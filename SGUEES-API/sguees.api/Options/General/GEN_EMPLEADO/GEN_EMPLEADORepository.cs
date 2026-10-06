@@ -2,8 +2,10 @@
 // Cómo lo hace: GetAll/Get/Create/Update de GEN_EMPLEADO; Iniciar/Personales con PRAL_MTTO_GEN_EMPLEADO.
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using eFramework.Data;
 using eFramework.Core;
@@ -20,10 +22,14 @@ namespace sguees.Repositories
 		private const bool _UsaEmpresa = true;
 		private const string _ViewPersonaNatural = "V_GEN_PERSONA_NATURAL";
 		private const string _SpEmpleado = "PRAL_MTTO_GEN_EMPLEADO";
+		private readonly string _connectionString;
 
 		public GEN_EMPLEADORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
-				config.GetSection("DbProvider:defaultProvider").Value) { }
+				config.GetSection("DbProvider:defaultProvider").Value)
+		{
+			_connectionString = config.GetConnectionString("defaultConnection") ?? string.Empty;
+		}
 
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
@@ -343,21 +349,29 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: elimina un empleado de la empresa.
-		// Cómo: Delete por CORR_EMPRESA + CORR_EMPLEADO; si hay FK informa registros asociados.
+		// Qué hace: elimina el empleado, su persona y el expediente.
+		// Cómo lo hace: si tiene puesto o carga de descriptor no borra nada y avisa; si no,
+		// borra historial, rubro, el empleado y las tablas de la persona en la misma transacción.
 		public async Task<CResult> DeleteAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
 
 			try
 			{
-				var pWhere = new List<CParameter>
+				if (await TienePuestoOCargaDescriptorAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO))
 				{
-					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "CORR_EMPLEADO", Value = Data.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
-				};
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.RowsAffected = 0;
+					objResultado.CodeHelper = 0;
+					objResultado.ErrorCode = 4102;
+					objResultado.ErrorMessage = "No se puede eliminar el empleado porque tiene puesto o carga de descriptor asociados.";
+					objResultado.ErrorSource = "";
+					return objResultado;
+				}
 
-				objResultado.RowsAffected = (int)await objData.Delete(_TableName, pWhere);
+				await EliminarEmpleadoYPersonaAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO);
+				objResultado.RowsAffected = 1;
 				objResultado.Data = null;
 				objResultado.Result = true;
 				objResultado.CodeHelper = Data.CORR_EMPLEADO;
@@ -380,6 +394,111 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
+		}
+
+		// Qué hace: indica si el empleado tiene puesto o carga en un descriptor.
+		// Cómo lo hace: busca una fila en GEN_EMPLEADO_PUESTO o SC_DESCRIPTOR_PUESTO_EMPLEADO.
+		private async Task<bool> TienePuestoOCargaDescriptorAsync(int corrEmpresa, int corrEmpleado)
+		{
+			const string sql = @"
+            SELECT CASE WHEN EXISTS (
+                SELECT 1
+                FROM dbo.GEN_EMPLEADO_PUESTO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                  AND CORR_EMPLEADO = @CORR_EMPLEADO
+            ) OR EXISTS (
+                SELECT 1
+                FROM dbo.SC_DESCRIPTOR_PUESTO_EMPLEADO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                  AND CORR_EMPLEADO = @CORR_EMPLEADO
+            ) THEN 1 ELSE 0 END;";
+
+			await using var conn = new SqlConnection(_connectionString);
+			await conn.OpenAsync();
+			await using var cmd = new SqlCommand(sql, conn);
+			cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+			cmd.Parameters.Add(new SqlParameter("@CORR_EMPLEADO", SqlDbType.Int) { Value = corrEmpleado });
+			var encontrado = await cmd.ExecuteScalarAsync();
+			return encontrado != null && encontrado != DBNull.Value && Convert.ToInt32(encontrado) == 1;
+		}
+
+		// Qué hace: borra historial, rubro, empleado y la persona.
+		// Cómo lo hace: solo llega aquí si no hay puesto ni carga. Si falla, no queda nada a medias.
+		private async Task EliminarEmpleadoYPersonaAsync(int corrEmpresa, int corrEmpleado)
+		{
+			const string sql = @"
+            SET XACT_ABORT ON;
+            BEGIN TRAN;
+
+            DECLARE @CORR_PERSONA BIGINT;
+
+            SELECT @CORR_PERSONA = CORR_PERSONA
+            FROM dbo.GEN_EMPLEADO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA
+              AND CORR_EMPLEADO = @CORR_EMPLEADO;
+
+            DELETE FROM dbo.GEN_EMPLEADO_PUESTO_HISTORIAL
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_EMPLEADO = @CORR_EMPLEADO;
+
+            DELETE FROM dbo.PLA_RUBRO_MENSUAL
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_EMPLEADO = @CORR_EMPLEADO;
+
+            DELETE FROM dbo.GEN_EMPLEADO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_EMPLEADO = @CORR_EMPLEADO;
+
+            IF @CORR_PERSONA IS NOT NULL AND @CORR_PERSONA > 0
+               AND NOT EXISTS (
+                    SELECT 1
+                    FROM dbo.GEN_EMPLEADO
+                    WHERE CORR_PERSONA = @CORR_PERSONA
+               )
+            BEGIN
+                DELETE FROM dbo.GEN_PERSONA_CONTACTO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_PARENTESCO_CONTACTO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_DOMICILIO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_FORMACION_ACADEMICA
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_EXPERIENCIA_LABORAL
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_COMPETENCIA
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_IDIOMAS
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_FAMILIAR
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_FAMILIAR_UEES
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_HIJOS
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_REFERENCIA_LABORAL
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_REFERENCIA_PERSONAL
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_EMPRESA_PERSONA
+                WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_NATURAL
+                WHERE CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_JURIDICA
+                WHERE CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA_USUARIO
+                WHERE CORR_PERSONA = @CORR_PERSONA;
+                DELETE FROM dbo.GEN_PERSONA
+                WHERE CORR_PERSONA = @CORR_PERSONA;
+            END
+
+            COMMIT TRAN;";
+
+			await using var conn = new SqlConnection(_connectionString);
+			await conn.OpenAsync();
+			await using var cmd = new SqlCommand(sql, conn);
+			cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+			cmd.Parameters.Add(new SqlParameter("@CORR_EMPLEADO", SqlDbType.Int) { Value = corrEmpleado });
+			await cmd.ExecuteNonQueryAsync();
 		}
 
 		private static List<CParameter> BuildEmpleadoSpParams(
