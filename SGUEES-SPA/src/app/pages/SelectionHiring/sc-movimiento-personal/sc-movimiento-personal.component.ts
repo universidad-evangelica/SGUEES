@@ -58,6 +58,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	btnAprobarMovimiento = '';
 	btnDevolverMovimiento = '';
 	btnRechazarMovimiento = '';
+	btnCrearEmpleado = '';
 
 	/** Visible al tener un movimiento seleccionado o abierto (CORR > 0). */
 	get btnImprimirMovimiento(): string {
@@ -569,12 +570,61 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 		this.btnConfirmarMovimiento = puedeConfirmar ? 'Confirmar' : '';
 		this.puedeEditarFechaEfectiva = puedeConfirmar;
+
+		// Qué hace: controla la visibilidad del botón Crear Empleado en la barra.
+		// Cómo lo hace: verifica que exista registro seleccionado/abierto, esté en estado Aprobado (AP) y sin empleado previamente asignado.
+		const corrMov = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		const tieneEmpleado = Number(this.model?.CORR_EMPLEADO) > 0;
+		const esAprobado = `${this.model?.ESTADO_MOVIMIENTO || ''}`.trim().toUpperCase() === 'AP';
+
+		this.btnCrearEmpleado = corrMov > 0 && esAprobado && !tieneEmpleado ? 'Crear Empleado' : '';
 	}
 
 	/** En browse, al seleccionar fila se habilita Confirmar e Imprimir en la barra. */
 	override focusedRowChanged(e: any): void {
 		super.focusedRowChanged(e);
 		this.refrescarBotones();
+	}
+
+	// Qué hace: ejecuta la acción de contratación del candidato a empleado.
+	// Cómo lo hace: solicita confirmación al usuario, llama al servicio y actualiza en memoria sin llamar a GetAll.
+	async crearEmpleado(): Promise<void> {
+		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (corr <= 0) {
+			this.notifyFx('Seleccione un movimiento aprobado.', NotifyType.Warning);
+			return;
+		}
+
+		const nombre = this.model?.NOMBRE_COMPLETO || 'el candidato';
+		const confirmResult = await confirm(
+			`¿Está seguro de crear el empleado institucional para <strong>${nombre}</strong>?`,
+			'Crear Empleado'
+		);
+		if (!confirmResult) return;
+
+		this.service.contratarEmpleado({ CORR_MOVIMIENTO_PERSONAL: corr }).subscribe({
+			next: (response: any) => {
+				if (response?.Result) {
+					this.notifyFx('Empleado creado exitosamente.', NotifyType.Success);
+					// Parchear en memoria sin GetAll (estandar-sin-getall-despues-guardar)
+					if (response.Data) {
+						const updated = response.Data;
+						this.model = { ...this.model, ...updated };
+						const idx = this.models.findIndex(
+							(m: any) => m.CORR_MOVIMIENTO_PERSONAL === updated.CORR_MOVIMIENTO_PERSONAL
+						);
+						if (idx >= 0) {
+							this.models[idx] = { ...this.models[idx], ...updated };
+							this.models = [...this.models];
+						}
+					}
+					this.refrescarBotones();
+				} else {
+					this.notifyFx(response?.ErrorMessage || 'Error al crear el empleado.', NotifyType.Error);
+				}
+			},
+			error: (err: any) => this.notifyFx(err, NotifyType.Error),
+		});
 	}
 
 	/**
@@ -638,6 +688,9 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			});
 	}
 
+	// Qué hace: escucha mensajes del visor de reportes para remover el indicador de carga.
+	// Cómo lo hace: valida tipo y origen del evento window:message y desactiva el estado de carga.
+	// eslint-disable-next-line @typescript-eslint/member-ordering
 	@HostListener('window:message', ['$event'])
 	onImprimirRptMessage(event: MessageEvent): void {
 		const data = event?.data;

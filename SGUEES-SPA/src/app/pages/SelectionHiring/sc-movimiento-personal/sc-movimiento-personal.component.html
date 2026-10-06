@@ -41,7 +41,13 @@
 		[btn6Type]="'default'"
 		[btn6Width]="120"
 		(btn6Click)="imprimirMovimiento()"
+		[btn7]="btnCrearEmpleado"
+		[btn7Icon]="'user'"
+		[btn7Type]="'default'"
+		[btn7Width]="150"
+		(btn7Click)="crearEmpleado()"
 	>
+		<!-- Botón Crear Empleado: disponible para movimientos aprobados sin ficha de empleado asignada -->
 	</app-barra-data-mtto>
 
 	<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">

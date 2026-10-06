@@ -25,5 +25,8 @@ namespace SGUEES.Services
 		Task<CResult> GetAccionesFlujoAsync(int corrEmpresa, int corrMovimiento, string login);
 		Task<CResult> GetPendientesActorAsync(List<CParameter> xWhere);
 		Task<int> CountPendientesActorAsync(int corrEmpresa, string login);
+		// Qué hace: contrato de servicio para contratar al candidato.
+		// Cómo lo hace: delega la ejecución al repositorio pasando parámetros de auditoría.
+		Task<CResult> ContratarEmpleadoAsync(SC_MOVIMIENTO_PERSONALParam Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

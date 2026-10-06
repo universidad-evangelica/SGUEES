@@ -241,6 +241,12 @@ export class ScMovimientoPersonalService {
 	}): Observable<IResult> {
 		return this.repo.registrarFechaIngreso(model);
 	}
+
+	// Qué hace: invoca la creación del empleado institucional en la API.
+	// Cómo lo hace: delega la petición al repositorio pasando el correlativo del movimiento.
+	contratarEmpleado(model: { CORR_MOVIMIENTO_PERSONAL: number }): Observable<IResult> {
+		return this.repo.contratarEmpleado(model);
+	}
 	//#endregion
 
 	//#region Grid / Form

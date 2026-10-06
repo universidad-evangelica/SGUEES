@@ -1360,5 +1360,75 @@ SELECT
 
 			return objResultado;
 		}
+
+		// Qué hace: ejecuta el SP dbo.PRAL_SC_CONTRATAR_CANDIDATO_A_EMPLEADO para contratar al candidato.
+		// Cómo lo hace: envía los parámetros al SP, valida resultado y relee la fila en V_SC_MOVIMIENTO_PERSONAL.
+		public async Task<CResult> ContratarEmpleadoAsync(SC_MOVIMIENTO_PERSONALParam Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			const string spName = "dbo.PRAL_SC_CONTRATAR_CANDIDATO_A_EMPLEADO";
+			var objResultado = new CResult();
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = DbType.Int32 },
+					new() { ParameterName = "@CORR_MOVIMIENTO_PERSONAL", Value = Data.CORR_MOVIMIENTO_PERSONAL, DbType = DbType.Int32 },
+					new() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = DbType.String },
+					new() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = DbType.String },
+					new() { ParameterName = "@CORR_EMPLEADO", Value = 0, DbType = DbType.Int32, Direction = ParameterDirection.Output },
+					new() { ParameterName = "@CORR_PERSONA", Value = 0L, DbType = DbType.Int64, Direction = ParameterDirection.Output },
+					new() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = DbType.Int32, Direction = ParameterDirection.Output },
+					new() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0m, DbType = DbType.Decimal, Direction = ParameterDirection.Output },
+					new() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = DbType.String, Direction = ParameterDirection.Output, Size = 4000 },
+				};
+
+				await objData.ExecCmd(CommandType.StoredProcedure, spName, true, p);
+
+				var numError = Convert.ToInt64(objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value ?? 0);
+				var mensajeError = objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value?.ToString();
+
+				if (numError != 0 || !string.IsNullOrWhiteSpace(mensajeError))
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.RowsAffected = 0;
+					objResultado.CodeHelper = Data.CORR_MOVIMIENTO_PERSONAL;
+					objResultado.ErrorCode = (int)numError;
+					objResultado.ErrorMessage = mensajeError ?? "Error al contratar el candidato.";
+					objResultado.ErrorSource = spName;
+					return objResultado;
+				}
+
+				var corrEmpleado = Convert.ToInt32(objData.objCommand.Parameters["@CORR_EMPLEADO"].Value ?? 0);
+
+				var keyWhere = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = DbType.Int32 },
+					new() { ParameterName = "CORR_MOVIMIENTO_PERSONAL", Value = Data.CORR_MOVIMIENTO_PERSONAL, DbType = DbType.Int32 },
+				};
+
+				var readerGet = await objData.GetDataReader("V_" + _TableName, keyWhere);
+				var response = new List<SC_MOVIMIENTO_PERSONALView>().FromDataReader(readerGet).FirstOrDefault();
+				readerGet.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = response != null;
+				objResultado.RowsAffected = 1;
+				objResultado.CodeHelper = corrEmpleado;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = string.Empty;
+			}
+			catch (Exception e)
+			{
+				SetError(objResultado, e);
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
 	}
 }
