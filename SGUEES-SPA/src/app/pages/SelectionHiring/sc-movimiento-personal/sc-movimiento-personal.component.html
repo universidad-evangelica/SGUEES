@@ -36,18 +36,18 @@
 		[btn5Type]="'danger'"
 		[btn5Width]="120"
 		(btn5Click)="rechazarMovimiento()"
-		[btn6]="btnImprimirMovimiento"
-		[btn6Icon]="'print'"
-		[btn6Type]="'default'"
-		[btn6Width]="120"
-		(btn6Click)="imprimirMovimiento()"
-		[btn7]="btnCrearEmpleado"
-		[btn7Icon]="'user'"
+		[btn6]="btnCrearEmpleado"
+		[btn6Icon]="'user'"
+		[btn6Type]="'success'"
+		[btn6Width]="150"
+		(btn6Click)="crearEmpleado()"
+		[btn7]="btnImprimirMovimiento"
+		[btn7Icon]="'print'"
 		[btn7Type]="'default'"
-		[btn7Width]="150"
-		(btn7Click)="crearEmpleado()"
+		[btn7Width]="120"
+		(btn7Click)="imprimirMovimiento()"
 	>
-		<!-- Botón Crear Empleado: disponible para movimientos aprobados sin ficha de empleado asignada -->
+		<!-- Barra principal de mantenimiento: flujo de estados, contratación en verde antes de imprimir -->
 	</app-barra-data-mtto>
 
 	<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">

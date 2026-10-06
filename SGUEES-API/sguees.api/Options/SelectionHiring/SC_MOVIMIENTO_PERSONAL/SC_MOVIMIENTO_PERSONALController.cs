@@ -160,7 +160,7 @@ namespace SGUEES.Controllers
 		}
 
 		// Qué hace: endpoint para crear el empleado institucional a partir del movimiento aprobado.
-		// Cómo lo hace: ejecuta el SP PRAL_SC_CONTRATAR_CANDIDATO_A_EMPLEADO y devuelve la fila actualizada.
+		// Cómo lo hace: ejecuta el SP PRAL_MTTO_SC_CONTRATAR_CANDIDATO_A_EMPLEADO y devuelve la fila actualizada.
 		[HttpPost("ContratarEmpleado")]
 		[Authorize(Policy = "/sc-movimiento-personal|U")]
 		public async Task<IActionResult> ContratarEmpleado([FromBody] SC_MOVIMIENTO_PERSONALParam Data)

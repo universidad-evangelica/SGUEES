@@ -1361,11 +1361,11 @@ SELECT
 			return objResultado;
 		}
 
-		// Qué hace: ejecuta el SP dbo.PRAL_SC_CONTRATAR_CANDIDATO_A_EMPLEADO para contratar al candidato.
+		// Qué hace: ejecuta el SP dbo.PRAL_MTTO_SC_CONTRATAR_CANDIDATO_A_EMPLEADO para contratar al candidato.
 		// Cómo lo hace: envía los parámetros al SP, valida resultado y relee la fila en V_SC_MOVIMIENTO_PERSONAL.
 		public async Task<CResult> ContratarEmpleadoAsync(SC_MOVIMIENTO_PERSONALParam Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
-			const string spName = "dbo.PRAL_SC_CONTRATAR_CANDIDATO_A_EMPLEADO";
+			const string spName = "dbo.PRAL_MTTO_SC_CONTRATAR_CANDIDATO_A_EMPLEADO";
 			var objResultado = new CResult();
 
 			try

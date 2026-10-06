@@ -572,12 +572,16 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.puedeEditarFechaEfectiva = puedeConfirmar;
 
 		// Qué hace: controla la visibilidad del botón Crear Empleado en la barra.
-		// Cómo lo hace: verifica que exista registro seleccionado/abierto, esté en estado Aprobado (AP) y sin empleado previamente asignado.
+		// Cómo lo hace: verifica que exista registro seleccionado/abierto, esté en estado Aprobado (AP), confirmado en el campo de confirmación y sin empleado previamente asignado.
 		const corrMov = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
 		const tieneEmpleado = Number(this.model?.CORR_EMPLEADO) > 0;
 		const esAprobado = `${this.model?.ESTADO_MOVIMIENTO || ''}`.trim().toUpperCase() === 'AP';
+		const esConfirmado =
+			this.service.esConfirmado(this.model?.CONFIRMADO)
+			|| Number(this.model?.CONFIRMADO) === 1
+			|| this.model?.CONFIRMADO === true;
 
-		this.btnCrearEmpleado = corrMov > 0 && esAprobado && !tieneEmpleado ? 'Crear Empleado' : '';
+		this.btnCrearEmpleado = corrMov > 0 && esAprobado && esConfirmado && !tieneEmpleado ? 'Crear Empleado' : '';
 	}
 
 	/** En browse, al seleccionar fila se habilita Confirmar e Imprimir en la barra. */
