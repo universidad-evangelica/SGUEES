@@ -285,6 +285,14 @@
 	border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
+// Qué hace: estilo visual en tono violeta para requisiciones aprobadas por Jefe de Unidad (JU).
+// Cómo lo hace: aplica texto lila #c4b5fd con fondo y borde violeta traslúcido rgba acorde al design system.
+:host ::ng-deep .estado-req--aprobado-ju {
+	color: #c4b5fd;
+	background: rgba(139, 92, 246, 0.16);
+	border: 1px solid rgba(139, 92, 246, 0.38);
+}
+
 :host ::ng-deep .estado-req--devuelta {
 	color: #fbbf24;
 	background: rgba(245, 158, 11, 0.16);

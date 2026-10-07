@@ -31,8 +31,13 @@ export const OPERACION_BANDEJA_ACTORES = {
 export class ScBandejaActoresService {
 	constructor(private repo: ScBandejaActoresRepository) {}
 
-	getEstadoRequisicionLabel(corrEstado: number | null | undefined): string {
+	// Qué hace: Retorna la etiqueta descriptiva del estado de requisición para la bandeja de actores.
+	// Cómo lo hace: Si viene NOMBRE_ESTADO_FLUJO de la bitácora (ej. Aprobado JI, Aprobado JU, Aprobado GG), lo prioriza; de lo contrario toma el catálogo o 'Borrador'.
+	getEstadoRequisicionLabel(corrEstado: number | null | undefined, nombreEstadoFlujo?: string | null): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		if (corr >= 2 && corr <= 5 && nombreEstadoFlujo?.trim()) {
+			return nombreEstadoFlujo.trim();
+		}
 		const item = BANDEJA_ACTORES_ESTADOS_REQUISICION.find(
 			(x) => x.CORR_ESTADO_REQUISICION === corr
 		);
@@ -51,15 +56,14 @@ export class ScBandejaActoresService {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
 		switch (corr) {
 			case 2:
-				return 'aprobacion';
+			case 5:
+				return 'aprobacion'; // Mantiene tono azul (.bandeja-estado--aprobacion)
 			case 3:
 				return 'devuelta';
 			case 4:
 				return 'rechazada';
-			case 5:
-				return 'aprobada';
 			default:
-				return 'borrador';
+				return 'aprobacion';
 		}
 	}
 
@@ -219,6 +223,7 @@ export class ScBandejaActoresService {
 	mapRequisicionToBandejaItem(row: any): ScBandejaActoresItem {
 		const corr = Number(row?.CORR_REQUISICION_PERSONAL) || 0;
 		const corrEstado = Number(row?.CORR_ESTADO_REQUISICION) || 1;
+		const nombreFlujo = row?.NOMBRE_ESTADO_FLUJO;
 
 		return {
 			ID: `REQ-${corr}`,
@@ -229,10 +234,11 @@ export class ScBandejaActoresService {
 			SOLICITANTE: row?.NOMBRE_SOLICITANTE || row?.USUARIO_CREA || '—',
 			CARGO_SOLICITANTE: row?.USUARIO_CREA || undefined,
 			FECHA: row?.FECHA_NOTIFICACION || row?.FECHA_REQUISICION,
-			ESTADO: this.getEstadoRequisicionLabel(corrEstado),
-			ESTADO_TONE: this.getEstadoTone(corrEstado),
+			ESTADO: this.getEstadoRequisicionLabel(corrEstado, nombreFlujo),
+			ESTADO_TONE: 'aprobacion',
 			CORR_REQUISICION_PERSONAL: corr,
 			CORR_ESTADO_REQUISICION: corrEstado,
+			NOMBRE_ESTADO_FLUJO: nombreFlujo,
 			CORR_UNIDAD: Number(row?.CORR_UNIDAD) || undefined,
 			NOMBRE_UNIDAD: row?.NOMBRE_UNIDAD,
 			NOMBRE_PUESTO: row?.NOMBRE_PUESTO,

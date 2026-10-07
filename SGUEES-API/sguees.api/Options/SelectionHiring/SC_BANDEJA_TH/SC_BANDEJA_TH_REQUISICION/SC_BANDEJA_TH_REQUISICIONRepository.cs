@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -298,14 +298,21 @@ ORDER BY FB.FECHA_ACCION DESC, FB.CORR_BITACORA DESC", xWhere);
 			return _DefaultSortField;
 		}
 
+		// Qué hace: Construye la cláusula ORDER BY para la paginación de requisiciones en la bandeja de TH.
+		// Cómo lo hace: Aplica el campo de ordenamiento solicitado y añade R.CORR_REQUISICION_PERSONAL como criterio secundario de desempate para que a fechas iguales prevalezca la última creada.
 		private static string BuildOrderBy(string sortField, string sortDir)
 		{
 			if (string.Equals(sortField, "NOMBRE_SOLICITANTE", StringComparison.OrdinalIgnoreCase))
 			{
-				return $"ISNULL(U.NOMBRE_USUARIO, R.USUARIO_CREA) {sortDir}";
+				return $"ISNULL(U.NOMBRE_USUARIO, R.USUARIO_CREA) {sortDir}, R.CORR_REQUISICION_PERSONAL {sortDir}";
 			}
 
-			return $"R.[{sortField}] {sortDir}";
+			if (string.Equals(sortField, "CORR_REQUISICION_PERSONAL", StringComparison.OrdinalIgnoreCase))
+			{
+				return $"R.[CORR_REQUISICION_PERSONAL] {sortDir}";
+			}
+
+			return $"R.[{sortField}] {sortDir}, R.CORR_REQUISICION_PERSONAL {sortDir}";
 		}
 
 		private static int GetInt(List<CParameter> xWhere, string name)

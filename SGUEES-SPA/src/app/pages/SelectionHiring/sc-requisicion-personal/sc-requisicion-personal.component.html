@@ -128,14 +128,14 @@
           >
           </app-data-lookup>
         </div>
-		<!-- Chip de estado: solo lectura; el flujo externo actualiza CORR_ESTADO_REQUISICION -->
+		<!-- motivo: Chip de estado del formulario: refleja el estado de flujo/bitácora (Aprobado JI, Aprobado JU, Aprobado GG, Devuelta JI, etc.) si existe -->
 		<div *dxTemplate="let cellInfo of 'CORR_ESTADO_REQUISICIONChip'">
 			<span
 				class="estado-req-chip"
-				[ngClass]="getEstadoRequisicionBadgeClass(model.CORR_ESTADO_REQUISICION)"
-				[title]="getEstadoRequisicionLabel(model.CORR_ESTADO_REQUISICION)"
+				[ngClass]="getEstadoRequisicionBadgeClass(model.CORR_ESTADO_REQUISICION, model.NOMBRE_ESTADO_FLUJO)"
+				[title]="getEstadoRequisicionLabel(model.CORR_ESTADO_REQUISICION, model.NOMBRE_ESTADO_FLUJO)"
 			>
-				{{ getEstadoRequisicionLabel(model.CORR_ESTADO_REQUISICION) }}
+				{{ getEstadoRequisicionLabel(model.CORR_ESTADO_REQUISICION, model.NOMBRE_ESTADO_FLUJO) }}
 			</span>
 		</div>
         <div *dxTemplate="let data of 'alertJustificacion'">

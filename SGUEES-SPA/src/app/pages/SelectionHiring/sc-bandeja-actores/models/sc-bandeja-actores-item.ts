@@ -28,6 +28,9 @@ export interface ScBandejaActoresItem {
 	CORR_MOVIMIENTO_PERSONAL?: number;
 	CORR_INSTANCIA?: number;
 	CORR_ESTADO_REQUISICION?: number;
+	// Qué hace: Nombre descriptivo del estado según la última firma/acción registrada en bitácora (ej. Aprobado JI, Aprobado JU, Aprobado GG).
+	// Cómo lo hace: Mapea la columna NOMBRE_ESTADO_FLUJO devuelta por la API para requisiciones.
+	NOMBRE_ESTADO_FLUJO?: string;
 	CORR_UNIDAD?: number;
 	CORR_EXPEDIENTE_CANDIDATO?: number;
 	CORR_SOLICITUD_EMPLEO?: number;

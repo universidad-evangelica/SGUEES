@@ -1625,14 +1625,22 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		);
 	}
 
-	/** Label del chip de estado (solo lectura). */
-	getEstadoRequisicionLabel(corrEstado?: number): string {
-		return this.service.getEstadoRequisicionLabel(corrEstado ?? this.model?.CORR_ESTADO_REQUISICION);
+	// Qué hace: Retorna la etiqueta descriptiva de estado para el chip del formulario.
+	// Cómo lo hace: Invoca el servicio enviando CORR_ESTADO_REQUISICION y NOMBRE_ESTADO_FLUJO del modelo activo.
+	getEstadoRequisicionLabel(corrEstado?: number, nombreEstadoFlujo?: string): string {
+		return this.service.getEstadoRequisicionLabel(
+			corrEstado ?? this.model?.CORR_ESTADO_REQUISICION,
+			nombreEstadoFlujo ?? this.model?.NOMBRE_ESTADO_FLUJO
+		);
 	}
 
-	/** Clase CSS del chip de estado (solo lectura). */
-	getEstadoRequisicionBadgeClass(corrEstado?: number): string {
-		return this.service.getEstadoRequisicionBadgeClass(corrEstado ?? this.model?.CORR_ESTADO_REQUISICION);
+	// Qué hace: Retorna la clase CSS de color para el chip del formulario.
+	// Cómo lo hace: Invoca el servicio enviando CORR_ESTADO_REQUISICION y NOMBRE_ESTADO_FLUJO del modelo activo.
+	getEstadoRequisicionBadgeClass(corrEstado?: number, nombreEstadoFlujo?: string): string {
+		return this.service.getEstadoRequisicionBadgeClass(
+			corrEstado ?? this.model?.CORR_ESTADO_REQUISICION,
+			nombreEstadoFlujo ?? this.model?.NOMBRE_ESTADO_FLUJO
+		);
 	}
 
 	override setFocus() {

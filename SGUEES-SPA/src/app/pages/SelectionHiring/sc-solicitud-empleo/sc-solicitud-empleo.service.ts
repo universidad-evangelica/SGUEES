@@ -169,7 +169,15 @@ export class ScSolicitudEmpleoService {
 
 	getColumns(): any {
 		return [
-			{ dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'Corr.', width: 100 },
+			// Qué hace: define la columna correlativo ordenada de la más reciente a la más antigua por defecto.
+			// Cómo lo hace: añade sortOrder: 'desc' y sortIndex: 0 en la configuración de la columna DevExtreme.
+			{
+				dataField: 'CORR_SOLICITUD_EMPLEO',
+				caption: 'Corr.',
+				width: 100,
+				sortOrder: 'desc',
+				sortIndex: 0,
+			},
 			{ dataField: 'FECHA_GENERACION', caption: 'Fecha Generación', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 			{ dataField: 'CORREO_INVITACION', caption: 'Correo Invitación', width: 250 },
 			{ dataField: 'DUI', caption: 'Doc. Identidad', width: 150 },

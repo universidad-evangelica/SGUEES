@@ -135,9 +135,13 @@ export class ScRequisicionPersonalService {
 		{ CORR_ESTADO_REQUISICION: 12, ESTADO_REQUISICION: 'Cancelada' },
 	];
 
-	/** Texto del chip según CORR_ESTADO_REQUISICION (default Borrador si viene vacío). */
-	getEstadoRequisicionLabel(corrEstado: number | null | undefined): string {
+	// Qué hace: Retorna el texto visible del chip de estado en la grilla y el formulario.
+	// Cómo lo hace: Si la requisición está en circuito de flujo (estados 2..5) y posee NOMBRE_ESTADO_FLUJO de la bitácora, prioriza ese texto; de lo contrario toma el catálogo de negocio o 'Borrador'.
+	getEstadoRequisicionLabel(corrEstado: number | null | undefined, nombreEstadoFlujo?: string | null): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		if (corr >= 2 && corr <= 5 && nombreEstadoFlujo?.trim()) {
+			return nombreEstadoFlujo.trim();
+		}
 		const item = this.estadosRequisicion.find((x) => x.CORR_ESTADO_REQUISICION === corr);
 		return item?.ESTADO_REQUISICION ?? 'Borrador';
 	}
@@ -156,9 +160,32 @@ export class ScRequisicionPersonalService {
 		return this.esEstadoRequisicionEditable(corrEstado);
 	}
 
-	/** Clase CSS del chip según el estado (solo lectura / indicador de flujo). */
-	getEstadoRequisicionBadgeClass(corrEstado: number | null | undefined): string {
+	// Qué hace: devuelve la clase CSS del badge/chip según el estado general o el actor específico del flujo.
+	// Cómo lo hace: evalúa el texto del flujo (JI -> azul, JU -> violeta, GG/Final -> verde, devuelta -> ámbar, rechazada -> rojo).
+	getEstadoRequisicionBadgeClass(corrEstado: number | null | undefined, nombreEstadoFlujo?: string | null): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		if (corr >= 2 && corr <= 5 && nombreEstadoFlujo?.trim()) {
+			const nombre = nombreEstadoFlujo.trim().toLowerCase();
+			if (nombre.includes('aprobado') || nombre.includes('aprobada')) {
+				if (nombre.includes('ju')) {
+					return 'estado-req--aprobado-ju';
+				}
+				if (nombre.includes('ji')) {
+					return 'estado-req--aprobacion';
+				}
+				if (nombre.includes('gg')) {
+					return 'estado-req--aprobada';
+				}
+				return 'estado-req--aprobada';
+			}
+			if (nombre.includes('devuelt')) {
+				return 'estado-req--devuelta';
+			}
+			if (nombre.includes('rechaz') || nombre.includes('deneg')) {
+				return 'estado-req--rechazada';
+			}
+			return 'estado-req--aprobacion';
+		}
 		switch (corr) {
 			case 1:
 				return 'estado-req--borrador';
@@ -187,16 +214,18 @@ export class ScRequisicionPersonalService {
 		}
 	}
 
-	/** Pinta chip de estado en celdas del grid principal (mismas clases .estado-req-* que el form). */
+	// Qué hace: Renderiza el elemento DOM span con el chip de estado en la celda del grid.
+	// Cómo lo hace: Agrega las clases CSS y el texto descriptivo pasando tanto CORR_ESTADO_REQUISICION como NOMBRE_ESTADO_FLUJO.
 	private renderEstadoRequisicionChip(
 		cellElement: HTMLElement,
-		corrEstado: number | null | undefined
+		corrEstado: number | null | undefined,
+		nombreEstadoFlujo?: string | null
 	): void {
 		cellElement.classList.add('requisicion-grid-estado-cell');
 
 		const chip = document.createElement('span');
-		chip.classList.add('estado-req-chip', this.getEstadoRequisicionBadgeClass(corrEstado));
-		chip.textContent = this.getEstadoRequisicionLabel(corrEstado);
+		chip.classList.add('estado-req-chip', this.getEstadoRequisicionBadgeClass(corrEstado, nombreEstadoFlujo));
+		chip.textContent = this.getEstadoRequisicionLabel(corrEstado, nombreEstadoFlujo);
 		chip.title = chip.textContent;
 
 		cellElement.innerHTML = '';
@@ -639,7 +668,15 @@ export class ScRequisicionPersonalService {
 
     getColumns(): any {
         return [
-            { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr.', width: 85 },
+            // Qué hace: define la columna correlativo ordenada de la más reciente a la más antigua por defecto.
+            // Cómo lo hace: añade sortOrder: 'desc' y sortIndex: 0 en la configuración de la columna DevExtreme.
+            {
+                dataField: 'CORR_REQUISICION_PERSONAL',
+                caption: 'Corr.',
+                width: 85,
+                sortOrder: 'desc',
+                sortIndex: 0,
+            },
             {
                 dataField: 'CORR_ESTADO_REQUISICION',
                 caption: 'Estado',
@@ -649,11 +686,12 @@ export class ScRequisicionPersonalService {
                 allowFiltering: true,
                 allowHeaderFiltering: true,
                 calculateCellValue: (row: any) =>
-                    this.getEstadoRequisicionLabel(row?.CORR_ESTADO_REQUISICION),
+                    this.getEstadoRequisicionLabel(row?.CORR_ESTADO_REQUISICION, row?.NOMBRE_ESTADO_FLUJO),
                 cellTemplate: (cellElement: HTMLElement, cellInfo: { data?: any }) => {
                     this.renderEstadoRequisicionChip(
                         cellElement,
-                        cellInfo.data?.CORR_ESTADO_REQUISICION
+                        cellInfo.data?.CORR_ESTADO_REQUISICION,
+                        cellInfo.data?.NOMBRE_ESTADO_FLUJO
                     );
                 },
                 lookup: {
@@ -842,12 +880,16 @@ export class ScRequisicionPersonalService {
             { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr. Requisición', width: 130 },
             { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 140 },
             { dataField: 'ESTADO_DESTINO', caption: 'Estado destino', width: 160 },
+            // Qué hace: define la columna Fecha / Hora ordenada de la acción más reciente a la más antigua.
+            // Cómo lo hace: agrega sortOrder: 'desc' y sortIndex: 0 en la configuración de la columna DevExtreme.
             {
                 dataField: 'FECHA_ACCION',
                 caption: 'Fecha / Hora',
                 width: 170,
                 dataType: 'datetime',
                 format: 'dd/MM/yyyy HH:mm',
+                sortOrder: 'desc',
+                sortIndex: 0,
             },
             { dataField: 'COMENTARIO', caption: 'Comentario', minWidth: 280 },
         ];

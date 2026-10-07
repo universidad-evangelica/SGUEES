@@ -30,12 +30,16 @@ export class FirmasDocumentoService {
                 caption: 'Observaciones',
                 minWidth: 280,
             },
+            // Qué hace: define la columna Fecha ordenada de la más reciente a la más antigua para la bitácora de firmas.
+            // Cómo lo hace: agrega sortOrder: 'desc' y sortIndex: 0 en la configuración de columna DevExtreme.
             {
                 dataField: 'FECHA_ACCION',
                 caption: 'Fecha',
                 width: 170,
                 dataType: 'datetime',
                 format: 'dd/MM/yyyy HH:mm',
+                sortOrder: 'desc',
+                sortIndex: 0,
             },
             //{ dataField: 'ESTADO_ORIGEN', caption: 'Estado Anterior', width: 180 },
         ];
