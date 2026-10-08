@@ -1,14 +1,15 @@
-using System.Net;
-using System.Text;
-using sguees.api.framework;
-using sguees.api.Policies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using NetCore.AutoRegisterDi;
 using sguees.api.Data;
+using sguees.api.framework;
+using sguees.api.Policies;
+using sguees.api.Services.Hubs;
 using sguees.api.Shared;
+using System.Net;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
@@ -18,6 +19,8 @@ builder.Services.AddControllers()
                     options.JsonSerializerOptions.Converters.Add(new DateTimeConverter());    
                     options.JsonSerializerOptions.Converters.Add(new StringConverter());    
                 });
+
+builder.Services.AddSignalR(); //builder para SignalR
 
 //Mapeo archivo ApplicacionDataContext que contiene los servicios de acceso a datos
 builder.Services.AddScoped<ApplicationDataContext>();
@@ -71,6 +74,24 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuer = false,
             ValidateAudience = false
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            // Si la solicitud es para nuestro hub de SignalR, obtenga el token de la cadena de consulta
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/hubs/notifications")))
+            {
+                // Read the token out of the query string
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+
 });
 
 // Politicas de autorización
@@ -114,7 +135,8 @@ var allowedOrigins = builder.Configuration.GetSection("AppSetting:AllowedOrigins
 
 app.UseCors(options => options.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
-            .AllowAnyHeader());
+            .AllowAnyHeader()
+            .AllowCredentials());
 
 // Rate limiting para endpoints públicos (login, reset password)
 app.UseMiddleware<RateLimitingMiddleware>();
@@ -122,5 +144,6 @@ app.UseMiddleware<RateLimitingMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications"); //asigno SignalR hub para notificaciones en tiempo real
 
 app.Run();
