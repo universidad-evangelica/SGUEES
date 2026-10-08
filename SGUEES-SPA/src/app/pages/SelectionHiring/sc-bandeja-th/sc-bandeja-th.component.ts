@@ -91,7 +91,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	readonly estadosFiltroContratacion: Array<{ VALUE: string; TEXT: string }> = [
 		{ VALUE: 'TODOS', TEXT: 'Todos' },
 		{ VALUE: 'APLICA', TEXT: 'Seleccionado' },
-		{ VALUE: 'LISTO_CREAR_USUARIO', TEXT: 'Listo para crear usuario' },
+		{ VALUE: 'LISTO_CREAR_USUARIO', TEXT: 'Listo para crear empleado' },
 		{ VALUE: 'CONTRATADO', TEXT: 'Contratado' },
 	];
 
@@ -537,7 +537,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: Ejecuta la confirmación del movimiento de personal con la fecha efectiva indicada en el modal.
-	// Cómo lo hace: Valida fecha obligatoria, envía la petición al API y actualiza el estado en memoria a 'Listo para crear usuario'.
+	// Cómo lo hace: Valida fecha obligatoria, envía la petición al API y actualiza el estado en memoria a 'Listo para crear empleado'.
 	async confirmarPopupConfirmarMov(): Promise<void> {
 		const item = this.selectedItem;
 		if (!item || this.accionEnCurso) {
@@ -581,7 +581,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 			item.FECHA_EFECTIVA = this.popupFechaEfectiva;
 			item.CONFIRMADO = true;
-			item.ESTADO = 'Listo para crear usuario';
+			item.ESTADO = 'Listo para crear empleado';
 			item.ESTADO_TONE = 'listo-usuario';
 			item.ESTADO_CICLO_CANDIDATO = 'LISTO_CREAR_USUARIO';
 			item.CORR_ESTADO_EXPEDIENTE = 4;
@@ -625,8 +625,8 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 		const nombre = item.NOMBRE_CANDIDATO || item.DESCRIPCION || 'el candidato';
 		const ok = await confirm(
-			`¿Está seguro de crear el usuario / empleado institucional para <strong>${nombre}</strong>?`,
-			'Crear usuario'
+			`¿Está seguro de crear el empleado institucional para <strong>${nombre}</strong>?`,
+			'Crear empleado'
 		);
 		if (!ok) return;
 

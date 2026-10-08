@@ -137,6 +137,7 @@
 			</div>
 
 			<div class="bandeja-grid-wrap">
+				<!-- Grilla principal de la bandeja TH con scroll horizontal y anchos seguros -->
 				<dx-data-grid
 					#gridBandeja
 					class="sguees-data-grid-mtto sguees-data-grid-mtto--enterprise bandeja-grid"
@@ -146,6 +147,7 @@
 					[columnAutoWidth]="false"
 					[allowColumnReordering]="true"
 					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
 					[rowAlternationEnabled]="true"
 					[hoverStateEnabled]="true"
 					[focusedRowEnabled]="true"
@@ -156,6 +158,7 @@
 					(onRowClick)="onRowClick($event)"
 				>
 					<dxo-load-panel [enabled]="true"></dxo-load-panel>
+					<dxo-scrolling [mode]="'standard'" [showScrollbar]="'auto'"></dxo-scrolling>
 					<dxo-paging [pageSize]="pageSize"></dxo-paging>
 					<dxo-pager
 						[visible]="true"
@@ -170,39 +173,45 @@
 						dataField="TIPO"
 						caption="Tipo"
 						[width]="130"
+						[minWidth]="110"
 						cellTemplate="tipoCell"
 						[allowFiltering]="true"
 					></dxi-column>
-					<dxi-column dataField="CODIGO" caption="Código" [width]="120"></dxi-column>
+					<dxi-column dataField="CODIGO" caption="Código" [width]="120" [minWidth]="100"></dxi-column>
 					<dxi-column
 						dataField="SOLICITANTE"
 						caption="Solicitante"
-						[width]="250"
+						[width]="240"
+						[minWidth]="180"
 						cellTemplate="solCell"
 					></dxi-column>
 					<dxi-column
 						dataField="DESCRIPCION"
 						caption="Descripción / Puesto"
-						[minWidth]="200"
+						[width]="300"
+						[minWidth]="240"
 						cellTemplate="descCell"
 					></dxi-column>
 					<dxi-column
 						dataField="FECHA"
 						caption="Fecha"
 						[width]="140"
+						[minWidth]="130"
 						cellTemplate="fechaCell"
 						sortOrder="desc"
 					></dxi-column>
 					<dxi-column
 						dataField="ESTADO"
 						caption="Estado"
-						[width]="170"
+						[width]="210"
+						[minWidth]="200"
 						cellTemplate="estadoCell"
 						[alignment]="'center'"
 					></dxi-column>
 					<dxi-column
 						caption="Acciones"
-						[width]="90"
+						[width]="110"
+						[minWidth]="100"
 						[allowFiltering]="false"
 						[allowSorting]="false"
 						cellTemplate="accionesCell"
@@ -497,10 +506,10 @@
 					(onClick)="abrirPopupConfirmarMov()"
 				></dx-button>
 
-				<!-- Botón para crear usuario institucional en contrataciones (cuando está listo para crear usuario) -->
+				<!-- Botón para crear empleado institucional en contrataciones (cuando está listo para crear empleado) -->
 				<dx-button
 					*ngIf="puedeCrearUsuario"
-					text="Crear usuario"
+					text="Crear empleado"
 					type="success"
 					icon="user"
 					[width]="'100%'"

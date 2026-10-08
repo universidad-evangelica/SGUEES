@@ -279,7 +279,7 @@ export class ScBandejaThService {
 		};
 	}
 
-	// Qué hace: Mapea registros de contrataciones determinando si está Seleccionado, Listo para crear usuario o Contratado.
+	// Qué hace: Mapea registros de contrataciones determinando si está Seleccionado, Listo para crear empleado o Contratado.
 	// Cómo lo hace: Evalúa si el movimiento de personal está aprobado ('AP') y confirmado (1), y si ya tiene CORR_EMPLEADO generado en GEN_EMPLEADO.
 	mapContratacionToBandejaItem(row: any): ScBandejaItem {
 		const base = this.mapCandidatoToBandejaItem({
@@ -306,7 +306,7 @@ export class ScBandejaThService {
 				estadoTone = 'cerrada';
 				estadoCiclo = 'CONTRATADO';
 			} else {
-				estado = 'Listo para crear usuario';
+				estado = 'Listo para crear empleado';
 				estadoTone = 'listo-usuario';
 				estadoCiclo = 'LISTO_CREAR_USUARIO';
 			}
@@ -348,7 +348,7 @@ export class ScBandejaThService {
 			case 'NO_APLICA':
 				return 'Rechazado';
 			case 'LISTO_CREAR_USUARIO':
-				return 'Listo para crear usuario';
+				return 'Listo para crear empleado';
 			case 'CONTRATADO':
 				return 'Contratado';
 			default:

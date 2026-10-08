@@ -72,7 +72,7 @@ export interface ScBandejaItem {
 	CANTIDAD_ENTREVISTAS?: number;
 	ULTIMA_ENTREVISTA?: string;
 	// Qué hace: Vinculación con movimiento de personal y ficha de empleado institucional.
-	// Cómo lo hace: Registra los identificadores devueltos por el API para resolver si ya está contratado o listo para crear usuario.
+	// Cómo lo hace: Registra los identificadores devueltos por el API para resolver si ya está contratado o listo para crear empleado.
 	CORR_REQUISICION_CANDIDATO?: number;
 	CORR_MOVIMIENTO_PERSONAL?: number;
 	ESTADO_MOVIMIENTO?: string;
