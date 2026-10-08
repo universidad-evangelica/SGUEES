@@ -119,7 +119,9 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		public async Task<CResult> DecideAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		// Qué hace: Registra el dictamen de Aplica o No aplica para un candidato en selección.
+		// Cómo lo hace: Valida los datos requeridos, valida jefatura si validarJefatura es true, inserta en SC_REQUISICION_CANDIDATO y si es APLICA genera el movimiento de personal.
+		public async Task<CResult> DecideAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION, bool validarJefatura = true)
 		{
 			if (Data == null)
 			{
@@ -159,7 +161,7 @@ namespace SGUEES.Repositories
 			}
 
 			var login = (vLOGIN_SISTEMA ?? string.Empty).Trim();
-			if (!await EsJefeActivoDeUnidadAsync(Data.CORR_EMPRESA, requisicion.CORR_UNIDAD, login))
+			if (validarJefatura && !await EsJefeActivoDeUnidadAsync(Data.CORR_EMPRESA, requisicion.CORR_UNIDAD, login))
 			{
 				return ValidationResult(
 					1010,
@@ -262,6 +264,14 @@ namespace SGUEES.Repositories
 					{
 						await EliminarDecisionAsync(Data.CORR_EMPRESA, corrCandidato);
 						return ValidationResult(1014, mensajeMovimiento);
+					}
+
+					// Qué hace: Pasa el estado del expediente a 3 (Seleccionado).
+					// Cómo lo hace: Actualiza la columna CORR_ESTADO_EXPEDIENTE del candidato dictaminado.
+					var corrExpediente = response?.CORR_EXPEDIENTE_CANDIDATO ?? Data.CORR_EXPEDIENTE_CANDIDATO;
+					if (corrExpediente > 0)
+					{
+						await ActualizarEstadoExpedienteAsync(Data.CORR_EMPRESA, corrExpediente, 3, login, vESTACION);
 					}
 				}
 
@@ -420,6 +430,46 @@ WHERE J.CORR_EMPRESA = @CORR_EMPRESA
 DELETE FROM dbo.SC_REQUISICION_CANDIDATO
 WHERE CORR_EMPRESA = @CORR_EMPRESA
   AND CORR_REQUISICION_CANDIDATO = @CORR_REQUISICION_CANDIDATO", true, p);
+		}
+
+		// Qué hace: Actualiza el estado del expediente del candidato (3: Seleccionado, 2: Proceso de selección).
+		// Cómo lo hace: Ejecuta un UPDATE puntual sobre dbo.SC_EXPEDIENTE_CANDIDATO con los parámetros recibidos.
+		private async Task ActualizarEstadoExpedienteAsync(
+			int corrEmpresa,
+			int corrExpediente,
+			int corrEstado,
+			string login,
+			string estacion)
+		{
+			if (corrExpediente <= 0)
+			{
+				return;
+			}
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_EXPEDIENTE_CANDIDATO", Value = corrExpediente, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_ESTADO_EXPEDIENTE", Value = corrEstado, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@USUARIO_ACTU", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@ESTACION_ACTU", Value = estacion ?? string.Empty, DbType = System.Data.DbType.String },
+				};
+
+				await objData.ExecCmd(System.Data.CommandType.Text, @"
+UPDATE dbo.SC_EXPEDIENTE_CANDIDATO
+SET CORR_ESTADO_EXPEDIENTE = @CORR_ESTADO_EXPEDIENTE,
+    USUARIO_ACTU = @USUARIO_ACTU,
+    ESTACION_ACTU = @ESTACION_ACTU,
+    FECHA_ACTU = GETDATE()
+WHERE CORR_EMPRESA = @CORR_EMPRESA
+  AND CORR_EXPEDIENTE_CANDIDATO = @CORR_EXPEDIENTE_CANDIDATO;", true, p);
+			}
+			catch
+			{
+				// No interrumpe la transacción principal si ocurre un error secundario en el expediente
+			}
 		}
 
 		private static void SetError(CResult result, Exception ex)

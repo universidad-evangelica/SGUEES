@@ -399,6 +399,18 @@ ORDER BY CASE WHEN UN.ACTIVO = 1 THEN 0 ELSE 1 END, UN.CORR_NIVEL DESC, EP.CORR_
 				objResultado.ErrorMessage = response == null
 					? "La confirmación se ejecutó pero no se pudo releer el movimiento."
 					: string.Empty;
+
+				if (response != null)
+				{
+					// Qué hace: Pasa el estado del expediente a 4 (Listo para crear usuario).
+					// Cómo lo hace: Actualiza la columna CORR_ESTADO_EXPEDIENTE en dbo.SC_EXPEDIENTE_CANDIDATO.
+					await ActualizarEstadoExpedientePorMovimientoAsync(
+						Data.CORR_EMPRESA,
+						Data.CORR_MOVIMIENTO_PERSONAL,
+						4,
+						vLOGIN_SISTEMA,
+						vESTACION);
+				}
 			}
 			catch (Exception e)
 			{
@@ -1412,6 +1424,11 @@ SELECT
 				var response = new List<SC_MOVIMIENTO_PERSONALView>().FromDataReader(readerGet).FirstOrDefault();
 				readerGet.Close();
 
+				if (corrEmpleado > 0)
+				{
+					await ActualizarExpedienteAContratadoAsync(Data.CORR_EMPRESA, Data.CORR_MOVIMIENTO_PERSONAL, vLOGIN_SISTEMA, vESTACION);
+				}
+
 				objResultado.Data = response;
 				objResultado.Result = response != null;
 				objResultado.RowsAffected = 1;
@@ -1429,6 +1446,67 @@ SELECT
 			}
 
 			return objResultado;
+		}
+
+		// Qué hace: Actualiza el estado del expediente a 5 (Contratado) para el candidato vinculado al movimiento.
+		// Cómo lo hace: Invoca ActualizarEstadoExpedientePorMovimientoAsync con estado 5.
+		private async Task ActualizarExpedienteAContratadoAsync(
+			int corrEmpresa,
+			int corrMovimiento,
+			string login,
+			string estacion)
+		{
+			await ActualizarEstadoExpedientePorMovimientoAsync(corrEmpresa, corrMovimiento, 5, login, estacion);
+		}
+
+		// Qué hace: Actualiza el estado del expediente para el candidato vinculado al movimiento de personal.
+		// Cómo lo hace: Enlaza SC_MOVIMIENTO_REQUISICION con SC_REQUISICION_CANDIDATO y actualiza CORR_ESTADO_EXPEDIENTE en dbo.SC_EXPEDIENTE_CANDIDATO.
+		private async Task ActualizarEstadoExpedientePorMovimientoAsync(
+			int corrEmpresa,
+			int corrMovimiento,
+			int corrEstadoExpediente,
+			string login,
+			string estacion)
+		{
+			if (corrMovimiento <= 0)
+			{
+				return;
+			}
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new() { ParameterName = "@CORR_MOVIMIENTO_PERSONAL", Value = corrMovimiento, DbType = DbType.Int32 },
+					new() { ParameterName = "@CORR_ESTADO_EXPEDIENTE", Value = corrEstadoExpediente, DbType = DbType.Int32 },
+					new() { ParameterName = "@USUARIO_ACTU", Value = login ?? string.Empty, DbType = DbType.String },
+					new() { ParameterName = "@ESTACION_ACTU", Value = estacion ?? string.Empty, DbType = DbType.String },
+				};
+
+				const string updateExpSql = @"
+UPDATE E
+SET E.CORR_ESTADO_EXPEDIENTE = @CORR_ESTADO_EXPEDIENTE,
+    E.USUARIO_ACTU = @USUARIO_ACTU,
+    E.ESTACION_ACTU = @ESTACION_ACTU,
+    E.FECHA_ACTU = GETDATE()
+FROM dbo.SC_EXPEDIENTE_CANDIDATO AS E
+INNER JOIN dbo.SC_REQUISICION_CANDIDATO AS RC
+    ON RC.CORR_EMPRESA = E.CORR_EMPRESA
+   AND RC.CORR_EXPEDIENTE_CANDIDATO = E.CORR_EXPEDIENTE_CANDIDATO
+INNER JOIN dbo.SC_MOVIMIENTO_REQUISICION AS MR
+    ON MR.CORR_EMPRESA = RC.CORR_EMPRESA
+   AND MR.CORR_REQUISICION_PERSONAL = RC.CORR_REQUISICION_PERSONAL
+   AND MR.CORR_REQUISICION_CANDIDATO = RC.CORR_REQUISICION_CANDIDATO
+WHERE MR.CORR_EMPRESA = @CORR_EMPRESA
+  AND MR.CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL;";
+
+				await objData.ExecCmd(CommandType.Text, updateExpSql, true, p);
+			}
+			catch
+			{
+				// No bloquea el flujo si ocurre un detalle con el expediente
+			}
 		}
 	}
 }

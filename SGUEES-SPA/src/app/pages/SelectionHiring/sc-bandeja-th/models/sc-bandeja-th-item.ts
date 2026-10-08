@@ -16,7 +16,9 @@ export type ScBandejaEstadoCandidato =
 	| 'CON_EXPEDIENTE'
 	| 'EN_SELECCION'
 	| 'APLICA'
-	| 'NO_APLICA';
+	| 'NO_APLICA'
+	| 'LISTO_CREAR_USUARIO'
+	| 'CONTRATADO';
 
 /** Evento de historial / bitácora del panel lateral. */
 export interface ScBandejaHistorialItem {
@@ -45,6 +47,7 @@ export interface ScBandejaItem {
 	CORR_REQUISICION_PERSONAL?: number;
 	CORR_ESTADO_REQUISICION?: number;
 	CORR_EXPEDIENTE_CANDIDATO?: number;
+	CORR_ESTADO_EXPEDIENTE?: number;
 	CORR_SOLICITUD_EMPLEO?: number;
 	CORR_PERSONA_DATOS?: number | null;
 	NOMBRE_UNIDAD?: string;
@@ -60,7 +63,7 @@ export interface ScBandejaItem {
 	HORARIO?: string;
 	TIEMPO_CONTRATO?: number;
 	JUSTIFICACION?: string;
-	/** Etapa del ciclo candidato (cuando TIPO = CANDIDATO). */
+	/** Etapa del ciclo candidato (cuando TIPO = CANDIDATO o CONTRATACION). */
 	ESTADO_CICLO_CANDIDATO?: ScBandejaEstadoCandidato;
 	ESTADO_DECISION?: 'PENDIENTE' | 'APLICA' | 'NO_APLICA';
 	OBSERVACION_DECISION?: string;
@@ -68,6 +71,14 @@ export interface ScBandejaItem {
 	CANTIDAD_PENDIENTES?: number;
 	CANTIDAD_ENTREVISTAS?: number;
 	ULTIMA_ENTREVISTA?: string;
+	// Qué hace: Vinculación con movimiento de personal y ficha de empleado institucional.
+	// Cómo lo hace: Registra los identificadores devueltos por el API para resolver si ya está contratado o listo para crear usuario.
+	CORR_REQUISICION_CANDIDATO?: number;
+	CORR_MOVIMIENTO_PERSONAL?: number;
+	ESTADO_MOVIMIENTO?: string;
+	CONFIRMADO?: number | boolean;
+	CORR_EMPLEADO?: number;
+	FECHA_EFECTIVA?: Date | string | null;
 	REQUIERE_ATENCION?: boolean;
 	/** Standby: movimiento personal / contrato aún no conectados. */
 	LISTO_CONTRATACION?: boolean;

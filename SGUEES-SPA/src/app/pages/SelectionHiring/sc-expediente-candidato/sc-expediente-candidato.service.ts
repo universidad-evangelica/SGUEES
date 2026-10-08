@@ -36,9 +36,14 @@ export class ScExpedienteCandidatoService {
 	 * Para agregar un estado: nueva entrada aquí + caso en getEstadoExpedienteBadgeClass()
 	 * + clase en sc-expediente-candidato.component.scss (.estado-exp--*).
 	 */
+	// Qué hace: Catálogo local de estados del expediente unificado con la bandeja de TH.
+	// Cómo lo hace: Mapea los códigos del 1 al 5 a sus descripciones legibles.
 	readonly estadosExpediente: { CORR_ESTADO_EXPEDIENTE: number; ESTADO_EXPEDIENTE: string }[] = [
 		{ CORR_ESTADO_EXPEDIENTE: 1, ESTADO_EXPEDIENTE: 'Borrador' },
 		{ CORR_ESTADO_EXPEDIENTE: 2, ESTADO_EXPEDIENTE: 'Proceso de selección' },
+		{ CORR_ESTADO_EXPEDIENTE: 3, ESTADO_EXPEDIENTE: 'Seleccionado' },
+		{ CORR_ESTADO_EXPEDIENTE: 4, ESTADO_EXPEDIENTE: 'Listo para crear usuario' },
+		{ CORR_ESTADO_EXPEDIENTE: 5, ESTADO_EXPEDIENTE: 'Contratado' },
 	];
 
 	/** Texto del chip según CORR_ESTADO_EXPEDIENTE (default Borrador si viene vacío). */
@@ -48,10 +53,8 @@ export class ScExpedienteCandidatoService {
 		return item?.ESTADO_EXPEDIENTE ?? 'Borrador';
 	}
 
-	/**
-	 * Clase CSS del chip según el estado (solo lectura / indicador de flujo).
-	 * Colores definidos en sc-expediente-candidato.component.scss (.estado-exp--*).
-	 */
+	// Qué hace: Retorna la clase CSS de estilo según el estado del expediente.
+	// Cómo lo hace: Devuelve clase gris (1), celeste (2), azul (3), violeta (4) y verde (5).
 	getEstadoExpedienteBadgeClass(corrEstado: number | null | undefined): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
 		switch (corr) {
@@ -59,6 +62,12 @@ export class ScExpedienteCandidatoService {
 				return 'estado-exp--borrador';
 			case 2:
 				return 'estado-exp--proceso';
+			case 3:
+				return 'estado-exp--seleccionado';
+			case 4:
+				return 'estado-exp--listo-usuario';
+			case 5:
+				return 'estado-exp--contratado';
 			default:
 				return 'estado-exp--borrador';
 		}

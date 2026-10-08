@@ -881,13 +881,14 @@ export class ScRequisicionPersonalService {
             { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 140 },
             { dataField: 'ESTADO_DESTINO', caption: 'Estado destino', width: 160 },
             // Qué hace: define la columna Fecha / Hora ordenada de la acción más reciente a la más antigua.
-            // Cómo lo hace: agrega sortOrder: 'desc' y sortIndex: 0 en la configuración de la columna DevExtreme.
+            // Cómo lo hace: añade sortOrder: 'desc' y calculateSortValue: 'CORR_BITACORA' para desempatar acciones del mismo minuto.
             {
                 dataField: 'FECHA_ACCION',
                 caption: 'Fecha / Hora',
                 width: 170,
                 dataType: 'datetime',
                 format: 'dd/MM/yyyy HH:mm',
+                calculateSortValue: 'CORR_BITACORA',
                 sortOrder: 'desc',
                 sortIndex: 0,
             },

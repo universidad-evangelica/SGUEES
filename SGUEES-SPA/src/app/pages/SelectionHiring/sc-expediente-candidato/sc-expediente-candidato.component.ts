@@ -222,12 +222,13 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 	activandoProcesoSeleccion = false;
 
-	/** Botón barra: activar estado Proceso de selección (solo expediente existente en borrador). */
+	// Qué hace: Controla visibilidad del botón para activar el proceso de selección.
+	// Cómo lo hace: Solo lo muestra si el expediente está en estado 1 (Borrador).
 	get btnActivarProcesoSeleccion(): string {
 		if (!this.mostrarResumenExpediente || !this.permiteEdit || this.activandoProcesoSeleccion) {
 			return '';
 		}
-		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) === 2) {
+		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) >= 2) {
 			return '';
 		}
 		return 'Activar proceso selección';
@@ -651,8 +652,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			return;
 		}
 
-		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) === 2) {
-			this.notifyFx('El expediente ya está en proceso de selección.', NotifyType.Warning);
+		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) >= 2) {
+			this.notifyFx('El expediente ya pasó de la fase borrador y no requiere activación.', NotifyType.Warning);
 			return;
 		}
 
