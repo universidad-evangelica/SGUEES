@@ -1839,6 +1839,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.fotoPreviewVisible = false;
 	}
 
+	// Qué hace: escucha la pulsación de la tecla Escape para cerrar vistas previas abiertas.
+	// Cómo lo hace: valida si el lightbox de foto o el panel de vista rápida están abiertos y ejecuta el cierre respectivo.
+	// eslint-disable-next-line @typescript-eslint/member-ordering
 	@HostListener('document:keydown.escape')
 	onEscape(): void {
 		if (this.fotoPreviewVisible) {
