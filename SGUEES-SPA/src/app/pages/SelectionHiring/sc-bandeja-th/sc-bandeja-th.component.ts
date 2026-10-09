@@ -41,7 +41,9 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	private observacionResolver: ((val: string | null) => void) | null = null;
 
 	popupConfirmarMovVisible = false;
-	popupFechaEfectiva: Date | string | null = null;
+	// Qué hace: Variable de fecha para el popup de confirmación de movimiento.
+	// Cómo lo hace: Se define como any para ser compatible con [(value)] de dx-date-box bajo strictTemplates.
+	popupFechaEfectiva: any = null;
 
 	activeTab: ScBandejaTab = 'REQUISICIONES';
 
@@ -49,8 +51,10 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	filtroEstado = 'TODOS';
 	filtroUnidad = 'TODOS';
 	filtroBusqueda = '';
-	fechaDesde: Date | null = null;
-	fechaHasta: Date | null = null;
+	// Qué hace: Variables de enlace para los filtros de rango de fechas de la bandeja.
+	// Cómo lo hace: Se definen como any para permitir null sin violar el tipo Date | number | string de dx-date-box en el template.
+	fechaDesde: any = null;
+	fechaHasta: any = null;
 
 	kpis: ScBandejaKpi[] = [];
 	totalRequisicionesApi = 0;
