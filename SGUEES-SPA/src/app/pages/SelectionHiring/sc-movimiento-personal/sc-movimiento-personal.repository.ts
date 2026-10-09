@@ -105,4 +105,15 @@ export class ScMovimientoPersonalRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	// Qué hace: invoca el endpoint ContratarEmpleado en la API.
+	// Cómo lo hace: petición POST enviando CORR_MOVIMIENTO_PERSONAL.
+	contratarEmpleado(model: { CORR_MOVIMIENTO_PERSONAL: number }): Observable<IResult> {
+		return this.objData.Post(
+			model,
+			this.xController,
+			'ContratarEmpleado',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

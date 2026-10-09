@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
+import { confirm } from 'devextreme/ui/dialog';
 import { lastValueFrom } from 'rxjs';
+import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -21,6 +23,8 @@ import { BANDEJA_ESTADOS_REQUISICION, ScBandejaThService } from './sc-bandeja-th
 	styleUrls: ['./sc-bandeja-th.component.scss'],
 })
 export class ScBandejaThComponent extends CBaseComponent implements OnInit {
+	@ViewChild('gridBandeja', { static: false }) gridBandeja?: DxDataGridComponent;
+
 	/** DataSource del grid: CustomStore (API). */
 	models: any = [];
 
@@ -28,6 +32,18 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	panelOpen = false;
 	panelTab: 'RESUMEN' | 'HISTORIAL' = 'RESUMEN';
 	bitacoraLoading = false;
+	accionEnCurso = false;
+
+	popupObservacionVisible = false;
+	popupObservacionTitulo = 'Observación';
+	popupObservacionHint = '';
+	popupObservacionTexto = '';
+	private observacionResolver: ((val: string | null) => void) | null = null;
+
+	popupConfirmarMovVisible = false;
+	// Qué hace: Variable de fecha para el popup de confirmación de movimiento.
+	// Cómo lo hace: Se define como any para ser compatible con [(value)] de dx-date-box bajo strictTemplates.
+	popupFechaEfectiva: any = null;
 
 	activeTab: ScBandejaTab = 'REQUISICIONES';
 
@@ -35,8 +51,10 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	filtroEstado = 'TODOS';
 	filtroUnidad = 'TODOS';
 	filtroBusqueda = '';
-	fechaDesde: Date | null = null;
-	fechaHasta: Date | null = null;
+	// Qué hace: Variables de enlace para los filtros de rango de fechas de la bandeja.
+	// Cómo lo hace: Se definen como any para permitir null sin violar el tipo Date | number | string de dx-date-box en el template.
+	fechaDesde: any = null;
+	fechaHasta: any = null;
 
 	kpis: ScBandejaKpi[] = [];
 	totalRequisicionesApi = 0;
@@ -71,12 +89,14 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		{ VALUE: 'POSTULANTE', TEXT: 'Postulante' },
 		{ VALUE: 'CON_EXPEDIENTE', TEXT: 'Con expediente' },
 		{ VALUE: 'EN_SELECCION', TEXT: 'En proceso de selección' },
-		{ VALUE: 'NO_APLICA', TEXT: 'No aplica' },
+		{ VALUE: 'NO_APLICA', TEXT: 'Rechazado' },
 	];
 
 	readonly estadosFiltroContratacion: Array<{ VALUE: string; TEXT: string }> = [
 		{ VALUE: 'TODOS', TEXT: 'Todos' },
-		{ VALUE: 'APLICA', TEXT: 'Listo para contratar' },
+		{ VALUE: 'APLICA', TEXT: 'Seleccionado' },
+		{ VALUE: 'LISTO_CREAR_USUARIO', TEXT: 'Listo para crear empleado' },
+		{ VALUE: 'CONTRATADO', TEXT: 'Contratado' },
 	];
 
 	estadosFiltro: Array<{ VALUE: string; TEXT: string }> = this.estadosFiltroRequisicion;
@@ -170,6 +190,31 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			item.TIPO === 'CANDIDATO' &&
 			item.ESTADO_CICLO_CANDIDATO === 'EN_SELECCION' &&
 			item.ESTADO_DECISION === 'PENDIENTE'
+		);
+	}
+
+	// Qué hace: Determina si se puede confirmar el movimiento de personal en contrataciones.
+	// Cómo lo hace: Valida que pertenezca a contrataciones y que aún no esté confirmado ni tenga empleado.
+	get puedeConfirmarMovimiento(): boolean {
+		const item = this.selectedItem;
+		if (!item) return false;
+		if (item.TIPO !== 'CONTRATACION' && !item.LISTO_CONTRATACION) return false;
+		const esConfirmado = item.CONFIRMADO === true || Number(item.CONFIRMADO) === 1;
+		const tieneEmpleado = Number(item.CORR_EMPLEADO) > 0;
+		return !esConfirmado && !tieneEmpleado;
+	}
+
+	// Qué hace: Determina si el candidato seleccionado está listo para crear su usuario/empleado institucional.
+	// Cómo lo hace: Valida que pertenezca a contrataciones, esté confirmado o en estado LISTO_CREAR_USUARIO y sin empleado asignado.
+	get puedeCrearUsuario(): boolean {
+		const item = this.selectedItem;
+		if (!item || item.TIPO !== 'CONTRATACION') return false;
+		const esAprobado = item.ESTADO_MOVIMIENTO === 'AP';
+		const esConfirmado = item.CONFIRMADO === true || Number(item.CONFIRMADO) === 1;
+		const tieneEmpleado = Number(item.CORR_EMPLEADO) > 0;
+		return (
+			(item.ESTADO_CICLO_CANDIDATO === 'LISTO_CREAR_USUARIO' || (esAprobado && esConfirmado)) &&
+			!tieneEmpleado
 		);
 	}
 
@@ -339,31 +384,296 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
-	/**
-	 * TODO (PENDIENTE-ACCIONES.md): ScRequisicionCandidatoService.decide
-	 */
-	accionDictamen(aplica: boolean): void {
-		if (!this.puedeDictaminar || !this.selectedItem) {
+	// Qué hace: Registra el dictamen de Aplica o No aplica para un candidato en selección.
+	// Cómo lo hace: Solicita confirmación u observación obligatoria, invoca el servicio de decisión y refresca los datos y contadores de la bandeja.
+	async accionDictamen(aplica: boolean): Promise<void> {
+		if (!this.puedeDictaminar || !this.selectedItem || this.accionEnCurso) {
 			return;
 		}
-		this.notifyFx(
-			aplica
-				? `Dictamen APLICA: pendiente de conectar (próxima fase).`
-				: `Dictamen NO APLICA: pendiente de conectar (próxima fase).`,
-			NotifyType.Warning,
-			{ raw: true }
-		);
+
+		const item = this.selectedItem;
+		let observacion: string | undefined;
+
+		// Qué hace: Solicita el motivo obligatorio cuando el candidato es rechazado o confirmación para movimiento de personal.
+		// Cómo lo hace: Muestra el modal de observación con título "Rechazado" o confirmación para movimiento de personal.
+		if (!aplica) {
+			observacion = await this.pedirObservacion(
+				'Rechazado',
+				'Indique el motivo. La observación es obligatoria para rechazar al candidato.'
+			);
+			if (observacion == null) {
+				return;
+			}
+			if (!observacion.trim()) {
+				this.notifyFx('La observación es obligatoria para rechazar al candidato.', NotifyType.Warning, {
+					raw: true,
+				});
+				return;
+			}
+		} else {
+			const ok = await confirm(
+				`¿Confirma seleccionar a ${item.NOMBRE_CANDIDATO || item.CODIGO} para ejecutar movimiento de personal?`,
+				'Ejecutar movimiento personal'
+			);
+			if (!ok) {
+				return;
+			}
+		}
+
+		this.accionEnCurso = true;
+		try {
+			const response = await lastValueFrom(
+				this.service.decideCandidato({
+					CORR_REQUISICION_PERSONAL: item.CORR_REQUISICION_PERSONAL || 0,
+					CORR_SOLICITUD_EMPLEO: item.CORR_SOLICITUD_EMPLEO || 0,
+					CORR_EXPEDIENTE_CANDIDATO: item.CORR_EXPEDIENTE_CANDIDATO || 0,
+					ESTADO_DECISION: aplica ? 'APLICA' : 'NO_APLICA',
+					OBSERVACION_DECISION: observacion,
+				})
+			);
+
+			if (!response.Result) {
+				this.notifyFx(
+					response.ErrorMessage || 'No se pudo registrar el dictamen.',
+					NotifyType.Error,
+					{ raw: true }
+				);
+				return;
+			}
+
+			this.notifyFx(
+				aplica
+					? 'Candidato seleccionado para movimiento de personal.'
+					: 'Candidato registrado como rechazado.',
+				NotifyType.Success,
+				{ raw: true }
+			);
+			this.cerrarPanel();
+			this.prefetchTotales();
+			this.configurarDataSource();
+		} catch (error: any) {
+			const msg =
+				error?.error?.ErrorMessage || error?.message || 'Error al registrar el dictamen.';
+			this.notifyFx(msg, NotifyType.Error, {
+				raw: true,
+			});
+		} finally {
+			this.accionEnCurso = false;
+		}
 	}
 
-	/**
-	 * TODO (PENDIENTE-ACCIONES.md): conectar proceso de movimiento personal / contrato.
-	 */
-	accionMovimientoStandby(): void {
-		this.notifyFx(
-			'Movimiento personal en standby. Se conectará en una fase posterior.',
-			NotifyType.Warning,
-			{ raw: true }
+	// Qué hace: Despliega el popup para solicitar observación al usuario.
+	// Cómo lo hace: Retorna una Promise resuelta al confirmar o cancelar el modal.
+	private pedirObservacion(titulo: string, hint?: string): Promise<string | null> {
+		this.popupObservacionTitulo = titulo;
+		this.popupObservacionHint =
+			hint || 'Puede indicar un comentario. Si lo deja vacío se usará el texto automático.';
+		this.popupObservacionTexto = '';
+		this.popupObservacionVisible = true;
+
+		return new Promise((resolve) => {
+			this.observacionResolver = resolve;
+		});
+	}
+
+	// Qué hace: Confirma y devuelve el texto de la observación escrita.
+	// Cómo lo hace: Resuelve la promesa pendiente y cierra el popup.
+	confirmarPopupObservacion(): void {
+		const texto = this.popupObservacionTexto ?? '';
+		const resolve = this.observacionResolver;
+		this.observacionResolver = null;
+		this.popupObservacionVisible = false;
+		this.popupObservacionTexto = '';
+		resolve?.(texto);
+	}
+
+	// Qué hace: Cancela la captura de observación.
+	// Cómo lo hace: Resuelve la promesa con null y cierra el popup.
+	cancelarPopupObservacion(): void {
+		if (!this.observacionResolver) {
+			this.popupObservacionVisible = false;
+			return;
+		}
+		const resolve = this.observacionResolver;
+		this.observacionResolver = null;
+		this.popupObservacionVisible = false;
+		this.popupObservacionTexto = '';
+		resolve(null);
+	}
+
+	// Qué hace: Abre el modal para capturar o validar la fecha efectiva antes de confirmar.
+	// Cómo lo hace: Precarga la fecha si ya venía registrada en BD y despliega el popup.
+	abrirPopupConfirmarMov(): void {
+		const item = this.selectedItem;
+		if (!item || this.accionEnCurso) {
+			return;
+		}
+
+		const corrMov = Number(item.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (corrMov <= 0) {
+			this.notifyFx(
+				'No se encontró un movimiento de personal vinculado a este candidato.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		if (item.CONFIRMADO === true || Number(item.CONFIRMADO) === 1) {
+			this.notifyFx(
+				'El movimiento de personal ya está confirmado.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		// Precargar fecha si ya existe en base de datos
+		this.popupFechaEfectiva = item.FECHA_EFECTIVA ?? null;
+		this.popupConfirmarMovVisible = true;
+	}
+
+	// Qué hace: Cancela y cierra el modal de confirmación de movimiento.
+	// Cómo lo hace: Oculta el popup y limpia el valor temporal de fecha.
+	cancelarPopupConfirmarMov(): void {
+		this.popupConfirmarMovVisible = false;
+		this.popupFechaEfectiva = null;
+	}
+
+	// Qué hace: Ejecuta la confirmación del movimiento de personal con la fecha efectiva indicada en el modal.
+	// Cómo lo hace: Valida fecha obligatoria, envía la petición al API y actualiza el estado en memoria a 'Listo para crear empleado'.
+	async confirmarPopupConfirmarMov(): Promise<void> {
+		const item = this.selectedItem;
+		if (!item || this.accionEnCurso) {
+			return;
+		}
+
+		// Alerta obligatoria si no tiene fecha efectiva
+		if (!this.popupFechaEfectiva) {
+			this.notifyFx(
+				'Debe indicar la fecha efectiva antes de confirmar el movimiento.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		const corrMov = Number(item.CORR_MOVIMIENTO_PERSONAL) || 0;
+		this.accionEnCurso = true;
+		try {
+			const response = await lastValueFrom(
+				this.service.confirmarMovimientoPersonal({
+					CORR_MOVIMIENTO_PERSONAL: corrMov,
+					FECHA_EFECTIVA: this.popupFechaEfectiva,
+				})
+			);
+
+			if (!response.Result) {
+				this.notifyFx(
+					response.ErrorMessage || 'No se pudo confirmar el movimiento.',
+					NotifyType.Error,
+					{ raw: true }
+				);
+				return;
+			}
+
+			this.notifyFx(
+				'El movimiento se confirmó correctamente.',
+				NotifyType.Success,
+				{ raw: true }
+			);
+
+			item.FECHA_EFECTIVA = this.popupFechaEfectiva;
+			item.CONFIRMADO = true;
+			item.ESTADO = 'Listo para crear empleado';
+			item.ESTADO_TONE = 'listo-usuario';
+			item.ESTADO_CICLO_CANDIDATO = 'LISTO_CREAR_USUARIO';
+			item.CORR_ESTADO_EXPEDIENTE = 4;
+			item.LISTO_CONTRATACION = false;
+
+			this.popupConfirmarMovVisible = false;
+			this.popupFechaEfectiva = null;
+
+			// Si el filtro de estado estaba en 'APLICA', cambiarlo a 'TODOS' para que el registro se mantenga visible
+			if (this.filtroEstado === 'APLICA') {
+				this.filtroEstado = 'TODOS';
+			}
+
+			this.prefetchTotales();
+			// Refrescar grilla sin cerrar panel ni perder selección
+			this.gridBandeja?.instance?.refresh();
+		} catch (error: any) {
+			const msg =
+				error?.error?.ErrorMessage || error?.message || 'Error al confirmar el movimiento.';
+			this.notifyFx(msg, NotifyType.Error, { raw: true });
+		} finally {
+			this.accionEnCurso = false;
+		}
+	}
+
+	// Qué hace: Ejecuta la contratación institucional del candidato para crear su usuario y empleado institucional.
+	// Cómo lo hace: Pide confirmación al usuario, invoca el endpoint ContratarEmpleado en SC_BANDEJA_TH y actualiza en memoria a estado Contratado.
+	async crearUsuario(): Promise<void> {
+		const item = this.selectedItem;
+		if (!item || this.accionEnCurso) return;
+
+		const corrMov = Number(item.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (corrMov <= 0) {
+			this.notifyFx(
+				'Seleccione un registro con movimiento personal válido.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		const nombre = item.NOMBRE_CANDIDATO || item.DESCRIPCION || 'el candidato';
+		const ok = await confirm(
+			`¿Está seguro de crear el empleado institucional para <strong>${nombre}</strong>?`,
+			'Crear empleado'
 		);
+		if (!ok) return;
+
+		this.accionEnCurso = true;
+		try {
+			const response = await lastValueFrom(
+				this.service.contratarEmpleado({ CORR_MOVIMIENTO_PERSONAL: corrMov })
+			);
+
+			if (!response.Result) {
+				this.notifyFx(
+					response.ErrorMessage || 'Error al crear el usuario/empleado.',
+					NotifyType.Error,
+					{ raw: true }
+				);
+				return;
+			}
+
+			this.notifyFx('Usuario y empleado creados exitosamente.', NotifyType.Success, { raw: true });
+
+			// Parchear en memoria (estandar-sin-getall-despues-guardar)
+			const data = response.Data;
+			const corrEmpleado = Number(data?.CORR_EMPLEADO) || 1;
+			item.CORR_EMPLEADO = corrEmpleado;
+			item.ESTADO = 'Contratado';
+			item.ESTADO_TONE = 'cerrada';
+			item.ESTADO_CICLO_CANDIDATO = 'CONTRATADO';
+			item.CORR_ESTADO_EXPEDIENTE = 5;
+			item.REQUIERE_ATENCION = false;
+
+			if (this.filtroEstado === 'LISTO_CREAR_USUARIO') {
+				this.filtroEstado = 'TODOS';
+			}
+
+			this.prefetchTotales();
+			this.gridBandeja?.instance?.refresh();
+		} catch (error: any) {
+			const msg =
+				error?.error?.ErrorMessage || error?.message || 'Error al crear el usuario.';
+			this.notifyFx(msg, NotifyType.Error, { raw: true });
+		} finally {
+			this.accionEnCurso = false;
+		}
 	}
 
 	tipoLabel(tipo: ScBandejaTipo, item?: ScBandejaItem | null): string {
@@ -610,6 +920,8 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 							FECHA_DESDE: this.fechaDesde,
 							FECHA_HASTA: this.fechaHasta,
 							BUSQUEDA: this.filtroBusqueda?.trim() || undefined,
+							ESTADO_CICLO_CANDIDATO:
+								this.filtroEstado !== 'TODOS' ? this.filtroEstado : undefined,
 						})
 					);
 

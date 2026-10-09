@@ -17,7 +17,7 @@
 |---|---|---|
 | `POSTULANTE` | Asociar expediente | `SC_EXPEDIENTE_CANDIDATO/AsociarSolicitud` |
 | `CON_EXPEDIENTE` | Activar proceso de selección | `SC_EXPEDIENTE_CANDIDATO/ActivarProcesoSeleccion` |
-| `EN_SELECCION` + `PENDIENTE` | Aplica / No aplica | `SC_REQUISICION_CANDIDATO/Decide` |
+| `EN_SELECCION` + `PENDIENTE` | Aplica / No aplica | `SC_BANDEJA_TH/DecideCandidato` |
 
 ## Stage Contrato — acciones
 

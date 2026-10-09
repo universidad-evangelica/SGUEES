@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -326,9 +326,12 @@ namespace SGUEES.Repositories
 
             try
             {
+                // Qué hace: Obtiene la bitácora de firmas ordenada del movimiento más reciente al más antiguo.
+                // Cómo lo hace: Lee V_SEG_FLUJO_BITACORA_FIRMAS con orden FECHA_ACCION DESC y CORR_BITACORA DESC.
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
 				SELECT
 					FB.CORR_EMPRESA,
+					FB.CORR_BITACORA,
 					FB.CORR_DOCUMENTO AS CORR_REQUISICION_PERSONAL,
 					FB.LOGIN_SISTEMA,
 					FB.ESTADO_DESTINO,
@@ -337,7 +340,7 @@ namespace SGUEES.Repositories
 				FROM V_SEG_FLUJO_BITACORA_FIRMAS FB
 				WHERE FB.CORR_TIPO_DOCUMENTO = @CORR_TIPO_DOCUMENTO
 				  AND FB.CORR_DOCUMENTO = @CORR_DOCUMENTO
-				ORDER BY FB.CORR_BITACORA", xWhere);
+				ORDER BY FB.FECHA_ACCION DESC, FB.CORR_BITACORA DESC", xWhere);
 
                 var response = new List<SC_REQUISICION_PERSONAL_BITACORAView>().FromDataReader(reader).ToList();
 

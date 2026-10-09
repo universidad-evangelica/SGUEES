@@ -580,6 +580,13 @@ namespace SGUEES.Services
 			return _repo.CountPendientesActorAsync(corrEmpresa, login);
 		}
 
+		// Qué hace: invoca la contratación del candidato a empleado.
+		// Cómo lo hace: delega la ejecución del SP al repositorio.
+		public async Task<CResult> ContratarEmpleadoAsync(SC_MOVIMIENTO_PERSONALParam Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await _repo.ContratarEmpleadoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

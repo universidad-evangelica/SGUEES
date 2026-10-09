@@ -328,7 +328,15 @@ export class ScDescriptorPuestoService {
 	// Qué hace: define las columnas del grid de consulta, incluidos badges de formato, estado y versión.
 	getColumns(): any[] {
 		return [
-			{ dataField: 'CORR_DESCRIPTOR_PUESTO', caption: 'Corr.', width: 85 },
+			// Qué hace: define la columna correlativo ordenada del más reciente al más antiguo por defecto.
+			// Cómo lo hace: añade sortOrder: 'desc' y sortIndex: 0 en la configuración de la columna DevExtreme.
+			{
+				dataField: 'CORR_DESCRIPTOR_PUESTO',
+				caption: 'Corr.',
+				width: 85,
+				sortOrder: 'desc',
+				sortIndex: 0,
+			},
 			{
 				dataField: 'CODIGO_DESCRIPTOR_PUESTO',
 				caption: 'Codigo',

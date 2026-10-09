@@ -32,5 +32,15 @@ namespace SGUEES.Models
 		public string NOMBRE_SOLICITANTE { get; set; }
 		public int CANTIDAD_ENTREVISTAS { get; set; }
 		public string ULTIMA_ENTREVISTA { get; set; }
+		// Qué hace: Identificadores y estados del movimiento de personal y empleado vinculado.
+		// Cómo lo hace: Mapea las columnas provenientes del OUTER APPLY a SC_MOVIMIENTO_REQUISICION y SC_MOVIMIENTO_PERSONAL.
+		public int? CORR_REQUISICION_CANDIDATO { get; set; }
+		public int? CORR_MOVIMIENTO_PERSONAL { get; set; }
+		public string ESTADO_MOVIMIENTO { get; set; }
+		public bool? CONFIRMADO { get; set; }
+		public int? CORR_EMPLEADO { get; set; }
+		// Qué hace: Fecha efectiva del movimiento de personal asociado.
+		// Cómo lo hace: Mapea la columna FECHA_EFECTIVA devuelta por la consulta de contrataciones.
+		public DateTime? FECHA_EFECTIVA { get; set; }
 	}
 }

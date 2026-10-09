@@ -222,12 +222,13 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 	activandoProcesoSeleccion = false;
 
-	/** Botón barra: activar estado Proceso de selección (solo expediente existente en borrador). */
+	// Qué hace: Controla visibilidad del botón para activar el proceso de selección.
+	// Cómo lo hace: Solo lo muestra si el expediente está en estado 1 (Borrador).
 	get btnActivarProcesoSeleccion(): string {
 		if (!this.mostrarResumenExpediente || !this.permiteEdit || this.activandoProcesoSeleccion) {
 			return '';
 		}
-		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) === 2) {
+		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) >= 2) {
 			return '';
 		}
 		return 'Activar proceso selección';
@@ -651,8 +652,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			return;
 		}
 
-		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) === 2) {
-			this.notifyFx('El expediente ya está en proceso de selección.', NotifyType.Warning);
+		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) >= 2) {
+			this.notifyFx('El expediente ya pasó de la fase borrador y no requiere activación.', NotifyType.Warning);
 			return;
 		}
 
@@ -1838,6 +1839,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.fotoPreviewVisible = false;
 	}
 
+	// Qué hace: escucha la pulsación de la tecla Escape para cerrar vistas previas abiertas.
+	// Cómo lo hace: valida si el lightbox de foto o el panel de vista rápida están abiertos y ejecuta el cierre respectivo.
+	// eslint-disable-next-line @typescript-eslint/member-ordering
 	@HostListener('document:keydown.escape')
 	onEscape(): void {
 		if (this.fotoPreviewVisible) {

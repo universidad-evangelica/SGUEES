@@ -283,12 +283,16 @@ export class GenEmpleadoService {
 
 	getColumns(): any {
 		return [
+			// Qué hace: define la columna correlativo ordenada del más reciente al más antiguo por defecto.
+			// Cómo lo hace: añade sortOrder: 'desc' y sortIndex: 0 en la configuración de la columna DevExtreme.
 			{
 				dataField: 'CORR_EMPLEADO',
 				caption: 'Corr.',
 				width: 90,
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
+				sortOrder: 'desc',
+				sortIndex: 0,
 			},
 			{ dataField: 'NOMBRE_EMPLEADO', caption: 'Persona', width: 280, minWidth: 200 },
 			{ dataField: 'DUI', caption: 'DUI', width: 120, minWidth: 100 },
