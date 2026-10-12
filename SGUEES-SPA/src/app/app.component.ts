@@ -31,7 +31,6 @@ export class AppComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.isPublicPortal = this.resolvePublicPortal();
       });
-    this.notificationSignalRService.startConnection(); // Iniciar la conexión de SignalR al crear el componente
   }
 
   get avisoInactividadVisible(): boolean {
@@ -68,6 +67,8 @@ export class AppComponent implements OnInit, OnDestroy {
 			if (token) {
 				this.authService.decodedToken = this.jwtHelper.decodeToken(token);
 			}
+			// SignalR exige JWT ([Authorize] en el hub): solo conectar con sesión válida.
+			void this.notificationSignalRService.startConnection();
 		}
     this.isPublicPortal = this.resolvePublicPortal();
 	}

@@ -20,7 +20,11 @@ builder.Services.AddControllers()
                     options.JsonSerializerOptions.Converters.Add(new StringConverter());    
                 });
 
-builder.Services.AddSignalR(); //builder para SignalR
+// SignalR: mismos nombres de propiedades que Controllers (TITULO/MENSAJE, sin camelCase).
+builder.Services.AddSignalR().AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+});
 
 //Mapeo archivo ApplicacionDataContext que contiene los servicios de acceso a datos
 builder.Services.AddScoped<ApplicationDataContext>();
