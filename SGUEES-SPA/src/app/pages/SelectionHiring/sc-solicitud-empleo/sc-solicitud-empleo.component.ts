@@ -934,7 +934,8 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.requisicionSeleccionada = null;
 	}
 
-	/** Carga requisiciones para el modal; excluye las ya vinculadas (sin duplicados). */
+	// Qué hace: Carga las requisiciones disponibles para vincular en el modal, mostrando solo las aprobadas (Aprobado GG = 5) de la más reciente a la más antigua y excluyendo las ya vinculadas.
+	// Cómo lo hace: Filtra por CORR_ESTADO_REQUISICION === 5, omite las que ya están en requisicionesSolicitud y ordena por FECHA_REQUISICION descendente (desempatando por CORR_REQUISICION_PERSONAL DESC).
 	private cargarRequisicionesModal(): void {
 		this.service
 			.getRequisicionesParaModal()
@@ -953,9 +954,20 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 					const vinculadas = new Set(
 						(this.requisicionesSolicitud ?? []).map((item) => Number(item.CORR_REQUISICION_PERSONAL))
 					);
-					this.requisicionesModal = (response.Data ?? []).filter(
-						(item: any) => !vinculadas.has(Number(item.CORR_REQUISICION_PERSONAL))
-					);
+					this.requisicionesModal = (response.Data ?? [])
+						.filter(
+							(item: any) =>
+								Number(item.CORR_ESTADO_REQUISICION) === 5 &&
+								!vinculadas.has(Number(item.CORR_REQUISICION_PERSONAL))
+						)
+						.sort((a: any, b: any) => {
+							const fechaA = new Date(a.FECHA_REQUISICION).getTime() || 0;
+							const fechaB = new Date(b.FECHA_REQUISICION).getTime() || 0;
+							if (fechaB !== fechaA) {
+								return fechaB - fechaA;
+							}
+							return Number(b.CORR_REQUISICION_PERSONAL) - Number(a.CORR_REQUISICION_PERSONAL);
+						});
 				},
 				error: (error: any) => {
 					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
@@ -967,12 +979,25 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.requisicionSeleccionada = e.selectedRowsData?.[0] ?? null;
 	}
 
+	// Qué hace: Valida y asigna la requisición seleccionada a la solicitud de empleo del candidato.
+	// Cómo lo hace: Comprueba que la requisición no tenga sus vacantes cubiertas (cubiertas >= total) antes de insertar la vinculación.
 	insertarRequisicionSeleccionada(): void {
 		if (!this.requisicionSeleccionada) {
 			this.messageService.add({
 				severity: 'warn',
 				summary: 'Requisición',
 				detail: 'Seleccione una requisición del listado.',
+			});
+			return;
+		}
+
+		const cubiertas = Number(this.requisicionSeleccionada.PLAZAS_CUBIERTAS ?? 0);
+		const total = Number(this.requisicionSeleccionada.CANTIDAD_PLAZAS ?? 0);
+		if (total > 0 && cubiertas >= total) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Vacantes completas',
+				detail: `La requisición #${this.requisicionSeleccionada.CORR_REQUISICION_PERSONAL} ya tiene sus vacantes completas (${cubiertas} de ${total} plazas cubiertas). No se le puede asignar a este candidato.`,
 			});
 			return;
 		}

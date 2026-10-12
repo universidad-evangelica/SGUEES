@@ -152,17 +152,35 @@ export class ScSolicitudEmpleoService {
 		return this.requisicionPersonalService.getEstadoRequisicionLabel(corrEstado);
 	}
 
-	/** Columnas del grid del modal (nombres, sin auditoría). */
+	// Qué hace: Define las columnas del grid del modal para seleccionar requisición de personal.
+	// Cómo lo hace: Retorna el arreglo de columnas con anchos fijos y la fecha configurada con orden descendente por defecto (sortOrder: 'desc', sortIndex: 0).
 	getRequisicionPickerColumns(): any[] {
 		return [
 			{ dataField: 'CORR_REQUISICION_PERSONAL', caption: 'No.', width: 70 },
-			{ dataField: 'FECHA_REQUISICION', caption: 'Fecha', width: 110, dataType: 'date', format: 'dd/MM/yyyy' },
+			{
+				dataField: 'FECHA_REQUISICION',
+				caption: 'Fecha',
+				width: 110,
+				dataType: 'date',
+				format: 'dd/MM/yyyy',
+				sortOrder: 'desc',
+				sortIndex: 0,
+			},
 			{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 200 },
 			{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 200 },
 			{ dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 120 },
 			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Contrato', width: 130 },
 			{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Vacante', width: 150 },
-			{ dataField: 'CANTIDAD_PLAZAS', caption: 'Plazas', width: 80 },
+			// Qué hace: Muestra el avance de plazas cubiertas sobre el total solicitado en la requisición.
+			// Cómo lo hace: Formatea 'cubiertas / total' a partir de PLAZAS_CUBIERTAS y CANTIDAD_PLAZAS.
+			{
+				dataField: 'CANTIDAD_PLAZAS',
+				caption: 'Plazas (Cubiertas / Total)',
+				width: 175,
+				alignment: 'center',
+				calculateCellValue: (row: any) =>
+					`${row?.PLAZAS_CUBIERTAS ?? 0} / ${row?.CANTIDAD_PLAZAS ?? 0}`,
+			},
 			{ dataField: 'SALARIO', caption: 'Salario', width: 100, format: '#,##0.00' },
 		];
 	}
