@@ -117,6 +117,22 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		);
 	}
 
+	/** Devuelta (3): reenviar al flujo con ENVIAR(2), no APROBAR(3). */
+	get puedeEnviarRequisicion(): boolean {
+		const item = this.selectedItem;
+		return !!item && item.TIPO === 'REQUISICION' && Number(item.CORR_ESTADO_REQUISICION) === 3;
+	}
+
+	/** En Aprobación (2): decisión del autorizador (JU/GG) — Aprobar / Devolver / Rechazar. */
+	get puedeAutorizarRequisicion(): boolean {
+		const item = this.selectedItem;
+		return !!item && item.TIPO === 'REQUISICION' && Number(item.CORR_ESTADO_REQUISICION) === 2;
+	}
+
+	get puedeAutorizarMovimiento(): boolean {
+		return this.selectedItem?.TIPO === 'MOVIMIENTO';
+	}
+
 	seleccionarTab(tab: ScBandejaActoresTab): void {
 		this.activeTab = tab;
 		this.filtroEstado = 'TODOS';
@@ -239,9 +255,24 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		this.panelTab = 'HISTORIAL';
 	}
 
+	async accionEnviar(): Promise<void> {
+		if (!this.puedeEnviarRequisicion) {
+			return;
+		}
+		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.ENVIAR, 'Enviar a aprobación');
+	}
+
 	async accionAprobar(): Promise<void> {
 		if (this.selectedItem?.TIPO === 'MOVIMIENTO') {
 			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar movimiento');
+			return;
+		}
+		if (!this.puedeAutorizarRequisicion) {
+			this.notifyFx(
+				'Solo se puede aprobar una requisición en estado En Aprobación. Si está Devuelta, use Enviar.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
 			return;
 		}
 		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar requisición');
@@ -252,12 +283,18 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver movimiento');
 			return;
 		}
+		if (!this.puedeAutorizarRequisicion) {
+			return;
+		}
 		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver requisición');
 	}
 
 	async accionRechazar(): Promise<void> {
 		if (this.selectedItem?.TIPO === 'MOVIMIENTO') {
 			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.RECHAZAR, 'Rechazar movimiento');
+			return;
+		}
+		if (!this.puedeAutorizarRequisicion) {
 			return;
 		}
 		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.RECHAZAR, 'Rechazar requisición');
@@ -398,15 +435,19 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		const item = this.selectedItem;
 		const codigo = item.CODIGO || String(item.CORR_REQUISICION_PERSONAL || '');
 		const textoDefault =
-			operacion === OPERACION_BANDEJA_ACTORES.APROBAR
-				? `Se aprobó la requisición ${codigo}.`
-				: operacion === OPERACION_BANDEJA_ACTORES.DEVOLVER
-					? `Se devolvió la requisición ${codigo}.`
-					: `Se rechazó la requisición ${codigo}.`;
+			operacion === OPERACION_BANDEJA_ACTORES.ENVIAR
+				? `Se envió la requisición ${codigo} a aprobación.`
+				: operacion === OPERACION_BANDEJA_ACTORES.APROBAR
+					? `Se aprobó la requisición ${codigo}.`
+					: operacion === OPERACION_BANDEJA_ACTORES.DEVOLVER
+						? `Se devolvió la requisición ${codigo}.`
+						: `Se rechazó la requisición ${codigo}.`;
 
 		const observacionCapturada = await this.pedirObservacion(
 			titulo,
-			'Puede indicar un comentario. Si lo deja vacío se usará el texto automático.'
+			operacion === OPERACION_BANDEJA_ACTORES.ENVIAR
+				? 'Puede indicar un comentario al reenviar. Si lo deja vacío se usará el texto automático.'
+				: 'Puede indicar un comentario. Si lo deja vacío se usará el texto automático.'
 		);
 		if (observacionCapturada == null) {
 			return;
