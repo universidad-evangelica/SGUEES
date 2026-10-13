@@ -10,6 +10,7 @@ import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 import { UserPanelModule } from '../user-panel/user-panel.component';
 import { AuthService, IUser} from 'src/app/shared/services';
 import { ThemeSwitcherModule } from 'src/app/shared/components/library/theme-switcher/theme-switcher.component';
+import { NotificationBellModule } from 'src/app/shared/components/library/notification-bell/notification-bell.component';
 import { RecorridoGuiaModule } from 'src/app/shared/recorrido-guia/recorrido-guia.module';
 import { RecorridoGuiaService } from 'src/app/shared/recorrido-guia/recorrido-guia.service';
 
@@ -73,6 +74,7 @@ export class AppHeaderComponent implements OnInit {
     DxButtonModule,
     DxToolbarModule,
     ThemeSwitcherModule,
+    NotificationBellModule,
     UserPanelModule,
     RecorridoGuiaModule,
   ],
