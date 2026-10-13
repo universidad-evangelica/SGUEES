@@ -66,7 +66,10 @@ namespace sguees.Services
 		}
 
 		/// <summary>
-		/// Referencia: tras alta OK, notificar con NotificarUsuarioAsync (fachada universal).
+		/// Referencia opción A — URL desde menú (SEG_OPCION_SISTEMA), no hardcodeada:
+		/// 1) Alta observador.
+		/// 2) ResolverUrlDestinoAsync("SC_REQUISICION_PERSONAL", corr) → lee URL_OPCION + ?corr=.
+		/// 3) NotificarUsuarioAsync(..., urlDestino).
 		/// </summary>
 		public async Task<CResult> CreateBy_CORR_REQUISICION_PERSONAL(SC_REQUISICION_OBSERVADORESTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
@@ -77,12 +80,14 @@ namespace sguees.Services
 			}
 
 			var corrReq = Data.CORR_REQUISICION_PERSONAL ?? 0;
-			var urlDestino = corrReq > 0
-				? $"/sc-requisicion-personal?corr={corrReq}"
-				: null;
 
 			try
 			{
+				// CODIGO_OPCION del menú destino (no la ruta Angular).
+				var urlDestino = await _notificacion.ResolverUrlDestinoAsync(
+					"SC_REQUISICION_PERSONAL",
+					corrReq);
+
 				await _notificacion.NotificarUsuarioAsync(
 					corrEmpresa: Data.CORR_EMPRESA,
 					loginDestino: Data.LOGIN_SISTEMA,

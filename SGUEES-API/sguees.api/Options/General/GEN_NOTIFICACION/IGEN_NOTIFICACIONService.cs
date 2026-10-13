@@ -28,5 +28,12 @@ namespace sguees.Services
 			string urlDestino = null,
 			string usuarioCrea = null,
 			string estacionCrea = null);
+
+		/// <summary>
+		/// Resuelve URL_DESTINO desde SEG_OPCION_SISTEMA.URL_OPCION + ?corr={corr}.
+		/// codigoOpcion = CODIGO_OPCION del menú (ej. SC_REQUISICION_PERSONAL).
+		/// Retorna null si no hay opción, URL vacía o corr inválido.
+		/// </summary>
+		Task<string> ResolverUrlDestinoAsync(string codigoOpcion, int corr);
 	}
 }

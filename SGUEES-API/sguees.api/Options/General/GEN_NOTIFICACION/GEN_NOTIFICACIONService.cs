@@ -13,15 +13,18 @@ namespace sguees.Services
 	{
 		private readonly IGEN_NOTIFICACIONRepository _repo;
 		private readonly INotificationSignalRService _signalR;
+		private readonly ISEG_OPCION_SISTEMAService _opcionSistema;
 		private readonly ILogger<GEN_NOTIFICACIONService> _logger;
 
 		public GEN_NOTIFICACIONService(
 			IGEN_NOTIFICACIONRepository repo,
 			INotificationSignalRService signalR,
+			ISEG_OPCION_SISTEMAService opcionSistema,
 			ILogger<GEN_NOTIFICACIONService> logger)
 		{
 			_repo = repo ?? throw new ArgumentNullException(nameof(repo));
 			_signalR = signalR ?? throw new ArgumentNullException(nameof(signalR));
+			_opcionSistema = opcionSistema ?? throw new ArgumentNullException(nameof(opcionSistema));
 			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
 		}
 
@@ -116,6 +119,64 @@ namespace sguees.Services
 				USUARIO_CREA = string.IsNullOrWhiteSpace(usuarioCrea) ? login : usuarioCrea.Trim(),
 				ESTACION_CREA = string.IsNullOrWhiteSpace(estacionCrea) ? "API" : estacionCrea.Trim()
 			});
+		}
+
+		public async Task<string> ResolverUrlDestinoAsync(string codigoOpcion, int corr)
+		{
+			if (corr <= 0 || string.IsNullOrWhiteSpace(codigoOpcion))
+			{
+				return null;
+			}
+
+			try
+			{
+				var resultado = await _opcionSistema.GetAsync(new SEG_OPCION_SISTEMAParam
+				{
+					CODIGO_OPCION = codigoOpcion.Trim()
+				});
+
+				if (!resultado.Result || resultado.Data is not SEG_OPCION_SISTEMAView opcion)
+				{
+					_logger.LogWarning(
+						"[GEN_NOTIFICACION] No se encontró SEG_OPCION_SISTEMA.CODIGO_OPCION={Codigo}",
+						codigoOpcion);
+					return null;
+				}
+
+				return AppendCorrQuery(opcion.URL_OPCION, corr);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogWarning(ex,
+					"[GEN_NOTIFICACION] Error resolviendo URL_OPCION para CODIGO_OPCION={Codigo}",
+					codigoOpcion);
+				return null;
+			}
+		}
+
+		/// <summary>
+		/// Convención deep link TH: {URL_OPCION}?corr={corr}.
+		/// </summary>
+		private static string AppendCorrQuery(string urlOpcion, int corr)
+		{
+			if (corr <= 0 || string.IsNullOrWhiteSpace(urlOpcion))
+			{
+				return null;
+			}
+
+			var path = urlOpcion.Trim();
+			if (!path.StartsWith("/"))
+			{
+				path = "/" + path;
+			}
+
+			var queryAt = path.IndexOf('?');
+			if (queryAt >= 0)
+			{
+				path = path.Substring(0, queryAt);
+			}
+
+			return $"{path}?corr={corr}";
 		}
 
 		private static CResult ValidarCreacion(GEN_NOTIFICACIONCreateParam data)
