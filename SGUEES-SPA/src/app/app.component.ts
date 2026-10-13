@@ -4,6 +4,7 @@ import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AppInfoService, AuthService, readOwnedSessionToken, ScreenService, ThemeService } from './shared/services';
 import { JwtHelperService } from '@auth0/angular-jwt';
+import { NotificationSignalRService } from './services/notification-signalr.service'; //Llamar SignalR para notificaciones
 
 @Component({
   selector: 'app-root',
@@ -23,7 +24,8 @@ export class AppComponent implements OnInit, OnDestroy {
               private themeService: ThemeService,
               private screen: ScreenService,
               private router: Router,
-              public appInfo: AppInfoService) {
+              public appInfo: AppInfoService,
+              private notificationSignalRService: NotificationSignalRService) {
     this.routerSub = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {
@@ -65,6 +67,8 @@ export class AppComponent implements OnInit, OnDestroy {
 			if (token) {
 				this.authService.decodedToken = this.jwtHelper.decodeToken(token);
 			}
+			// SignalR exige JWT ([Authorize] en el hub): solo conectar con sesión válida.
+			void this.notificationSignalRService.startConnection();
 		}
     this.isPublicPortal = this.resolvePublicPortal();
 	}
