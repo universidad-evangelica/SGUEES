@@ -21,6 +21,7 @@ builder.Services.AddControllers()
                 });
 
 // SignalR: mismos nombres de propiedades que Controllers (TITULO/MENSAJE, sin camelCase).
+builder.Services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, LoginSistemaUserIdProvider>();
 builder.Services.AddSignalR().AddJsonProtocol(options =>
 {
     options.PayloadSerializerOptions.PropertyNamingPolicy = null;

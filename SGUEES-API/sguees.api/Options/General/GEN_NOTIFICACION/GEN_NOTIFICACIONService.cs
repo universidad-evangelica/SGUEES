@@ -96,6 +96,28 @@ namespace sguees.Services
 			return persistido;
 		}
 
+		public Task<CResult> NotificarUsuarioAsync(
+			int corrEmpresa,
+			string loginDestino,
+			string titulo,
+			string mensaje,
+			string urlDestino = null,
+			string usuarioCrea = null,
+			string estacionCrea = null)
+		{
+			var login = loginDestino?.Trim() ?? string.Empty;
+			return CrearYEnviarAsync(new GEN_NOTIFICACIONCreateParam
+			{
+				CORR_EMPRESA = corrEmpresa,
+				LOGIN_SISTEMA = login,
+				TITULO = titulo,
+				MENSAJE = mensaje,
+				URL_DESTINO = urlDestino,
+				USUARIO_CREA = string.IsNullOrWhiteSpace(usuarioCrea) ? login : usuarioCrea.Trim(),
+				ESTACION_CREA = string.IsNullOrWhiteSpace(estacionCrea) ? "API" : estacionCrea.Trim()
+			});
+		}
+
 		private static CResult ValidarCreacion(GEN_NOTIFICACIONCreateParam data)
 		{
 			if (data == null)

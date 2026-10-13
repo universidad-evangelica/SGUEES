@@ -15,5 +15,18 @@ namespace sguees.Services
 		/// No expuesta como endpoint HTTP público.
 		/// </summary>
 		Task<CResult> CrearYEnviarAsync(GEN_NOTIFICACIONCreateParam data);
+
+		/// <summary>
+		/// Fachada universal para módulos de negocio: arma el param y llama CrearYEnviarAsync.
+		/// URL_DESTINO opcional (ruta interna Angular o null).
+		/// </summary>
+		Task<CResult> NotificarUsuarioAsync(
+			int corrEmpresa,
+			string loginDestino,
+			string titulo,
+			string mensaje,
+			string urlDestino = null,
+			string usuarioCrea = null,
+			string estacionCrea = null);
 	}
 }

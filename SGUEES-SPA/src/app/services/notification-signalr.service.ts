@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -29,6 +29,8 @@ export class NotificationSignalRService {
   /** Emite tras reconectar el hub (para resincronizar con la API). */
   readonly reconnected$: Observable<void> = this.reconnectedSubject.asObservable();
 
+  constructor(private zone: NgZone) {}
+
   // Qué hace: abre SignalR solo si esta pestaña tiene sesión JWT válida.
   public async startConnection(): Promise<void> {
     const token = readOwnedSessionToken();
@@ -52,13 +54,13 @@ export class NotificationSignalRService {
         .withAutomaticReconnect()
         .build();
 
-      // Listener una sola vez (solo al crear el HubConnection).
+      // Listener una sola vez. NgZone: el WebSocket corre fuera de Angular; sin esto el badge no pinta hasta un clic.
       this.hubConnection.on('ReceiveNotification', (notification: NotificationMessageDto) => {
-        this.notificationSubject.next(notification ?? {});
+        this.zone.run(() => this.notificationSubject.next(notification ?? {}));
       });
 
       this.hubConnection.onreconnected(() => {
-        this.reconnectedSubject.next();
+        this.zone.run(() => this.reconnectedSubject.next());
       });
     }
 

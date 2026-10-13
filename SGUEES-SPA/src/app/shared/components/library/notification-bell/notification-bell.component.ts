@@ -149,22 +149,31 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
   }
 
   private onSignalRNotification(n: NotificationMessageDto): void {
-    if (n?.CORR_NOTIFICACION == null || n?.CORR_EMPRESA == null) {
+    const corrEmpresa = Number(n?.CORR_EMPRESA);
+    const corrNotif = Number(n?.CORR_NOTIFICACION);
+    if (!Number.isFinite(corrEmpresa) || corrEmpresa <= 0 || !Number.isFinite(corrNotif) || corrNotif <= 0) {
       return;
     }
 
+    const normalized: GenNotificacionItem = {
+      ...n,
+      CORR_EMPRESA: corrEmpresa,
+      CORR_NOTIFICACION: corrNotif,
+      LEIDA: !!n.LEIDA,
+    };
+
     const idx = this.items.findIndex(
-      (x) => x.CORR_EMPRESA === n.CORR_EMPRESA && x.CORR_NOTIFICACION === n.CORR_NOTIFICACION
+      (x) => Number(x.CORR_EMPRESA) === corrEmpresa && Number(x.CORR_NOTIFICACION) === corrNotif
     );
 
     const wasNew = idx < 0;
     if (idx >= 0) {
-      this.items[idx] = { ...this.items[idx], ...n };
+      this.items[idx] = { ...this.items[idx], ...normalized };
     } else {
-      this.items = [n, ...this.items].slice(0, this.pageSize);
+      this.items = [normalized, ...this.items].slice(0, this.pageSize);
     }
 
-    if (wasNew && !n.LEIDA) {
+    if (wasNew && !normalized.LEIDA) {
       this.pendientes += 1;
     }
   }
