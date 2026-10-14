@@ -9,6 +9,7 @@ namespace sguees.Services
 	public interface IGEN_PARENTESCOService
 	{
 		Task<CResult> GetAllAsync(GEN_PARENTESCOParam xWhere);
+		Task<CResult> GetCORR_PARENTESCO_ACA_PROSPECTOAsync(GEN_PARENTESCOParam xWhere);
 		Task<CResult> GetAsync(GEN_PARENTESCOParam xWhere);
 		Task<CResult> CreateAsync(GEN_PARENTESCOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(GEN_PARENTESCOTable Data, string vLOGIN_SISTEMA, string vESTACION);

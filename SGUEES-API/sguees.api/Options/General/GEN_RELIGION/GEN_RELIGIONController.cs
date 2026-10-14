@@ -39,6 +39,15 @@ namespace sguees.Controllers
 			return await _service.GetAsync(Data);
 		}
 
+		[HttpGet("GetCORR_RELIGION_ACA_PROSPECTO")]
+		[Authorize(Policy = "/aca-prospecto|R")]
+		// Qué hace: religiones para la edición de datos personales del prospecto.
+		// Cómo: llama a GetAllAsync del servicio.
+		public async Task<CResult> GetCORR_RELIGION_ACA_PROSPECTO([FromQuery] GEN_RELIGIONParam Data)
+		{
+			return await _service.GetAllAsync(Data);
+		}
+
 		[HttpPost]
 		[Authorize(Policy = "/gen-religion|C")]
 		public async Task<IActionResult> Post(GEN_RELIGIONTable Data)
