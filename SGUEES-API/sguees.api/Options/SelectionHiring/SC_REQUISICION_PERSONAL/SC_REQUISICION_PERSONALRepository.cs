@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -325,9 +326,12 @@ namespace SGUEES.Repositories
 
             try
             {
+                // Qué hace: Obtiene la bitácora de firmas ordenada del movimiento más reciente al más antiguo.
+                // Cómo lo hace: Lee V_SEG_FLUJO_BITACORA_FIRMAS con orden FECHA_ACCION DESC y CORR_BITACORA DESC.
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
 				SELECT
 					FB.CORR_EMPRESA,
+					FB.CORR_BITACORA,
 					FB.CORR_DOCUMENTO AS CORR_REQUISICION_PERSONAL,
 					FB.LOGIN_SISTEMA,
 					FB.ESTADO_DESTINO,
@@ -336,7 +340,7 @@ namespace SGUEES.Repositories
 				FROM V_SEG_FLUJO_BITACORA_FIRMAS FB
 				WHERE FB.CORR_TIPO_DOCUMENTO = @CORR_TIPO_DOCUMENTO
 				  AND FB.CORR_DOCUMENTO = @CORR_DOCUMENTO
-				ORDER BY FB.CORR_BITACORA", xWhere);
+				ORDER BY FB.FECHA_ACCION DESC, FB.CORR_BITACORA DESC", xWhere);
 
                 var response = new List<SC_REQUISICION_PERSONAL_BITACORAView>().FromDataReader(reader).ToList();
 
@@ -504,6 +508,51 @@ namespace SGUEES.Repositories
             }
 
             return objResultado;
+        }
+
+        /// <summary>
+        /// Puesto del creador de la requisición (USUARIO_CREA). Si no hay creador, usa el login de sesión.
+        /// </summary>
+        public async Task<int> ResolverUnidadCreadorAsync(int corrEmpresa, int corrRequisicion, string loginFallback)
+        {
+            var unidad = 0;
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+                    new() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = corrRequisicion, DbType = DbType.Int32 },
+                    new() { ParameterName = "LOGIN_FALLBACK", Value = loginFallback ?? string.Empty, DbType = DbType.String },
+                };
+                var reader = await objData.GetDataReader(CommandType.Text, @"
+SELECT TOP 1 EP.CORR_UNIDAD
+FROM dbo.GEN_EMPLEADO_PUESTO AS EP
+INNER JOIN dbo.GEN_EMPLEADO AS E
+	ON E.CORR_EMPRESA = EP.CORR_EMPRESA AND E.CORR_EMPLEADO = EP.CORR_EMPLEADO
+INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+	ON PU.CORR_PERSONA = E.CORR_PERSONA
+INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS UN
+	ON UN.CORR_EMPRESA = EP.CORR_EMPRESA AND UN.CORR_UNIDAD = EP.CORR_UNIDAD
+WHERE EP.CORR_EMPRESA = @CORR_EMPRESA
+  AND LTRIM(RTRIM(PU.LOGIN_SISTEMA)) = LTRIM(RTRIM(ISNULL((
+		SELECT R.USUARIO_CREA
+		FROM dbo.SC_REQUISICION_PERSONAL AS R
+		WHERE R.CORR_EMPRESA = @CORR_EMPRESA
+		  AND R.CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL
+	), @LOGIN_FALLBACK)))
+ORDER BY CASE WHEN UN.ACTIVO = 1 THEN 0 ELSE 1 END, UN.CORR_NIVEL DESC, EP.CORR_UNIDAD DESC", p);
+                if (reader.Read() && reader["CORR_UNIDAD"] != DBNull.Value)
+                {
+                    unidad = Convert.ToInt32(reader["CORR_UNIDAD"]);
+                }
+                reader.Close();
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return unidad;
         }
     }
 }

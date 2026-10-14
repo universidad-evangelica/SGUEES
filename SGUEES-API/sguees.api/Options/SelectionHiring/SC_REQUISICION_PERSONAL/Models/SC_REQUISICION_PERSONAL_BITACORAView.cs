@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
@@ -6,6 +6,8 @@ namespace SGUEES.Models
     public class SC_REQUISICION_PERSONAL_BITACORAView
     {
         public int CORR_EMPRESA { get; set; }
+        /// <summary>Identificador secuencial del movimiento en la bitácora.</summary>
+        public int CORR_BITACORA { get; set; }
         /// <summary>Alias de CORR_DOCUMENTO de V_SEG_FLUJO_BITACORA_FIRMAS.</summary>
         public int CORR_REQUISICION_PERSONAL { get; set; }
         public string LOGIN_SISTEMA { get; set; }

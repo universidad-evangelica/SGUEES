@@ -1,5 +1,7 @@
 SET QUOTED_IDENTIFIER, ANSI_NULLS ON
 GO
+-- Qué hace: lectura de puestos asignados a cada unidad.
+-- Cómo lo hace: GEN_UNIDADES_PUESTO con unidad, puesto, tipo, estado y misión.
 CREATE OR ALTER VIEW [dbo].[V_GEN_UNIDADES_PUESTO]
 AS
 SELECT
@@ -10,6 +12,10 @@ SELECT
   up.[CORR_PUESTO],
   p.[CODIGO_PUESTO],
   p.[NOMBRE_PUESTO],
+  p.[CORR_TIPO_PUESTO],
+  tp.[NOMBRE_TIPO_PUESTO],
+  p.[ACTIVO_PUESTO],
+  p.[MISION_PUESTO],
   up.[USUARIO_CREA],
   up.[ESTACION_CREA],
   up.[FECHA_CREA],
@@ -23,4 +29,7 @@ LEFT JOIN [dbo].[SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES] u
 LEFT JOIN [dbo].[PLA_PUESTO] p
   ON p.[CORR_EMPRESA] = up.[CORR_EMPRESA]
  AND p.[CORR_PUESTO] = up.[CORR_PUESTO]
+LEFT JOIN [dbo].[PLA_TIPO_PUESTO] tp
+  ON tp.[CORR_EMPRESA] = p.[CORR_EMPRESA]
+ AND tp.[CORR_TIPO_PUESTO] = p.[CORR_TIPO_PUESTO]
 GO

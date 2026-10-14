@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.Web.UI;
 using DevExpress.XtraReports.UI;
 using sgueesRpt.Layouts;
+using sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL;
 using sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL;
 
 namespace sgueesRpt.Layouts.SelectionHiring
@@ -96,6 +97,10 @@ namespace sgueesRpt.Layouts.SelectionHiring
 				case "sc-requisicion-personal|rptRequisicionPersonal|":
 					return LoadRequisicionPersonal(query, out errorMessage);
 
+				// sc-movimiento-personal → rptMovimientoPersonal
+				case "sc-movimiento-personal|rptMovimientoPersonal|":
+					return LoadMovimientoPersonal(query, out errorMessage);
+
 				// Ejemplos futuros (descomentar cuando existan el XtraReport y el Load*):
 				// case "sc-descriptor-puesto|rptDescriptorPuesto|corto":
 				//     return LoadDescriptorPuestoCorto(query, out errorMessage);
@@ -141,6 +146,27 @@ namespace sgueesRpt.Layouts.SelectionHiring
 
 			var rpt = new rptRequisicionPersonal();
 			rpt.LoadFromDatabase(corrEmpresa, corrRequisicion);
+			return rpt;
+		}
+
+		private static XtraReport LoadMovimientoPersonal(NameValueCollection query, out string errorMessage)
+		{
+			errorMessage = null;
+			int corrEmpresa;
+			int corrMovimiento;
+			if (!int.TryParse(query["CORR_EMPRESA"], out corrEmpresa) || corrEmpresa <= 0)
+			{
+				errorMessage = "Parámetro CORR_EMPRESA inválido.";
+				return null;
+			}
+			if (!int.TryParse(query["CORR_MOVIMIENTO_PERSONAL"], out corrMovimiento) || corrMovimiento <= 0)
+			{
+				errorMessage = "Parámetro CORR_MOVIMIENTO_PERSONAL inválido.";
+				return null;
+			}
+
+			var rpt = new rptMovimientoPersonal();
+			rpt.LoadFromDatabase(corrEmpresa, corrMovimiento);
 			return rpt;
 		}
 

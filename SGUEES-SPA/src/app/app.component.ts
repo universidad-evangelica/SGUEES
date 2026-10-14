@@ -2,8 +2,9 @@ import { Component, HostBinding, OnDestroy, OnInit, } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { AppInfoService, AuthService, ScreenService, ThemeService } from './shared/services';
+import { AppInfoService, AuthService, readOwnedSessionToken, ScreenService, ThemeService } from './shared/services';
 import { JwtHelperService } from '@auth0/angular-jwt';
+import { NotificationSignalRService } from './services/notification-signalr.service'; //Llamar SignalR para notificaciones
 
 @Component({
   selector: 'app-root',
@@ -23,7 +24,8 @@ export class AppComponent implements OnInit, OnDestroy {
               private themeService: ThemeService,
               private screen: ScreenService,
               private router: Router,
-              public appInfo: AppInfoService) {
+              public appInfo: AppInfoService,
+              private notificationSignalRService: NotificationSignalRService) {
     this.routerSub = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {
@@ -31,8 +33,27 @@ export class AppComponent implements OnInit, OnDestroy {
       });
   }
 
+  get avisoInactividadVisible(): boolean {
+    return this.authService.idleWarningVisible;
+  }
+
+  get segundosInactividad(): number {
+    return this.authService.idleSecondsLeft;
+  }
+
+  // Qué hace: deja la sesión abierta cuando la persona sigue usando el sistema.
+  // Cómo lo hace: reinicia el plazo de 1 día y cierra el aviso.
+  continuarSesion(): void {
+    this.authService.registrarActividad();
+  }
+
   isAuthenticated() {
-    return this.authService.loggedIn;
+    if (this.authService.loggedIn) {
+      return true;
+    }
+    // Qué hace: mantiene el marco de la aplicación hasta entrar al login.
+    // Cómo lo hace: evita la pantalla negra mientras la ruta anterior todavía está activa.
+    return this.authService.cerrandoSesion && !this.esRutaLogin();
   }
 
   ngOnDestroy(): void {
@@ -41,12 +62,27 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-		const token = localStorage.getItem('token');
-		if (token) {
-			this.authService.decodedToken = this.jwtHelper.decodeToken(token);
+		if (this.authService.loggedIn) {
+			const token = readOwnedSessionToken();
+			if (token) {
+				this.authService.decodedToken = this.jwtHelper.decodeToken(token);
+			}
+			// SignalR exige JWT ([Authorize] en el hub): solo conectar con sesión válida.
+			void this.notificationSignalRService.startConnection();
 		}
     this.isPublicPortal = this.resolvePublicPortal();
 	}
+
+  private esRutaLogin(): boolean {
+    const path = `${this.router.url || ''}`.split('?')[0];
+    return (
+      path.includes('login-form') ||
+      path.includes('recuperar-contrasena') ||
+      path.includes('reset-password') ||
+      path.includes('create-account') ||
+      path.includes('change-password')
+    );
+  }
 
   private resolvePublicPortal(): boolean {
     const path = `${this.router.url || ''} ${window.location.pathname || ''}`.split('?')[0];

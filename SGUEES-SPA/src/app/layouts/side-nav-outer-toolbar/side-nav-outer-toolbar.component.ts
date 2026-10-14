@@ -2,9 +2,11 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  AfterViewInit,
   NgModule,
   Input,
   ViewChild,
+  ElementRef,
 } from '@angular/core';
 import { DxTreeViewTypes } from 'devextreme-angular/ui/tree-view';
 import { DxDrawerModule, DxDrawerTypes } from 'devextreme-angular/ui/drawer';
@@ -16,6 +18,7 @@ import { ScreenService, AppInfoService } from '../../shared/services';
 import { SideNavigationMenuModule } from 'src/app/shared/components/library/side-navigation-menu/side-navigation-menu.component';
 import { AppHeaderModule } from 'src/app/shared/components/library/app-header/app-header.component';
 import { AppFooterModule } from 'src/app/shared/components/library/app-footer/app-footer.component';
+import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
 import { Subscription } from 'rxjs';
@@ -26,7 +29,7 @@ import { debounceTime } from 'rxjs/operators';
   templateUrl: './side-nav-outer-toolbar.component.html',
   styleUrls: ['./side-nav-outer-toolbar.component.scss'],
 })
-export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
+export class SideNavOuterToolbarComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild(DxScrollViewComponent, { static: true }) scrollView!: DxScrollViewComponent;
 
   @Input()
@@ -50,14 +53,33 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
 
   routerSubscription: Subscription;
 
-  screenSubscription: Subscription;
+  screenSubscription!: Subscription;
 
-  constructor(private screen: ScreenService, private router: Router, public appInfo: AppInfoService) {
+  // Qué hace: guarda el aviso que se movió al body.
+  private toastMovidoAlBody: Element | null = null;
+
+  constructor(
+    private screen: ScreenService,
+    private router: Router,
+    public appInfo: AppInfoService,
+    private host: ElementRef<HTMLElement>,
+    private messageService: MessageService
+  ) {
     this.routerSubscription = this.router.events.subscribe((event: Event) => {
       if (event instanceof NavigationEnd) {
         this.selectedRoute = event.urlAfterRedirects.split('?')[0];
       }
     });
+  }
+
+  // Qué hace: deja el aviso por encima del modal.
+  // Cómo: mueve el toast al body para que no quede debajo del overlay del popup.
+  ngAfterViewInit(): void {
+    const toast = this.host.nativeElement.querySelector('p-toast');
+    if (toast && toast.parentElement !== document.body) {
+      document.body.appendChild(toast);
+      this.toastMovidoAlBody = toast;
+    }
   }
 
   ngOnInit() {
@@ -70,7 +92,14 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
     this.updateDrawer();
   }
 
+  // Qué hace: quita el aviso al cerrar el menú, por ejemplo al salir de la sesión.
+  // Cómo: lo devuelve al menú para que Angular lo destruya y limpia los avisos pendientes.
   ngOnDestroy(): void {
+    if (this.toastMovidoAlBody?.parentElement === document.body) {
+      this.host.nativeElement.appendChild(this.toastMovidoAlBody);
+    }
+    this.toastMovidoAlBody = null;
+    this.messageService.clear();
     this.routerSubscription.unsubscribe();
     this.screenSubscription.unsubscribe();
   }

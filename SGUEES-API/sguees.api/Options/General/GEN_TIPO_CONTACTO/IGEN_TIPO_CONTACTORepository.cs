@@ -10,5 +10,6 @@ namespace sguees.Repositories
 	public interface IGEN_TIPO_CONTACTORepository : IRepository<GEN_TIPO_CONTACTOTable>
 	{
 		Task<CResult> ActivarInactivarAsync(GEN_TIPO_CONTACTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<bool> ExistsNombreCortoAsync(string normalizedValue, int excludeCorr);
 	}
 }

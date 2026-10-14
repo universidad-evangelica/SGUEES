@@ -14,9 +14,11 @@ namespace SGUEES.Services
 			_repo = repo;
 		}
 
-		public Task<CResult> DecideAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		// Qué hace: Delega el registro de decisión de candidato al repositorio.
+		// Cómo lo hace: Pasa el modelo de datos, usuario, estación y la bandera opcional validarJefatura al repositorio.
+		public Task<CResult> DecideAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION, bool validarJefatura = true)
 		{
-			return _repo.DecideAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			return _repo.DecideAsync(Data, vLOGIN_SISTEMA, vESTACION, validarJefatura);
 		}
 
 		public Task<CResult> GetPostulacionesExpedienteAsync(SC_REQUISICION_CANDIDATOParam xWhere)

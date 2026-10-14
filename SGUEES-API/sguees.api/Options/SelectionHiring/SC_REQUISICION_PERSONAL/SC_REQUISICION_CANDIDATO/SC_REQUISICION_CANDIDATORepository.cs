@@ -119,7 +119,9 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		public async Task<CResult> DecideAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		// Qué hace: Registra el dictamen de Aplica o No aplica para un candidato en selección.
+		// Cómo lo hace: Valida los datos requeridos, valida jefatura si validarJefatura es true, inserta en SC_REQUISICION_CANDIDATO y si es APLICA genera el movimiento de personal.
+		public async Task<CResult> DecideAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION, bool validarJefatura = true)
 		{
 			if (Data == null)
 			{
@@ -159,7 +161,7 @@ namespace SGUEES.Repositories
 			}
 
 			var login = (vLOGIN_SISTEMA ?? string.Empty).Trim();
-			if (!await EsJefeActivoDeUnidadAsync(Data.CORR_EMPRESA, requisicion.CORR_UNIDAD, login))
+			if (validarJefatura && !await EsJefeActivoDeUnidadAsync(Data.CORR_EMPRESA, requisicion.CORR_UNIDAD, login))
 			{
 				return ValidationResult(
 					1010,
@@ -246,6 +248,31 @@ namespace SGUEES.Repositories
 						new CParameter() { ParameterName = "CORR_REQUISICION_CANDIDATO", Value = corr, DbType = System.Data.DbType.Int32 },
 					});
 					response = reload.Data as SC_REQUISICION_CANDIDATOView;
+				}
+
+				if (string.Equals(Data.ESTADO_DECISION, "APLICA", StringComparison.OrdinalIgnoreCase))
+				{
+					var corrCandidato = response?.CORR_REQUISICION_CANDIDATO ?? 0;
+					var mensajeMovimiento = await CrearMovimientoDesdeRequisicionAsync(
+						Data.CORR_EMPRESA,
+						Data.CORR_REQUISICION_PERSONAL,
+						corrCandidato,
+						login,
+						vESTACION);
+
+					if (!string.IsNullOrWhiteSpace(mensajeMovimiento))
+					{
+						await EliminarDecisionAsync(Data.CORR_EMPRESA, corrCandidato);
+						return ValidationResult(1014, mensajeMovimiento);
+					}
+
+					// Qué hace: Pasa el estado del expediente a 3 (Seleccionado).
+					// Cómo lo hace: Actualiza la columna CORR_ESTADO_EXPEDIENTE del candidato dictaminado.
+					var corrExpediente = response?.CORR_EXPEDIENTE_CANDIDATO ?? Data.CORR_EXPEDIENTE_CANDIDATO;
+					if (corrExpediente > 0)
+					{
+						await ActualizarEstadoExpedienteAsync(Data.CORR_EMPRESA, corrExpediente, 3, login, vESTACION);
+					}
 				}
 
 				objResultado.Data = response;
@@ -354,6 +381,95 @@ WHERE J.CORR_EMPRESA = @CORR_EMPRESA
 			reader?.Close();
 			objData.objConnection.Close();
 			return rows.Count > 0;
+		}
+
+		/// <summary>
+		/// Alta del movimiento (origen requisición) y de la puente. Vacío = correcto.
+		/// </summary>
+		private async Task<string> CrearMovimientoDesdeRequisicionAsync(
+			int corrEmpresa,
+			int corrRequisicion,
+			int corrCandidato,
+			string login,
+			string estacion)
+		{
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@CORR_REQUISICION_PERSONAL", Value = corrRequisicion, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@CORR_REQUISICION_CANDIDATO", Value = corrCandidato, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@LOGIN_SISTEMA", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
+				new() { ParameterName = "@ESTACION", Value = estacion ?? string.Empty, DbType = System.Data.DbType.String },
+				new() { ParameterName = "@CORR_MOVIMIENTO_PERSONAL", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+				new() { ParameterName = "@MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 500 },
+			};
+
+			await objData.ExecCmd(
+				System.Data.CommandType.StoredProcedure,
+				"PRAL_MTTO_SC_MOVIMIENTO_DESDE_REQUISICION",
+				true,
+				p);
+
+			return objData.objCommand.Parameters["@MENSAJE_ERROR"].Value?.ToString();
+		}
+
+		private async Task EliminarDecisionAsync(int corrEmpresa, int corrCandidato)
+		{
+			if (corrCandidato <= 0)
+			{
+				return;
+			}
+
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@CORR_REQUISICION_CANDIDATO", Value = corrCandidato, DbType = System.Data.DbType.Int32 },
+			};
+
+			await objData.ExecCmd(System.Data.CommandType.Text, @"
+DELETE FROM dbo.SC_REQUISICION_CANDIDATO
+WHERE CORR_EMPRESA = @CORR_EMPRESA
+  AND CORR_REQUISICION_CANDIDATO = @CORR_REQUISICION_CANDIDATO", true, p);
+		}
+
+		// Qué hace: Actualiza el estado del expediente del candidato (3: Seleccionado, 2: Proceso de selección).
+		// Cómo lo hace: Ejecuta un UPDATE puntual sobre dbo.SC_EXPEDIENTE_CANDIDATO con los parámetros recibidos.
+		private async Task ActualizarEstadoExpedienteAsync(
+			int corrEmpresa,
+			int corrExpediente,
+			int corrEstado,
+			string login,
+			string estacion)
+		{
+			if (corrExpediente <= 0)
+			{
+				return;
+			}
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_EXPEDIENTE_CANDIDATO", Value = corrExpediente, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_ESTADO_EXPEDIENTE", Value = corrEstado, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@USUARIO_ACTU", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@ESTACION_ACTU", Value = estacion ?? string.Empty, DbType = System.Data.DbType.String },
+				};
+
+				await objData.ExecCmd(System.Data.CommandType.Text, @"
+UPDATE dbo.SC_EXPEDIENTE_CANDIDATO
+SET CORR_ESTADO_EXPEDIENTE = @CORR_ESTADO_EXPEDIENTE,
+    USUARIO_ACTU = @USUARIO_ACTU,
+    ESTACION_ACTU = @ESTACION_ACTU,
+    FECHA_ACTU = GETDATE()
+WHERE CORR_EMPRESA = @CORR_EMPRESA
+  AND CORR_EXPEDIENTE_CANDIDATO = @CORR_EXPEDIENTE_CANDIDATO;", true, p);
+			}
+			catch
+			{
+				// No interrumpe la transacción principal si ocurre un error secundario en el expediente
+			}
 		}
 
 		private static void SetError(CResult result, Exception ex)

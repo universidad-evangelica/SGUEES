@@ -1,0 +1,43 @@
+-- Qué hace: script de documentación de GEN_PERSONA_EXPERIENCIA_LABORAL (ya existente en BD).
+-- Cómo lo hace: refleja la estructura consultada en SQL Server (solo documentación).
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+/*
+Tabla: dbo.GEN_PERSONA_EXPERIENCIA_LABORAL
+Fuente: estructura real BD SGUEES (solo documentación; no ejecutar CREATE TABLE).
+PK: (CORR_EMPRESA, CORR_PERSONA, CORR_EXPERIENCIA_LABORAL)
+*/
+CREATE TABLE [dbo].[GEN_PERSONA_EXPERIENCIA_LABORAL]
+(
+	[CORR_EMPRESA] [int] NOT NULL,
+	[CORR_PERSONA] [bigint] NOT NULL,
+	[CORR_EXPERIENCIA_LABORAL] [int] NOT NULL,
+	[LUGAR_TRABAJO] [varchar](150) NULL,
+	[CARGO_DESEMPENADO] [varchar](150) NULL,
+	[TELEFONO] [varchar](25) NULL,
+	[JEFE_INMEDIATO] [varchar](100) NULL,
+	[SALARIO_INICIAL] [decimal](18, 2) NULL,
+	[SALARIO_FINAL] [decimal](18, 2) NULL,
+	[FECHA_INICIO] [date] NULL,
+	[FECHA_FIN] [date] NULL,
+	[PERIODO_INICIAL] [int] NULL,
+	[PERIODO_FINAL] [int] NULL,
+	[PERIODO] [varchar](11) NULL,
+	[MOTIVO_SALIDA] [varchar](500) NULL,
+	[USUARIO_CREA] [varchar](50) NULL,
+	[ESTACION_CREA] [varchar](50) NULL,
+	[FECHA_CREA] [datetime] NULL,
+	[USUARIO_ACTU] [varchar](50) NULL,
+	[ESTACION_ACTU] [varchar](50) NULL,
+	[FECHA_ACTU] [datetime] NULL,
+	CONSTRAINT [PK_GEN_PERSONA_EXPERIENCIA_LABORAL] PRIMARY KEY CLUSTERED
+	(
+		[CORR_EMPRESA] ASC,
+		[CORR_PERSONA] ASC,
+		[CORR_EXPERIENCIA_LABORAL] ASC
+	)
+);
+GO

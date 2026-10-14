@@ -68,6 +68,18 @@ namespace SGUEES.Services
 				});
 			}
 
+			// Qué hace: Pasa el filtro de estado de contratación al repositorio.
+			// Cómo lo hace: Si viene especificado, lo agrega como parámetro de texto a la lista.
+			if (!string.IsNullOrWhiteSpace(xWhere.ESTADO_CICLO_CANDIDATO))
+			{
+				p.Add(new CParameter
+				{
+					ParameterName = "ESTADO_CICLO_CANDIDATO",
+					Value = xWhere.ESTADO_CICLO_CANDIDATO.Trim(),
+					DbType = DbType.String,
+				});
+			}
+
 			return await _repo.GetContratacionesPagedAsync(p);
 		}
 	}

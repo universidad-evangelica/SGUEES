@@ -1,0 +1,57 @@
+<div class="notif-bell">
+  <div class="messages" id="sguees-notif-bell-btn">
+    <dx-button
+      icon="belloutline"
+      stylingMode="text"
+      hint="Notificaciones"
+      (onClick)="togglePanel()"
+    ></dx-button>
+    <div class="dx-badge" *ngIf="badgeText">{{ badgeText }}</div>
+  </div>
+
+  <dx-popover
+    [target]="'#sguees-notif-bell-btn'"
+    [(visible)]="panelVisible"
+    position="bottom"
+    [width]="360"
+    [showEvent]="''"
+    [hideEvent]="''"
+    [hideOnOutsideClick]="true"
+    [showTitle]="true"
+    title="Notificaciones"
+    [shading]="false"
+    (onHiding)="onPanelHiding()"
+  >
+    <div *dxTemplate="let data of 'content'" class="notif-panel">
+      <div class="notif-panel__status" *ngIf="loading">
+        <dx-load-indicator [height]="24" [width]="24"></dx-load-indicator>
+        <span>Cargando…</span>
+      </div>
+
+      <div class="notif-panel__error" *ngIf="!loading && errorMsg">
+        {{ errorMsg }}
+      </div>
+
+      <div class="notif-panel__empty" *ngIf="!loading && !errorMsg && items.length === 0">
+        No hay notificaciones.
+      </div>
+
+      <dx-scroll-view *ngIf="!loading && items.length > 0" [height]="320" showScrollbar="onHover">
+        <button
+          type="button"
+          class="notif-item"
+          *ngFor="let item of items; trackBy: trackByNotif"
+          [class.notif-item--unread]="!item.LEIDA"
+          (click)="onItemClick(item)"
+        >
+          <div class="notif-item__title">{{ item.TITULO || '(Sin título)' }}</div>
+          <div class="notif-item__msg">{{ item.MENSAJE }}</div>
+          <div class="notif-item__meta">
+            <span>{{ item.FECHA_CREA | date: 'dd/MM/yyyy HH:mm' }}</span>
+            <span class="notif-item__dot" *ngIf="!item.LEIDA">Nueva</span>
+          </div>
+        </button>
+      </dx-scroll-view>
+    </div>
+  </dx-popover>
+</div>

@@ -113,6 +113,8 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "ACTIVO_TIPO_CONTACTO", Value = Data.ACTIVO_TIPO_CONTACTO ?? true, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "NUMERO_CARACTERES", Value = Data.NUMERO_CARACTERES ?? 0, DbType = System.Data.DbType.Int16 },
 					new CParameter() { ParameterName = "ACTIVO_CARACTERES", Value = Data.ACTIVO_CARACTERES ?? false, DbType = System.Data.DbType.Boolean },
+					new CParameter() { ParameterName = "FORMATO_CARACTERES", Value = ValorLista(Data.FORMATO_CARACTERES), DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "APLICA_PARA", Value = ValorLista(Data.APLICA_PARA), DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
@@ -167,6 +169,8 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "NOMBRE_CORTO", Value = Data.NOMBRE_CORTO, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "NUMERO_CARACTERES", Value = Data.NUMERO_CARACTERES ?? 0, DbType = System.Data.DbType.Int16 },
 					new CParameter() { ParameterName = "ACTIVO_CARACTERES", Value = Data.ACTIVO_CARACTERES ?? false, DbType = System.Data.DbType.Boolean },
+					new CParameter() { ParameterName = "FORMATO_CARACTERES", Value = ValorLista(Data.FORMATO_CARACTERES), DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "APLICA_PARA", Value = ValorLista(Data.APLICA_PARA), DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -317,11 +321,50 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Qué hace: indica si otro tipo de contacto ya usa el mismo nombre corto.
+		// Cómo lo hace: compara en mayúsculas y sin espacios, excluyendo el correlativo en edición.
+		public async Task<bool> ExistsNombreCortoAsync(string normalizedValue, int excludeCorr)
+		{
+			if (string.IsNullOrWhiteSpace(normalizedValue))
+			{
+				return false;
+			}
+
+			var sql = $@"SELECT TOP 1 1 AS FOUND
+				FROM {_ViewName}
+				WHERE UPPER(LTRIM(RTRIM(NOMBRE_CORTO))) = @NORMALIZED_VALUE
+				AND (@EXCLUDE_CORR <= 0 OR CORR_TIPO_CONTACTO <> @EXCLUDE_CORR)";
+
+			try
+			{
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+				{
+					new CParameter() { ParameterName = "NORMALIZED_VALUE", Value = normalizedValue, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorr, DbType = System.Data.DbType.Int32 },
+				});
+
+				var exists = reader.Read();
+				reader.Close();
+				return exists;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+		}
+
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
 				e.Message.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) ||
 				e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
+		}
+
+		// Qué hace: envía NULL cuando la lista viene vacía.
+		// Cómo lo hace: el CHECK de FORMATO_CARACTERES / APLICA_PARA admite NULL y rechaza ''.
+		private static object ValorLista(string value)
+		{
+			return string.IsNullOrWhiteSpace(value) ? DBNull.Value : value.Trim();
 		}
 	}
 }

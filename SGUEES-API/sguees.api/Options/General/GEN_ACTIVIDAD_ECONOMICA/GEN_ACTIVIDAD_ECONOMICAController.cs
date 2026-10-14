@@ -76,6 +76,13 @@ namespace sguees.Controllers
 		}
 
 		// Lookups usados por otros módulos (se mantienen).
+		[HttpGet("GetCORR_ACTIVIDAD_ECONOMICA_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		// Qué hace: entrega el catálogo de actividad económica para el tab Personales de empleado.
+		// Cómo: llama a GetAllAsync del servicio.
+		public async Task<CResult> GetCORR_ACTIVIDAD_ECONOMICA_GEN_EMPLEADO([FromQuery] GEN_ACTIVIDAD_ECONOMICAParam Data)
+			=> await _service.GetAllAsync(Data);
+
 		[HttpGet("GetCORR_ACTIVIDAD_ECONOMICA_VEN_DOCUMENTO")]
 		[Authorize(Policy = "/ven-documento|R")]
 		public async Task<CResult> GetCORR_ACTIVIDAD_ECONOMICA_VEN_DOCUMENTO([FromQuery] GEN_ACTIVIDAD_ECONOMICAParam Data)

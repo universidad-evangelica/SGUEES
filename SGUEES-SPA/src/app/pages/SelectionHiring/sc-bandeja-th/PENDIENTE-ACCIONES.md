@@ -7,17 +7,16 @@
 | Stage | Estados |
 |---|---|
 | Candidatos | `POSTULANTE`, `CON_EXPEDIENTE`, `EN_SELECCION`, `NO_APLICA` |
-| Contrataciones | Solo `APLICA` → listo para movimiento personal |
+| Contrataciones | Solo `APLICA` → `Seleccionado` (listo para movimiento personal) |
 
 `NO_APLICA` se queda en **Candidatos** (cierre del ciclo). No va a Contrataciones.
 
-## Botones visibles (stubs)
-
-| Stage / estado | Botón | Conectar a |
+## Botones y acciones
+| Stage / estado | Botón | Conectado a |
 |---|---|---|
 | Candidatos · `POSTULANTE` | Asociar expediente | `ScExpedienteCandidatoService.asociarSolicitud` |
 | Candidatos · `CON_EXPEDIENTE` | Activar proceso de selección | `ScExpedienteCandidatoService.activarProcesoSeleccion` |
-| Candidatos · `EN_SELECCION` | Aplica / No aplica | `ScRequisicionCandidatoService.decide` |
+| Candidatos · `EN_SELECCION` | Aplica / No aplica | `ScBandejaThService.decideCandidato` (Conectado) |
 | Contrataciones · `APLICA` | Ejecutar movimiento personal | Standby (proceso contrato) |
 | Cualquiera | Ver detalle | Deep link: REQ → `/sc-requisicion-personal?corr=`; Candidato → expediente (permiso R) |
 

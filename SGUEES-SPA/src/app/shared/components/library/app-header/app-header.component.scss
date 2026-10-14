@@ -51,6 +51,16 @@ header {
       }
     }
 
+    ::ng-deep .dx-toolbar-item.header-notification-bell {
+      min-width: 0;
+      padding-inline: 4px 6px;
+
+      .dx-item-content {
+        display: flex;
+        align-items: center;
+      }
+    }
+
     ::ng-deep .dx-toolbar-item.header-recorrido-btn {
       min-width: 0;
       padding-inline: 8px 4px;

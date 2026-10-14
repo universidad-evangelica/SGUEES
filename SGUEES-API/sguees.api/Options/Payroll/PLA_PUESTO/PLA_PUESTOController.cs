@@ -105,6 +105,16 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Qué hace: entrega puestos para asignarlos en el tab Puestos de gen-empleado.
+        // Cómo: fija CORR_EMPRESA de sesión y llama GetAllAsync (autorizado para gen-empleado).
+        [HttpGet("GetCORR_PUESTO_GEN_EMPLEADO")]
+        [Authorize(Policy = "/gen-empleado|R")]
+        public async Task<CResult> GetCORR_PUESTO_GEN_EMPLEADO([FromQuery] PLA_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
@@ -125,7 +135,7 @@ namespace SGUEES.Controllers
             Data.USUARIO_ACTU = Data.USUARIO_CREA;
             Data.ESTACION_ACTU = Data.ESTACION_CREA;
             Data.FECHA_ACTU = Data.FECHA_CREA;
-            Data.ESTADO_PUESTO ??= true;
+            Data.ACTIVO_PUESTO ??= true;
             Data.APROBACION_PUESTO ??= false;
         }
 
@@ -135,9 +145,9 @@ namespace SGUEES.Controllers
             Data.USUARIO_ACTU = GetUsuario();
             Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
             Data.FECHA_ACTU = DateTime.Now;
-            if (!Data.ESTADO_PUESTO.HasValue)
+            if (!Data.ACTIVO_PUESTO.HasValue)
             {
-                Data.ESTADO_PUESTO = true;
+                Data.ACTIVO_PUESTO = true;
             }
             if (!Data.APROBACION_PUESTO.HasValue)
             {

@@ -630,8 +630,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 					this.popupDecisionVisible = false;
 					this.notifyFx(
 						this.decisionModel.ESTADO_DECISION === 'APLICA'
-							? 'Candidato marcado como Aplica.'
-							: 'Candidato marcado como No aplica.',
+							? 'Se generó el movimiento de personal.'
+							: 'Candidato rechazado.',
 						NotifyType.Success
 					);
 					this.cargarCandidatos();
@@ -1536,7 +1536,6 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}
 
 		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
-		const unidad = Number(this.model?.CORR_UNIDAD) || null;
 		const observacion =
 			'Se envió la requisición de personal a aprobación.';
 
@@ -1548,7 +1547,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				CORR_REQUISICION_PERSONAL: corr,
 				OPERACION: OPERACION_FLUJO_REQUISICION.ENVIAR,
 				OBSERVACION: observacion,
-				CORR_UNIDAD_DOCUMENTO: unidad,
+				CORR_UNIDAD_DOCUMENTO: null,
 			})
 			.pipe(take(1))
 			.subscribe({
@@ -1626,14 +1625,22 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		);
 	}
 
-	/** Label del chip de estado (solo lectura). */
-	getEstadoRequisicionLabel(corrEstado?: number): string {
-		return this.service.getEstadoRequisicionLabel(corrEstado ?? this.model?.CORR_ESTADO_REQUISICION);
+	// Qué hace: Retorna la etiqueta descriptiva de estado para el chip del formulario.
+	// Cómo lo hace: Invoca el servicio enviando CORR_ESTADO_REQUISICION y NOMBRE_ESTADO_FLUJO del modelo activo.
+	getEstadoRequisicionLabel(corrEstado?: number, nombreEstadoFlujo?: string): string {
+		return this.service.getEstadoRequisicionLabel(
+			corrEstado ?? this.model?.CORR_ESTADO_REQUISICION,
+			nombreEstadoFlujo ?? this.model?.NOMBRE_ESTADO_FLUJO
+		);
 	}
 
-	/** Clase CSS del chip de estado (solo lectura). */
-	getEstadoRequisicionBadgeClass(corrEstado?: number): string {
-		return this.service.getEstadoRequisicionBadgeClass(corrEstado ?? this.model?.CORR_ESTADO_REQUISICION);
+	// Qué hace: Retorna la clase CSS de color para el chip del formulario.
+	// Cómo lo hace: Invoca el servicio enviando CORR_ESTADO_REQUISICION y NOMBRE_ESTADO_FLUJO del modelo activo.
+	getEstadoRequisicionBadgeClass(corrEstado?: number, nombreEstadoFlujo?: string): string {
+		return this.service.getEstadoRequisicionBadgeClass(
+			corrEstado ?? this.model?.CORR_ESTADO_REQUISICION,
+			nombreEstadoFlujo ?? this.model?.NOMBRE_ESTADO_FLUJO
+		);
 	}
 
 	override setFocus() {

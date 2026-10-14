@@ -24,6 +24,9 @@ namespace SGUEES.Models
 		public string CORR_EMPLEADO_SUSTITUTO { get; set; }
 		public decimal SALARIO { get; set; }
 		public int CORR_ESTADO_REQUISICION { get; set; }
+		// Qué hace: Expone el nombre del estado según el último movimiento en la bitácora del flujo (ej. Aprobado JI, Aprobado JU, Aprobado GG, Devuelta JI).
+		// Cómo lo hace: Mapea la columna NOMBRE_ESTADO_FLUJO devuelta por la vista V_SC_REQUISICION_PERSONAL.
+		public string NOMBRE_ESTADO_FLUJO { get; set; }
 		public DateTime? FECHA_APROBACION { get; set; }
 		public DateTime? FECHA_CIERRE { get; set; }
 		public int? TIEMPO_CONTRATO { get; set; }

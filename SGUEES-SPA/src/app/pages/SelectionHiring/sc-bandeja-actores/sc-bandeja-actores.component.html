@@ -124,6 +124,11 @@
 				donde usted es jefe activo de la unidad solicitante.
 			</div>
 
+			<div class="bandeja-standby" *ngIf="activeTab === 'MOVIMIENTOS'">
+				<strong>Movimientos:</strong> ascensos y traslados desde cero con notificación
+				pendiente dirigida a su usuario.
+			</div>
+
 			<div class="bandeja-grid-wrap">
 				<dx-data-grid
 					class="sguees-data-grid-mtto sguees-data-grid-mtto--enterprise bandeja-grid"
@@ -409,7 +414,7 @@
 					(onClick)="accionVerDetalle()"
 				></dx-button>
 				<dx-button
-					*ngIf="selectedItem.TIPO === 'REQUISICION'"
+					*ngIf="selectedItem.TIPO === 'REQUISICION' || selectedItem.TIPO === 'MOVIMIENTO'"
 					text="Ver flujo / historial"
 					stylingMode="outlined"
 					icon="clock"
@@ -419,7 +424,7 @@
 					(onClick)="accionVerFlujo()"
 				></dx-button>
 
-				<ng-container *ngIf="selectedItem.TIPO === 'REQUISICION'">
+				<ng-container *ngIf="selectedItem.TIPO === 'REQUISICION' || selectedItem.TIPO === 'MOVIMIENTO'">
 					<dx-button
 						text="Aprobar"
 						type="success"

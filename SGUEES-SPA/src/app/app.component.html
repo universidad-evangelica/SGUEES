@@ -1,3 +1,33 @@
+<!-- motivo: aviso de los últimos 20 segundos antes de cerrar la sesión por 1 día sin actividad -->
+<dx-popup
+	[visible]="avisoInactividadVisible"
+	[showTitle]="true"
+	title="Sesión por inactividad"
+	[width]="440"
+	[height]="'auto'"
+	[dragEnabled]="false"
+	[hideOnOutsideClick]="false"
+	[showCloseButton]="false"
+	[wrapperAttr]="{ class: 'idle-session-popup' }"
+>
+	<div class="idle-session">
+		<p class="idle-session__text">
+			La sesión se cerrará por inactividad en
+			<strong>{{ segundosInactividad }}</strong>
+			segundos.
+		</p>
+		<p class="idle-session__hint">Mueva el mouse o pulse Continuar para seguir en el sistema.</p>
+		<div class="idle-session__actions">
+			<dx-button
+				text="Continuar"
+				type="default"
+				stylingMode="contained"
+				(onClick)="continuarSesion()"
+			></dx-button>
+		</div>
+	</div>
+</dx-popup>
+
 <ng-container *ngIf="isPublicPortal; else appShell">
   <router-outlet></router-outlet>
 </ng-container>

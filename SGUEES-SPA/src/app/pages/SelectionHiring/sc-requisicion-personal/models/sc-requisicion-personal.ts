@@ -14,6 +14,9 @@ export interface ScRequisicionPersonal {
     CORR_EMPLEADO_SUSTITUTO: string;
     SALARIO: number;
     CORR_ESTADO_REQUISICION: number;
+    // Qué hace: Nombre descriptivo del estado según la última firma/acción registrada en bitácora (ej. Aprobado JI, Aprobado JU, Aprobado GG, Devuelta JI).
+    // Cómo lo hace: Mapea la columna NOMBRE_ESTADO_FLUJO devuelta por la API/vista SQL.
+    NOMBRE_ESTADO_FLUJO?: string;
     FECHA_APROBACION?: Date | null;
     FECHA_CIERRE?: Date | null;
     TIEMPO_CONTRATO: number;

@@ -1,0 +1,70 @@
+/* =============================================================================
+   Bitácora local del movimiento (alta y cambios en Borrador).
+   No usa SEG_FLUJO_INSTANCIA ni notifica. El circuito sigue en
+   V_SEG_FLUJO_BITACORA_FIRMAS cuando se envía a aprobación.
+   ============================================================================= */
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
+IF OBJECT_ID(N'dbo.SC_MOVIMIENTO_PERSONAL_BITACORA', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.SC_MOVIMIENTO_PERSONAL_BITACORA
+    (
+        CORR_BITACORA                INT IDENTITY(1, 1) NOT NULL,
+        CORR_EMPRESA                 INT             NOT NULL,
+        CORR_MOVIMIENTO_PERSONAL     INT             NOT NULL,
+        LOGIN_SISTEMA                VARCHAR(50)     NOT NULL,
+        ESTADO_DESTINO               NVARCHAR(50)    NOT NULL,
+        COMENTARIO                   NVARCHAR(500)   NOT NULL,
+        FECHA_ACCION                 DATETIME        NOT NULL,
+        USUARIO_CREA                 VARCHAR(50)     NULL,
+        ESTACION_CREA                VARCHAR(50)     NULL,
+        FECHA_CREA                   DATETIME        NULL,
+        CONSTRAINT PK_SC_MOVIMIENTO_PERSONAL_BITACORA
+            PRIMARY KEY CLUSTERED (CORR_BITACORA),
+        CONSTRAINT FK_SC_MOVIMIENTO_PERSONAL_BITACORA_MOV
+            FOREIGN KEY (CORR_EMPRESA, CORR_MOVIMIENTO_PERSONAL)
+            REFERENCES dbo.SC_MOVIMIENTO_PERSONAL (CORR_EMPRESA, CORR_MOVIMIENTO_PERSONAL)
+            ON DELETE CASCADE
+    );
+
+    CREATE INDEX IX_SC_MOVIMIENTO_PERSONAL_BITACORA_DOC
+        ON dbo.SC_MOVIMIENTO_PERSONAL_BITACORA (CORR_EMPRESA, CORR_MOVIMIENTO_PERSONAL, FECHA_ACCION);
+END
+GO
+
+/* El alta ya guardada en Borrador no pasó por esta tabla. */
+INSERT INTO dbo.SC_MOVIMIENTO_PERSONAL_BITACORA
+(
+    CORR_EMPRESA,
+    CORR_MOVIMIENTO_PERSONAL,
+    LOGIN_SISTEMA,
+    ESTADO_DESTINO,
+    COMENTARIO,
+    FECHA_ACCION,
+    USUARIO_CREA,
+    ESTACION_CREA,
+    FECHA_CREA
+)
+SELECT
+    M.CORR_EMPRESA,
+    M.CORR_MOVIMIENTO_PERSONAL,
+    LEFT(ISNULL(NULLIF(LTRIM(RTRIM(M.USUARIO_CREA)), ''), 'SISTEMA'), 50),
+    N'Borrador',
+    N'Se registró el movimiento de personal.',
+    ISNULL(M.FECHA_CREA, GETDATE()),
+    LEFT(ISNULL(NULLIF(LTRIM(RTRIM(M.USUARIO_CREA)), ''), 'SISTEMA'), 50),
+    M.ESTACION_CREA,
+    ISNULL(M.FECHA_CREA, GETDATE())
+FROM dbo.SC_MOVIMIENTO_PERSONAL AS M
+WHERE M.ESTADO_MOVIMIENTO = 'DI'
+  AND NOT EXISTS (
+        SELECT 1
+        FROM dbo.SC_MOVIMIENTO_PERSONAL_BITACORA AS B
+        WHERE B.CORR_EMPRESA = M.CORR_EMPRESA
+          AND B.CORR_MOVIMIENTO_PERSONAL = M.CORR_MOVIMIENTO_PERSONAL
+    );
+GO

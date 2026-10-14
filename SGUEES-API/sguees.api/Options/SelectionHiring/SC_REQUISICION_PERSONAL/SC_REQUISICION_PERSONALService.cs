@@ -110,7 +110,7 @@ namespace SGUEES.Services
 
         /// <summary>
         /// Ejecuta operación de flujo de la requisición (Enviar/Aprobar/Devolver/Rechazar).
-        /// Endpoint reutilizable: cualquier pantalla puede llamar PUT SC_REQUISICION_PERSONAL/Autoriza.
+        /// La unidad del circuito es el puesto del creador, no CORR_UNIDAD del documento.
         /// </summary>
         public async Task<CResult> AutorizaAsync(SC_REQUISICION_PERSONAL_AUTORIZAParam Data, string vLOGIN_SISTEMA)
         {
@@ -134,17 +134,46 @@ namespace SGUEES.Services
                 return ValidationError("Operacion invalida. Use 1=GUARDAR, 2=ENVIAR, 3=APROBAR, 4=DEVOLVER, 5=RECHAZAR.");
             }
 
-            if (string.IsNullOrWhiteSpace(Data.OBSERVACION))
-            {
-                return ValidationError("El comentario / observacion es obligatorio.");
-            }
-
             if (string.IsNullOrWhiteSpace(vLOGIN_SISTEMA))
             {
                 return ValidationError("No se pudo identificar el usuario de sesion.");
             }
 
-            Data.OBSERVACION = Data.OBSERVACION.Trim();
+            if (string.IsNullOrWhiteSpace(Data.OBSERVACION))
+            {
+                Data.OBSERVACION = Data.OPERACION switch
+                {
+                    1 => "Se guardó la requisición en borrador.",
+                    2 => "Se envió la requisición de personal a aprobación.",
+                    3 => "Se aprobó la requisición.",
+                    4 => "Se devolvió la requisición.",
+                    5 => "Se rechazó la requisición.",
+                    _ => "Se registró una acción en el flujo de la requisición.",
+                };
+            }
+            else
+            {
+                Data.OBSERVACION = Data.OBSERVACION.Trim();
+            }
+
+            if (Data.OPERACION == 1 || Data.OPERACION == 2)
+            {
+                var unidad = await _repo.ResolverUnidadCreadorAsync(
+                    Data.CORR_EMPRESA,
+                    Data.CORR_REQUISICION_PERSONAL,
+                    vLOGIN_SISTEMA.Trim());
+                if (unidad <= 0)
+                {
+                    return ValidationError("No se encontró la unidad del puesto del creador. El flujo la usa para ubicar los niveles de aprobación.");
+                }
+
+                Data.CORR_UNIDAD_DOCUMENTO = unidad;
+            }
+            else
+            {
+                Data.CORR_UNIDAD_DOCUMENTO = null;
+            }
+
             return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
         }
 

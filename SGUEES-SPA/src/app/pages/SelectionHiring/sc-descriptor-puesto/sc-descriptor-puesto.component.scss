@@ -121,6 +121,10 @@
 	opacity: 0.8;
 }
 
+.descriptor-firmas-grid {
+	min-height: 220px;
+}
+
 // Bitacora del descriptor (tab principal).
 .descriptor-bitacora {
 	margin-top: 15px;
@@ -174,6 +178,26 @@
 	font-size: 0.92rem;
 	line-height: 1.4;
 	opacity: 0.85;
+}
+
+.descriptor-flujo-popup__aviso {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin: 0;
+	padding: 10px 12px;
+	border-radius: 8px;
+	font-size: 0.9rem;
+	line-height: 1.4;
+	color: #fbbf24;
+	background: rgba(245, 158, 11, 0.16);
+	border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.descriptor-flujo-popup__aviso-icon {
+	flex-shrink: 0;
+	margin-top: 2px;
+	font-size: 16px;
 }
 
 .descriptor-flujo-popup__actions {
@@ -539,6 +563,62 @@
 
 :host ::ng-deep .descriptor-deta-toolbar-btn--cancel .dx-button {
 	min-width: 140px;
+}
+
+.carga-empleado-grid {
+	min-height: 220px;
+}
+
+:host ::ng-deep .carga-empleado-grid {
+	col.carga-empleado-col-estado,
+	td.carga-empleado-col-estado {
+		width: 110px !important;
+		min-width: 110px !important;
+		max-width: 110px !important;
+	}
+}
+
+.carga-empleado-popup-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+	padding: 10px 12px;
+	background: var(--sguees-surface-subtle, color-mix(in srgb, var(--base-text-color) 6%, transparent));
+	border: 1px solid var(--border-color, color-mix(in srgb, var(--base-text-color) 12%, transparent));
+	border-radius: var(--sguees-radius-md, 10px);
+}
+
+:host ::ng-deep .carga-empleado-popup-toolbar .dx-button {
+	min-width: 120px;
+	min-height: 36px;
+	font-weight: 600;
+}
+
+::ng-deep .carga-empleado-asignar-popup .dx-popup-content {
+	box-sizing: border-box;
+	overflow: visible;
+	padding-bottom: 8px;
+}
+
+::ng-deep .carga-empleado-asignar-popup .carga-empleado-popup-grid {
+	width: 100%;
+	max-height: calc(100vh - 300px);
+
+	.dx-datagrid-headers .dx-header-row > td,
+	.dx-datagrid-rowsview .dx-data-row > td {
+		vertical-align: middle;
+	}
+
+	// Qué hace: deja la columna Estado al tamaño de la insignia.
+	// Cómo lo hace: fija el ancho para que el espacio sobrante no la estire.
+	col.carga-empleado-col-estado,
+	td.carga-empleado-col-estado {
+		width: 110px !important;
+		min-width: 110px !important;
+		max-width: 110px !important;
+	}
 }
 
 :host ::ng-deep .descriptor-deta-datagrid {
