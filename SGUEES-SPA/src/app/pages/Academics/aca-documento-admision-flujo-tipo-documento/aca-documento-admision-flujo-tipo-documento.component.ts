@@ -9,20 +9,20 @@ import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { AcaDocumentoAdmisionFlujoService } from './aca-documento-admision-flujo.service';
+import { AcaDocumentoAdmisionFlujoTipoDocumentoService } from './aca-documento-admision-flujo-tipo-documento.service';
 import {
 	AcaDocumentoAdmisionAsignacion,
 	AcaDocumentoAdmisionItem,
 	AcaDocumentoAdmisionSeleccion,
 	AcaFlujoTipoProspecto,
-} from './models/aca-documento-admision-flujo';
+} from './models/aca-documento-admision-flujo-tipo-documento';
 
 @Component({
-	selector: 'app-aca-documento-admision-flujo',
-	templateUrl: './aca-documento-admision-flujo.component.html',
-	styleUrls: ['./aca-documento-admision-flujo.component.scss'],
+	selector: 'app-aca-documento-admision-flujo-tipo-documento',
+	templateUrl: './aca-documento-admision-flujo-tipo-documento.component.html',
+	styleUrls: ['./aca-documento-admision-flujo-tipo-documento.component.scss'],
 })
-export class AcaDocumentoAdmisionFlujoComponent extends CBaseComponent implements OnInit {
+export class AcaDocumentoAdmisionFlujoTipoDocumentoComponent extends CBaseComponent implements OnInit {
 	@ViewChild('dataGrid', { static: false }) dataGrid!: DataGridMttoComponent;
 
 	protected override etiquetaRegistro = 'el documento de la solicitud';
@@ -47,7 +47,7 @@ export class AcaDocumentoAdmisionFlujoComponent extends CBaseComponent implement
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: AcaDocumentoAdmisionFlujoService,
+		private service: AcaDocumentoAdmisionFlujoTipoDocumentoService,
 		private cdr: ChangeDetectorRef
 	) {
 		super(appInfoService, router);

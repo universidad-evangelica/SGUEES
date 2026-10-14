@@ -3,12 +3,12 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IResult } from 'src/app/FxAPI/IResult';
-import { AcaDocumentoAdmisionAsignacion } from './models/aca-documento-admision-flujo';
-import { AcaDocumentoAdmisionFlujoRepository } from './aca-documento-admision-flujo.repository';
+import { AcaDocumentoAdmisionAsignacion } from './models/aca-documento-admision-flujo-tipo-documento';
+import { AcaDocumentoAdmisionFlujoTipoDocumentoRepository } from './aca-documento-admision-flujo-tipo-documento.repository';
 
 @Injectable({ providedIn: 'root' })
-export class AcaDocumentoAdmisionFlujoService {
-	constructor(private repo: AcaDocumentoAdmisionFlujoRepository) {}
+export class AcaDocumentoAdmisionFlujoTipoDocumentoService {
+	constructor(private repo: AcaDocumentoAdmisionFlujoTipoDocumentoRepository) {}
 
 	// Qué hace: obtiene las solicitudes ACA_PROSPECTO.
 	// Cómo: llama GetAll.

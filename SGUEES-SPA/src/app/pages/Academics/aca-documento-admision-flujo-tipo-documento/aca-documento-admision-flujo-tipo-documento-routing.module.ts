@@ -10,9 +10,9 @@ import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { ToastModule } from 'primeng/toast';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
-import { AcaDocumentoAdmisionFlujoComponent } from './aca-documento-admision-flujo.component';
+import { AcaDocumentoAdmisionFlujoTipoDocumentoComponent } from './aca-documento-admision-flujo-tipo-documento.component';
 
-const routes: Routes = [{ path: '', component: AcaDocumentoAdmisionFlujoComponent }];
+const routes: Routes = [{ path: '', component: AcaDocumentoAdmisionFlujoTipoDocumentoComponent }];
 
 @NgModule({
 	imports: [
@@ -27,6 +27,6 @@ const routes: Routes = [{ path: '', component: AcaDocumentoAdmisionFlujoComponen
 		ToastModule,
 	],
 	exports: [RouterModule],
-	declarations: [AcaDocumentoAdmisionFlujoComponent],
+	declarations: [AcaDocumentoAdmisionFlujoTipoDocumentoComponent],
 })
-export class AcaDocumentoAdmisionFlujoRoutingModule {}
+export class AcaDocumentoAdmisionFlujoTipoDocumentoRoutingModule {}

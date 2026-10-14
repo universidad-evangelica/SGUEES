@@ -8,7 +8,7 @@ import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
-export class AcaDocumentoAdmisionFlujoRepository {
+export class AcaDocumentoAdmisionFlujoTipoDocumentoRepository {
 	readonly xController = 'ACA_DOCUMENTO_ADMISION_FLUJO_TIPO_DOCUMENTO';
 
 	constructor(private objData: CData) {}

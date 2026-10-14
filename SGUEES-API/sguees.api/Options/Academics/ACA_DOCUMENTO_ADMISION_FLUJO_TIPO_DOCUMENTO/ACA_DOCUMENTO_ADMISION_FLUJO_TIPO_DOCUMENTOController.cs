@@ -28,7 +28,7 @@ namespace SGUEES.Controllers
 		// Qué hace: lista las solicitudes con código de opción ACA_PROSPECTO.
 		// Cómo: fija la empresa de sesión y consulta la vista de tipos.
 		[HttpGet("GetAll")]
-		[Authorize(Policy = "/aca-documento-admision-flujo|R")]
+		[Authorize(Policy = "/aca-documento-admision-flujo-tipo-documento|R")]
 		public async Task<CResult> GetAll([FromQuery] ACA_DOCUMENTO_ADMISION_FLUJO_TIPO_DOCUMENTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -38,7 +38,7 @@ namespace SGUEES.Controllers
 		// Qué hace: obtiene una solicitud.
 		// Cómo: fija la empresa y consulta por el tipo de documento.
 		[HttpGet("Get")]
-		[Authorize(Policy = "/aca-documento-admision-flujo|R")]
+		[Authorize(Policy = "/aca-documento-admision-flujo-tipo-documento|R")]
 		public async Task<CResult> Get([FromQuery] ACA_DOCUMENTO_ADMISION_FLUJO_TIPO_DOCUMENTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -48,7 +48,7 @@ namespace SGUEES.Controllers
 		// Qué hace: lista los documentos ya marcados en las solicitudes.
 		// Cómo: fija la empresa y consulta la vista de la relación.
 		[HttpGet("GetAsignaciones")]
-		[Authorize(Policy = "/aca-documento-admision-flujo|R")]
+		[Authorize(Policy = "/aca-documento-admision-flujo-tipo-documento|R")]
 		public async Task<CResult> GetAsignaciones([FromQuery] ACA_DOCUMENTO_ADMISION_FLUJO_TIPO_DOCUMENTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -58,7 +58,7 @@ namespace SGUEES.Controllers
 		// Qué hace: lista el catálogo de documentos de admisión para el popup.
 		// Cómo: lee ACA_DOCUMENTO_ADMISION sin filtrar por solicitud.
 		[HttpGet("GetDocumentos")]
-		[Authorize(Policy = "/aca-documento-admision-flujo|R")]
+		[Authorize(Policy = "/aca-documento-admision-flujo-tipo-documento|R")]
 		public async Task<CResult> GetDocumentos()
 		{
 			return await _service.GetDocumentosAsync();
@@ -67,7 +67,7 @@ namespace SGUEES.Controllers
 		// Qué hace: asocia un documento a la solicitud seleccionada.
 		// Cómo: completa auditoría y devuelve 201 con la fila leída de la vista.
 		[HttpPost]
-		[Authorize(Policy = "/aca-documento-admision-flujo|C")]
+		[Authorize(Policy = "/aca-documento-admision-flujo-tipo-documento|C")]
 		public async Task<IActionResult> Post(ACA_DOCUMENTO_ADMISION_FLUJO_TIPO_DOCUMENTOTable Data)
 		{
 			SetCreateAudit(Data);
@@ -78,7 +78,7 @@ namespace SGUEES.Controllers
 		// Qué hace: quita un documento de la solicitud.
 		// Cómo: fija la empresa y elimina la fila de la relación.
 		[HttpDelete]
-		[Authorize(Policy = "/aca-documento-admision-flujo|D")]
+		[Authorize(Policy = "/aca-documento-admision-flujo-tipo-documento|D")]
 		public async Task<IActionResult> Delete([FromQuery] ACA_DOCUMENTO_ADMISION_FLUJO_TIPO_DOCUMENTOTable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
