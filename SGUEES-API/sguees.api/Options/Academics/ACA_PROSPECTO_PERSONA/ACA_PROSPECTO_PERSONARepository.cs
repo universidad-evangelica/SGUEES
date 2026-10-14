@@ -97,7 +97,7 @@ namespace sguees.Repositories
         }
 
         // Qué hace: alta, modificación y eliminación aún no habilitadas.
-        // Cómo lo hace: /aca-prospecto es de solo consulta; IRepository exige los métodos, así que
+        // Cómo lo hace: Prospectos es de solo consulta; IRepository exige los métodos, así que
         //               responden un error claro hasta la fase de edición.
         public Task<CResult> CreateAsync(ACA_PROSPECTO_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {

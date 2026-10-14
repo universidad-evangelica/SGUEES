@@ -1,5 +1,6 @@
 // Qué hace: endpoints REST del catálogo parentesco.
 // Cómo lo hace: CRUD + ActivarInactivar con auditoría por claims (sin empresa).
+using sguees.api.Policies;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -33,7 +34,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpGet("GetCORR_PARENTESCO_ACA_PROSPECTO")]
-		[Authorize(Policy = "/aca-prospecto|R")]
+		[Authorize(Policy = PermisosProspecto.LecturaAmbos)]
 		// Qué hace: parentescos para los familiares del prospecto (pestaña Información personal).
 		// Cómo: estándar de datos cross-tabla, el catálogo expone el método con el permiso de la
 		//       pantalla que lo consume; devuelve solo los activos.

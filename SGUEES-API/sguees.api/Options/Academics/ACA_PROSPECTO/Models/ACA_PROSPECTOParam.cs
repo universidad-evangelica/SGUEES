@@ -11,5 +11,7 @@ namespace sguees.Models
         public byte NUMERO_PERIODO { get; set; }
         // Carrera elegida, para listar sus modalidades con plan vigente.
         public int CORR_CARRERA { get; set; }
+        // Modalidad elegida, para validar el cambio de ciclo/carrera antes de guardar.
+        public int CORR_MODALIDAD { get; set; }
     }
 }
