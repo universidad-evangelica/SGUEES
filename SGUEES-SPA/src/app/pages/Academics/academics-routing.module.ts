@@ -15,7 +15,9 @@ import { AcaProspectoComponent as AcaProspectoBecaComponent } from './aca-prospe
 
 const routes: Routes = [
   // Qué hace: abre Solicitud nuevo ingreso, Solicitud beca y Solicitud socioeconómica.
-  // Cómo lo hace: cada una tiene su pantalla. Socioeconómico ya no sale de aca-prospecto.
+  // Cómo lo hace: la dirección de nuevo ingreso es /aca-prospecto-nuevo-ingreso.
+  //               /aca-prospecto-academico sigue abriendo la misma pantalla hasta que el menú
+  //               quede actualizado y el usuario vuelva a entrar.
   {
     path: 'aca-prospecto-nuevo-ingreso',
     component: AcaProspectoNuevoIngresoComponent,
