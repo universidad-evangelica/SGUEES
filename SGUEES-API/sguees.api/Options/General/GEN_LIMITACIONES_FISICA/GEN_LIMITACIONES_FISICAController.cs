@@ -26,9 +26,17 @@ namespace sguees.Controllers
         }
 
         // Qué hace: limitaciones físicas para los combos de la edición de prospectos (vistas de prospectos).
-        [HttpGet("GetCORR_LIMITACION_FISICA_ACA_PROSPECTO")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
-        public async Task<CResult> GetCORR_LIMITACION_FISICA_ACA_PROSPECTO([FromQuery] GEN_LIMITACIONES_FISICAParam Data)
+        [HttpGet("GetCORR_LIMITACION_FISICA_ACA_PROSPECTO_NUEVO_INGRESO")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        public async Task<CResult> GetCORR_LIMITACION_FISICA_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] GEN_LIMITACIONES_FISICAParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetCORR_LIMITACION_FISICA_ACA_PROSPECTOAsync(Data);
+        }
+
+        [HttpGet("GetCORR_LIMITACION_FISICA_ACA_PROSPECTO_ECONOMICO")]
+        [Authorize(Policy = "/aca-prospecto-economico|R")]
+        public async Task<CResult> GetCORR_LIMITACION_FISICA_ACA_PROSPECTO_ECONOMICO([FromQuery] GEN_LIMITACIONES_FISICAParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetCORR_LIMITACION_FISICA_ACA_PROSPECTOAsync(Data);

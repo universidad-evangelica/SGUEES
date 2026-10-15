@@ -13,9 +13,9 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 
-import { AcaProspectoNuevoIngresoComponent } from './aca-prospecto-nuevo-ingreso.component';
+import { AcaProspectoComponent } from './aca-prospecto.component';
 
-const routes: Routes = [{ path: '', component: AcaProspectoNuevoIngresoComponent }];
+const routes: Routes = [{ path: '', component: AcaProspectoComponent }];
 
 @NgModule({
     imports: [
@@ -33,6 +33,6 @@ const routes: Routes = [{ path: '', component: AcaProspectoNuevoIngresoComponent
         DataLookupModule,
     ],
     exports: [RouterModule],
-    declarations: [AcaProspectoNuevoIngresoComponent],
+    declarations: [AcaProspectoComponent],
 })
 export class AcaProspectoNuevoIngresoRoutingModule {}

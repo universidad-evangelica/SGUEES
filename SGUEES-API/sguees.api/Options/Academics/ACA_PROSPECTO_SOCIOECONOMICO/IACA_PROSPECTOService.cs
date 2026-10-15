@@ -1,0 +1,19 @@
+using System.Threading.Tasks;
+using eFramework.Core;
+using sguees.Models.Socioeconomico;
+
+namespace sguees.Services.Socioeconomico
+{
+    public interface IACA_PROSPECTOService
+    {
+        Task<CResult> GetAllAsync(ACA_PROSPECTOParam xWhere);
+        Task<CResult> GetAsync(ACA_PROSPECTOParam xWhere);
+        Task<CResult> GetCORR_CARRERA_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere);
+        Task<CResult> GetCORR_MODALIDAD_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere);
+        Task<CResult> GetCICLO_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere);
+        Task<CResult> GetVALIDAR_CAMBIO_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere);
+        Task<CResult> CreateAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        Task<CResult> UpdateAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        Task<CResult> DeleteAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+    }
+}

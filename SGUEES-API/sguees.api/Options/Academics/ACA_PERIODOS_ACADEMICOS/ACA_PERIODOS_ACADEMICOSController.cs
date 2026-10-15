@@ -25,9 +25,17 @@ namespace sguees.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
-        [HttpGet("GetCICLO_ACA_PROSPECTO")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
-        public async Task<CResult> GetCICLO_ACA_PROSPECTO([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
+        [HttpGet("GetCICLO_ACA_PROSPECTO_NUEVO_INGRESO")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        public async Task<CResult> GetCICLO_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
+        }
+
+        [HttpGet("GetCICLO_ACA_PROSPECTO_ECONOMICO")]
+        [Authorize(Policy = "/aca-prospecto-economico|R")]
+        public async Task<CResult> GetCICLO_ACA_PROSPECTO_ECONOMICO([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
