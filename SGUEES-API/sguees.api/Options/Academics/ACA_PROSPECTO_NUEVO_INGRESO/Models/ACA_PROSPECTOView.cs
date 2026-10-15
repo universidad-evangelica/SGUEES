@@ -36,5 +36,8 @@ namespace sguees.Models
         public string ESTADO_TEXTO { get; set; }
         public string FINANCIA_ESTUDIOS { get; set; }
         public DateTime FECHA_REGISTRO { get; set; }
+        public int? CORR_TIPO_DOCUMENTO { get; set; }
+        public int? CORR_ESTADO { get; set; }
+        public string NOMBRE_ESTADO { get; set; }
     }
 }

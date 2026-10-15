@@ -1,6 +1,6 @@
 <div class="sguees-mtto-view" id="LoadPanel">
-    <!-- Barra estándar: título, combo de ciclos (combox1, solo en el listado), Guardar/Cancelar en
-         edición y botón "Modificar" (btn1) en consulta cuando el usuario tiene permiso U. -->
+    <!-- Barra estándar: título, refrescar y exportar. Guardar/Cancelar en edición y
+         "Modificar" (btn1) en consulta cuando el usuario tiene permiso U. -->
     <app-barra-data-mtto
         [tituloVentana]="tituloVentana"
         [isBrowse]="isBrowse()"
@@ -9,13 +9,11 @@
         [permiteAdd]="permiteAdd"
         [showRefresh]="true"
         [showExport]="permitePrint"
-        [combox1]="barraFiltroCiclo"
         [btn1]="btnModificar"
         [btn1Icon]="'edit'"
         [btn1Type]="'default'"
         [btn1Width]="120"
         (btn1Click)="modificar()"
-        (combox1Change)="onFiltroCicloChanged($event)"
         (consultar)="consultar()"
         (guardar)="guardar()"
         (cancelar)="cancelar()"
@@ -826,11 +824,14 @@
                             <span class="aca-prospecto-section-title">Documentación obligatoria</span>
                             <span class="aca-prospecto-section-subtitle">Solo los documentos marcados en la solicitud de nuevo ingreso y que aplican a este prospecto</span>
                         </header>
+                        <!-- La carga usa el mismo destino que el portal. El input queda oculto; lo abre el botón de la fila. -->
+                        <input #archivoDocumento type="file" hidden (change)="onArchivoDocumento($event)" />
                         <app-data-grid-mtto
                             [isBrowse]="true"
                             [models]="documentos"
                             [columns]="columnsDocumento"
                             [summary]="summaryDocumento"
+                            [customButtons]="botonesDocumento"
                             [keyExpr]="'CORR_DOCUMENTO_ADMISION'"
                             [unifiedToolbar]="false"
                             [showAdd]="false"
@@ -850,7 +851,7 @@
         </section>
     </div>
 
-    <!-- Listado del ciclo seleccionado: sin alta ni eliminación; el lápiz abre la edición (permiso U). -->
+    <!-- Listado de todos los ciclos. Buscar, exportar y recargar quedan en la barra. -->
     <app-data-grid-mtto
         [isBrowse]="isBrowse()"
         [models]="models"
@@ -859,15 +860,15 @@
         [keyExpr]="mttoGridKeyExpr"
         [focusedRowKey]="gridFocusedRowKey"
         [loading]="loadingVisible"
-        [showSearch]="true"
-        [showExport]="permitePrint"
+        [showSearch]="false"
+        [showExport]="false"
         [showAdd]="false"
-        [showRefresh]="true"
+        [showRefresh]="false"
         [permiteEditar]="getPermiteEditar"
         [permiteDele]="false"
         [showEmptyState]="true"
         [emptyTitle]="'Sin prospectos'"
-        [emptyMessage]="'No hay prospectos registrados para el ciclo seleccionado.'"
+        [emptyMessage]="'No hay prospectos registrados.'"
         (refresh)="consultar()"
         (rowClick)="onGridRowClick($event)"
         (editClick)="editarClick($event)"

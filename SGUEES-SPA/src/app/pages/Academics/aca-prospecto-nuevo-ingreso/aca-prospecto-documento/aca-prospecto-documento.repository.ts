@@ -17,4 +17,9 @@ export class AcaProspectoDocumentoRepository {
     getAll(xWhere: IParam[]): Observable<IResult> {
         return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
     }
+
+    // Qué hace: envía el archivo del documento seleccionado.
+    cargarArchivo(model: FormData): Observable<IResult> {
+        return this.objData.Post(model, this.xController, 'CargarArchivo', environment.UrlGENERALAPI);
+    }
 }

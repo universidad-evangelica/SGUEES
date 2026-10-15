@@ -1,4 +1,4 @@
-import { Component, NgZone, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, NgZone, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -13,9 +13,7 @@ import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { BarraMttoCombox } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { AcaProspecto } from './models/aca-prospecto';
-import { AcaProspectoCiclo } from './models/aca-prospecto-ciclo';
 import { AcaProspectoService } from './aca-prospecto.service';
 import { AcaProspectoPersonaService } from './aca-prospecto-persona/aca-prospecto-persona.service';
 import { AcaProspectoContactoService, TIPO_CORREO } from './aca-prospecto-contacto/aca-prospecto-contacto.service';
@@ -32,8 +30,8 @@ import {
 } from './aca-prospecto-estudio/aca-prospecto-estudio.service';
 import { AcaProspectoEmpleoService } from './aca-prospecto-empleo/aca-prospecto-empleo.service';
 
-// Qué hace: consulta y edición de prospectos de pregrado por ciclo (Académico → Consultas → Prospectos).
-// Cómo lo hace: listado filtrado por el combo de ciclos de la barra; un clic en la fila abre la
+// Qué hace: consulta y edición de prospectos de pregrado (Académico → Solicitud de nuevo ingreso).
+// Cómo lo hace: el listado trae todos los ciclos y el ciclo va en la grilla; un clic en la fila abre la
 //               consulta (modo Not_Defined, sin Guardar) y carga las tablas hijas en una pestaña por bloque.
 //               Editar = lápiz de la grilla (editarClick, estándar) o botón "Modificar" desde la
 //               consulta: los formularios se habilitan y Guardar actualiza tabla por tabla
@@ -63,6 +61,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     @ViewChild('chkDeportado', { static: false }) chkDeportado?: DxCheckBoxComponent;
     @ViewChild('chkUniversidad', { static: false }) chkUniversidad?: DxCheckBoxComponent;
     @ViewChild('chkUees', { static: false }) chkUees?: DxCheckBoxComponent;
+    @ViewChild('archivoDocumento', { static: false }) archivoDocumento?: ElementRef<HTMLInputElement>;
 
     protected override mttoGridKeyExpr = 'CORR_PROSPECTO';
     readOnly = true;
@@ -70,15 +69,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     btnModificar = '';
     model: any = this.fillData();
     itemsCarrera: any[] = [];
-
-    // Qué hace: catálogo y valor del combo de ciclos de la barra (combox1).
-    mCICLO: AcaProspectoCiclo[] = [];
-    filtroCiclo = '';
-    barraFiltroCiclo: BarraMttoCombox | null = null;
-    cicloLookupColumns = [
-        { dataField: 'NOMBRE_CICLO', caption: 'Ciclo', width: 160 },
-        { dataField: 'CANTIDAD_PROSPECTOS', caption: 'Prospectos', width: 110 },
-    ];
 
     // Qué hace: catálogos de los lookups de edición (se cargan una vez al abrir la pantalla).
     mCORR_SEXO: any[] = [];
@@ -96,7 +86,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Oferta para el cambio de carrera: carreras del ciclo del prospecto y modalidades de la elegida.
     mCORR_CARRERA_CICLO: any[] = [];
     mCORR_MODALIDAD: any[] = [];
-    // Ciclos a los que se puede mover el prospecto (no confundir con mCICLO, el filtro de la barra).
+    // Ciclos a los que se puede mover el prospecto desde Datos del prospecto.
     mCICLO_CAMBIO: any[] = [];
     // Dependientes del país/departamento del registro abierto.
     mCORR_DEPTO_RESIDENCIA: any[] = [];
@@ -198,6 +188,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     // Documentos que aplican a esta solicitud (tipo 104 y regla del prospecto).
     documentos: any[] = [];
+    documentoPendiente: any = null;
+    subiendoDocumento = false;
+    // Qué hace: botón de carga en la columna Options de Documentación.
+    // Cómo lo hace: abre el selector de archivo de esa fila.
+    botonesDocumento = [
+        {
+            hint: 'Subir archivo',
+            icon: 'upload',
+            stylingMode: 'text',
+            visible: () => !this.subiendoDocumento,
+            onClick: (e: any) => this.elegirArchivoDocumento(e),
+        },
+    ];
     columnsDocumento: any[] = [];
     summaryDocumento: any = {};
     // #endregion
@@ -257,7 +260,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.itemsEstudioUniversidad = this.serviceEstudio.getItemsUniversidad();
         this.itemsEstudioUees = this.serviceEstudio.getItemsUees();
         this.itemsEmpleo = this.serviceEmpleo.getItems();
-        this.selectedLookUpCICLO = this.selectedLookUpCICLO.bind(this);
         this.selectedLookUpCORR_SEXO = this.selectedLookUpCORR_SEXO.bind(this);
         this.selectedLookUpCORR_ESTADO_CIVIL = this.selectedLookUpCORR_ESTADO_CIVIL.bind(this);
         this.selectedLookUpCORR_TIPO_SANGRE = this.selectedLookUpCORR_TIPO_SANGRE.bind(this);
@@ -287,7 +289,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     //#region <Manejo de Combos>
     llenaComboBox() {
-        this.getCICLO();
         this.getCORR_SEXO();
         this.getCORR_ESTADO_CIVIL();
         this.getCORR_TIPO_SANGRE();
@@ -299,10 +300,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.getCORR_LIMITACION_FISICA();
         this.getCODIGO_PAIS();
         this.getCORR_MEDIO_ORIGEN();
-    }
-
-    selectedLookUpCICLO(vRow: any): string {
-        return vRow?.[0]?.CICLO ?? '';
     }
 
     // Qué hace: llave seleccionada de cada lookup de edición (app-data-lookup exige la función).
@@ -362,31 +359,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     selectedLookUpCICLO_CAMBIO(vRow: any): any {
         return vRow?.[0]?.CICLO;
-    }
-
-    // Qué hace: carga los ciclos de pregrado y selecciona el ciclo por defecto.
-    // Cómo lo hace: ES_CICLO_DEFECTO lo calcula la vista con la misma regla de admisiones;
-    //               al tener ciclo, vuelve a consultar el listado.
-    getCICLO() {
-        this.appInfoService
-            .getLookUp('ACA_PROSPECTO_NUEVO_INGRESO', 'ACA_PERIODOS_ACADEMICOS', 'GetCICLO', undefined, environment.UrlGENERALAPI)
-            .pipe(take(1))
-            .subscribe({
-                next: (response: any) => {
-                    if (response.Result) {
-                        this.mCICLO = response.Data ?? [];
-                        const cicloDefecto = this.mCICLO.find((item) => item.ES_CICLO_DEFECTO) ?? this.mCICLO[0];
-                        this.filtroCiclo = cicloDefecto?.CICLO ?? '';
-                        this.syncBarraFiltroCiclo();
-                        this.consultar();
-                    } else {
-                        this.notifyApiResponse(response);
-                    }
-                },
-                error: (error: any) => {
-                    this.notifyApiError(error);
-                },
-            });
     }
 
     getCORR_SEXO() {
@@ -544,29 +516,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.getCORR_DEPTO_ESTUDIO(value);
     }
 
-    onFiltroCicloChanged(value: any): void {
-        this.filtroCiclo = value ?? '';
-        this.syncBarraFiltroCiclo();
-        this.consultar();
-    }
-
-    // Qué hace: arma la configuración del combox1 de la barra.
-    // Cómo lo hace: sin opción "Todos" ni botón de limpiar; siempre hay un ciclo seleccionado.
-    private syncBarraFiltroCiclo(): void {
-        this.barraFiltroCiclo = {
-            label: 'Ciclo',
-            model: this.mCICLO,
-            value: this.filtroCiclo,
-            valueExpr: 'CICLO',
-            displayExpr: 'NOMBRE_CICLO',
-            lookupColumns: this.cicloLookupColumns,
-            selectedRowKeys: this.selectedLookUpCICLO,
-            showClearButton: false,
-            dropDownWidth: 320,
-            width: 220,
-        };
-    }
-
     // Qué hace: llama a un lookup Get{CAMPO}_ACA_PROSPECTO del catálogo indicado.
     // Cómo lo hace: centraliza take(1), errores y la asignación del resultado.
     private cargarLookup(controller: string, metodo: string, asignar: (data: any[]) => void, xWhere?: IParam[]): void {
@@ -589,14 +538,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // #endregion
 
     //#region <Metodos Mtto>
-    fillParam(): any {
-        const ciclo = this.mCICLO.find((item) => item.CICLO === this.filtroCiclo);
-        return {
-            ANIO: ciclo?.ANIO ?? 0,
-            NUMERO_PERIODO: ciclo?.NUMERO_PERIODO ?? 0,
-        };
-    }
-
     // Qué hace: modelo del encabezado; con registro, dispara la carga de las tablas hijas.
     // Cómo lo hace: igual que flujos (fillData → cargarPasos); lo llaman rowDblClick (consulta)
     //               y editarClick (edición desde la grilla).
@@ -641,19 +582,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         };
     }
 
-    // Qué hace: listado de prospectos del ciclo seleccionado.
-    // Cómo lo hace: sin ciclo no consulta (la API lo exige); ngOnInit la llama antes de
-    //               cargar el combo y getCICLO la vuelve a llamar con el ciclo por defecto.
+    // Qué hace: listado de prospectos de todos los ciclos.
+    // Cómo lo hace: el ciclo va en cada fila; la barra ya no lo filtra.
     consultar() {
-        const param = this.fillParam();
-        if (!(param.ANIO > 0 && param.NUMERO_PERIODO > 0)) {
-            this.models = [];
-            return;
-        }
-
         this.loadingVisible = true;
         this.service
-            .getAll(param)
+            .getAll()
             .pipe(take(1))
             .subscribe({
                 next: (response: any) => {
@@ -2197,6 +2131,54 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     cargarDocumentos(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceDocumento.getDocumentosPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.documentos = data ?? [];
+        });
+    }
+
+    // Qué hace: abre el selector de archivo de la fila elegida en Documentación.
+    // Cómo lo hace: guarda la fila y limita el input a los formatos de ese documento.
+    elegirArchivoDocumento(e: any): void {
+        const fila = e?.row?.data;
+        if (!fila || this.subiendoDocumento) return;
+        this.documentoPendiente = fila;
+        const input = this.archivoDocumento?.nativeElement;
+        if (!input) return;
+        input.accept = this.serviceDocumento.acepta(fila);
+        input.value = '';
+        input.click();
+    }
+
+    // Qué hace: sube el archivo y deja el nombre en la fila, sin volver a consultar toda la grilla.
+    onArchivoDocumento(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        const fila = this.documentoPendiente;
+        input.value = '';
+        const corr = this.model?.CORR_PROSPECTO;
+        if (!file || !fila || !corr) return;
+
+        const aviso = this.serviceDocumento.validarArchivo(fila, file);
+        if (aviso) {
+            this.notifyFx(aviso, NotifyType.Warning, { raw: true });
+            return;
+        }
+
+        this.subiendoDocumento = true;
+        this.serviceDocumento.cargarArchivo(corr, fila.CORR_DOCUMENTO_ADMISION, file).pipe(take(1)).subscribe({
+            next: (response: any) => {
+                this.subiendoDocumento = false;
+                if (!response?.Result || !response?.Data) {
+                    this.notifyApiResponse(response);
+                    return;
+                }
+                this.documentos = this.documentos.map((d) =>
+                    d.CORR_DOCUMENTO_ADMISION === response.Data.CORR_DOCUMENTO_ADMISION ? { ...d, ...response.Data } : d
+                );
+                this.notifyFx(response.ErrorMessage || 'Documento cargado', NotifyType.Success);
+            },
+            error: (error: any) => {
+                this.subiendoDocumento = false;
+                this.notifyApiError(error);
+            },
         });
     }
 

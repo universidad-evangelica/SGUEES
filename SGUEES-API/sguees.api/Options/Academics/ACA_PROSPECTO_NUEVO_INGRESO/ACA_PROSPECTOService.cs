@@ -15,19 +15,13 @@ namespace sguees.Services
             _repo = repo;
         }
 
-        // Qué hace: listado de prospectos de un ciclo (año + número de período).
-        // Cómo lo hace: exige el ciclo porque eFramework omite del WHERE los enteros en 0
-        //               y, sin él, devolvería los prospectos de todos los ciclos.
+        // Qué hace: listado de prospectos de nuevo ingreso, de todos los ciclos.
+        // Cómo lo hace: filtra solo por empresa. El ciclo va en la fila, no como filtro.
         public async Task<CResult> GetAllAsync(ACA_PROSPECTOParam xWhere)
         {
-            if (xWhere.ANIO <= 0 || xWhere.NUMERO_PERIODO <= 0)
-                return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe seleccionar un ciclo" };
-
             var p = new List<CParameter>
             {
                 new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-                new CParameter() {ParameterName="ANIO",Value=xWhere.ANIO,DbType=System.Data.DbType.Int16},
-                new CParameter() {ParameterName="NUMERO_PERIODO",Value=xWhere.NUMERO_PERIODO,DbType=System.Data.DbType.Byte},
             };
 
             return await _repo.GetAllAsync(p);

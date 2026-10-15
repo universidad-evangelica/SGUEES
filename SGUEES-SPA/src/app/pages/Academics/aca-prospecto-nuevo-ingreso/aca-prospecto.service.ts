@@ -11,14 +11,10 @@ import { AcaProspectoRepository } from './aca-prospecto.repository';
 export class AcaProspectoService {
     constructor(private repo: AcaProspectoRepository) {}
 
-    // Qué hace: prospectos del ciclo seleccionado en la barra.
-    // Cómo lo hace: la API exige año y número de período; el componente no consulta sin ciclo.
-    getAll(param: any): Observable<IResult> {
-        let xWhere: IParam[] = [
-            { Parameter: 'ANIO', Value: param.ANIO },
-            { Parameter: 'NUMERO_PERIODO', Value: param.NUMERO_PERIODO },
-        ];
-        return this.repo.getAll(xWhere);
+    // Qué hace: prospectos de nuevo ingreso de todos los ciclos.
+    // Cómo lo hace: no manda año ni período; el ciclo queda como columna de la grilla.
+    getAll(): Observable<IResult> {
+        return this.repo.getAll([]);
     }
 
     get(param: any): Observable<IResult> {
@@ -102,10 +98,11 @@ export class AcaProspectoService {
         return [
             { dataField: 'CODIGO_PROSPECTO', caption: 'CIF', width: 120 },
             { dataField: 'NOMBRE_COMPLETO', caption: 'Nombre completo', width: 280 },
-            { dataField: 'DUI', caption: 'DUI', width: 120 },
             { dataField: 'NOMBRE_CARRERA', caption: 'Carrera', width: 280 },
+            { dataField: 'CICLO', caption: 'Ciclo', width: 110 },
             { dataField: 'NOMBRE_MODALIDAD', caption: 'Modalidad', width: 130 },
             { dataField: 'FORMA_INGRESO_TEXTO', caption: 'Forma de ingreso', width: 180 },
+            { dataField: 'DUI', caption: 'DUI', width: 120 },
             {
                 dataField: 'NOMBRE_ESTADO',
                 caption: 'Estado',
