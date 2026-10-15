@@ -378,11 +378,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                         this.syncBarraFiltroCiclo();
                         this.consultar();
                     } else {
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        this.notifyApiResponse(response);
                     }
                 },
                 error: (error: any) => {
-                    this.notifyFx(error, NotifyType.Error);
+                    this.notifyApiError(error);
                 },
             });
     }
@@ -667,12 +667,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     if (response.Result) {
                         this.models = response.Data;
                     } else {
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        this.notifyApiResponse(response);
                     }
                     this.loadingVisible = false;
                 },
                 error: (error: any) => {
-                    this.notifyFx(error, NotifyType.Error);
+                    this.notifyApiError(error);
                     this.loadingVisible = false;
                 },
             });
@@ -2002,12 +2002,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 if (response.Result) {
                     asignar(response.Data ?? []);
                 } else {
-                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                    this.notifyApiResponse(response);
                 }
                 this.finalizarCarga();
             },
             error: (error: any) => {
-                this.notifyFx(error, NotifyType.Error);
+                this.notifyApiError(error);
                 this.finalizarCarga();
             },
         });

@@ -83,10 +83,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                         this.syncBarraFiltroCiclo();
                         this.consultar();
                     } else {
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        this.notifyApiResponse(response);
                     }
                 },
-                error: (error: any) => this.notifyFx(error, NotifyType.Error),
+                error: (error: any) => this.notifyApiError(error),
             });
     }
 
@@ -180,12 +180,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     if (response.Result) {
                         this.models = response.Data;
                     } else {
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        this.notifyApiResponse(response);
                     }
                     this.loadingVisible = false;
                 },
                 error: (error: any) => {
-                    this.notifyFx(error, NotifyType.Error);
+                    this.notifyApiError(error);
                     this.loadingVisible = false;
                 },
             });
@@ -287,12 +287,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                         this.respuestas = response.Data ?? [];
                         this.armarSecciones();
                     } else {
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        this.notifyApiResponse(response);
                     }
                     terminar();
                 },
                 error: (error: any) => {
-                    this.notifyFx(error, NotifyType.Error);
+                    this.notifyApiError(error);
                     terminar();
                 },
             });
@@ -306,12 +306,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                         this.archivos = response.Data ?? [];
                         this.armarSecciones();
                     } else {
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        this.notifyApiResponse(response);
                     }
                     terminar();
                 },
                 error: (error: any) => {
-                    this.notifyFx(error, NotifyType.Error);
+                    this.notifyApiError(error);
                     terminar();
                 },
             });
@@ -359,7 +359,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 for (const item of lista) {
                     if (!item.response?.Result) {
                         this.loadingVisible = false;
-                        this.notifyFx(item.response?.ErrorMessage || 'No se pudieron cargar las opciones.', NotifyType.Error);
+                        this.notifyApiResponse(item.response);
                         return;
                     }
                     opciones[item.id] = item.response.Data ?? [];
@@ -371,7 +371,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             },
             error: (error: any) => {
                 this.loadingVisible = false;
-                this.notifyFx(error, NotifyType.Error);
+                this.notifyApiError(error);
             },
         });
     }
@@ -427,7 +427,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 },
                 error: (error: any) => {
                     this.guardandoEdicion = false;
-                    this.notifyFx(error?.message || error, NotifyType.Error);
+                    this.notifyApiError(error);
                 },
             });
     }
@@ -444,7 +444,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             next: (response: any) => {
                 this.guardandoEdicion = false;
                 if (!response?.Result) {
-                    this.notifyFx(response?.ErrorMessage || 'No se pudo cambiar el archivo.', NotifyType.Error);
+                    this.notifyApiResponse(response);
                     return;
                 }
                 archivo.ARCHIVO_NOMBRE = response.Data || file.name;
@@ -452,7 +452,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             },
             error: (error: any) => {
                 this.guardandoEdicion = false;
-                this.notifyFx(error, NotifyType.Error);
+                this.notifyApiError(error);
             },
         });
     }
@@ -539,7 +539,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     }
                     setTimeout(() => window.URL.revokeObjectURL(url), 60000);
                 },
-                error: () => this.notifyFx('No se pudo abrir el archivo.', NotifyType.Error),
+                error: (error: any) => this.notifyApiError(error),
             });
     }
 
