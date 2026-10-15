@@ -1,0 +1,169 @@
+<!-- Contenedor principal del mantenimiento de Facultades. -->
+<div class="sguees-mtto-view">
+<!-- Toolbar: nuevo, guardar, cancelar y activar/desactivar la fila enfocada. -->
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[showRibbon]="true"
+	[showExport]="permitePrint"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRow]="isBrowse() ? model : null"
+	(consultar)="consultar()"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+	(activarInactivar)="activar_inactivar()"
+>
+</app-barra-data-mtto>
+
+	<!-- Formulario de creación/edición (oculto en browse). -->
+<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+	<dx-form
+		#fData
+		id="fData"
+		[formData]="model"
+		[labelLocation]="'top'"
+		[colCount]="mttoFormColCount"
+		[colCountByScreen]="mttoFormColCountByScreen"
+		[showRequiredMark]="false"
+		[items]="items"
+	>
+	</dx-form>
+</div>
+
+<!-- Sección hija: sedes donde se ofertan las carreras de la facultad (solo con la facultad ya guardada). -->
+<section class="content-block dx-card responsive-paddings sguees-mtto-form-card aca-facultades-sedes" *ngIf="mostrarSedes()">
+	<!-- Nuevo en el encabezado (patrón de las secciones hijas de aca-prospecto): no depende de la toolbar del grid. -->
+	<header class="aca-facultades-sedes__head">
+		<span class="aca-facultades-sedes__texto">
+			<span class="aca-facultades-sedes__title">Sedes de la Facultad</span>
+			<span class="aca-facultades-sedes__subtitle">Sedes donde se ofertan las carreras de {{ model?.NOMBRE_FACULTAD }}</span>
+		</span>
+		<dx-button
+			*ngIf="puedeModificarSedes && isSedeBrowse()"
+			[text]="'Nuevo'"
+			[icon]="'plus'"
+			[type]="'default'"
+			(onClick)="nuevoSede()"
+		>
+		</dx-button>
+	</header>
+
+	<!-- Guardar y Cancelar de la sede (solo con su formulario abierto). -->
+	<app-barra-data-mtto
+		*ngIf="!isSedeBrowse()"
+		[isBrowse]="false"
+		[isForm]="true"
+		[permiteAdd]="puedeModificarSedes"
+		(guardar)="guardarSede()"
+		(cancelar)="cancelarSede()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Formulario de la sede: reemplaza al grid mientras está abierto. -->
+	<div *ngIf="!isSedeBrowse()" class="aca-facultades-sedes__form">
+		<dx-form
+			#fDataSede
+			id="fDataSede"
+			[formData]="sedeModel"
+			[labelLocation]="'top'"
+			[colCount]="mttoFormColCount"
+			[colCountByScreen]="mttoFormColCountByScreen"
+			[showRequiredMark]="false"
+			[items]="sedeItems"
+		>
+			<div *dxTemplate="let cellInfo of 'CORR_SEDETemplate'">
+				<dx-select-box
+					[dataSource]="sedesDisponibles"
+					[(value)]="sedeModel.CORR_SEDE"
+					displayExpr="NOMBRE_SEDE"
+					valueExpr="CORR_SEDE"
+					placeholder="Seleccione una sede..."
+					[searchEnabled]="true"
+					[readOnly]="banderaMttoSede !== 1"
+				>
+				</dx-select-box>
+			</div>
+		</dx-form>
+	</div>
+
+	<!-- Grid de sedes de la facultad. -->
+	<app-data-grid-mtto
+		*ngIf="isSedeBrowse()"
+		[isBrowse]="true"
+		[models]="sedeModels"
+		[columns]="sedeColumns"
+		[keyExpr]="'CORR_SEDE'"
+		[gridHeight]="'auto'"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[showFilterPanel]="false"
+		[permiteEditar]="puedeModificarSedes"
+		[permiteDele]="puedeModificarSedes"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		(editClick)="editarSede($event)"
+		(rowDblClick)="editarSede($event)"
+		(rowRemoving)="rowRemovingSede($event)"
+	>
+	</app-data-grid-mtto>
+</section>
+
+<!-- Grilla del catálogo con acciones de mantenimiento. -->
+<app-data-grid-mtto
+	#gridFacultades
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[repaintChangesOnly]="false"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showSearch]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[exportFileName]="'Facultades'"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="onEditClick($event)"
+>
+</app-data-grid-mtto>
+
+</div>
+
+<!-- Panel de carga durante operaciones asíncronas. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>
