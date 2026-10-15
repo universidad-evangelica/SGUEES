@@ -27,7 +27,7 @@ namespace sguees.Controllers
 
         // Qué hace: sexos para los combos de la edición de prospectos (vistas de prospectos).
         [HttpGet("GetCORR_SEXO_ACA_PROSPECTO_NUEVO_INGRESO")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> GetCORR_SEXO_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] GEN_SEXOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -35,7 +35,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetCORR_SEXO_ACA_PROSPECTO_ECONOMICO")]
-        [Authorize(Policy = "/aca-prospecto-economico|R")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
         public async Task<CResult> GetCORR_SEXO_ACA_PROSPECTO_ECONOMICO([FromQuery] GEN_SEXOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

@@ -34,7 +34,7 @@ import { AcaProspectoEmpleoService } from './aca-prospecto-empleo/aca-prospecto-
 
 // Qué hace: consulta y edición de prospectos de pregrado por ciclo (Académico → Consultas → Prospectos).
 // Cómo lo hace: listado filtrado por el combo de ciclos de la barra; un clic en la fila abre la
-//               consulta (modo Not_Defined, sin Guardar) y carga las tablas hijas en tres pestañas.
+//               consulta (modo Not_Defined, sin Guardar) y carga las tablas hijas en una pestaña por bloque.
 //               Editar = lápiz de la grilla (editarClick, estándar) o botón "Modificar" desde la
 //               consulta: los formularios se habilitan y Guardar actualiza tabla por tabla
 //               (persona → empleo → socioeconómico → respuestas → prospecto), como el resto del ERP
@@ -59,6 +59,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     @ViewChild('fEstudioUees', { static: false }) formEstudioUees?: DxFormComponent;
     // Interruptores de encabezado: empleo y las dos secciones opcionales de estudios.
     @ViewChild('chkTrabaja', { static: false }) chkTrabaja?: DxCheckBoxComponent;
+    @ViewChild('chkDiscapacidad', { static: false }) chkDiscapacidad?: DxCheckBoxComponent;
+    @ViewChild('chkDeportado', { static: false }) chkDeportado?: DxCheckBoxComponent;
     @ViewChild('chkUniversidad', { static: false }) chkUniversidad?: DxCheckBoxComponent;
     @ViewChild('chkUees', { static: false }) chkUees?: DxCheckBoxComponent;
 
@@ -142,6 +144,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     itemsLimitacion: any[] = [];
     limitacionesEliminar: any[] = [];
     limitacionOriginal: Record<number, string> = {};
+    // Qué hace: el analista desmarcó "¿Posee discapacidad?" y la limitación se borra al guardar.
+    discapacidadEliminar = false;
+    private limitacionesCargadas = false;
     deportaciones: any[] = [];
     columnsDeportacion: any[] = [];
     summaryDeportacion: any = {};
@@ -150,6 +155,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     itemsDeportacion: any[] = [];
     deportacionesEliminar: any[] = [];
     deportacionOriginal: Record<number, string> = {};
+    // Qué hace: el analista desmarcó "¿Ha sido deportado?" y la deportación se borra al guardar.
+    deportacionEliminar = false;
+    private deportacionesCargadas = false;
     // Medios de origen: N, sin repetir el medio. "Otro" y "Referido amigo/familiar" llevan campos propios.
     medios: any[] = [];
     columnsMedio: any[] = [];
@@ -768,6 +776,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.readOnly = false;
         this.sincronizarEmpleoConTrabaja();
         this.sincronizarEstudioMedia();
+        this.sincronizarDiscapacidad();
+        this.sincronizarDeportado();
     }
 
     // Qué hace: concilia la declaración "trabaja" con la existencia del empleo al entrar a edición.
@@ -839,6 +849,164 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (!this.empleoModel) {
             this.prepararEmpleoNuevo();
         }
+    }
+
+    // Qué hace: "¿Posee discapacidad?" abre la limitación, como en el portal.
+    // Cómo lo hace: marcar sin fila prepara el formulario; desmarcar una ya guardada pide confirmación
+    //               y la deja para borrar al guardar. El clic del usuario trae e.event; la carga no.
+    get discapacidadActiva(): boolean {
+        if (this.discapacidadEliminar) {
+            return false;
+        }
+        return !!this.limitacionModel || this.limitaciones.length > 0 || this.personaModel?.POSEE_DISCAPACIDAD === true;
+    }
+
+    onDiscapacidadChanged(e: any): void {
+        if (!e?.event || this.readOnly || !this.personaModel) {
+            return;
+        }
+        if (e.value === true) {
+            this.abrirDiscapacidad();
+            return;
+        }
+        const guardada = this.limitaciones.some((l) => l.CORR_PROSPECTO_LIMITACION_FISICA > 0)
+            || (this.limitacionModel?.CORR_PROSPECTO_LIMITACION_FISICA > 0);
+        if (!guardada) {
+            this.cancelarLimitacion();
+            this.discapacidadEliminar = false;
+            this.personaModel.POSEE_DISCAPACIDAD = false;
+            return;
+        }
+        this.discapacidadEliminar = true;
+        confirm(
+            '<div class="sguees-confirm-message">Al guardar se eliminará la limitación registrada. ¿Desea continuar?</div>',
+            'Salud'
+        ).then((acepta: boolean) => {
+            this.zone.run(() => {
+                if (acepta) {
+                    return;
+                }
+                this.discapacidadEliminar = false;
+                this.chkDiscapacidad?.instance?.option('value', true);
+                this.abrirDiscapacidad();
+            });
+        });
+    }
+
+    // Qué hace: "¿Ha sido deportado?" abre el país, como en el portal.
+    // Cómo lo hace: misma mecánica que la discapacidad: una fila vigente, y desmarcar la deja para borrar.
+    get deportadoActivo(): boolean {
+        if (this.deportacionEliminar) {
+            return false;
+        }
+        return !!this.deportacionModel || this.deportaciones.length > 0 || this.personaModel?.HA_SIDO_DEPORTADO === true;
+    }
+
+    onDeportadoChanged(e: any): void {
+        if (!e?.event || this.readOnly || !this.personaModel) {
+            return;
+        }
+        if (e.value === true) {
+            this.abrirDeportacion();
+            return;
+        }
+        const guardada = this.deportaciones.some((d) => d.CORR_PROSPECTO_DEPORTACION > 0)
+            || (this.deportacionModel?.CORR_PROSPECTO_DEPORTACION > 0);
+        if (!guardada) {
+            this.cancelarDeportacion();
+            this.deportacionEliminar = false;
+            this.personaModel.HA_SIDO_DEPORTADO = false;
+            return;
+        }
+        this.deportacionEliminar = true;
+        confirm(
+            '<div class="sguees-confirm-message">Al guardar se eliminará la deportación registrada. ¿Desea continuar?</div>',
+            'Deportación'
+        ).then((acepta: boolean) => {
+            this.zone.run(() => {
+                if (acepta) {
+                    return;
+                }
+                this.deportacionEliminar = false;
+                this.chkDeportado?.instance?.option('value', true);
+                this.abrirDeportacion();
+            });
+        });
+    }
+
+    private sincronizarDiscapacidad(): void {
+        if (!this.limitacionesCargadas || this.discapacidadEliminar || this.limitacionModel) {
+            return;
+        }
+        if (this.limitaciones.length > 0 || this.personaModel?.POSEE_DISCAPACIDAD === true) {
+            this.abrirDiscapacidad();
+        }
+    }
+
+    private sincronizarDeportado(): void {
+        if (!this.deportacionesCargadas || this.deportacionEliminar || this.deportacionModel) {
+            return;
+        }
+        if (this.deportaciones.length > 0 || this.personaModel?.HA_SIDO_DEPORTADO === true) {
+            this.abrirDeportacion();
+        }
+    }
+
+    private abrirDiscapacidad(): void {
+        this.discapacidadEliminar = false;
+        if (this.limitacionModel) {
+            return;
+        }
+        if (this.limitaciones.length > 0) {
+            this.limitacionEditando = this.limitaciones[0];
+            this.limitacionModel = { ...this.limitaciones[0] };
+            return;
+        }
+        if (this.readOnly || !this.personaModel) {
+            return;
+        }
+        this.personaModel.POSEE_DISCAPACIDAD = true;
+        this.nuevaLimitacion();
+    }
+
+    private abrirDeportacion(): void {
+        this.deportacionEliminar = false;
+        if (this.deportacionModel) {
+            return;
+        }
+        const vigente = this.deportaciones.find((d) => d.ES_VIGENTE === true || d.ES_VIGENTE === 1) ?? this.deportaciones[0];
+        if (vigente) {
+            this.deportacionEditando = vigente;
+            this.deportacionModel = { ...vigente };
+            return;
+        }
+        if (this.readOnly || !this.personaModel) {
+            return;
+        }
+        this.personaModel.HA_SIDO_DEPORTADO = true;
+        this.nuevaDeportacion();
+    }
+
+    private descartarDiscapacidad(): void {
+        this.cancelarLimitacion();
+        for (const fila of this.limitaciones) {
+            if (fila.CORR_PROSPECTO_LIMITACION_FISICA > 0) {
+                this.limitacionesEliminar.push(fila);
+            }
+        }
+        this.limitaciones = [];
+        this.discapacidadEliminar = false;
+    }
+
+    private descartarDeportacion(): void {
+        this.cancelarDeportacion();
+        for (const fila of this.deportaciones) {
+            if (fila.CORR_PROSPECTO_DEPORTACION > 0) {
+                this.deportacionesEliminar.push(fila);
+            }
+        }
+        this.deportaciones = [];
+        this.deportacionEliminar = false;
     }
 
     // Qué hace: aplica la regla del portal para el empleo en el extranjero.
@@ -999,11 +1167,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: acepta la limitación del formulario; no se puede repetir la misma limitación.
-    aceptarLimitacion(): void {
+    aceptarLimitacion(): boolean {
         const resultado = this.formLimitacion?.instance?.validate();
         if (resultado && !resultado.isValid) {
             this.notifyFx('Revise los campos marcados antes de aceptar.', NotifyType.Warning, { raw: true });
-            return;
+            return false;
         }
 
         const modelo = this.leerFormData(this.formLimitacion, this.limitacionModel);
@@ -1011,7 +1179,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         const mensaje = this.serviceLimitacion.validar(modelo, otras);
         if (mensaje) {
             this.notifyFx(mensaje, NotifyType.Warning, { raw: true });
-            return;
+            return false;
         }
 
         modelo.NOMBRE_LIMITACION = this.mCORR_LIMITACION_FISICA.find((l) => l.CORR_LIMITACION_FISICA === modelo.CORR_LIMITACION_FISICA)?.NOMBRE ?? '';
@@ -1024,6 +1192,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.limitaciones = [...this.limitaciones];
         this.limitacionModel = null;
         this.limitacionEditando = null;
+        return true;
     }
 
     cancelarLimitacion(): void {
@@ -1067,11 +1236,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         }
     }
 
-    aceptarDeportacion(): void {
+    aceptarDeportacion(): boolean {
         const resultado = this.formDeportacion?.instance?.validate();
         if (resultado && !resultado.isValid) {
             this.notifyFx('Revise los campos marcados antes de aceptar.', NotifyType.Warning, { raw: true });
-            return;
+            return false;
         }
 
         const modelo = this.leerFormData(this.formDeportacion, this.deportacionModel);
@@ -1079,7 +1248,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         const mensaje = this.serviceDeportacion.validar(modelo, otras);
         if (mensaje) {
             this.notifyFx(mensaje, NotifyType.Warning, { raw: true });
-            return;
+            return false;
         }
 
         modelo.NOMBRE_PAIS = this.mCORR_PAIS.find((p) => p.CORR_PAIS === modelo.CORR_PAIS)?.NOMBRE_PAIS ?? '';
@@ -1092,6 +1261,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.deportaciones = [...this.deportaciones];
         this.deportacionModel = null;
         this.deportacionEditando = null;
+        return true;
     }
 
     cancelarDeportacion(): void {
@@ -1587,12 +1757,14 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.notifyFx('Acepte o cancele el medio que está editando antes de guardar.', NotifyType.Warning, { raw: true });
             return false;
         }
-        if (this.limitacionModel) {
-            this.notifyFx('Acepte o cancele la limitación que está editando antes de guardar.', NotifyType.Warning, { raw: true });
+        if (this.discapacidadEliminar) {
+            this.descartarDiscapacidad();
+        } else if (this.limitacionModel && !this.aceptarLimitacion()) {
             return false;
         }
-        if (this.deportacionModel) {
-            this.notifyFx('Acepte o cancele la deportación que está editando antes de guardar.', NotifyType.Warning, { raw: true });
+        if (this.deportacionEliminar) {
+            this.descartarDeportacion();
+        } else if (this.deportacionModel && !this.aceptarDeportacion()) {
             return false;
         }
         if (this.contactoModel) {
@@ -1683,6 +1855,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         const pasos: { nombre: string; accion: () => Observable<IResult> }[] = [];
 
         if (this.personaModel) {
+            this.personaModel.TRABAJA = !!this.empleoModel && !this.empleoEliminar;
+            this.personaModel.POSEE_DISCAPACIDAD = this.limitaciones.length > 0;
+            this.personaModel.HA_SIDO_DEPORTADO = this.deportaciones.length > 0;
             pasos.push({
                 nombre: 'Datos personales',
                 accion: () => this.servicePersona.update(this.leerFormData(this.formPersona, this.personaModel)),
@@ -1844,7 +2019,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // #endregion
 
     //#region <Metodos Detalle - Carga>
-    // Qué hace: carga las tablas hijas de las tres pestañas al abrir la consulta o la edición.
+    // Qué hace: carga las tablas hijas de las pestañas al abrir la consulta o la edición.
     // Cómo lo hace: 11 consultas en paralelo; el load panel se apaga cuando termina la última.
     cargarDetalle(CORR_PROSPECTO: number): void {
         this.limpiarDetalle();
@@ -1884,11 +2059,15 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.limitacionEditando = null;
         this.limitacionesEliminar = [];
         this.limitacionOriginal = {};
+        this.discapacidadEliminar = false;
+        this.limitacionesCargadas = false;
         this.deportaciones = [];
         this.deportacionModel = null;
         this.deportacionEditando = null;
         this.deportacionesEliminar = [];
         this.deportacionOriginal = {};
+        this.deportacionEliminar = false;
+        this.deportacionesCargadas = false;
         this.medios = [];
         this.medioModel = null;
         this.medioEditando = null;
@@ -1954,6 +2133,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     cargarPersona(CORR_PROSPECTO: number): void {
         this.cargarLista(this.servicePersona.getPersonaPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.personaModel = data[0] ?? null;
+            this.sincronizarDiscapacidad();
+            this.sincronizarDeportado();
             this.getCORR_DEPTO_RESIDENCIA(this.personaModel?.CORR_PAIS_RESIDENCIA);
             this.getCORR_MUNICIPIO_RESIDENCIA(this.personaModel?.CORR_PAIS_RESIDENCIA, this.personaModel?.CORR_DEPTO_RESIDENCIA);
             this.sincronizarEmpleoConTrabaja();
@@ -1990,20 +2171,24 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     cargarLimitaciones(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceLimitacion.getLimitacionesPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.limitaciones = data ?? [];
+            this.limitacionesCargadas = true;
             this.limitacionOriginal = {};
             for (const limitacion of this.limitaciones) {
                 this.limitacionOriginal[limitacion.CORR_PROSPECTO_LIMITACION_FISICA] = JSON.stringify(this.serviceLimitacion.getPayload(limitacion));
             }
+            this.sincronizarDiscapacidad();
         });
     }
 
     cargarDeportaciones(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceDeportacion.getDeportacionesPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.deportaciones = data ?? [];
+            this.deportacionesCargadas = true;
             this.deportacionOriginal = {};
             for (const deportacion of this.deportaciones) {
                 this.deportacionOriginal[deportacion.CORR_PROSPECTO_DEPORTACION] = JSON.stringify(this.serviceDeportacion.getPayload(deportacion));
             }
+            this.sincronizarDeportado();
         });
     }
 

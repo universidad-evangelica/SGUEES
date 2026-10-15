@@ -40,7 +40,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpGet("GetCORR_RELIGION_ACA_PROSPECTO_NUEVO_INGRESO")]
-		[Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+		[Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
 		// Qué hace: religiones para la edición de datos personales del prospecto.
 		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCORR_RELIGION_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] GEN_RELIGIONParam Data)
@@ -49,7 +49,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpGet("GetCORR_RELIGION_ACA_PROSPECTO_ECONOMICO")]
-		[Authorize(Policy = "/aca-prospecto-economico|R")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
 		// Qué hace: religiones para la edición de datos personales del prospecto.
 		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCORR_RELIGION_ACA_PROSPECTO_ECONOMICO([FromQuery] GEN_RELIGIONParam Data)

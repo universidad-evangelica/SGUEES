@@ -26,7 +26,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetCICLO_ACA_PROSPECTO_NUEVO_INGRESO")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> GetCICLO_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -34,7 +34,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetCICLO_ACA_PROSPECTO_ECONOMICO")]
-        [Authorize(Policy = "/aca-prospecto-economico|R")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
         public async Task<CResult> GetCICLO_ACA_PROSPECTO_ECONOMICO([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

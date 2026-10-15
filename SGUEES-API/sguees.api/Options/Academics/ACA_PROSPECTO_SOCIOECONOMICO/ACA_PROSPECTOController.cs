@@ -26,7 +26,7 @@ namespace sguees.Controllers.Socioeconomico
 		}
 
 		[HttpGet("GetAll")]
-		[Authorize(Policy = "/aca-prospecto-economico|R")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
 		public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -34,7 +34,7 @@ namespace sguees.Controllers.Socioeconomico
 		}
 
 		[HttpGet("Get")]
-		[Authorize(Policy = "/aca-prospecto-economico|R")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
 		public async Task<CResult> Get([FromQuery] ACA_PROSPECTOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -42,7 +42,7 @@ namespace sguees.Controllers.Socioeconomico
 		}
 
 		[HttpGet("GetCORR_CARRERA_ACA_PROSPECTO_ECONOMICO")]
-		[Authorize(Policy = "/aca-prospecto-economico|R")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
 		public async Task<CResult> GetCORR_CARRERA_ACA_PROSPECTO_ECONOMICO([FromQuery] ACA_PROSPECTOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -50,7 +50,7 @@ namespace sguees.Controllers.Socioeconomico
 		}
 
 		[HttpGet("GetCORR_MODALIDAD_ACA_PROSPECTO_ECONOMICO")]
-		[Authorize(Policy = "/aca-prospecto-economico|R")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
 		public async Task<CResult> GetCORR_MODALIDAD_ACA_PROSPECTO_ECONOMICO([FromQuery] ACA_PROSPECTOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -58,7 +58,7 @@ namespace sguees.Controllers.Socioeconomico
 		}
 
 		[HttpGet("GetCICLO_ACA_PROSPECTO_ECONOMICO")]
-		[Authorize(Policy = "/aca-prospecto-economico|R")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
 		public async Task<CResult> GetCICLO_ACA_PROSPECTO_ECONOMICO([FromQuery] ACA_PROSPECTOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -68,7 +68,7 @@ namespace sguees.Controllers.Socioeconomico
 		// Qué hace: consecuencias de cambiar ciclo o carrera antes de guardar.
 		// Cómo lo hace: el mismo servicio del encabezado, con el permiso de esta pantalla.
 		[HttpGet("GetVALIDAR_CAMBIO_ACA_PROSPECTO_ECONOMICO")]
-		[Authorize(Policy = "/aca-prospecto-economico|U")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|U")]
 		public async Task<CResult> GetVALIDAR_CAMBIO_ACA_PROSPECTO_ECONOMICO([FromQuery] ACA_PROSPECTOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -76,7 +76,7 @@ namespace sguees.Controllers.Socioeconomico
 		}
 
 		[HttpPut]
-		[Authorize(Policy = "/aca-prospecto-economico|U")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|U")]
 		public async Task<IActionResult> Put(ACA_PROSPECTOTable Data)
 		{
 			this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTOTable.CORR_PROSPECTO));

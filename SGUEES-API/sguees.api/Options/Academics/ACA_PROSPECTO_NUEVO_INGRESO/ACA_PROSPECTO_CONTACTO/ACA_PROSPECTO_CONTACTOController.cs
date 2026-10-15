@@ -28,7 +28,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_CONTACTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -36,7 +36,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_CONTACTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -48,7 +48,7 @@ namespace sguees.Controllers
         // Cómo lo hace: ejecuta el mismo SP del registro (NI_LIST_CATALOGS opción 21); el catálogo está
         //               quemado ahí hasta que el código se agregue a GEN_PAIS.
         [HttpGet("GetCODIGO_PAIS_ACA_PROSPECTO_NUEVO_INGRESO")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> GetCODIGO_PAIS_ACA_PROSPECTO_NUEVO_INGRESO()
         {
             return await _service.GetCODIGO_PAIS_ACA_PROSPECTOAsync();
@@ -57,7 +57,7 @@ namespace sguees.Controllers
         // Qué hace: actualiza un contacto (teléfono o correo) del prospecto.
         // Cómo lo hace: permiso U del padre (vistas de prospectos); auditoría por claims; reglas en el Service.
         [HttpPut]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|U")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
         public async Task<IActionResult> Put(ACA_PROSPECTO_CONTACTOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_CONTACTOTable.CORR_PROSPECTO_CONTACTO));
@@ -69,7 +69,7 @@ namespace sguees.Controllers
 
         // Qué hace: agrega un contacto al prospecto.
         [HttpPost]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|U")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
         public async Task<IActionResult> Post(ACA_PROSPECTO_CONTACTOTable Data)
         {
             SetCreateAudit(Data);
@@ -80,7 +80,7 @@ namespace sguees.Controllers
 
         // Qué hace: elimina un contacto del prospecto (nunca el principal de su tipo).
         [HttpDelete]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|U")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
         public async Task<IActionResult> Delete([FromQuery] ACA_PROSPECTO_CONTACTOTable Data)
         {
             var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));

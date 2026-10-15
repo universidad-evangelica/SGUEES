@@ -29,7 +29,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_FAMILIARParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -37,7 +37,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_FAMILIARParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -46,7 +46,7 @@ namespace sguees.Controllers
 
         // Qué hace: actualiza un familiar del prospecto.
         [HttpPut]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|U")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
         public async Task<IActionResult> Put(ACA_PROSPECTO_FAMILIARTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_FAMILIARTable.CORR_PROSPECTO_FAMILIAR));
@@ -58,7 +58,7 @@ namespace sguees.Controllers
 
         // Qué hace: agrega un familiar al prospecto.
         [HttpPost]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|U")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
         public async Task<IActionResult> Post(ACA_PROSPECTO_FAMILIARTable Data)
         {
             SetCreateAudit(Data);
@@ -69,7 +69,7 @@ namespace sguees.Controllers
 
         // Qué hace: elimina un familiar del prospecto.
         [HttpDelete]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|U")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
         public async Task<IActionResult> Delete([FromQuery] ACA_PROSPECTO_FAMILIARTable Data)
         {
             var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));

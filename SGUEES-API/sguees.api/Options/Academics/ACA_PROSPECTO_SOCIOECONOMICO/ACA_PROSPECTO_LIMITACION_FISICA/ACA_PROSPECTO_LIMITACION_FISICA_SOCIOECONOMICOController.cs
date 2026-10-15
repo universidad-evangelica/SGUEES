@@ -28,7 +28,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = "/aca-prospecto-economico|R")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_LIMITACION_FISICA_SOCIOECONOMICOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -36,7 +36,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = "/aca-prospecto-economico|R")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_LIMITACION_FISICA_SOCIOECONOMICOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -45,7 +45,7 @@ namespace sguees.Controllers
 
         // Qué hace: actualiza una limitación física del prospecto (permiso U del de las vistas de prospectos).
         [HttpPut]
-        [Authorize(Policy = "/aca-prospecto-economico|U")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|U")]
         public async Task<IActionResult> Put(ACA_PROSPECTO_LIMITACION_FISICA_SOCIOECONOMICOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_LIMITACION_FISICA_SOCIOECONOMICOTable.CORR_PROSPECTO_LIMITACION_FISICA));
@@ -57,7 +57,7 @@ namespace sguees.Controllers
 
         // Qué hace: agrega una limitación física (y enciende POSEE_DISCAPACIDAD en la persona).
         [HttpPost]
-        [Authorize(Policy = "/aca-prospecto-economico|U")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|U")]
         public async Task<IActionResult> Post(ACA_PROSPECTO_LIMITACION_FISICA_SOCIOECONOMICOTable Data)
         {
             SetCreateAudit(Data);
@@ -68,7 +68,7 @@ namespace sguees.Controllers
 
         // Qué hace: elimina una limitación física (si era la última, apaga POSEE_DISCAPACIDAD).
         [HttpDelete]
-        [Authorize(Policy = "/aca-prospecto-economico|U")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|U")]
         public async Task<IActionResult> Delete([FromQuery] ACA_PROSPECTO_LIMITACION_FISICA_SOCIOECONOMICOTable Data)
         {
             var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));

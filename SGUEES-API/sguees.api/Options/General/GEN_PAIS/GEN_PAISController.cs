@@ -71,7 +71,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetCORR_PAIS_ACA_PROSPECTO_NUEVO_INGRESO")]
-		[Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+		[Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
 		// Qué hace: países para nacionalidad, procedencia, residencia y empleo en la edición de prospectos.
 		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCORR_PAIS_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] GEN_PAISParam data)
@@ -80,7 +80,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetCORR_PAIS_ACA_PROSPECTO_ECONOMICO")]
-		[Authorize(Policy = "/aca-prospecto-economico|R")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
 		// Qué hace: países para nacionalidad, procedencia, residencia y empleo en la edición de prospectos.
 		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCORR_PAIS_ACA_PROSPECTO_ECONOMICO([FromQuery] GEN_PAISParam data)

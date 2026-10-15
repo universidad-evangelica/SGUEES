@@ -27,7 +27,7 @@ namespace sguees.Controllers
 
         // Qué hace: opciones de las preguntas del estudio socioeconómico para los combos de la edición de prospectos (vistas de prospectos).
         [HttpGet("GetCORR_OPCION_ACA_PROSPECTO_ECONOMICO")]
-        [Authorize(Policy = "/aca-prospecto-economico|R")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
         public async Task<CResult> GetCORR_OPCION_ACA_PROSPECTO_ECONOMICO([FromQuery] ACA_SE_OPCIONParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

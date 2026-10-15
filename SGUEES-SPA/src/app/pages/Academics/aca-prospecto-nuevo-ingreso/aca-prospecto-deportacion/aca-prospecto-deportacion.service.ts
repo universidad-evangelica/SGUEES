@@ -70,13 +70,11 @@ export class AcaProspectoDeportacionService {
         };
     }
 
-    // Qué hace: formulario de una deportación (reemplaza a la grilla mientras se edita).
-    // Cómo lo hace: el país es lookup (template), así que su obligatoriedad se revisa en validar().
+    // Qué hace: el país que pide el portal cuando se marca "¿Ha sido deportado?".
+    // Cómo lo hace: un solo país; vigente queda en verdadero en el modelo, sin preguntarlo en pantalla.
     getItems(): any {
         return [
-            { dataField: 'CORR_PAIS', label: { text: 'País' }, colSpan: 3, template: 'CORR_PAIS_DEPORTACIONLookup' },
-            { dataField: 'ES_VIGENTE', label: { text: 'Vigente' }, colSpan: 1, editorType: 'dxCheckBox' },
-            { dataField: 'OBSERVACION', label: { text: 'Observación' }, colSpan: 4, editorOptions: { maxLength: 500 } },
+            { dataField: 'CORR_PAIS', label: { text: 'País de deportación' }, colSpan: 4, template: 'CORR_PAIS_DEPORTACIONLookup' },
         ];
     }
 

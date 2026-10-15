@@ -66,7 +66,7 @@ export class AcaProspectoLimitacionFisicaService {
     // Cómo lo hace: la limitación es lookup (template), así que su obligatoriedad se revisa en validar().
     getItems(): any {
         return [
-            { dataField: 'CORR_LIMITACION_FISICA', label: { text: 'Limitación' }, colSpan: 3, template: 'CORR_LIMITACION_FISICALookup' },
+            { dataField: 'CORR_LIMITACION_FISICA', label: { text: 'Limitaciones físicas' }, colSpan: 3, template: 'CORR_LIMITACION_FISICALookup' },
             { dataField: 'ESPECIFIQUE', label: { text: 'Especifique' }, colSpan: 5, editorOptions: { maxLength: 500 } },
         ];
     }

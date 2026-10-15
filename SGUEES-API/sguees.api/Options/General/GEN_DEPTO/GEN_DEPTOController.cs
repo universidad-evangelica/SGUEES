@@ -86,7 +86,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetCORR_DEPTO_ACA_PROSPECTO_NUEVO_INGRESO")]
-		[Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+		[Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
 		// Qué hace: departamentos del país indicado (CORR_PAIS) para residencia y empleo en la edición de prospectos.
 		// Cómo: llama a GetAllAsync del servicio, que filtra por CORR_PAIS cuando viene.
 		public async Task<CResult> GetCORR_DEPTO_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] GEN_DEPTOParam Data)
@@ -96,7 +96,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetCORR_DEPTO_ACA_PROSPECTO_ECONOMICO")]
-		[Authorize(Policy = "/aca-prospecto-economico|R")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
 		// Qué hace: departamentos del país indicado (CORR_PAIS) para residencia y empleo en la edición de prospectos.
 		// Cómo: llama a GetAllAsync del servicio, que filtra por CORR_PAIS cuando viene.
 		public async Task<CResult> GetCORR_DEPTO_ACA_PROSPECTO_ECONOMICO([FromQuery] GEN_DEPTOParam Data)

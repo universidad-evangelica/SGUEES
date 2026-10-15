@@ -79,8 +79,8 @@ export class AcaProspectoPersonaService {
 
     // Qué hace: formulario "Datos personales" (pestaña Información personal).
     // Cómo lo hace: los catálogos son lookups (template) sobre los CORR_*; el dx-form [readOnly] los
-    //               bloquea en consulta. Edad, "Posee discapacidad" y "Ha sido deportado" quedan de
-    //               solo lectura hasta la fase 2 (dependen de las grillas de salud y migratorio).
+    //               bloquea en consulta. Edad queda de solo lectura. Trabaja, discapacidad y deportación
+    //               se marcan en su sección, como en el portal de admisiones.
     getItems(): any {
         return [
             { itemType: 'group', caption: 'Identidad', colSpan: 8, colCount: 8, items: [
@@ -126,20 +126,8 @@ export class AcaProspectoPersonaService {
                 { dataField: 'CORR_MUNICIPIO_RESIDENCIA', label: { text: 'Municipio' }, colSpan: 2, template: 'CORR_MUNICIPIO_RESIDENCIALookup' },
                 { dataField: 'DIRECCION_ACTUAL', label: { text: 'Dirección actual' }, colSpan: 8, editorOptions: { maxLength: 300 } },
             ] },
-            { itemType: 'group', caption: 'Condiciones declaradas', colSpan: 8, colCount: 8, items: [
-                // Las tres son espejo del detalle, no se editan aquí: "Trabaja" se controla en
-                // Información económica → Información laboral (igual que el portal, donde el check
-                // vive en la sección laboral); discapacidad y deportación saldrán de sus grillas.
-                {
-                    dataField: 'TRABAJA',
-                    label: { text: 'Trabaja' },
-                    colSpan: 2,
-                    editorType: 'dxCheckBox',
-                    editorOptions: { readOnly: true },
-                },
-                { dataField: 'POSEE_DISCAPACIDAD', label: { text: 'Posee discapacidad' }, colSpan: 2, editorType: 'dxCheckBox', editorOptions: { readOnly: true } },
-                { dataField: 'HA_SIDO_DEPORTADO', label: { text: 'Ha sido deportado' }, colSpan: 2, editorType: 'dxCheckBox', editorOptions: { readOnly: true } },
-            ] },
+            // Trabaja, discapacidad y deportación no van aquí: en el portal cada una se marca en su
+            // sección (información laboral, salud y país de deportación) y al guardar enciende la bandera.
         ];
     }
 }

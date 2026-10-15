@@ -28,7 +28,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_PERSONAParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -36,7 +36,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_PERSONAParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -46,7 +46,7 @@ namespace sguees.Controllers
         // Qué hace: actualiza los datos personales del prospecto.
         // Cómo lo hace: toma CORR_PROSPECTO_PERSONA del body o del query, completa auditoría y llama a UpdateAsync.
         [HttpPut]
-        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|U")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
         public async Task<IActionResult> Put(ACA_PROSPECTO_PERSONATable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_PERSONATable.CORR_PROSPECTO_PERSONA));

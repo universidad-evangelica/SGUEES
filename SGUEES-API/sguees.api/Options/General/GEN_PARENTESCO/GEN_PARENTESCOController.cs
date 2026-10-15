@@ -33,7 +33,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpGet("GetCORR_PARENTESCO_ACA_PROSPECTO_NUEVO_INGRESO")]
-		[Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|R")]
+		[Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
 		// Qué hace: parentescos para los familiares del prospecto (pestaña Información personal).
 		// Cómo: estándar de datos cross-tabla, el catálogo expone el método con el permiso de la
 		//       pantalla que lo consume; devuelve solo los activos.
@@ -43,7 +43,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpGet("GetCORR_PARENTESCO_ACA_PROSPECTO_ECONOMICO")]
-		[Authorize(Policy = "/aca-prospecto-economico|R")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
 		// Qué hace: parentescos para los familiares del prospecto (pestaña Información personal).
 		// Cómo: estándar de datos cross-tabla, el catálogo expone el método con el permiso de la
 		//       pantalla que lo consume; devuelve solo los activos.

@@ -16,19 +16,9 @@ import { AcaDocumentoAdmisionFlujoTipoDocumentoComponent } from './aca-documento
 
 const routes: Routes = [
   // Qué hace: abre Solicitud nuevo ingreso, Solicitud beca y Solicitud socioeconómica.
-  // Cómo lo hace: la dirección de nuevo ingreso es /aca-prospecto-nuevo-ingreso.
-  //               /aca-prospecto-academico sigue abriendo la misma pantalla hasta que el menú
-  //               quede actualizado y el usuario vuelva a entrar.
+  // Cómo lo hace: cada pantalla usa su propia dirección, la misma que el menú y la política del API.
   {
     path: 'aca-prospecto-nuevo-ingreso',
-    component: AcaProspectoNuevoIngresoComponent,
-    canActivate: [AuthGuardService],
-    canDeactivate: [AppCanDeactivateGuard],
-    data: { titulo: 'Solicitud nuevo ingreso' },
-    loadChildren: () => import('./aca-prospecto-nuevo-ingreso/aca-prospecto-nuevo-ingreso.module').then((m) => m.AcaProspectoNuevoIngresoModule),
-  },
-  {
-    path: 'aca-prospecto-academico',
     component: AcaProspectoNuevoIngresoComponent,
     canActivate: [AuthGuardService],
     canDeactivate: [AppCanDeactivateGuard],
@@ -44,7 +34,7 @@ const routes: Routes = [
     loadChildren: () => import('./aca-prospecto-beca/aca-prospecto-beca.module').then((m) => m.AcaProspectoBecaModule),
   },
   {
-    path: 'aca-prospecto-economico',
+    path: 'aca-prospecto-socioeconomico',
     component: AcaProspectoSocioeconomicoComponent,
     canActivate: [AuthGuardService],
     canDeactivate: [AppCanDeactivateGuard],

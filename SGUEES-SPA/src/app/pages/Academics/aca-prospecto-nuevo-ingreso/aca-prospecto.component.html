@@ -100,11 +100,12 @@
         </div>
 
         <section class="sguees-section-card aca-prospecto-card">
-            <!-- deferRendering=false: las tres pestañas se renderizan para poder validar sus formularios al guardar. -->
+            <!-- Qué hace: cada bloque del formulario va en su propia pestaña para no bajar por toda la ficha. -->
+            <!-- Cómo lo hace: deferRendering=false deja todas renderizadas para validar al guardar. -->
             <dx-tab-panel #tabPanel class="aca-prospecto-tab-panel" [selectedIndex]="0" [animationEnabled]="false" [swipeEnabled]="false" [deferRendering]="false">
 
-                <!-- ================= Información personal ================= -->
-                <dxi-item title="Información personal" [icon]="'user'">
+                <!-- ================= Datos personales ================= -->
+                <dxi-item title="Datos personales" [icon]="'user'">
                     <div class="aca-prospecto-tab">
                         <header class="aca-prospecto-section-head">
                             <span class="aca-prospecto-section-title">Datos personales</span>
@@ -235,6 +236,142 @@
                             <p class="aca-prospecto-vacio">El prospecto no tiene datos personales registrados.</p>
                         </ng-template>
 
+                        <!-- Igual que el portal: el check habilita el país y al guardar queda HA_SIDO_DEPORTADO. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">¿Ha sido deportado de algún país? (Retornado)</span>
+                                <span class="aca-prospecto-section-subtitle">Si marca Sí, indique el país. Al guardar se registra la deportación.</span>
+                            </span>
+                            <dx-check-box
+                                #chkDeportado
+                                [value]="deportadoActivo"
+                                [text]="'Sí'"
+                                [disabled]="readOnly || !personaModel"
+                                (onValueChanged)="onDeportadoChanged($event)"
+                            >
+                            </dx-check-box>
+                        </header>
+                        <p class="aca-prospecto-aviso" *ngIf="deportacionEliminar">
+                            La deportación se eliminará al guardar.
+                        </p>
+                        <dx-form
+                            #fDeportacion
+                            *ngIf="deportacionModel && !deportacionEliminar"
+                            class="sguees-form-premium"
+                            [formData]="deportacionModel"
+                            [labelLocation]="'top'"
+                            [colCount]="8"
+                            [readOnly]="readOnly"
+                            [items]="itemsDeportacion"
+                        >
+                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_DEPORTACIONLookup'">
+                                <app-data-lookup
+                                    [model]="mCORR_PAIS"
+                                    [(value)]="deportacionModel.CORR_PAIS"
+                                    [valueExpr]="'CORR_PAIS'"
+                                    [displayExpr]="'NOMBRE_PAIS'"
+                                    [selectedRowKeys]="selectedLookUpCORR_PAIS"
+                                    [readOnly]="readOnly"
+                                    [showClearButton]="true"
+                                >
+                                </app-data-lookup>
+                            </div>
+                        </dx-form>
+
+                        <!-- Igual que el portal: el check vive en Información laboral y abre el empleo. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">Información laboral</span>
+                                <span class="aca-prospecto-section-subtitle">Fuente: formulario de datos personales</span>
+                            </span>
+                            <dx-check-box
+                                #chkTrabaja
+                                [value]="personaModel?.TRABAJA === true"
+                                [text]="'¿Está trabajando actualmente?'"
+                                [disabled]="readOnly || !personaModel"
+                                (onValueChanged)="onTrabajaChanged($event)"
+                            >
+                            </dx-check-box>
+                        </header>
+                        <p class="aca-prospecto-aviso" *ngIf="empleoEliminar">
+                            La información laboral se eliminará al guardar porque indicó que ya no trabaja.
+                        </p>
+                        <p class="aca-prospecto-aviso" *ngIf="empleoNuevo && !empleoEliminar">
+                            Ingrese la información laboral.
+                        </p>
+                        <dx-form
+                            #fEmpleo
+                            *ngIf="empleoModel && !empleoEliminar; else sinEmpleo"
+                            class="sguees-form-premium"
+                            [formData]="empleoModel"
+                            [labelLocation]="'top'"
+                            [colCount]="8"
+                            [readOnly]="readOnly"
+                            [items]="itemsEmpleo"
+                            (onFieldDataChanged)="onEmpleoChanged($event)"
+                        >
+                            <div *dxTemplate="let cellInfo of 'CORR_SECTOR_LABORALLookup'">
+                                <app-data-lookup
+                                    [model]="mCORR_SECTOR_LABORAL"
+                                    [(value)]="empleoModel.CORR_SECTOR_LABORAL"
+                                    [valueExpr]="'CORR_SECTOR_LABORAL'"
+                                    [displayExpr]="'NOMBRE'"
+                                    [selectedRowKeys]="selectedLookUpCORR_SECTOR_LABORAL"
+                                    [readOnly]="readOnly"
+                                    [showClearButton]="true"
+                                >
+                                </app-data-lookup>
+                            </div>
+                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_EMPLEOLookup'">
+                                <app-data-lookup
+                                    [model]="mCORR_PAIS"
+                                    [(value)]="empleoModel.CORR_PAIS"
+                                    (valueChange)="onPaisEmpleoChange($event)"
+                                    [valueExpr]="'CORR_PAIS'"
+                                    [displayExpr]="'NOMBRE_PAIS'"
+                                    [selectedRowKeys]="selectedLookUpCORR_PAIS"
+                                    [readOnly]="readOnly || empleoModel.TIENE_EMPLEO_FUERA === true"
+                                    [showClearButton]="true"
+                                >
+                                </app-data-lookup>
+                            </div>
+                            <div *dxTemplate="let cellInfo of 'CORR_DEPTO_EMPLEOLookup'">
+                                <app-data-lookup
+                                    [model]="mCORR_DEPTO_EMPLEO"
+                                    [(value)]="empleoModel.CORR_DEPTO"
+                                    (valueChange)="onDeptoEmpleoChange($event)"
+                                    [valueExpr]="'CORR_DEPTO'"
+                                    [displayExpr]="'NOMBRE_DEPTO'"
+                                    [selectedRowKeys]="selectedLookUpCORR_DEPTO"
+                                    [readOnly]="readOnly || empleoModel.TIENE_EMPLEO_FUERA === true"
+                                    [showClearButton]="true"
+                                >
+                                </app-data-lookup>
+                            </div>
+                            <div *dxTemplate="let cellInfo of 'CORR_MUNICIPIO_EMPLEOLookup'">
+                                <app-data-lookup
+                                    [model]="mCORR_MUNICIPIO_EMPLEO"
+                                    [(value)]="empleoModel.CORR_MUNICIPIO"
+                                    [valueExpr]="'CORR_MUNICIPIO'"
+                                    [displayExpr]="'NOMBRE_MUNICIPIO'"
+                                    [selectedRowKeys]="selectedLookUpCORR_MUNICIPIO"
+                                    [readOnly]="readOnly || empleoModel.TIENE_EMPLEO_FUERA === true"
+                                    [showClearButton]="true"
+                                >
+                                </app-data-lookup>
+                            </div>
+                        </dx-form>
+                        <ng-template #sinEmpleo>
+                            <p class="aca-prospecto-vacio" *ngIf="!empleoEliminar">
+                                El prospecto declaró que no trabaja.<span *ngIf="isForm()"> Para registrar su empleo, marque "¿Está trabajando actualmente?".</span>
+                            </p>
+                        </ng-template>
+                    </div>
+                </dxi-item>
+
+                <!-- ================= Contacto ================= -->
+                <dxi-item title="Contacto" [icon]="'tel'">
+                    <div class="aca-prospecto-tab">
                         <!-- Contactos: N teléfonos y correos; el principal de cada tipo es el que usa el portal
                              (perfil y correo del token), por eso no se puede eliminar. -->
                         <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
@@ -291,7 +428,59 @@
                                 <dx-button [text]="'Cancelar'" [icon]="'close'" (onClick)="cancelarContacto()"></dx-button>
                             </div>
                         </ng-template>
+                    </div>
+                </dxi-item>
 
+                <!-- ================= Salud ================= -->
+                <dxi-item title="Salud" [icon]="'heart'">
+                    <div class="aca-prospecto-tab">
+                        <!-- Igual que el portal: el check habilita la limitación y al guardar queda POSEE_DISCAPACIDAD. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">Salud</span>
+                                <span class="aca-prospecto-section-subtitle">Estado de salud y contacto de emergencia</span>
+                            </span>
+                            <dx-check-box
+                                #chkDiscapacidad
+                                [value]="discapacidadActiva"
+                                [text]="'¿Posee discapacidad?'"
+                                [disabled]="readOnly || !personaModel"
+                                (onValueChanged)="onDiscapacidadChanged($event)"
+                            >
+                            </dx-check-box>
+                        </header>
+                        <p class="aca-prospecto-aviso" *ngIf="discapacidadEliminar">
+                            La limitación se eliminará al guardar.
+                        </p>
+                        <dx-form
+                            #fLimitacion
+                            *ngIf="limitacionModel && !discapacidadEliminar"
+                            class="sguees-form-premium"
+                            [formData]="limitacionModel"
+                            [labelLocation]="'top'"
+                            [colCount]="8"
+                            [readOnly]="readOnly"
+                            [items]="itemsLimitacion"
+                        >
+                            <div *dxTemplate="let cellInfo of 'CORR_LIMITACION_FISICALookup'">
+                                <app-data-lookup
+                                    [model]="mCORR_LIMITACION_FISICA"
+                                    [(value)]="limitacionModel.CORR_LIMITACION_FISICA"
+                                    [valueExpr]="'CORR_LIMITACION_FISICA'"
+                                    [displayExpr]="'NOMBRE'"
+                                    [selectedRowKeys]="selectedLookUpCORR_LIMITACION_FISICA"
+                                    [readOnly]="readOnly"
+                                    [showClearButton]="true"
+                                >
+                                </app-data-lookup>
+                            </div>
+                        </dx-form>
+                    </div>
+                </dxi-item>
+
+                <!-- ================= Datos familiares ================= -->
+                <dxi-item title="Datos familiares" [icon]="'group'">
+                    <div class="aca-prospecto-tab">
                         <!-- Familia: mientras se edita un familiar, el formulario ocupa el lugar de la grilla. -->
                         <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
                             <span class="aca-prospecto-section-head-texto">
@@ -383,228 +572,15 @@
                                 Ningún familiar está marcado como contacto de emergencia.<span *ngIf="isForm()"> Márquelo en su ficha dentro de Familia.</span>
                             </p>
                         </ng-template>
-
-                        <!-- Salud: N limitaciones (sin repetir). "Posee discapacidad" es espejo: la mantiene el API. -->
-                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
-                            <span class="aca-prospecto-section-head-texto">
-                                <span class="aca-prospecto-section-title">Salud</span>
-                                <span class="aca-prospecto-section-subtitle">{{ limitacionModel ? 'Acepte o cancele para volver al listado' : 'Limitaciones físicas declaradas' }}</span>
-                            </span>
-                            <dx-button
-                                *ngIf="!readOnly && !limitacionModel"
-                                [text]="'Nuevo'"
-                                [icon]="'plus'"
-                                [type]="'default'"
-                                [disabled]="!personaModel"
-                                (onClick)="nuevaLimitacion()"
-                            >
-                            </dx-button>
-                        </header>
-                        <app-data-grid-mtto
-                            *ngIf="!limitacionModel; else formularioLimitacion"
-                            [isBrowse]="true"
-                            [models]="limitaciones"
-                            [columns]="columnsLimitacion"
-                            [summary]="summaryLimitacion"
-                            [keyExpr]="'CORR_PROSPECTO_LIMITACION_FISICA'"
-                            [unifiedToolbar]="false"
-                            [showAdd]="false"
-                            [showSearch]="false"
-                            [showExport]="false"
-                            [showRefresh]="false"
-                            [permiteEditar]="!readOnly"
-                            [permiteDele]="!readOnly"
-                            [confirmDelete]="true"
-                            [gridHeight]="200"
-                            [showEmptyState]="true"
-                            [emptyTitle]="'Sin limitaciones'"
-                            [emptyMessage]="'El prospecto no declaró limitaciones físicas.'"
-                            (editClick)="editarLimitacion($event)"
-                            (rowRemoving)="eliminarLimitacion($event)"
-                        >
-                        </app-data-grid-mtto>
-                        <ng-template #formularioLimitacion>
-                            <dx-form
-                                #fLimitacion
-                                class="sguees-form-premium"
-                                [formData]="limitacionModel"
-                                [labelLocation]="'top'"
-                                [colCount]="8"
-                                [items]="itemsLimitacion"
-                            >
-                                <div *dxTemplate="let cellInfo of 'CORR_LIMITACION_FISICALookup'">
-                                    <app-data-lookup
-                                        [model]="mCORR_LIMITACION_FISICA"
-                                        [(value)]="limitacionModel.CORR_LIMITACION_FISICA"
-                                        [valueExpr]="'CORR_LIMITACION_FISICA'"
-                                        [displayExpr]="'NOMBRE'"
-                                        [selectedRowKeys]="selectedLookUpCORR_LIMITACION_FISICA"
-                                        [showClearButton]="true"
-                                    >
-                                    </app-data-lookup>
-                                </div>
-                            </dx-form>
-                            <div class="aca-prospecto-form-acciones">
-                                <dx-button [text]="'Aceptar'" [icon]="'check'" [type]="'default'" (onClick)="aceptarLimitacion()"></dx-button>
-                                <dx-button [text]="'Cancelar'" [icon]="'close'" (onClick)="cancelarLimitacion()"></dx-button>
-                            </div>
-                        </ng-template>
-
-                        <!-- Migratorio: N deportaciones. "Ha sido deportado" es espejo: la mantiene el API. -->
-                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
-                            <span class="aca-prospecto-section-head-texto">
-                                <span class="aca-prospecto-section-title">Migratorio</span>
-                                <span class="aca-prospecto-section-subtitle">{{ deportacionModel ? 'Acepte o cancele para volver al listado' : 'Deportaciones declaradas' }}</span>
-                            </span>
-                            <dx-button
-                                *ngIf="!readOnly && !deportacionModel"
-                                [text]="'Nuevo'"
-                                [icon]="'plus'"
-                                [type]="'default'"
-                                [disabled]="!personaModel"
-                                (onClick)="nuevaDeportacion()"
-                            >
-                            </dx-button>
-                        </header>
-                        <app-data-grid-mtto
-                            *ngIf="!deportacionModel; else formularioDeportacion"
-                            [isBrowse]="true"
-                            [models]="deportaciones"
-                            [columns]="columnsDeportacion"
-                            [summary]="summaryDeportacion"
-                            [keyExpr]="'CORR_PROSPECTO_DEPORTACION'"
-                            [unifiedToolbar]="false"
-                            [showAdd]="false"
-                            [showSearch]="false"
-                            [showExport]="false"
-                            [showRefresh]="false"
-                            [permiteEditar]="!readOnly"
-                            [permiteDele]="!readOnly"
-                            [confirmDelete]="true"
-                            [gridHeight]="200"
-                            [showEmptyState]="true"
-                            [emptyTitle]="'Sin deportaciones'"
-                            [emptyMessage]="'El prospecto no declaró deportaciones.'"
-                            (editClick)="editarDeportacion($event)"
-                            (rowRemoving)="eliminarDeportacion($event)"
-                        >
-                        </app-data-grid-mtto>
-                        <ng-template #formularioDeportacion>
-                            <dx-form
-                                #fDeportacion
-                                class="sguees-form-premium"
-                                [formData]="deportacionModel"
-                                [labelLocation]="'top'"
-                                [colCount]="8"
-                                [items]="itemsDeportacion"
-                            >
-                                <div *dxTemplate="let cellInfo of 'CORR_PAIS_DEPORTACIONLookup'">
-                                    <app-data-lookup
-                                        [model]="mCORR_PAIS"
-                                        [(value)]="deportacionModel.CORR_PAIS"
-                                        [valueExpr]="'CORR_PAIS'"
-                                        [displayExpr]="'NOMBRE_PAIS'"
-                                        [selectedRowKeys]="selectedLookUpCORR_PAIS"
-                                        [showClearButton]="true"
-                                    >
-                                    </app-data-lookup>
-                                </div>
-                            </dx-form>
-                            <div class="aca-prospecto-form-acciones">
-                                <dx-button [text]="'Aceptar'" [icon]="'check'" [type]="'default'" (onClick)="aceptarDeportacion()"></dx-button>
-                                <dx-button [text]="'Cancelar'" [icon]="'close'" (onClick)="cancelarDeportacion()"></dx-button>
-                            </div>
-                        </ng-template>
-
-                        <!-- Información adicional: N medios, uno por medio. "Otro" y "Referido amigo/familiar"
-                             llevan campos propios, igual que en el portal. -->
-                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
-                            <span class="aca-prospecto-section-head-texto">
-                                <span class="aca-prospecto-section-title">Información adicional</span>
-                                <span class="aca-prospecto-section-subtitle">{{ medioModel ? 'Acepte o cancele para volver al listado' : '¿Cómo se enteró de la universidad?' }}</span>
-                            </span>
-                            <dx-button
-                                *ngIf="!readOnly && !medioModel"
-                                [text]="'Nuevo'"
-                                [icon]="'plus'"
-                                [type]="'default'"
-                                [disabled]="!personaModel"
-                                (onClick)="nuevoMedio()"
-                            >
-                            </dx-button>
-                        </header>
-                        <app-data-grid-mtto
-                            *ngIf="!medioModel; else formularioMedio"
-                            [isBrowse]="true"
-                            [models]="medios"
-                            [columns]="columnsMedio"
-                            [summary]="summaryMedio"
-                            [keyExpr]="'CORR_PROSPECTO_MEDIO'"
-                            [unifiedToolbar]="false"
-                            [showAdd]="false"
-                            [showSearch]="false"
-                            [showExport]="false"
-                            [showRefresh]="false"
-                            [permiteEditar]="!readOnly"
-                            [permiteDele]="!readOnly"
-                            [confirmDelete]="true"
-                            [gridHeight]="200"
-                            [showEmptyState]="true"
-                            [emptyTitle]="'Sin medios registrados'"
-                            [emptyMessage]="'El prospecto no indicó cómo conoció la universidad.'"
-                            (editClick)="editarMedio($event)"
-                            (rowRemoving)="eliminarMedio($event)"
-                        >
-                        </app-data-grid-mtto>
-                        <ng-template #formularioMedio>
-                            <dx-form
-                                #fMedio
-                                class="sguees-form-premium"
-                                [formData]="medioModel"
-                                [labelLocation]="'top'"
-                                [colCount]="8"
-                                [items]="itemsMedio"
-                            >
-                                <div *dxTemplate="let cellInfo of 'CORR_MEDIO_ORIGENLookup'">
-                                    <app-data-lookup
-                                        [model]="mCORR_MEDIO_ORIGEN"
-                                        [(value)]="medioModel.CORR_MEDIO_ORIGEN"
-                                        (valueChange)="onMedioChanged($event)"
-                                        [valueExpr]="'CORR_MEDIO_ORIGEN'"
-                                        [displayExpr]="'NOMBRE'"
-                                        [selectedRowKeys]="selectedLookUpCORR_MEDIO_ORIGEN"
-                                        [showClearButton]="true"
-                                    >
-                                    </app-data-lookup>
-                                </div>
-                                <!-- dropDownWidth: los nombres de carrera son largos y se cortaban en el desplegable. -->
-                                <div *dxTemplate="let cellInfo of 'CORR_CARRERA_REFIERELookup'">
-                                    <app-data-lookup
-                                        [model]="mCORR_CARRERA"
-                                        [(value)]="medioModel.CORR_CARRERA_REFIERE"
-                                        [valueExpr]="'CORR_CARRERA'"
-                                        [displayExpr]="'NOMBRE_CARRERA'"
-                                        [selectedRowKeys]="selectedLookUpCORR_CARRERA"
-                                        [dropDownWidth]="480"
-                                        [showClearButton]="true"
-                                    >
-                                    </app-data-lookup>
-                                </div>
-                            </dx-form>
-                            <div class="aca-prospecto-form-acciones">
-                                <dx-button [text]="'Aceptar'" [icon]="'check'" [type]="'default'" (onClick)="aceptarMedio()"></dx-button>
-                                <dx-button [text]="'Cancelar'" [icon]="'close'" (onClick)="cancelarMedio()"></dx-button>
-                            </div>
-                        </ng-template>
                     </div>
                 </dxi-item>
 
-                <!-- ================= Información académica ================= -->
-                <dxi-item title="Información académica" [icon]="'bookmark'" [visible]="esAcademico">
+                <!-- ================= Educación ================= -->
+                <dxi-item title="Educación" [icon]="'bookmark'" [visible]="esAcademico">
                     <div class="aca-prospecto-tab">
                         <header class="aca-prospecto-section-head">
                             <span class="aca-prospecto-section-title">Carrera a la que aplica</span>
-                            <span class="aca-prospecto-section-subtitle">Solo lectura: la carrera se cambia desde el portal de admisiones</span>
+                            <span class="aca-prospecto-section-subtitle">Solo lectura: facultad y plan. El ciclo y la carrera se cambian en Datos del prospecto</span>
                         </header>
                         <dx-form
                             class="sguees-form-premium"
@@ -753,6 +729,92 @@
                             <p class="aca-prospecto-vacio" *ngIf="!estudioUeesEliminar">
                                 El prospecto no es graduado de la UEES.
                             </p>
+                        </ng-template>
+                    </div>
+                </dxi-item>
+
+                <!-- ================= Información adicional ================= -->
+                <dxi-item title="Información adicional" [icon]="'info'">
+                    <div class="aca-prospecto-tab">
+                        <!-- Información adicional: N medios, uno por medio. "Otro" y "Referido amigo/familiar"
+                             llevan campos propios, igual que en el portal. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">Información adicional</span>
+                                <span class="aca-prospecto-section-subtitle">{{ medioModel ? 'Acepte o cancele para volver al listado' : '¿Cómo se enteró de la universidad?' }}</span>
+                            </span>
+                            <dx-button
+                                *ngIf="!readOnly && !medioModel"
+                                [text]="'Nuevo'"
+                                [icon]="'plus'"
+                                [type]="'default'"
+                                [disabled]="!personaModel"
+                                (onClick)="nuevoMedio()"
+                            >
+                            </dx-button>
+                        </header>
+                        <app-data-grid-mtto
+                            *ngIf="!medioModel; else formularioMedio"
+                            [isBrowse]="true"
+                            [models]="medios"
+                            [columns]="columnsMedio"
+                            [summary]="summaryMedio"
+                            [keyExpr]="'CORR_PROSPECTO_MEDIO'"
+                            [unifiedToolbar]="false"
+                            [showAdd]="false"
+                            [showSearch]="false"
+                            [showExport]="false"
+                            [showRefresh]="false"
+                            [permiteEditar]="!readOnly"
+                            [permiteDele]="!readOnly"
+                            [confirmDelete]="true"
+                            [gridHeight]="200"
+                            [showEmptyState]="true"
+                            [emptyTitle]="'Sin medios registrados'"
+                            [emptyMessage]="'El prospecto no indicó cómo conoció la universidad.'"
+                            (editClick)="editarMedio($event)"
+                            (rowRemoving)="eliminarMedio($event)"
+                        >
+                        </app-data-grid-mtto>
+                        <ng-template #formularioMedio>
+                            <dx-form
+                                #fMedio
+                                class="sguees-form-premium"
+                                [formData]="medioModel"
+                                [labelLocation]="'top'"
+                                [colCount]="8"
+                                [items]="itemsMedio"
+                            >
+                                <div *dxTemplate="let cellInfo of 'CORR_MEDIO_ORIGENLookup'">
+                                    <app-data-lookup
+                                        [model]="mCORR_MEDIO_ORIGEN"
+                                        [(value)]="medioModel.CORR_MEDIO_ORIGEN"
+                                        (valueChange)="onMedioChanged($event)"
+                                        [valueExpr]="'CORR_MEDIO_ORIGEN'"
+                                        [displayExpr]="'NOMBRE'"
+                                        [selectedRowKeys]="selectedLookUpCORR_MEDIO_ORIGEN"
+                                        [showClearButton]="true"
+                                    >
+                                    </app-data-lookup>
+                                </div>
+                                <!-- dropDownWidth: los nombres de carrera son largos y se cortaban en el desplegable. -->
+                                <div *dxTemplate="let cellInfo of 'CORR_CARRERA_REFIERELookup'">
+                                    <app-data-lookup
+                                        [model]="mCORR_CARRERA"
+                                        [(value)]="medioModel.CORR_CARRERA_REFIERE"
+                                        [valueExpr]="'CORR_CARRERA'"
+                                        [displayExpr]="'NOMBRE_CARRERA'"
+                                        [selectedRowKeys]="selectedLookUpCORR_CARRERA"
+                                        [dropDownWidth]="480"
+                                        [showClearButton]="true"
+                                    >
+                                    </app-data-lookup>
+                                </div>
+                            </dx-form>
+                            <div class="aca-prospecto-form-acciones">
+                                <dx-button [text]="'Aceptar'" [icon]="'check'" [type]="'default'" (onClick)="aceptarMedio()"></dx-button>
+                                <dx-button [text]="'Cancelar'" [icon]="'close'" (onClick)="cancelarMedio()"></dx-button>
+                            </div>
                         </ng-template>
                     </div>
                 </dxi-item>
