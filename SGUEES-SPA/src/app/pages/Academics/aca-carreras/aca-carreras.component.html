@@ -1,0 +1,87 @@
+<div class="sguees-mtto-view">
+    <app-barra-data-mtto
+        [tituloVentana]="tituloVentana" [subTituloVentana]="subTituloVentana"
+        [isBrowse]="isBrowse()" [isForm]="isForm()" [permiteAdd]="permiteAdd"
+        (nuevo)="nuevo()" (guardar)="guardar()" (cancelar)="cancelar()">
+    </app-barra-data-mtto>
+
+    <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+        <dx-tab-panel [(selectedIndex)]="tabSeleccionada" [deferRendering]="false">
+        <dxi-item title="Datos generales">
+        <dx-form #fData [formData]="model" [labelLocation]="'top'" [items]="items"
+            [colCount]="mttoFormColCount" [colCountByScreen]="mttoFormColCountByScreen">
+            <div *dxTemplate="let cellInfo of 'areaLookup'">
+                <app-data-lookup [model]="areasDisponibles" [(value)]="model.CORR_AREA_ACADEMICA"
+                    [readOnly]="readOnly"></app-data-lookup>
+            </div>
+            <div *dxTemplate="let cellInfo of 'facultadLookup'">
+                <app-data-lookup [model]="facultadesDisponibles" [(value)]="model.CORR_FACULTAD"
+                    [readOnly]="readOnly"></app-data-lookup>
+            </div>
+            <div *dxTemplate="let cellInfo of 'gradoLookup'">
+                <app-data-lookup [model]="gradosDisponibles" [(value)]="model.CORR_GRADO_ACADEMICO"
+                    [readOnly]="readOnly" [showClearButton]="true"></app-data-lookup>
+            </div>
+        </dx-form>
+        </dxi-item>
+        <dxi-item title="Sedes">
+            <p *ngIf="!model.CORR_CARRERA">Guarde primero la carrera para asociarle sedes.</p>
+            <ng-container *ngIf="model.CORR_CARRERA">
+                <p>Las asociaciones se guardan de inmediato. Desactivar conserva los períodos y el historial.</p>
+                <p *ngIf="cambiosGeneralesPendientes">Guarde los cambios en Datos generales antes de modificar las sedes.</p>
+                <p *ngIf="cargandoSedes">Cargando o guardando sedes…</p>
+                <p *ngIf="!cargandoSedes && !sedesCargadas">No se pudieron cargar las sedes. Utilice Actualizar sedes.</p>
+                <app-data-lookup [model]="sedesDisponibles" [(value)]="sedeParaAsociar"
+                    [lookupColumns]="sedeLookupColumns" [showClearButton]="true"
+                    [readOnly]="!puedeModificarSedes || !permiteAdd"></app-data-lookup>
+                <dx-data-grid id="carreras-sedes-grid" [dataSource]="sedes" [keyExpr]="sedesKey" [columns]="sedesColumns"
+                    [selectedRowKeys]="sedesSeleccionadas"
+                    [showBorders]="true" [showRowLines]="true" [rowAlternationEnabled]="true"
+                    [allowColumnResizing]="true" [columnAutoWidth]="false" [width]="'100%'"
+                    (onSelectionChanged)="seleccionarSede($event)">
+                    <dxo-selection mode="single"></dxo-selection>
+                    <dxo-paging [pageSize]="10"></dxo-paging>
+                    <dxo-filter-row [visible]="true"></dxo-filter-row>
+                    <dxo-toolbar>
+                        <dxi-item location="before">
+                            <dx-button text="Asociar sede" icon="add" [visible]="permiteAdd"
+                                [disabled]="!puedeModificarSedes" (onClick)="asociarSede()"></dx-button>
+                        </dxi-item>
+                        <dxi-item location="before">
+                            <dx-button [text]="sedeSeleccionada?.ACTIVO ? 'Desactivar sede' : 'Activar sede'"
+                                [visible]="permiteEdit && !!sedeSeleccionada" [disabled]="!puedeModificarSedes"
+                                (onClick)="cambiarEstadoSede()"></dx-button>
+                        </dxi-item>
+                        <dxi-item location="after">
+                            <dx-button text="Actualizar sedes" icon="refresh" [disabled]="cargandoSedes"
+                                (onClick)="cargarSedes()"></dx-button>
+                        </dxi-item>
+                    </dxo-toolbar>
+                </dx-data-grid>
+            </ng-container>
+        </dxi-item>
+        <dxi-item title="Planes académicos">
+            <app-aca-planes-academicos [carreraId]="model.CORR_CARRERA"
+                [bloqueado]="cambiosGeneralesPendientes" [permiteCrear]="permiteAdd" [permiteEditar]="permiteEdit">
+            </app-aca-planes-academicos>
+        </dxi-item>
+        </dx-tab-panel>
+    </div>
+
+    <app-data-grid-mtto [isBrowse]="isBrowse()" [models]="models" [columns]="columns"
+        [fitViewport]="true"
+        [summary]="summary" [keyExpr]="mttoGridKeyExpr" [pageSize]="mttoPageSize"
+        [remoteOperations]="mttoRemoteOperations" [showAdd]="permiteAdd" [showRefresh]="true"
+        [showExport]="permitePrint" [permitePrint]="permitePrint"
+        [permiteEditar]="getPermiteEditar" [permiteDele]="getPermiteDele"
+        [showEstadoToolbar]="true" [campoEstado]="mttoCampoEstado"
+        [puedeCambiarEstado]="permiteEdit" [focusedRowKey]="gridFocusedRowKey"
+        [exportFileName]="'Carreras'"
+        (add)="nuevo()" (refresh)="consultar()" (editClick)="editarClick($event)"
+        (rowDblClick)="rowDblClick($event)" (rowRemoving)="rowRemoving($event)"
+        (focusedRowChanged)="focusedRowChanged($event)" (activarInactivar)="activar_inactivar()">
+    </app-data-grid-mtto>
+</div>
+<dx-load-panel [(visible)]="loadingVisible" [showIndicator]="true" [showPane]="true"
+    [shading]="true" shadingColor="rgba(0,0,0,0.4)"></dx-load-panel>
+

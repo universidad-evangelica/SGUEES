@@ -9,5 +9,6 @@ namespace sguees.Repositories
     public interface IACA_CARRERASRepository : IRepository<ACA_CARRERASTable>
     {
         Task<CResult> GetCORR_CARRERA_ACA_PROSPECTOAsync(List<CParameter> xWhere);
+        Task<CResult> ActivarInactivarAsync(ACA_CARRERASTable data, string user, string station);
     }
 }

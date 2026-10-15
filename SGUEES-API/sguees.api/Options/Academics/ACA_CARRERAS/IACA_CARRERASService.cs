@@ -12,5 +12,6 @@ namespace sguees.Services
         Task<CResult> UpdateAsync(ACA_CARRERASTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> DeleteAsync(ACA_CARRERASTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> GetCORR_CARRERA_ACA_PROSPECTOAsync(ACA_CARRERASParam xWhere);
+        Task<CResult> ActivarInactivarAsync(ACA_CARRERASTable data, string user, string station);
     }
 }

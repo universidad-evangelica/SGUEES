@@ -17,6 +17,36 @@
   width: 100%;
 }
 
+// El flex: 1 del grid puede ignorar su altura y crecer con todas las filas.
+// En pantallas acotadas, respetar la altura calculada para activar scroll interno.
+:host(.sguees-data-grid-mtto-host--fit-viewport) .sguees-data-grid-mtto--enterprise {
+  flex: 0 0 auto;
+
+  // Reservar el espacio para filas, sin márgenes grandes en barras y pie.
+  ::ng-deep {
+    .dx-datagrid-header-panel .dx-toolbar {
+      padding: 4px 0;
+    }
+
+    .dx-datagrid-pager,
+    .dx-pager {
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    .dx-datagrid-headers .dx-row > td,
+    .dx-datagrid-total-footer .dx-row > td {
+      padding-top: 4px;
+      padding-bottom: 4px;
+    }
+
+    .dx-datagrid-filter-panel {
+      padding: 4px 12px;
+      min-height: 28px;
+    }
+  }
+}
+
 .sguees-grid-mtto-shell--unified {
   gap: 0;
 }

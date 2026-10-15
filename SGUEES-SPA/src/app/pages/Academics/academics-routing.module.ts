@@ -1,4 +1,6 @@
 import { NgModule } from '@angular/core';
+import { AcaCarrerasComponent } from './aca-carreras/aca-carreras.component';
+import { AcaPeriodosAcademicosComponent } from './aca-periodos-academicos/aca-periodos-academicos.component';
 import { RouterModule, Routes } from '@angular/router';
 import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
 import { AuthGuardService } from 'src/app/shared/services/auth.service';
@@ -13,6 +15,19 @@ import { AcaProspectoComponent } from './aca-prospecto/aca-prospecto.component';
 import { AcaProspectoBecaComponent } from './aca-prospecto-beca/aca-prospecto-beca.component';
 
 const routes: Routes = [
+  {
+    path: 'aca-periodos-academicos', component: AcaPeriodosAcademicosComponent,
+    canActivate: [AuthGuardService], canDeactivate: [AppCanDeactivateGuard], data: { titulo: 'Períodos académicos' },
+    loadChildren: () => import('./aca-periodos-academicos/aca-periodos-academicos.module').then(m => m.AcaPeriodosAcademicosModule),
+  },
+  {
+    path: 'aca-carreras',
+    component: AcaCarrerasComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Carreras' },
+    loadChildren: () => import('./aca-carreras/aca-carreras.module').then(m => m.AcaCarrerasModule),
+  },
   // Qué hace: abre Solicitud nuevo ingreso, Solicitud beca y Solicitud socioeconómica.
   // Cómo lo hace: nuevo ingreso y socioeconómico comparten la pantalla; vista distingue las pestañas.
   {

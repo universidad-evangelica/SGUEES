@@ -1,0 +1,73 @@
+<div class="sguees-mtto-view">
+    <app-barra-data-mtto [tituloVentana]="tituloVentana" [subTituloVentana]="subTituloVentana" [isBrowse]="isBrowse()" [isForm]="isForm()"
+        [permiteAdd]="permiteAdd" (nuevo)="nuevo()" (guardar)="guardar()" (cancelar)="cancelar()"></app-barra-data-mtto>
+    <div class="content-block dx-card responsive-paddings">
+        <dx-button text="Consultar oferta" icon="search" [disabled]="!catalogosCargados || loadingVisible" (onClick)="abrirOferta()"></dx-button>
+        <dx-button text="Ver bitácora" icon="clock" [disabled]="!model?.CORR_PERIODO_ACADEMICO || loadingVisible" (onClick)="verHistorial()"></dx-button>
+        <dx-button text="Actualizar catálogos" icon="refresh" [disabled]="loadingVisible" (onClick)="cargarCatalogos()"></dx-button>
+    </div>
+    <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+        <p *ngIf="!model.CORR_PERIODO_ACADEMICO">El nuevo período se guardará inactivo. Actívelo desde el listado después de revisar su calendario.</p>
+        <p *ngIf="model.EN_USO">Este período tiene registros relacionados: sede, área, alcance, año y número están protegidos.</p>
+        <p *ngIf="anioDifiere" role="status">Atención: el año del ciclo difiere del año de inicio académico. Revise el calendario antes de guardar o activar.</p>
+        <dx-form #fData [formData]="model" labelLocation="top" [colCount]="2" [colCountByScreen]="{xs: 1, sm: 2, md: 2, lg: 2}">
+            <dxi-item dataField="CORR_SEDE" [label]="{text: 'Sede'}" template="sede">
+                <div *dxTemplate="let data of 'sede'"><app-data-lookup [model]="sedes" [value]="model.CORR_SEDE" (valueChange)="cambiarSede($event)" [readOnly]="identidadProtegida"></app-data-lookup></div>
+            </dxi-item>
+            <dxi-item dataField="CORR_AREA_ACADEMICA" [label]="{text: 'Área académica'}" template="area">
+                <div *dxTemplate="let data of 'area'"><app-data-lookup [model]="areas" [value]="model.CORR_AREA_ACADEMICA" (valueChange)="cambiarArea($event)" [readOnly]="identidadProtegida"></app-data-lookup></div>
+            </dxi-item>
+            <dxi-item dataField="ALCANCE" editorType="dxSelectBox" [label]="{text: 'Alcance'}"
+                [editorOptions]="{dataSource: alcances, readOnly: identidadProtegida, onValueChanged: alcanceChanged}"></dxi-item>
+            <dxi-item dataField="CORR_FACULTAD" [visible]="model.ALCANCE !== 'Área'" [label]="{text: 'Facultad'}" template="facultad">
+                <div *dxTemplate="let data of 'facultad'"><app-data-lookup [model]="facultades" [(value)]="model.CORR_FACULTAD" [readOnly]="identidadProtegida || model.ALCANCE === 'Carrera'"></app-data-lookup></div>
+            </dxi-item>
+            <dxi-item dataField="CORR_CARRERA" [visible]="model.ALCANCE === 'Carrera'" [label]="{text: 'Carrera'}" template="carrera" [colSpan]="2">
+                <div *dxTemplate="let data of 'carrera'"><app-data-lookup [model]="carreras" [value]="model.CORR_CARRERA" (valueChange)="cambiarCarrera($event)" [readOnly]="identidadProtegida"></app-data-lookup></div>
+            </dxi-item>
+            <dxi-item dataField="ANIO" editorType="dxNumberBox" [label]="{text: 'Año del ciclo'}" [editorOptions]="{min: 1, max: 9999, format: '#0', readOnly: identidadProtegida}">
+                <dxi-validation-rule type="required"></dxi-validation-rule><dxi-validation-rule type="pattern" pattern="^[0-9]+$" message="Ingrese un año entero."></dxi-validation-rule>
+            </dxi-item>
+            <dxi-item dataField="NUMERO_PERIODO" editorType="dxNumberBox" [label]="{text: 'Número de período'}" [editorOptions]="{min: 1, max: 255, format: '#0', readOnly: identidadProtegida}">
+                <dxi-validation-rule type="required"></dxi-validation-rule><dxi-validation-rule type="pattern" pattern="^[0-9]+$" message="Ingrese un número entero."></dxi-validation-rule>
+            </dxi-item>
+            <dxi-item dataField="FECHA_INICIO" editorType="dxDateBox" [label]="{text: 'Inicio académico'}" [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy', readOnly: readOnly}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            <dxi-item dataField="FECHA_FIN" editorType="dxDateBox" [label]="{text: 'Fin académico'}" [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy', readOnly: readOnly}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            <dxi-item dataField="FECHA_INICIO_INSCRIPCION" editorType="dxDateBox" [label]="{text: 'Apertura de inscripción'}" [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy', readOnly: readOnly}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            <dxi-item dataField="FECHA_FIN_INSCRIPCION" editorType="dxDateBox" [label]="{text: 'Cierre de inscripción'}" [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy', readOnly: readOnly}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            <dxi-item dataField="ACTIVO" editorType="dxCheckBox" [label]="{text: 'Activo'}" [editorOptions]="{readOnly: true}"></dxi-item>
+        </dx-form>
+    </div>
+    <app-data-grid-mtto [isBrowse]="isBrowse()" [models]="models" [columns]="columns" [fitViewport]="true" [viewportOffset]="390" [summary]="summary"
+        [keyExpr]="mttoGridKeyExpr" [pageSize]="mttoPageSize" [remoteOperations]="mttoRemoteOperations" [showAdd]="permiteAdd"
+        [showRefresh]="true" [showExport]="permitePrint" [permitePrint]="permitePrint" [permiteEditar]="getPermiteEditar" [permiteDele]="false"
+        [showEstadoToolbar]="true" campoEstado="ACTIVO" [puedeCambiarEstado]="permiteEdit" [focusedRowKey]="gridFocusedRowKey"
+        exportFileName="Períodos académicos" (add)="nuevo()" (refresh)="consultar()" (editClick)="editarClick($event)"
+        (rowDblClick)="rowDblClick($event)" (focusedRowChanged)="focusedRowChanged($event)" (activarInactivar)="activar_inactivar()"></app-data-grid-mtto>
+</div>
+<dx-popup [(visible)]="historialVisible" [title]="'Bitácora del período ' + historialId" [width]="'95vw'" [height]="'80vh'" [showCloseButton]="false" [hideOnOutsideClick]="false">
+    <div *dxTemplate="let data of 'content'" style="max-height: 65vh; overflow-y: auto;">
+        <p>Versiones guardadas desde la implementación de este mantenimiento. Cada fila muestra el estado posterior a la operación.</p>
+        <dx-data-grid id="periodos-historial-grid" [dataSource]="historial" keyExpr="ID_BITACORA" [columns]="historialColumns" [showBorders]="true" [allowColumnResizing]="true">
+            <dxo-paging [pageSize]="10"></dxo-paging>
+        </dx-data-grid>
+        <dx-button text="Cerrar bitácora" [disabled]="loadingVisible" (onClick)="historialVisible = false"></dx-button>
+    </div>
+</dx-popup>
+<dx-popup [(visible)]="ofertaVisible" title="Consultar oferta V2" [width]="'95vw'" [height]="'85vh'" [showCloseButton]="false" [hideOnOutsideClick]="false">
+    <div *dxTemplate="let data of 'content'" style="max-height: 70vh; overflow-y: auto;">
+        <p>Consulta la configuración guardada. V2 aplica prioridad Carrera → Facultad → Área; una excepción inactiva o cerrada puede bloquear el alcance general.</p>
+        <dx-form #fOferta [formData]="ofertaFiltro" [colCount]="3" labelLocation="top" [disabled]="loadingVisible" (onFieldDataChanged)="invalidarOferta()">
+            <dxi-item dataField="CORR_SEDE" editorType="dxSelectBox" [label]="{text: 'Sede de consulta'}" [editorOptions]="{dataSource: ofertaSedes, valueExpr: 'Key', displayExpr: 'Value'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            <dxi-item dataField="CORR_AREA_ACADEMICA" editorType="dxSelectBox" [label]="{text: 'Área de consulta'}" [editorOptions]="{dataSource: ofertaAreas, valueExpr: 'Key', displayExpr: 'Value'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            <dxi-item dataField="ANIO" editorType="dxNumberBox" [label]="{text: 'Año de consulta'}" [editorOptions]="{min: 1, max: 9999, format: '#0'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            <dxi-item dataField="NUMERO_PERIODO" editorType="dxNumberBox" [label]="{text: 'Número de consulta'}" [editorOptions]="{min: 1, max: 255, format: '#0'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            <dxi-item dataField="FECHA_REFERENCIA" editorType="dxDateBox" [label]="{text: 'Fecha de referencia'}" [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+        </dx-form>
+        <dx-button text="Consultar V2" icon="search" [disabled]="loadingVisible" (onClick)="consultarOferta()"></dx-button>
+        <p *ngIf="ofertaConsultada && !oferta.length">No hay oferta elegible para estos parámetros. Revise estados, prioridades, fechas de inscripción y planes vigentes.</p>
+        <dx-data-grid id="periodos-oferta-grid" [dataSource]="oferta" [columns]="ofertaColumns" [showBorders]="true" [allowColumnResizing]="true"><dxo-paging [pageSize]="10"></dxo-paging></dx-data-grid>
+        <dx-button text="Cerrar consulta" [disabled]="loadingVisible" (onClick)="ofertaVisible = false"></dx-button>
+    </div>
+</dx-popup>
+<dx-load-panel [(visible)]="loadingVisible" [showIndicator]="true" [showPane]="true" [shading]="true" shadingColor="rgba(0,0,0,0.4)"></dx-load-panel>

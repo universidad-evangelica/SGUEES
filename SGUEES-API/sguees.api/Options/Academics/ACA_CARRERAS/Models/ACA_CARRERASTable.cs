@@ -4,7 +4,7 @@ using eFramework.Data;
 namespace sguees.Models
 {
     // Qué hace: columnas de dbo.ACA_CARRERAS.
-    // Cómo lo hace: espejo de la tabla; hoy esta carpeta solo expone el combo de prospectos.
+    // Cómo lo hace: espejo de la tabla; empresa, auditoría y estado se controlan en el servidor.
     public class ACA_CARRERASTable : BaseEntity
     {
         public int CORR_CARRERA { get; set; }
