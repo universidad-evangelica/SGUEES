@@ -24,6 +24,7 @@
 
     <!-- Consulta o edición del prospecto; Cancelar regresa al listado. -->
     <div *ngIf="!isBrowse()" class="aca-prospecto-shell">
+        <div class="aca-prospecto-cabecera">
         <section class="sguees-section-card aca-prospecto-card">
             <header class="aca-prospecto-section-head">
                 <span class="aca-prospecto-section-title">Datos del prospecto</span>
@@ -82,6 +83,21 @@
                 </div>
             </dx-form>
         </section>
+
+        <!-- Boceto del flujo. Los botones se conectan cuando se implemente el flujo 104. -->
+        <aside class="sguees-section-card aca-prospecto-card aca-prospecto-flujo">
+            <header class="aca-prospecto-section-head">
+                <span class="aca-prospecto-section-title">Flujo de autorización</span>
+                <span class="aca-prospecto-section-subtitle">Solicitud de nuevo ingreso. Todavía no está conectado.</span>
+            </header>
+            <p class="aca-prospecto-flujo-actual">Estado actual: {{ model.ESTADO_SOLICITUD || 'Sin estado' }}</p>
+            <ol class="aca-prospecto-flujo-pasos">
+                <li>Ingresado, se muestra como Pendiente</li>
+                <li>Aprobado</li>
+                <li>Rechazada</li>
+            </ol>
+        </aside>
+        </div>
 
         <section class="sguees-section-card aca-prospecto-card">
             <!-- deferRendering=false: las tres pestañas se renderizan para poder validar sus formularios al guardar. -->
@@ -738,6 +754,34 @@
                                 El prospecto no es graduado de la UEES.
                             </p>
                         </ng-template>
+                    </div>
+                </dxi-item>
+
+                <!-- Documentos del tipo 104 que además cumplen la regla de este prospecto. -->
+                <dxi-item title="Documentación" [icon]="'file'">
+                    <div class="aca-prospecto-tab">
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Documentación obligatoria</span>
+                            <span class="aca-prospecto-section-subtitle">Solo los documentos marcados en la solicitud de nuevo ingreso y que aplican a este prospecto</span>
+                        </header>
+                        <app-data-grid-mtto
+                            [isBrowse]="true"
+                            [models]="documentos"
+                            [columns]="columnsDocumento"
+                            [summary]="summaryDocumento"
+                            [keyExpr]="'CORR_DOCUMENTO_ADMISION'"
+                            [unifiedToolbar]="false"
+                            [showAdd]="false"
+                            [showSearch]="true"
+                            [showExport]="false"
+                            [showRefresh]="false"
+                            [permiteEditar]="false"
+                            [permiteDele]="false"
+                            [showEmptyState]="true"
+                            [emptyTitle]="'Sin documentos'"
+                            [emptyMessage]="'No hay documentos configurados para esta solicitud, o la regla de equivalencia y cuota no pide ninguno.'"
+                        >
+                        </app-data-grid-mtto>
                     </div>
                 </dxi-item>
             </dx-tab-panel>

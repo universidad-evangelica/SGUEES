@@ -80,6 +80,15 @@ export class AcaProspectoService {
     }
 
     // Qué hace: catálogo fijo de formas de ingreso (mismos códigos que el portal de admisiones).
+    // Qué hace: texto del estado de la solicitud de nuevo ingreso.
+    // Cómo lo hace: Ingresado (38) se muestra como Pendiente. Los demás usan el nombre del flujo.
+    textoEstadoSolicitud(row: any): string {
+        if (Number(row?.CORR_ESTADO) === 38) {
+            return 'Pendiente';
+        }
+        return row?.NOMBRE_ESTADO || '';
+    }
+
     getFormasIngreso(): any[] {
         return [
             { CODIGO: 'NI', TEXTO: 'Nuevo Ingreso' },
@@ -97,7 +106,12 @@ export class AcaProspectoService {
             { dataField: 'NOMBRE_CARRERA', caption: 'Carrera', width: 280 },
             { dataField: 'NOMBRE_MODALIDAD', caption: 'Modalidad', width: 130 },
             { dataField: 'FORMA_INGRESO_TEXTO', caption: 'Forma de ingreso', width: 180 },
-            { dataField: 'ESTADO_TEXTO', caption: 'Estado', width: 120 },
+            {
+                dataField: 'NOMBRE_ESTADO',
+                caption: 'Estado',
+                width: 140,
+                calculateCellValue: (row: any) => this.textoEstadoSolicitud(row),
+            },
             {
                 dataField: 'FECHA_REGISTRO',
                 caption: 'Fecha de registro',
@@ -184,7 +198,7 @@ export class AcaProspectoService {
                 editorOptions: { maxLength: 100 },
             },
             {
-                dataField: 'ESTADO_TEXTO',
+                dataField: 'ESTADO_SOLICITUD',
                 label: { text: 'Estado' },
                 colSpan: 1,
                 editorOptions: { readOnly: true },

@@ -26,6 +26,9 @@ export interface AcaProspecto {
     FORMA_INGRESO_TEXTO: string;
     ESTADO: string;
     ESTADO_TEXTO: string;
+    CORR_ESTADO?: number | null;
+    NOMBRE_ESTADO?: string;
+    ESTADO_SOLICITUD?: string;
     FINANCIA_ESTUDIOS: string;
     FECHA_REGISTRO: Date | null;
 }

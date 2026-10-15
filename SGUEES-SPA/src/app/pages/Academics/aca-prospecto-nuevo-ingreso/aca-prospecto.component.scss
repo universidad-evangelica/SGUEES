@@ -4,6 +4,39 @@
 	gap: var(--sguees-content-gap, 16px);
 }
 
+// Qué hace: datos del prospecto a la izquierda y el boceto del flujo a la derecha.
+// Cómo lo hace: en pantallas angostas el flujo baja debajo de los datos.
+.aca-prospecto-cabecera {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 320px;
+	gap: var(--sguees-content-gap, 16px);
+	align-items: start;
+}
+
+.aca-prospecto-flujo-actual {
+	margin: 0 0 12px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--sguees-text-primary);
+}
+
+.aca-prospecto-flujo-pasos {
+	margin: 0;
+	padding-left: 18px;
+	color: var(--sguees-text-secondary, var(--texteditor-label-color));
+	font-size: 13px;
+}
+
+.aca-prospecto-flujo-pasos li + li {
+	margin-top: 8px;
+}
+
+@media (max-width: 1100px) {
+	.aca-prospecto-cabecera {
+		grid-template-columns: 1fr;
+	}
+}
+
 .aca-prospecto-card {
 	margin-bottom: 0;
 }

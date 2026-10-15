@@ -23,6 +23,7 @@ import { AcaProspectoFamiliarService } from './aca-prospecto-familiar/aca-prospe
 import { AcaProspectoLimitacionFisicaService } from './aca-prospecto-limitacion-fisica/aca-prospecto-limitacion-fisica.service';
 import { AcaProspectoDeportacionService } from './aca-prospecto-deportacion/aca-prospecto-deportacion.service';
 import { AcaProspectoMedioOrigenService, MEDIO_OTRO, MEDIO_REFERIDO } from './aca-prospecto-medio-origen/aca-prospecto-medio-origen.service';
+import { AcaProspectoDocumentoService } from './aca-prospecto-documento/aca-prospecto-documento.service';
 import {
     AcaProspectoEstudioService,
     SECCION_MEDIA,
@@ -186,6 +187,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: las consultas del detalle van en paralelo; sin esto, si la persona llega primero
     //               y declara que trabaja, se prepararía un empleo "nuevo" aunque ya tenga uno.
     empleoCargado = false;
+
+    // Documentos que aplican a esta solicitud (tipo 104 y regla del prospecto).
+    documentos: any[] = [];
+    columnsDocumento: any[] = [];
+    summaryDocumento: any = {};
     // #endregion
 
     // Qué hace: esta pantalla es solo la solicitud de nuevo ingreso.
@@ -210,6 +216,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         private serviceMedio: AcaProspectoMedioOrigenService,
         private serviceEstudio: AcaProspectoEstudioService,
         private serviceEmpleo: AcaProspectoEmpleoService,
+        private serviceDocumento: AcaProspectoDocumentoService,
         // Qué hace: devuelve a Angular el hilo tras los diálogos de DevExtreme (su promesa resuelve fuera
         //           de la zona y la pantalla no se refrescaría sola).
         private zone: NgZone
@@ -218,6 +225,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.columns = this.service.getColumns();
         this.summary = this.service.getSummary();
         this.items = this.service.getItems();
+        this.columnsDocumento = this.serviceDocumento.getColumns();
+        this.summaryDocumento = this.serviceDocumento.getSummary();
         this.itemsCarrera = this.service.getItemsCarrera();
         this.itemsPersona = this.servicePersona.getItems();
         this.columnsContacto = this.serviceContacto.getColumns();
@@ -586,7 +595,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     override fillData(xModel?: AcaProspecto): AcaProspecto {
         if (xModel !== undefined) {
             this.cargarDetalle(xModel.CORR_PROSPECTO);
-            return { ...xModel };
+            return { ...xModel, ESTADO_SOLICITUD: this.service.textoEstadoSolicitud(xModel) };
         }
         return {
             CORR_EMPRESA: 0,
@@ -616,6 +625,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             FORMA_INGRESO_TEXTO: '',
             ESTADO: '',
             ESTADO_TEXTO: '',
+            CORR_ESTADO: null,
+            NOMBRE_ESTADO: '',
+            ESTADO_SOLICITUD: '',
             FINANCIA_ESTUDIOS: '',
             FECHA_REGISTRO: null,
         };
@@ -1847,6 +1859,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.cargarLimitaciones(CORR_PROSPECTO);
         this.cargarDeportaciones(CORR_PROSPECTO);
         this.cargarMedios(CORR_PROSPECTO);
+        this.cargarDocumentos(CORR_PROSPECTO);
         // Solo lo de la vista abierta: lo que no se carga no tiene modelo, así que tampoco entra al guardado.
         if (this.esAcademico) {
             this.cargarEstudios(CORR_PROSPECTO);
@@ -1897,6 +1910,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.empleoNuevo = false;
         this.empleoEliminar = false;
         this.empleoCargado = false;
+        this.documentos = [];
         this.mCORR_DEPTO_RESIDENCIA = [];
         this.mCORR_MUNICIPIO_RESIDENCIA = [];
         this.mCORR_DEPTO_EMPLEO = [];
@@ -1994,6 +2008,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: medios de origen con su código y su firma, para enviar al API solo los que cambien.
+    // Qué hace: documentos de esta solicitud según el tipo 104 y la regla del prospecto.
+    cargarDocumentos(CORR_PROSPECTO: number): void {
+        this.cargarLista(this.serviceDocumento.getDocumentosPorProspecto(CORR_PROSPECTO), (data: any[]) => {
+            this.documentos = data ?? [];
+        });
+    }
+
     cargarMedios(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceMedio.getMediosPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.medios = (data ?? []).map((m) => ({ ...m, CODIGO_MEDIO: this.codigoMedio(m.CORR_MEDIO_ORIGEN) }));
