@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +27,7 @@ namespace sguees.Controllers
 
         // Qué hace: sectores laborales para los combos de la edición de prospectos (vistas de prospectos).
         [HttpGet("GetCORR_SECTOR_LABORAL_ACA_PROSPECTO")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
         public async Task<CResult> GetCORR_SECTOR_LABORAL_ACA_PROSPECTO([FromQuery] GEN_SECTOR_LABORALParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

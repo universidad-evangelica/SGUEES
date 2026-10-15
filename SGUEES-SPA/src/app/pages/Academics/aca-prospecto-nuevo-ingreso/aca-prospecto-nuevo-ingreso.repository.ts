@@ -8,8 +8,8 @@ import { CData } from 'src/app/FxAPI/CData';
 @Injectable({
     providedIn: 'root',
 })
-export class AcaProspectoRepository {
-    readonly xController = 'ACA_PROSPECTO';
+export class AcaProspectoNuevoIngresoRepository {
+    readonly xController = 'ACA_PROSPECTO_NUEVO_INGRESO';
 
     constructor(private objData: CData) {}
 

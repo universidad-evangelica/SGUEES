@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +28,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = PermisosProspecto.LecturaEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_SE_RESPUESTAParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -37,7 +36,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = PermisosProspecto.LecturaEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_SE_RESPUESTAParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -48,7 +47,7 @@ namespace sguees.Controllers
         // Cómo lo hace: recibe el lote (una fila por pregunta) y delega en GuardarAsync; la auditoría
         //               (usuario del token y estación) la aplica el repositorio en cada fila.
         [HttpPut("Guardar")]
-        [Authorize(Policy = PermisosProspecto.EdicionEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|U")]
         public async Task<IActionResult> Guardar(ACA_PROSPECTO_SE_RESPUESTA_GUARDARParam Data)
         {
             var resultado = await _service.GuardarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));

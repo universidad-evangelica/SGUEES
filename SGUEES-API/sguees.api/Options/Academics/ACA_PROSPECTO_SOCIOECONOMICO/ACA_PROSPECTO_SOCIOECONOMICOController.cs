@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +28,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = PermisosProspecto.LecturaEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_SOCIOECONOMICOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -37,7 +36,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = PermisosProspecto.LecturaEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_SOCIOECONOMICOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -48,7 +47,7 @@ namespace sguees.Controllers
         // Cómo lo hace: toma CORR_PROSPECTO_SOCIOECONOMICO del body o del query, completa auditoría y llama a UpdateAsync.
         //               La versión del cuestionario y los términos aceptados no se editan desde el ERP.
         [HttpPut]
-        [Authorize(Policy = PermisosProspecto.EdicionEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|U")]
         public async Task<IActionResult> Put(ACA_PROSPECTO_SOCIOECONOMICOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_SOCIOECONOMICOTable.CORR_PROSPECTO_SOCIOECONOMICO));

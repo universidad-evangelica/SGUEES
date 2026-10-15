@@ -9,19 +9,28 @@ import { AcaBecEntidadFinanciadoraComponent } from './aca-bec-entidad-financiado
 import { AcaBecFinanciadorComponent } from './aca-bec-financiador/aca-bec-financiador.component';
 import { AcaBecRequisitoComponent } from './aca-bec-requisito/aca-bec-requisito.component';
 import { AcaBecTipoComponent } from './aca-bec-tipo/aca-bec-tipo.component';
-import { AcaProspectoComponent } from './aca-prospecto/aca-prospecto.component';
+import { AcaProspectoNuevoIngresoComponent } from './aca-prospecto-nuevo-ingreso/aca-prospecto-nuevo-ingreso.component';
+import { AcaProspectoEconomicoComponent } from './aca-prospecto-economico/aca-prospecto-economico.component';
 import { AcaProspectoBecaComponent } from './aca-prospecto-beca/aca-prospecto-beca.component';
 
 const routes: Routes = [
   // Qué hace: abre Solicitud nuevo ingreso, Solicitud beca y Solicitud socioeconómica.
-  // Cómo lo hace: nuevo ingreso y socioeconómico comparten la pantalla; vista distingue las pestañas.
+  // Cómo lo hace: cada una tiene su pantalla. Socioeconómico ya no sale de aca-prospecto.
   {
-    path: 'aca-prospecto-academico',
-    component: AcaProspectoComponent,
+    path: 'aca-prospecto-nuevo-ingreso',
+    component: AcaProspectoNuevoIngresoComponent,
     canActivate: [AuthGuardService],
     canDeactivate: [AppCanDeactivateGuard],
-    data: { titulo: 'Solicitud nuevo ingreso', vista: 'academico' },
-    loadChildren: () => import('./aca-prospecto/aca-prospecto.module').then((m) => m.AcaProspectoModule),
+    data: { titulo: 'Solicitud nuevo ingreso' },
+    loadChildren: () => import('./aca-prospecto-nuevo-ingreso/aca-prospecto-nuevo-ingreso.module').then((m) => m.AcaProspectoNuevoIngresoModule),
+  },
+  {
+    path: 'aca-prospecto-academico',
+    component: AcaProspectoNuevoIngresoComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Solicitud nuevo ingreso' },
+    loadChildren: () => import('./aca-prospecto-nuevo-ingreso/aca-prospecto-nuevo-ingreso.module').then((m) => m.AcaProspectoNuevoIngresoModule),
   },
   {
     path: 'aca-prospecto-beca',
@@ -33,11 +42,11 @@ const routes: Routes = [
   },
   {
     path: 'aca-prospecto-economico',
-    component: AcaProspectoComponent,
+    component: AcaProspectoEconomicoComponent,
     canActivate: [AuthGuardService],
     canDeactivate: [AppCanDeactivateGuard],
-    data: { titulo: 'Solicitud socioeconómica', vista: 'economico' },
-    loadChildren: () => import('./aca-prospecto/aca-prospecto.module').then((m) => m.AcaProspectoModule),
+    data: { titulo: 'Solicitud socioeconómica' },
+    loadChildren: () => import('./aca-prospecto-economico/aca-prospecto-economico.module').then((m) => m.AcaProspectoEconomicoModule),
   },
   {
     path: 'aca-bec-origen-beca',

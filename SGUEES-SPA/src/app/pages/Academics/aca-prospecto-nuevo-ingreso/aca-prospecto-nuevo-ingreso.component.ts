@@ -16,7 +16,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { BarraMttoCombox } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { AcaProspecto } from './models/aca-prospecto';
 import { AcaProspectoCiclo } from './models/aca-prospecto-ciclo';
-import { AcaProspectoService } from './aca-prospecto.service';
+import { AcaProspectoNuevoIngresoService } from './aca-prospecto-nuevo-ingreso.service';
 import { AcaProspectoPersonaService } from './aca-prospecto-persona/aca-prospecto-persona.service';
 import { AcaProspectoContactoService, TIPO_CORREO } from './aca-prospecto-contacto/aca-prospecto-contacto.service';
 import { AcaProspectoFamiliarService } from './aca-prospecto-familiar/aca-prospecto-familiar.service';
@@ -30,9 +30,6 @@ import {
     SECCION_GRADUADO_UEES,
 } from './aca-prospecto-estudio/aca-prospecto-estudio.service';
 import { AcaProspectoEmpleoService } from './aca-prospecto-empleo/aca-prospecto-empleo.service';
-import { AcaProspectoSocioeconomicoService } from './aca-prospecto-socioeconomico/aca-prospecto-socioeconomico.service';
-import { AcaProspectoSeRespuestaService } from './aca-prospecto-se-respuesta/aca-prospecto-se-respuesta.service';
-import { AcaProspectoSeRespuesta } from './aca-prospecto-se-respuesta/models/aca-prospecto-se-respuesta';
 
 // Qué hace: consulta y edición de prospectos de pregrado por ciclo (Académico → Consultas → Prospectos).
 // Cómo lo hace: listado filtrado por el combo de ciclos de la barra; un clic en la fila abre la
@@ -42,16 +39,14 @@ import { AcaProspectoSeRespuesta } from './aca-prospecto-se-respuesta/models/aca
 //               (persona → empleo → socioeconómico → respuestas → prospecto), como el resto del ERP
 //               (eFramework no maneja transacciones). Las grillas hijas siguen de solo lectura (fase 2).
 @Component({
-    selector: 'app-aca-prospecto',
-    templateUrl: './aca-prospecto.component.html',
-    styleUrls: ['./aca-prospecto.component.scss'],
+    selector: 'app-aca-prospecto-nuevo-ingreso',
+    templateUrl: './aca-prospecto-nuevo-ingreso.component.html',
+    styleUrls: ['./aca-prospecto-nuevo-ingreso.component.scss'],
 })
-export class AcaProspectoComponent extends CBaseComponent implements OnInit {
+export class AcaProspectoNuevoIngresoComponent extends CBaseComponent implements OnInit {
     //#region <Declarando Variables>
     @ViewChild('fPersona', { static: false }) formPersona?: DxFormComponent;
     @ViewChild('fEmpleo', { static: false }) formEmpleo?: DxFormComponent;
-    @ViewChild('fSocio', { static: false }) formSocio?: DxFormComponent;
-    @ViewChild('fRespuestas', { static: false }) formRespuestas?: DxFormComponent;
     @ViewChild('fContacto', { static: false }) formContacto?: DxFormComponent;
     @ViewChild('fMedio', { static: false }) formMedio?: DxFormComponent;
     @ViewChild('fLimitacion', { static: false }) formLimitacion?: DxFormComponent;
@@ -100,7 +95,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     mCORR_MODALIDAD: any[] = [];
     // Ciclos a los que se puede mover el prospecto (no confundir con mCICLO, el filtro de la barra).
     mCICLO_CAMBIO: any[] = [];
-    mOPCIONES_SE: any[] = [];
     // Dependientes del país/departamento del registro abierto.
     mCORR_DEPTO_RESIDENCIA: any[] = [];
     mCORR_MUNICIPIO_RESIDENCIA: any[] = [];
@@ -192,30 +186,22 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: las consultas del detalle van en paralelo; sin esto, si la persona llega primero
     //               y declara que trabaja, se prepararía un empleo "nuevo" aunque ya tenga uno.
     empleoCargado = false;
-    socioeconomicoModel: any = null;
-    itemsSocioeconomico: any[] = [];
-    respuestasSE: AcaProspectoSeRespuesta[] = [];
-    itemsRespuestasSE: any[] = [];
-    respuestasSEModel: any = {};
     // #endregion
 
-    // Qué hace: la misma pantalla sirve dos opciones de menú (data.vista en academics-routing.module.ts):
-    //   'academico' -> Información personal + Información académica (y el encabezado editable)
-    //   'economico' -> Información personal + Información económica (encabezado de solo lectura)
-    // Cómo lo hace: la vista decide qué se carga, qué pestañas se ven y qué pasos entran al guardar; así una
-    //               vista nunca envía datos de la otra. El API exige el permiso de la vista correspondiente.
+    // Qué hace: esta pantalla es solo la solicitud de nuevo ingreso.
+    // Cómo lo hace: deja fija la parte académica y no carga el estudio socioeconómico.
     get esAcademico(): boolean {
-        return this.router?.snapshot?.data?.['vista'] !== 'economico';
+        return true;
     }
 
     get esEconomico(): boolean {
-        return this.router?.snapshot?.data?.['vista'] === 'economico';
+        return false;
     }
 
     constructor(
         public override appInfoService: AppInfoService,
         public override router: ActivatedRoute,
-        private service: AcaProspectoService,
+        private service: AcaProspectoNuevoIngresoService,
         private servicePersona: AcaProspectoPersonaService,
         private serviceContacto: AcaProspectoContactoService,
         private serviceFamiliar: AcaProspectoFamiliarService,
@@ -224,8 +210,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         private serviceMedio: AcaProspectoMedioOrigenService,
         private serviceEstudio: AcaProspectoEstudioService,
         private serviceEmpleo: AcaProspectoEmpleoService,
-        private serviceSocioeconomico: AcaProspectoSocioeconomicoService,
-        private serviceRespuestaSE: AcaProspectoSeRespuestaService,
         // Qué hace: devuelve a Angular el hilo tras los diálogos de DevExtreme (su promesa resuelve fuera
         //           de la zona y la pantalla no se refrescaría sola).
         private zone: NgZone
@@ -256,7 +240,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.itemsEstudioUniversidad = this.serviceEstudio.getItemsUniversidad();
         this.itemsEstudioUees = this.serviceEstudio.getItemsUees();
         this.itemsEmpleo = this.serviceEmpleo.getItems();
-        this.itemsSocioeconomico = this.serviceSocioeconomico.getItems();
         this.selectedLookUpCICLO = this.selectedLookUpCICLO.bind(this);
         this.selectedLookUpCORR_SEXO = this.selectedLookUpCORR_SEXO.bind(this);
         this.selectedLookUpCORR_ESTADO_CIVIL = this.selectedLookUpCORR_ESTADO_CIVIL.bind(this);
@@ -299,7 +282,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.getCORR_LIMITACION_FISICA();
         this.getCODIGO_PAIS();
         this.getCORR_MEDIO_ORIGEN();
-        this.getOPCIONES_SE();
     }
 
     selectedLookUpCICLO(vRow: any): string {
@@ -442,18 +424,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.mCODIGO_PAIS = this.serviceContacto.getCodigosPais(data);
             if (this.contactoModel) {
                 this.refrescarItemsContacto();
-            }
-        });
-    }
-
-    // Qué hace: opciones activas del banco para las preguntas de opción única del cuestionario.
-    // Cómo lo hace: si las respuestas ya estaban cargadas, rearma el formulario para que los combos
-    //               tengan sus opciones.
-    getOPCIONES_SE() {
-        this.cargarLookup('ACA_SE_OPCION', 'GetCORR_OPCION', (data) => {
-            this.mOPCIONES_SE = data;
-            if (this.respuestasSE.length) {
-                this.refrescarItemsRespuestasSE();
             }
         });
     }
@@ -1499,37 +1469,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         }
     }
 
-    // Qué hace: recalcula el aporte líquido cuando cambia el salario o los descuentos de un ingreso.
-    // Cómo lo hace: la regla vive en el servicio (salario − descuentos, mínimo 0); updateData refresca
-    //               el editor bloqueado. El líquido no dispara el cálculo, así que no hay ciclo.
-    onRespuestaSEChanged(e: any): void {
-        if (this.readOnly) {
-            return;
-        }
-        const calculo = this.serviceRespuestaSE.calcularLiquido(e?.dataField, this.respuestasSEModel);
-        if (calculo && this.formRespuestas?.instance) {
-            this.formRespuestas.instance.updateData(calculo.campo, calculo.valor);
-        }
-
-        // Preguntas dependientes (por ejemplo las de la universidad): al responder "No" se limpian y
-        // se ocultan, igual que el portal; al volver a "Sí" reaparecen vacías para llenarlas.
-        const dependientes = this.serviceRespuestaSE.getDependientes(e?.dataField);
-        if (!dependientes.length) {
-            return;
-        }
-        if (e?.value !== true) {
-            for (const campo of dependientes) {
-                this.formRespuestas?.instance?.updateData(campo, null);
-            }
-        }
-        this.refrescarItemsRespuestasSE();
-    }
-
-    // Qué hace: rearma las preguntas del cuestionario respetando las dependencias del formData actual.
-    private refrescarItemsRespuestasSE(): void {
-        this.itemsRespuestasSE = this.serviceRespuestaSE.getItems(this.respuestasSE, this.mOPCIONES_SE, this.respuestasSEModel);
-    }
-
     private prepararEmpleoNuevo(): void {
         this.empleoModel = this.serviceEmpleo.getModeloNuevo(this.personaModel);
         this.empleoNuevo = true;
@@ -1668,8 +1607,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.formEmergencia,
             this.formEmpleo,
             ...estudiosAGuardar.map((e) => e.form),
-            this.formSocio,
-            this.formRespuestas,
         ];
         for (const formulario of formularios) {
             const resultado = formulario?.instance?.validate();
@@ -1838,25 +1775,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.agregarPasoEstudio(pasos, 'Estudios universitarios', SECCION_UNIVERSIDAD, this.estudioUniversidad, this.formEstudioUniversidad, this.estudioUniversidadEliminar);
         this.agregarPasoEstudio(pasos, 'Graduado UEES', SECCION_GRADUADO_UEES, this.estudioUees, this.formEstudioUees, this.estudioUeesEliminar);
 
-        if (this.socioeconomicoModel) {
-            pasos.push({
-                nombre: 'Estudio socioeconómico',
-                accion: () => this.serviceSocioeconomico.update(this.leerFormData(this.formSocio, this.socioeconomicoModel)),
-            });
-            if (this.respuestasSE.length) {
-                pasos.push({
-                    nombre: 'Preguntas del cuestionario',
-                    accion: () =>
-                        this.serviceRespuestaSE.guardar(
-                            this.model.CORR_PROSPECTO,
-                            this.socioeconomicoModel.CORR_PROSPECTO_SOCIOECONOMICO,
-                            this.respuestasSE,
-                            this.leerFormData(this.formRespuestas, this.respuestasSEModel)
-                        ),
-                });
-            }
-        }
-        // El encabezado (carrera, ciclo, forma de ingreso) solo se edita desde la vista académica.
+        // El encabezado (carrera, ciclo, forma de ingreso) solo se edita desde la solicitud de nuevo ingreso.
         if (this.esAcademico) {
             pasos.push({
                 nombre: 'Datos del prospecto',
@@ -1932,11 +1851,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (this.esAcademico) {
             this.cargarEstudios(CORR_PROSPECTO);
         }
-        if (this.esEconomico) {
-            this.cargarEmpleo(CORR_PROSPECTO);
-            this.cargarSocioeconomico(CORR_PROSPECTO);
-            this.cargarRespuestasSE(CORR_PROSPECTO);
-        }
     }
 
     limpiarDetalle(): void {
@@ -1983,10 +1897,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.empleoNuevo = false;
         this.empleoEliminar = false;
         this.empleoCargado = false;
-        this.socioeconomicoModel = null;
-        this.respuestasSE = [];
-        this.itemsRespuestasSE = [];
-        this.respuestasSEModel = {};
         this.mCORR_DEPTO_RESIDENCIA = [];
         this.mCORR_MUNICIPIO_RESIDENCIA = [];
         this.mCORR_DEPTO_EMPLEO = [];
@@ -2161,22 +2071,5 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         });
     }
 
-    // Qué hace: cabecera del estudio socioeconómico (fechas, términos, cuota máxima).
-    cargarSocioeconomico(CORR_PROSPECTO: number): void {
-        this.cargarLista(this.serviceSocioeconomico.getSocioeconomicoPorProspecto(CORR_PROSPECTO), (data: any[]) => {
-            this.socioeconomicoModel = data[0] ?? null;
-        });
-    }
-
-    // Qué hace: arma el formulario de preguntas del estudio socioeconómico del prospecto.
-    // Cómo lo hace: el servicio genera los campos (con las opciones del banco para opción única)
-    //               y el formData según el tipo de cada pregunta.
-    cargarRespuestasSE(CORR_PROSPECTO: number): void {
-        this.cargarLista(this.serviceRespuestaSE.getRespuestasPorProspecto(CORR_PROSPECTO), (data: AcaProspectoSeRespuesta[]) => {
-            this.respuestasSE = data;
-            this.respuestasSEModel = this.serviceRespuestaSE.getFormData(data);
-            this.refrescarItemsRespuestasSE();
-        });
-    }
     // #endregion
 }

@@ -1,0 +1,31 @@
+export interface AcaProspecto {
+    CORR_EMPRESA: number;
+    CORR_PROSPECTO: number;
+    CODIGO_PROSPECTO: string;
+    ACTIVO_PROSPECTO: boolean;
+    CORR_PROSPECTO_PERSONA: number | null;
+    NOMBRES: string;
+    APELLIDO1: string;
+    APELLIDO2: string;
+    NOMBRE_COMPLETO: string;
+    DUI: string;
+    CORR_PERIODO_ACADEMICO: number;
+    ANIO: number;
+    NUMERO_PERIODO: number | null;
+    CICLO: string;
+    CORR_PLAN_ACADEMICO: number;
+    CODIGO_PLAN: string;
+    CORR_CARRERA: number | null;
+    CODIGO_CARRERA: string;
+    NOMBRE_CARRERA: string;
+    CORR_MODALIDAD: number | null;
+    NOMBRE_MODALIDAD: string;
+    CORR_FACULTAD: number | null;
+    NOMBRE_FACULTAD: string;
+    FORMA_INGRESO: string;
+    FORMA_INGRESO_TEXTO: string;
+    ESTADO: string;
+    ESTADO_TEXTO: string;
+    FINANCIA_ESTUDIOS: string;
+    FECHA_REGISTRO: Date | null;
+}

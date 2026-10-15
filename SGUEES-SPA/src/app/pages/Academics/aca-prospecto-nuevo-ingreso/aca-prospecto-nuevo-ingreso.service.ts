@@ -3,13 +3,13 @@ import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 
-import { AcaProspectoRepository } from './aca-prospecto.repository';
+import { AcaProspectoNuevoIngresoRepository } from './aca-prospecto-nuevo-ingreso.repository';
 
 @Injectable({
     providedIn: 'root',
 })
-export class AcaProspectoService {
-    constructor(private repo: AcaProspectoRepository) {}
+export class AcaProspectoNuevoIngresoService {
+    constructor(private repo: AcaProspectoNuevoIngresoRepository) {}
 
     // Qué hace: prospectos del ciclo seleccionado en la barra.
     // Cómo lo hace: la API exige año y número de período; el componente no consulta sin ciclo.

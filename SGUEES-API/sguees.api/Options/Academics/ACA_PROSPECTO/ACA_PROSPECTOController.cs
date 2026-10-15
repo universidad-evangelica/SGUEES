@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +27,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -36,7 +35,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -49,7 +48,7 @@ namespace sguees.Controllers
         // Qué hace: carreras que el prospecto puede elegir en su ciclo (cambio de carrera desde el ERP).
         // Cómo lo hace: misma oferta que el formulario del aspirante, más la condición de plan vigente.
         [HttpGet("GetCORR_CARRERA_ACA_PROSPECTO")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
         public async Task<CResult> GetCORR_CARRERA_ACA_PROSPECTO([FromQuery] ACA_PROSPECTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -58,7 +57,7 @@ namespace sguees.Controllers
 
         // Qué hace: modalidades con plan vigente de la carrera elegida.
         [HttpGet("GetCORR_MODALIDAD_ACA_PROSPECTO")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
         public async Task<CResult> GetCORR_MODALIDAD_ACA_PROSPECTO([FromQuery] ACA_PROSPECTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -67,7 +66,7 @@ namespace sguees.Controllers
 
         // Qué hace: ciclos a los que se puede mover el prospecto (combo "Ciclo" del encabezado).
         [HttpGet("GetCICLO_ACA_PROSPECTO")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
         public async Task<CResult> GetCICLO_ACA_PROSPECTO([FromQuery] ACA_PROSPECTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -77,7 +76,7 @@ namespace sguees.Controllers
         // Qué hace: consecuencias de cambiar ciclo/carrera antes de guardar (beca a clonar, reapertura).
         // Cómo lo hace: ACA_SP_CAMBIAR_CICLO_PROSPECTO con @SOLO_VALIDAR = 1: no escribe nada.
         [HttpGet("GetVALIDAR_CAMBIO_ACA_PROSPECTO")]
-        [Authorize(Policy = PermisosProspecto.EdicionAcademico)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|U")]
         public async Task<CResult> GetVALIDAR_CAMBIO_ACA_PROSPECTO([FromQuery] ACA_PROSPECTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -85,7 +84,7 @@ namespace sguees.Controllers
         }
 
         [HttpPut]
-        [Authorize(Policy = PermisosProspecto.EdicionAcademico)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico|U")]
         public async Task<IActionResult> Put(ACA_PROSPECTOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTOTable.CORR_PROSPECTO));

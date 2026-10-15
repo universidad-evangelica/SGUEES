@@ -8,7 +8,7 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { BarraMttoCombox } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { environment } from 'src/environments/environment';
-import { AcaProspectoCiclo } from '../aca-prospecto/models/aca-prospecto-ciclo';
+import { AcaProspectoCiclo } from '../aca-prospecto-nuevo-ingreso/models/aca-prospecto-ciclo';
 import { AcaProspectoBeca } from './models/aca-prospecto-beca';
 import { AcaProspectoBecaRespuesta } from './models/aca-prospecto-beca-respuesta';
 import { AcaProspectoBecaArchivo } from './models/aca-prospecto-beca-archivo';

@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +27,7 @@ namespace sguees.Controllers
 
         // Qué hace: carreras para los combos de la edición de prospectos (vistas de prospectos).
         [HttpGet("GetCORR_CARRERA_ACA_PROSPECTO")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
         public async Task<CResult> GetCORR_CARRERA_ACA_PROSPECTO([FromQuery] ACA_CARRERASParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +28,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_MEDIO_ORIGENParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -37,7 +36,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_MEDIO_ORIGENParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -46,7 +45,7 @@ namespace sguees.Controllers
 
         // Qué hace: actualiza un medio de origen del prospecto (permiso U del de las vistas de prospectos).
         [HttpPut]
-        [Authorize(Policy = PermisosProspecto.EdicionAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|U")]
         public async Task<IActionResult> Put(ACA_PROSPECTO_MEDIO_ORIGENTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_MEDIO_ORIGENTable.CORR_PROSPECTO_MEDIO));
@@ -58,7 +57,7 @@ namespace sguees.Controllers
 
         // Qué hace: agrega un medio de origen al prospecto (uno por medio).
         [HttpPost]
-        [Authorize(Policy = PermisosProspecto.EdicionAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|U")]
         public async Task<IActionResult> Post(ACA_PROSPECTO_MEDIO_ORIGENTable Data)
         {
             SetCreateAudit(Data);
@@ -69,7 +68,7 @@ namespace sguees.Controllers
 
         // Qué hace: elimina un medio de origen del prospecto.
         [HttpDelete]
-        [Authorize(Policy = PermisosProspecto.EdicionAmbos)]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso,/aca-prospecto-academico,/aca-prospecto-economico|U")]
         public async Task<IActionResult> Delete([FromQuery] ACA_PROSPECTO_MEDIO_ORIGENTable Data)
         {
             var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));

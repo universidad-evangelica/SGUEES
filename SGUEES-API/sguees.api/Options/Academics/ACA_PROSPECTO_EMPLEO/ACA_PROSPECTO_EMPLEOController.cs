@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +28,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = PermisosProspecto.LecturaEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_EMPLEOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -37,7 +36,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = PermisosProspecto.LecturaEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_EMPLEOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -47,7 +46,7 @@ namespace sguees.Controllers
         // Qué hace: actualiza la información laboral del prospecto.
         // Cómo lo hace: toma CORR_PROSPECTO_EMPLEO del body o del query, completa auditoría y llama a UpdateAsync.
         [HttpPut]
-        [Authorize(Policy = PermisosProspecto.EdicionEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|U")]
         public async Task<IActionResult> Put(ACA_PROSPECTO_EMPLEOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_EMPLEOTable.CORR_PROSPECTO_EMPLEO));
@@ -61,7 +60,7 @@ namespace sguees.Controllers
         // Cómo lo hace: los hijos del prospecto se rigen por el permiso U de las vistas de prospectos (no por C,
         //               que crearía prospectos); completa auditoría de creación y llama a CreateAsync.
         [HttpPost]
-        [Authorize(Policy = PermisosProspecto.EdicionEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|U")]
         public async Task<IActionResult> Post(ACA_PROSPECTO_EMPLEOTable Data)
         {
             SetCreateAudit(Data);
@@ -73,7 +72,7 @@ namespace sguees.Controllers
         // Qué hace: elimina la información laboral del prospecto y deja TRABAJA en 0 en la persona.
         // Cómo lo hace: PK por query (estándar DELETE); mismo permiso U del padre.
         [HttpDelete]
-        [Authorize(Policy = PermisosProspecto.EdicionEconomico)]
+        [Authorize(Policy = "/aca-prospecto-economico|U")]
         public async Task<IActionResult> Delete([FromQuery] ACA_PROSPECTO_EMPLEOTable Data)
         {
             var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
