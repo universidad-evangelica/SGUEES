@@ -52,4 +52,14 @@ export class AcaProspectoRepository {
     aprobar(model: any): Observable<IResult> {
         return this.objData.Put(model, this.xController, 'Aprobar', [], environment.UrlGENERALAPI);
     }
+
+    // Qué hace: rechaza la solicitud en el paso del analista.
+    rechazar(model: any): Observable<IResult> {
+        return this.objData.Put(model, this.xController, 'Rechazar', [], environment.UrlGENERALAPI);
+    }
+
+    // Qué hace: devuelve una solicitud aprobada a Ingresado, en la misma instancia.
+    revertir(model: any): Observable<IResult> {
+        return this.objData.Put(model, this.xController, 'Revertir', [], environment.UrlGENERALAPI);
+    }
 }

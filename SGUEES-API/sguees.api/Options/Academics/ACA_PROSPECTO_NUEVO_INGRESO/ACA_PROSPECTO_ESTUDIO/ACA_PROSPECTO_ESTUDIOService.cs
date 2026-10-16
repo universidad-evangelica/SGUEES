@@ -124,10 +124,7 @@ namespace sguees.Services
                 Data.CORR_DEPTO = null;
                 Data.CORR_MUNICIPIO = null;
 
-                if (!(Data.CORR_CARRERA > 0))
-                    return ErrorValidacion("Seleccione la carrera con la que se graduó en la UEES.");
-                if (Data.FECHA_GRADUACION == null)
-                    return ErrorValidacion("Indique la fecha de graduación.");
+                // La solicitud ingresada puede quedar sin carrera ni fecha; el 100 % se revisa al aprobar.
             }
             else
             {
@@ -145,8 +142,7 @@ namespace sguees.Services
                 Data.CORR_MUNICIPIO = null;
             }
 
-            if (Data.NOMBRE_INSTITUCION == null)
-                return ErrorValidacion("Ingrese el nombre de la institución.");
+            Data.NOMBRE_INSTITUCION ??= string.Empty;
 
             var largo = ExcedeLargo(Data.NOMBRE_INSTITUCION, 100, "El nombre de la institución")
                 ?? ExcedeLargo(Data.TITULO_OBTENIDO, 200, "El título obtenido")

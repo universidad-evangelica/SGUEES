@@ -55,8 +55,9 @@ namespace sguees.Services
         }
 
         // Qué hace: valida los datos personales antes de actualizar.
-        // Cómo lo hace: obligatorios nombres y primer apellido; largos según la tabla; municipio exige
-        //               departamento y departamento exige país (llaves compuestas de GEN_DEPTO/GEN_MUNICIPIO).
+        // Cómo lo hace: una solicitud ingresada puede guardar campos vacíos; el 100 % se exige al aprobar.
+        //               Nombres y primer apellido son NOT NULL, así que el vacío se guarda como texto en blanco.
+        //               Municipio exige departamento y departamento exige país.
         public async Task<CResult> UpdateAsync(ACA_PROSPECTO_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data == null || Data.CORR_PROSPECTO_PERSONA <= 0)
@@ -73,8 +74,8 @@ namespace sguees.Services
             Data.IGLESIA_ACTUAL = Limpiar(Data.IGLESIA_ACTUAL);
             Data.DIRECCION_ACTUAL = Limpiar(Data.DIRECCION_ACTUAL);
 
-            if (Data.NOMBRES == null) return ErrorValidacion("Debe ingresar los nombres.");
-            if (Data.APELLIDO1 == null) return ErrorValidacion("Debe ingresar el primer apellido.");
+            Data.NOMBRES ??= string.Empty;
+            Data.APELLIDO1 ??= string.Empty;
 
             var largo = ExcedeLargo(Data.NOMBRES, 200, "Nombres")
                 ?? ExcedeLargo(Data.APELLIDO1, 200, "Primer apellido")

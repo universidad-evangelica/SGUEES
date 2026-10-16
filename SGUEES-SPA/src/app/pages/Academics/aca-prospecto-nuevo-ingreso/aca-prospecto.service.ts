@@ -28,6 +28,16 @@ export class AcaProspectoService {
         return this.repo.aprobar({ CORR_PROSPECTO, OBSERVACION });
     }
 
+    // Qué hace: envía el rechazo con el comentario de la bitácora.
+    rechazar(CORR_PROSPECTO: number, OBSERVACION: string): Observable<IResult> {
+        return this.repo.rechazar({ CORR_PROSPECTO, OBSERVACION });
+    }
+
+    // Qué hace: revierte la aprobación y deja la solicitud Ingresada.
+    revertir(CORR_PROSPECTO: number, OBSERVACION: string): Observable<IResult> {
+        return this.repo.revertir({ CORR_PROSPECTO, OBSERVACION });
+    }
+
     get(param: any): Observable<IResult> {
         let xWhere: IParam[] = [{ Parameter: 'CORR_PROSPECTO', Value: param.CORR_PROSPECTO }];
         return this.repo.get(xWhere);
@@ -117,8 +127,15 @@ export class AcaProspectoService {
         return 'aca-prospecto-badge--default';
     }
 
+    // Qué hace: la solicitud aprobada ya no avisa el cierre de inscripción.
+    // Cómo lo hace: el estado 39 cierra el flujo, así que Vence y el plazo dejan de mostrarse.
+    solicitudAprobada(row: any): boolean {
+        return Number(row?.CORR_ESTADO) === 39;
+    }
+
     // Qué hace: texto de la columna Vence según los días que faltan para cerrar la inscripción.
     // Cómo lo hace: más de 15 días, de 6 a 15, 5 o menos, o vencido. La fecha es FECHA_FIN_INSCRIPCION del ciclo.
+    //               Si ya está aprobada, no hay aviso.
     textoVence(dias: number | null | undefined): string {
         if (dias === null || dias === undefined || Number.isNaN(Number(dias))) {
             return '—';
@@ -236,10 +253,14 @@ export class AcaProspectoService {
                 width: 170,
                 minWidth: 140,
                 allowHeaderFiltering: false,
-                calculateCellValue: (row: any) => this.textoVence(row?.DIAS_VENCE),
+                calculateCellValue: (row: any) => (this.solicitudAprobada(row) ? '—' : this.textoVence(row?.DIAS_VENCE)),
                 cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-                    const texto = this.textoVence(cellInfo?.data?.DIAS_VENCE);
                     cellElement.classList.add('aca-prospecto-badge-cell');
+                    if (this.solicitudAprobada(cellInfo?.data)) {
+                        cellElement.textContent = '—';
+                        return;
+                    }
+                    const texto = this.textoVence(cellInfo?.data?.DIAS_VENCE);
                     const badge = document.createElement('span');
                     badge.className = 'aca-prospecto-vence ' + this.claseVence(cellInfo?.data?.DIAS_VENCE);
                     badge.textContent = texto;

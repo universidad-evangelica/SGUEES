@@ -11,8 +11,12 @@ GO
 --   aspirante envía su documentación (portal /student-profile), o cuando
 --   se inicie el flujo desde el ERP.
 --   OPERACION = 1 inicia el flujo (portal).
---   OPERACION = 3 aprueba: solo si el login es el ejecutor del paso actual
---   y ese paso tiene acción hacia el estado 39 Aprobado.
+--   OPERACION = 3 aprueba: ejecutor del paso actual, acción hacia 39 Aprobado.
+--                 Esa acción AVANZA al paso Solicitud aprobada. La instancia sigue activa.
+--   OPERACION = 4 rechaza: ejecutor del paso actual, acción hacia 46 Rechazada.
+--   OPERACION = 5 revierte: la solicitud está en Solicitud aprobada (estado 39).
+--                 El ejecutor de ese paso usa la acción Retorna y vuelve a
+--                 Aprobación del analista, estado 38 Ingresado.
 --
 -- Importante:
 --   Este procedimiento NO guarda datos personales ni archivos.
@@ -40,6 +44,8 @@ GO
 -- @OPERACION:
 --   1 = ENVIAR / Iniciar flujo de nuevo ingreso.
 --   3 = APROBAR (ejecutor del paso actual; estado destino 39).
+--   4 = RECHAZAR (ejecutor del paso actual; estado destino 46).
+--   5 = REVERTIR (paso Solicitud aprobada; Retorna a 38 en Aprobación del analista).
 --
 -- @LOGIN_SISTEMA:
 --   Debe existir en SEG_USUARIO y estar activo. El aspirante del portal
@@ -60,9 +66,10 @@ GO
 --   -8 = falta @CORR_UNIDAD_DOCUMENTO
 --  -10 = falló EjecutarFlujoProceso (detalle en @MENSAJE_ERROR)
 --  -12 = la solicitud 104 ya tiene instancia activa (ya enviada)
---  -13 = el login no es el ejecutor del paso actual
---  -14 = el paso actual no tiene acción hacia Aprobado (39)
---  -15 = no hay instancia activa para aprobar
+--  -13 = el login no es el ejecutor del paso
+--  -14 = el paso no tiene la acción pedida
+--  -15 = no hay instancia para la operación
+--  -16 = Revertir solo aplica si el estado actual es Aprobado (39)
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_ACA_PROSPECTO_NUEVO_INGRESO_AUTORIZA]
 (
@@ -128,9 +135,9 @@ BEGIN
 		RETURN -1;
 	END
 
-	IF @OPERACION IS NULL OR @OPERACION NOT IN (1, 3)
+	IF @OPERACION IS NULL OR @OPERACION NOT IN (1, 3, 4, 5)
 	BEGIN
-		SET @MENSAJE_ERROR = 'Operacion no soportada. Use 1=ENVIAR o 3=APROBAR.';
+		SET @MENSAJE_ERROR = 'Operacion no soportada. Use 1=ENVIAR, 3=APROBAR, 4=RECHAZAR o 5=REVERTIR.';
 		RETURN -5;
 	END
 
@@ -230,44 +237,121 @@ BEGIN
 	  AND CORR_DOCUMENTO = @CORR_PROSPECTO
 	  AND ACTIVO = 1;
 
-	-- Aprobar: el login tiene que ser el actor origen del paso en el que está la solicitud.
-	IF @OPERACION = 3
+	-- Revertir también alcanza una aprobación anterior que cerró la instancia (ACTIVO = 0).
+	IF @OPERACION = 5 AND @ID_INSTANCIA IS NULL
+	BEGIN
+		SELECT TOP 1
+		       @ID_INSTANCIA = CORR_INSTANCIA,
+		       @CORR_PASO_ACTUAL = CORR_PASO_ACTUAL,
+		       @CORR_ESTADO = CORR_ESTADO_ACTUAL,
+		       @UNIDAD_DOC = ISNULL(@UNIDAD_DOC, CORR_UNIDAD_DOCUMENTO)
+		FROM dbo.SEG_FLUJO_INSTANCIA
+		WHERE CORR_EMPRESA = @EMPRESA
+		  AND CORR_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO
+		  AND CORR_DOCUMENTO = @CORR_PROSPECTO
+		  AND CORR_ESTADO_ACTUAL = 39
+		ORDER BY CORR_INSTANCIA DESC;
+	END
+
+	-- Aprobar, rechazar y revertir: el login tiene que ser el actor origen del paso de esa acción.
+	IF @OPERACION IN (3, 4, 5)
 	BEGIN
 		IF @ID_INSTANCIA IS NULL
 		BEGIN
-			SET @MENSAJE_ERROR = 'La solicitud no tiene un flujo activo para aprobar.';
+			SET @MENSAJE_ERROR = CASE WHEN @OPERACION = 5
+				THEN 'La solicitud no está aprobada para revertir.'
+				ELSE 'La solicitud no tiene un flujo activo.' END;
 			RETURN -15;
 		END
 
-		SELECT @ACTOR_PASO = CORR_ACTOR_ORIGEN
-		FROM dbo.SEG_FLUJO_PASO
-		WHERE CORR_EMPRESA = @EMPRESA
-		  AND CORR_PASO = @CORR_PASO_ACTUAL;
-
-		IF @ACTOR_PASO IS NULL
-		   OR ISNULL(dbo.SEG_FN_UsuarioMatchActorUnidad(LTRIM(RTRIM(@LOGIN_SISTEMA)), @ACTOR_PASO, @UNIDAD_DOC, @EMPRESA), 0) <> 1
+		IF @OPERACION = 5
 		BEGIN
-			SET @MENSAJE_ERROR = 'El usuario no es el ejecutor del paso actual.';
-			RETURN -13;
+			IF ISNULL(@CORR_ESTADO, 0) <> 39
+			BEGIN
+				SET @MENSAJE_ERROR = 'Revertir solo aplica cuando la solicitud está Aprobada.';
+				RETURN -16;
+			END
+
+			SET @ID_ACCION = NULL;
+			SELECT TOP 1
+			       @ID_ACCION = A.CORR_ACCION,
+			       @CORR_PASO_ACTUAL = A.CORR_PASO,
+			       @ACTOR_PASO = PS.CORR_ACTOR_ORIGEN
+			FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO AS A
+			INNER JOIN dbo.SEG_FLUJO_PASO AS PS
+				ON PS.CORR_EMPRESA = A.CORR_EMPRESA AND PS.CORR_PASO = A.CORR_PASO
+			WHERE A.CORR_EMPRESA = @EMPRESA
+			  AND A.CORR_FLUJO_PROCESO = @ID_FLUJO
+			  AND A.CORR_TIPO_MOVIMIENTO = 2
+			  AND A.CORR_ESTADO_DESTINO = 38
+			  AND A.CORR_PASO_DESTINO IS NOT NULL
+			  AND A.PERMITIDO = 1
+			  AND A.ACTIVO = 1
+			ORDER BY A.CORR_ACCION;
+
+			IF @ID_ACCION IS NULL
+			BEGIN
+				SET @MENSAJE_ERROR = 'El paso Solicitud aprobada no tiene la accion Retorna hacia Ingresado.';
+				RETURN -14;
+			END
+
+			IF @ACTOR_PASO IS NULL
+			   OR ISNULL(dbo.SEG_FN_UsuarioMatchActorUnidad(LTRIM(RTRIM(@LOGIN_SISTEMA)), @ACTOR_PASO, @UNIDAD_DOC, @EMPRESA), 0) <> 1
+			BEGIN
+				SET @MENSAJE_ERROR = 'El usuario no es el ejecutor del paso para revertir.';
+				RETURN -13;
+			END
+
+			-- La instancia queda activa en Solicitud aprobada para que el motor ejecute Retorna.
+			UPDATE dbo.SEG_FLUJO_INSTANCIA
+			SET ACTIVO = 1,
+			    CORR_PASO_ACTUAL = @CORR_PASO_ACTUAL
+			WHERE CORR_EMPRESA = @EMPRESA
+			  AND CORR_INSTANCIA = @ID_INSTANCIA;
+
+			SET @CORR_ACCION_USADA = @ID_ACCION;
+			SET @MODO = 'REVERTIR';
 		END
-
-		SET @ID_ACCION = NULL;
-		SELECT TOP 1 @ID_ACCION = CORR_ACCION
-		FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO
-		WHERE CORR_EMPRESA = @EMPRESA
-		  AND CORR_PASO = @CORR_PASO_ACTUAL
-		  AND CORR_ESTADO_DESTINO = 39
-		  AND PERMITIDO = 1
-		  AND ACTIVO = 1;
-
-		IF @ID_ACCION IS NULL
+		ELSE
 		BEGIN
-			SET @MENSAJE_ERROR = 'El paso actual no tiene una accion de aprobacion.';
-			RETURN -14;
-		END
+			IF ISNULL(@CORR_ESTADO, 0) <> 38
+			BEGIN
+				SET @MENSAJE_ERROR = 'La solicitud ya no está Ingresada.';
+				RETURN -15;
+			END
 
-		SET @CORR_ACCION_USADA = @ID_ACCION;
-		SET @MODO = 'APROBAR';
+			SELECT @ACTOR_PASO = CORR_ACTOR_ORIGEN
+			FROM dbo.SEG_FLUJO_PASO
+			WHERE CORR_EMPRESA = @EMPRESA
+			  AND CORR_PASO = @CORR_PASO_ACTUAL;
+
+			IF @ACTOR_PASO IS NULL
+			   OR ISNULL(dbo.SEG_FN_UsuarioMatchActorUnidad(LTRIM(RTRIM(@LOGIN_SISTEMA)), @ACTOR_PASO, @UNIDAD_DOC, @EMPRESA), 0) <> 1
+			BEGIN
+				SET @MENSAJE_ERROR = 'El usuario no es el ejecutor del paso actual.';
+				RETURN -13;
+			END
+
+			SET @ID_ACCION = NULL;
+			SELECT TOP 1 @ID_ACCION = CORR_ACCION
+			FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO
+			WHERE CORR_EMPRESA = @EMPRESA
+			  AND CORR_PASO = @CORR_PASO_ACTUAL
+			  AND CORR_ESTADO_DESTINO = CASE WHEN @OPERACION = 4 THEN 46 ELSE 39 END
+			  AND PERMITIDO = 1
+			  AND ACTIVO = 1;
+
+			IF @ID_ACCION IS NULL
+			BEGIN
+				SET @MENSAJE_ERROR = CASE WHEN @OPERACION = 4
+					THEN 'El paso actual no tiene una accion de rechazo.'
+					ELSE 'El paso actual no tiene una accion de aprobacion.' END;
+				RETURN -14;
+			END
+
+			SET @CORR_ACCION_USADA = @ID_ACCION;
+			SET @MODO = CASE WHEN @OPERACION = 4 THEN 'RECHAZAR' ELSE 'APROBAR' END;
+		END
 	END
 	ELSE IF @ID_INSTANCIA IS NOT NULL
 	BEGIN
@@ -286,7 +370,9 @@ BEGIN
 
 	IF @UNIDAD_DOC IS NULL
 	BEGIN
-		SET @MENSAJE_ERROR = 'Al iniciar el flujo (OPERACION=1) debe enviar @CORR_UNIDAD_DOCUMENTO.';
+		SET @MENSAJE_ERROR = CASE WHEN @OPERACION = 1
+			THEN 'Al iniciar el flujo (OPERACION=1) debe enviar @CORR_UNIDAD_DOCUMENTO.'
+			ELSE 'La instancia no tiene unidad de documento.' END;
 		RETURN -8;
 	END
 

@@ -5,5 +5,7 @@ namespace sguees.Models
     {
         public int CORR_PROSPECTO { get; set; }
         public bool PUEDE_APROBAR { get; set; }
+        public bool PUEDE_RECHAZAR { get; set; }
+        public bool PUEDE_REVERTIR { get; set; }
     }
 }

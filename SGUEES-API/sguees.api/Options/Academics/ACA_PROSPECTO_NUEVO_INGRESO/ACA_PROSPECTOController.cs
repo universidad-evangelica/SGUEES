@@ -99,7 +99,27 @@ namespace sguees.Controllers
         public async Task<IActionResult> Aprobar(ACA_PROSPECTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            var resultado = await _service.AprobarAsync(Data, GetUsuario(), Data.OBSERVACION, ClientInfoHelper.GetClientStation(HttpContext));
+            var resultado = await _service.AccionFlujoAsync(Data, GetUsuario(), Data.OBSERVACION, ClientInfoHelper.GetClientStation(HttpContext), 3);
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : Ok(resultado);
+        }
+
+        // Qué hace: rechaza la solicitud si este login ejecuta el paso actual.
+        [HttpPut("Rechazar")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
+        public async Task<IActionResult> Rechazar(ACA_PROSPECTOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            var resultado = await _service.AccionFlujoAsync(Data, GetUsuario(), Data.OBSERVACION, ClientInfoHelper.GetClientStation(HttpContext), 4);
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : Ok(resultado);
+        }
+
+        // Qué hace: revierte una solicitud aprobada a Ingresado, en la misma instancia.
+        [HttpPut("Revertir")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
+        public async Task<IActionResult> Revertir(ACA_PROSPECTOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            var resultado = await _service.AccionFlujoAsync(Data, GetUsuario(), Data.OBSERVACION, ClientInfoHelper.GetClientStation(HttpContext), 5);
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : Ok(resultado);
         }
 

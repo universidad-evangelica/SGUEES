@@ -22,8 +22,8 @@ namespace sguees.Repositories
 
         // Qué hace: solicitudes de nuevo ingreso ya enviadas, pendientes o aprobadas.
         // Cómo lo hace: lee V_ACA_PROSPECTO (sigue en pregrado, área 5) y deja la instancia
-        //               tipo 104 en estado 38 Ingresado (sigue activa) o 39 Aprobado
-        //               (el flujo ya cerró la instancia). Quien edita en el portal no tiene instancia.
+        //               tipo 104 en estado 38 Ingresado o 39 Aprobado.
+        //               Aprobado sigue en el paso Solicitud aprobada. Quien edita en el portal no tiene instancia.
         private const string _SqlSolicitudesIngresadas =
             "SELECT V.*, " +
             "PA.FECHA_FIN_INSCRIPCION, " +
@@ -341,18 +341,28 @@ namespace sguees.Repositories
             "ORDER BY X.ANIO, X.NUMERO_PERIODO";
 
 
-        // Qué hace: indica si el login es el ejecutor del paso actual y ese paso puede aprobar.
-        // Cómo lo hace: instancia activa tipo 104 en estado 38, actor origen del paso y acción hacia 39.
+        // Qué hace: indica qué botones del paso puede pulsar este login.
+        // Cómo lo hace: Aprobar y Rechazar exigen instancia activa en 38 y el actor origen de ese paso.
+        //               Revertir exige estado 39 y el actor origen del paso cuya acción Retorna a 38.
         private const string _SqlPuedeAprobar =
-            "SELECT CAST(CASE WHEN dbo.SEG_FN_UsuarioMatchActorUnidad(@LOGIN_SISTEMA, PS.CORR_ACTOR_ORIGEN, I.CORR_UNIDAD_DOCUMENTO, I.CORR_EMPRESA) = 1 " +
-            "AND EXISTS (SELECT 1 FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO A " +
-            "WHERE A.CORR_EMPRESA = I.CORR_EMPRESA AND A.CORR_PASO = I.CORR_PASO_ACTUAL " +
-            "AND A.CORR_ESTADO_DESTINO = 39 AND A.PERMITIDO = 1 AND A.ACTIVO = 1) " +
-            "THEN 1 ELSE 0 END AS bit) AS PUEDE_APROBAR " +
+            "SELECT CAST(CASE WHEN I.ACTIVO = 1 AND I.CORR_ESTADO_ACTUAL = 38 " +
+            "AND dbo.SEG_FN_UsuarioMatchActorUnidad(@LOGIN_SISTEMA, PS.CORR_ACTOR_ORIGEN, I.CORR_UNIDAD_DOCUMENTO, I.CORR_EMPRESA) = 1 " +
+            "AND EXISTS (SELECT 1 FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO A WHERE A.CORR_EMPRESA = I.CORR_EMPRESA AND A.CORR_PASO = I.CORR_PASO_ACTUAL AND A.CORR_ESTADO_DESTINO = 39 AND A.PERMITIDO = 1 AND A.ACTIVO = 1) " +
+            "THEN 1 ELSE 0 END AS bit) AS PUEDE_APROBAR, " +
+            "CAST(CASE WHEN I.ACTIVO = 1 AND I.CORR_ESTADO_ACTUAL = 38 " +
+            "AND dbo.SEG_FN_UsuarioMatchActorUnidad(@LOGIN_SISTEMA, PS.CORR_ACTOR_ORIGEN, I.CORR_UNIDAD_DOCUMENTO, I.CORR_EMPRESA) = 1 " +
+            "AND EXISTS (SELECT 1 FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO A WHERE A.CORR_EMPRESA = I.CORR_EMPRESA AND A.CORR_PASO = I.CORR_PASO_ACTUAL AND A.CORR_ESTADO_DESTINO = 46 AND A.PERMITIDO = 1 AND A.ACTIVO = 1) " +
+            "THEN 1 ELSE 0 END AS bit) AS PUEDE_RECHAZAR, " +
+            "CAST(CASE WHEN I.CORR_ESTADO_ACTUAL = 39 AND EXISTS (" +
+            "SELECT 1 FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO AR " +
+            "INNER JOIN dbo.SEG_FLUJO_PASO PR ON PR.CORR_EMPRESA = AR.CORR_EMPRESA AND PR.CORR_PASO = AR.CORR_PASO " +
+            "WHERE AR.CORR_EMPRESA = I.CORR_EMPRESA AND AR.CORR_FLUJO_PROCESO = I.CORR_FLUJO_PROCESO AND AR.CORR_TIPO_MOVIMIENTO = 2 AND AR.CORR_ESTADO_DESTINO = 38 AND AR.CORR_PASO_DESTINO IS NOT NULL AND AR.PERMITIDO = 1 AND AR.ACTIVO = 1 " +
+            "AND dbo.SEG_FN_UsuarioMatchActorUnidad(@LOGIN_SISTEMA, PR.CORR_ACTOR_ORIGEN, I.CORR_UNIDAD_DOCUMENTO, I.CORR_EMPRESA) = 1" +
+            ") THEN 1 ELSE 0 END AS bit) AS PUEDE_REVERTIR " +
             "FROM dbo.SEG_FLUJO_INSTANCIA I " +
-            "INNER JOIN dbo.SEG_FLUJO_PASO PS ON PS.CORR_EMPRESA = I.CORR_EMPRESA AND PS.CORR_PASO = I.CORR_PASO_ACTUAL " +
-            "WHERE I.CORR_EMPRESA = @CORR_EMPRESA AND I.CORR_TIPO_DOCUMENTO = 104 " +
-            "AND I.CORR_DOCUMENTO = @CORR_PROSPECTO AND I.ACTIVO = 1 AND I.CORR_ESTADO_ACTUAL = 38";
+            "LEFT JOIN dbo.SEG_FLUJO_PASO PS ON PS.CORR_EMPRESA = I.CORR_EMPRESA AND PS.CORR_PASO = I.CORR_PASO_ACTUAL " +
+            "WHERE I.CORR_EMPRESA = @CORR_EMPRESA AND I.CORR_TIPO_DOCUMENTO = 104 AND I.CORR_DOCUMENTO = @CORR_PROSPECTO " +
+            "AND I.CORR_INSTANCIA = (SELECT MAX(I2.CORR_INSTANCIA) FROM dbo.SEG_FLUJO_INSTANCIA I2 WHERE I2.CORR_EMPRESA = I.CORR_EMPRESA AND I2.CORR_TIPO_DOCUMENTO = 104 AND I2.CORR_DOCUMENTO = I.CORR_DOCUMENTO)";
 
         public async Task<CResult> GetPuedeAprobarAsync(List<CParameter> xWhere)
         {
@@ -364,16 +374,27 @@ namespace sguees.Repositories
 
             try
             {
-                var puede = false;
+                var puedeAprobar = false;
+                var puedeRechazar = false;
+                var puedeRevertir = false;
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlPuedeAprobar, xWhere);
-                if (reader.Read() && reader["PUEDE_APROBAR"] != System.DBNull.Value)
-                    puede = Convert.ToBoolean(reader["PUEDE_APROBAR"]);
+                if (reader.Read())
+                {
+                    if (reader["PUEDE_APROBAR"] != DBNull.Value)
+                        puedeAprobar = Convert.ToBoolean(reader["PUEDE_APROBAR"]);
+                    if (reader["PUEDE_RECHAZAR"] != DBNull.Value)
+                        puedeRechazar = Convert.ToBoolean(reader["PUEDE_RECHAZAR"]);
+                    if (reader["PUEDE_REVERTIR"] != DBNull.Value)
+                        puedeRevertir = Convert.ToBoolean(reader["PUEDE_REVERTIR"]);
+                }
                 reader.Close();
 
                 objResultado.Data = new ACA_PROSPECTO_ACCION_FLUJOView
                 {
                     CORR_PROSPECTO = corrProspecto,
-                    PUEDE_APROBAR = puede
+                    PUEDE_APROBAR = puedeAprobar,
+                    PUEDE_RECHAZAR = puedeRechazar,
+                    PUEDE_REVERTIR = puedeRevertir
                 };
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
@@ -396,21 +417,158 @@ namespace sguees.Repositories
             return objResultado;
         }
 
-        // Qué hace: aprueba la solicitud con el login de la sesión.
-        // Cómo lo hace: OPERACION=3 del SP de autoriza; el SP rechaza si no es el ejecutor del paso.
-        public async Task<CResult> AprobarAsync(int corrEmpresa, int corrProspecto, string login, string observacion, string estacion)
+        // Qué hace: mismo 100 % que habilita Enviar en admisión.
+        // Cómo lo hace: promedia los anillos del portal (datos personales, documentación,
+        //               estudio socioeconómico y, si marcó interés, el formulario de beca).
+        private const string _SqlCompletitudAprobar =
+            "DECLARE @persona int, @pFilled int = 0, @pTotal int = 0, @pPct int = 0, " +
+            "@eq bit = 0, @cuota bit = 0, @dTotal int = 0, @dCarg int = 0, @dPct int = 0, " +
+            "@socio int, @version varchar(20), @seFilled int = 0, @seTotal int = 0, @sePct int = 0, " +
+            "@becas bit = 0, @beca int, @becaTipo int, @becaVer int, @bTotal int = 0, @bFilled int = 0, @bPct int = 0, " +
+            "@n int = 3, @general int = 0, @mensaje varchar(500) = ''; " +
+            "SELECT TOP 1 @persona = CORR_PROSPECTO_PERSONA FROM dbo.ACA_PROSPECTO_PERSONA WHERE CORR_PROSPECTO = @CORR_PROSPECTO; " +
+            "IF @persona IS NOT NULL BEGIN " +
+            "  SELECT @pTotal = 11, @pFilled = " +
+            "    CASE WHEN NULLIF(LTRIM(RTRIM(LUGAR_NACIMIENTO)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_PAIS_PROCEDENCIA IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_PAIS_RESIDENCIA IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_SEXO IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN NULLIF(LTRIM(RTRIM(DUI)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_ESTADO_CIVIL IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_RELIGION IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN NULLIF(LTRIM(RTRIM(IGLESIA_ACTUAL)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN NULLIF(LTRIM(RTRIM(DIRECCION_ACTUAL)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_DEPTO_RESIDENCIA IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_MUNICIPIO_RESIDENCIA IS NOT NULL THEN 1 ELSE 0 END " +
+            "  FROM dbo.ACA_PROSPECTO_PERSONA WHERE CORR_PROSPECTO_PERSONA = @persona; " +
+            "  IF EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_PERSONA WHERE CORR_PROSPECTO_PERSONA = @persona AND HA_SIDO_DEPORTADO = 1) BEGIN " +
+            "    SET @pTotal = @pTotal + 1; " +
+            "    IF EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_DEPORTACION WHERE CORR_PROSPECTO_PERSONA = @persona AND ES_VIGENTE = 1) SET @pFilled = @pFilled + 1; " +
+            "  END " +
+            "  IF EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_PERSONA WHERE CORR_PROSPECTO_PERSONA = @persona AND POSEE_DISCAPACIDAD = 1) BEGIN " +
+            "    SET @pTotal = @pTotal + 1; " +
+            "    IF EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_LIMITACION_FISICA WHERE CORR_PROSPECTO_PERSONA = @persona) SET @pFilled = @pFilled + 1; " +
+            "  END " +
+            "  SET @pTotal = @pTotal + 4; " +
+            "  SELECT TOP 1 @pFilled = @pFilled " +
+            "    + CASE WHEN NULLIF(LTRIM(RTRIM(NOMBRES)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_PARENTESCO > 0 THEN 1 ELSE 0 END " +
+            "    + CASE WHEN NULLIF(LTRIM(RTRIM(TELEFONO_EMERGENCIA)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN NULLIF(LTRIM(RTRIM(DIRECCION_EMERGENCIA)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "  FROM dbo.ACA_PROSPECTO_FAMILIAR WHERE CORR_PROSPECTO_PERSONA = @persona AND ES_EMERGENCIA = 1; " +
+            "  SET @pTotal = @pTotal + 6; " +
+            "  SELECT TOP 1 @pFilled = @pFilled " +
+            "    + CASE WHEN NULLIF(LTRIM(RTRIM(NOMBRE_INSTITUCION)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN NULLIF(LTRIM(RTRIM(TIPO_EDUCACION)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN NULLIF(LTRIM(RTRIM(TITULO_OBTENIDO)), '') IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN ANIO_TITULACION IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_PAIS IS NOT NULL THEN 1 ELSE 0 END " +
+            "    + CASE WHEN CORR_DEPTO IS NOT NULL THEN 1 ELSE 0 END " +
+            "  FROM dbo.ACA_PROSPECTO_ESTUDIO WHERE CORR_PROSPECTO_PERSONA = @persona AND NIVEL_ESTUDIO = 'MEDIO' AND GRADUADO_UEES = 0; " +
+            "  SET @pTotal = @pTotal + 1; " +
+            "  IF EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_MEDIO_ORIGEN WHERE CORR_PROSPECTO_PERSONA = @persona) SET @pFilled = @pFilled + 1; " +
+            "  SET @pPct = CASE WHEN @pTotal = 0 THEN 0 ELSE CAST(ROUND(@pFilled * 100.0 / @pTotal, 0) AS int) END; " +
+            "  IF @pPct > 100 SET @pPct = 100; " +
+            "END " +
+            "SELECT @eq = CASE WHEN UPPER(LTRIM(RTRIM(ISNULL(FORMA_INGRESO, '')))) = 'EQ' THEN 1 ELSE 0 END, " +
+            "       @becas = CASE WHEN BECAS_INTERES = 1 THEN 1 ELSE 0 END " +
+            "FROM dbo.ACA_PROSPECTO WHERE CORR_PROSPECTO = @CORR_PROSPECTO; " +
+            "SELECT TOP 1 @cuota = CASE WHEN S.APLICA_CUOTA_MAXIMA = 1 THEN 1 ELSE 0 END, " +
+            "       @socio = S.CORR_PROSPECTO_SOCIOECONOMICO, @version = V.CODIGO " +
+            "FROM dbo.ACA_PROSPECTO_PERSONA P " +
+            "INNER JOIN dbo.ACA_PROSPECTO_SOCIOECONOMICO S ON S.CORR_PROSPECTO_PERSONA = P.CORR_PROSPECTO_PERSONA " +
+            "LEFT JOIN dbo.ACA_SE_VERSION V ON V.CORR_VERSION = S.CORR_VERSION " +
+            "WHERE P.CORR_PROSPECTO = @CORR_PROSPECTO ORDER BY S.CORR_PROSPECTO_SOCIOECONOMICO DESC; " +
+            "SELECT @dTotal = COUNT(*) FROM dbo.ACA_DOCUMENTO_ADMISION D " +
+            "WHERE D.ACTIVO = 1 AND EXISTS (SELECT 1 FROM dbo.ACA_DOCUMENTO_ADMISION_REGLA R " +
+            "  WHERE R.CORR_DOCUMENTO_ADMISION = D.CORR_DOCUMENTO_ADMISION AND R.ES_EQUIVALENCIA = @eq AND R.CON_CUOTA_MAXIMA = @cuota); " +
+            "SELECT @dCarg = COUNT(DISTINCT X.CORR_DOCUMENTO_ADMISION) FROM dbo.ACA_PROSPECTO_DOCUMENTO X " +
+            "WHERE X.CORR_PROSPECTO = @CORR_PROSPECTO AND X.ACTIVO = 1 AND EXISTS (SELECT 1 FROM dbo.ACA_DOCUMENTO_ADMISION D " +
+            "  WHERE D.CORR_DOCUMENTO_ADMISION = X.CORR_DOCUMENTO_ADMISION AND D.ACTIVO = 1 AND EXISTS (SELECT 1 FROM dbo.ACA_DOCUMENTO_ADMISION_REGLA R " +
+            "    WHERE R.CORR_DOCUMENTO_ADMISION = D.CORR_DOCUMENTO_ADMISION AND R.ES_EQUIVALENCIA = @eq AND R.CON_CUOTA_MAXIMA = @cuota)); " +
+            "SET @dPct = CASE WHEN @dTotal = 0 THEN 0 ELSE CAST(ROUND(@dCarg * 100.0 / @dTotal, 0) AS int) END; " +
+            "IF @cuota = 1 SET @sePct = 100; " +
+            "ELSE IF @socio IS NOT NULL BEGIN " +
+            "  DECLARE @centro int = 0, @bachNom int = 0, @bachCuo int = 0, @uniTiene bit = 0, @uniNom int = 0, " +
+            "          @ing int = 0, @alim int = 0, @serv int = 0, @tran int = 0, @personas int = 0; " +
+            "  SELECT @centro = CASE WHEN S.CORR_TIPO_INSTITUCION IS NOT NULL OR EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_SE_RESPUESTA R INNER JOIN dbo.ACA_SE_PREGUNTA Q ON Q.CORR_PREGUNTA = R.CORR_PREGUNTA LEFT JOIN dbo.ACA_SE_OPCION O ON O.CORR_OPCION = R.CORR_OPCION WHERE R.CORR_PROSPECTO_SOCIOECONOMICO = S.CORR_PROSPECTO_SOCIOECONOMICO AND Q.CODIGO = 'CENTRO_EDUCATIVO' AND (NULLIF(LTRIM(RTRIM(O.CODIGO)), '') IS NOT NULL OR NULLIF(LTRIM(RTRIM(R.VALOR_TEXTO)), '') IS NOT NULL)) THEN 1 ELSE 0 END " +
+            "  FROM dbo.ACA_PROSPECTO_SOCIOECONOMICO S WHERE S.CORR_PROSPECTO_SOCIOECONOMICO = @socio; " +
+            "  SELECT @bachNom = MAX(CASE WHEN Q.CODIGO = 'BACH_NOMBRE' AND NULLIF(LTRIM(RTRIM(R.VALOR_TEXTO)), '') IS NOT NULL THEN 1 ELSE 0 END), " +
+            "         @bachCuo = MAX(CASE WHEN Q.CODIGO = 'BACH_CUOTA' AND R.VALOR_NUMERO IS NOT NULL THEN 1 ELSE 0 END), " +
+            "         @uniTiene = MAX(CASE WHEN Q.CODIGO = 'UNI_TIENE' AND R.VALOR_BIT = 1 THEN 1 ELSE 0 END), " +
+            "         @uniNom = MAX(CASE WHEN Q.CODIGO = 'UNI_NOMBRE' AND NULLIF(LTRIM(RTRIM(R.VALOR_TEXTO)), '') IS NOT NULL THEN 1 ELSE 0 END), " +
+            "         @alim = MAX(CASE WHEN Q.CODIGO = 'EGR_ALIM_MONTO' AND R.VALOR_NUMERO IS NOT NULL AND R.VALOR_NUMERO <> 0 THEN 1 ELSE 0 END), " +
+            "         @serv = MAX(CASE WHEN Q.CODIGO = 'EGR_SERV_MONTO' AND R.VALOR_NUMERO IS NOT NULL AND R.VALOR_NUMERO <> 0 THEN 1 ELSE 0 END), " +
+            "         @tran = MAX(CASE WHEN Q.CODIGO = 'EGR_TRAN_MONTO' AND R.VALOR_NUMERO IS NOT NULL AND R.VALOR_NUMERO <> 0 THEN 1 ELSE 0 END) " +
+            "  FROM dbo.ACA_PROSPECTO_SE_RESPUESTA R INNER JOIN dbo.ACA_SE_PREGUNTA Q ON Q.CORR_PREGUNTA = R.CORR_PREGUNTA " +
+            "  WHERE R.CORR_PROSPECTO_SOCIOECONOMICO = @socio; " +
+            "  IF EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_SE_RESPUESTA R INNER JOIN dbo.ACA_SE_PREGUNTA Q ON Q.CORR_PREGUNTA = R.CORR_PREGUNTA WHERE R.CORR_PROSPECTO_SOCIOECONOMICO = @socio AND ( " +
+            "      (Q.CODIGO = 'ING_EST_LUGAR' AND NULLIF(LTRIM(RTRIM(R.VALOR_TEXTO)), '') IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_SE_RESPUESTA L INNER JOIN dbo.ACA_SE_PREGUNTA LQ ON LQ.CORR_PREGUNTA = L.CORR_PREGUNTA WHERE L.CORR_PROSPECTO_SOCIOECONOMICO = @socio AND LQ.CODIGO = 'ING_EST_LIQ' AND L.VALOR_NUMERO IS NOT NULL AND L.VALOR_NUMERO <> 0)) " +
+            "      OR (Q.CODIGO = 'ING_MAD_LUGAR' AND NULLIF(LTRIM(RTRIM(R.VALOR_TEXTO)), '') IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_SE_RESPUESTA L INNER JOIN dbo.ACA_SE_PREGUNTA LQ ON LQ.CORR_PREGUNTA = L.CORR_PREGUNTA WHERE L.CORR_PROSPECTO_SOCIOECONOMICO = @socio AND LQ.CODIGO = 'ING_MAD_LIQ' AND L.VALOR_NUMERO IS NOT NULL AND L.VALOR_NUMERO <> 0)) " +
+            "      OR (Q.CODIGO = 'ING_PAD_LUGAR' AND NULLIF(LTRIM(RTRIM(R.VALOR_TEXTO)), '') IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_SE_RESPUESTA L INNER JOIN dbo.ACA_SE_PREGUNTA LQ ON LQ.CORR_PREGUNTA = L.CORR_PREGUNTA WHERE L.CORR_PROSPECTO_SOCIOECONOMICO = @socio AND LQ.CODIGO = 'ING_PAD_LIQ' AND L.VALOR_NUMERO IS NOT NULL AND L.VALOR_NUMERO <> 0)) " +
+            "      OR (Q.CODIGO = 'ING_OTR_LUGAR' AND NULLIF(LTRIM(RTRIM(R.VALOR_TEXTO)), '') IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_SE_RESPUESTA L INNER JOIN dbo.ACA_SE_PREGUNTA LQ ON LQ.CORR_PREGUNTA = L.CORR_PREGUNTA WHERE L.CORR_PROSPECTO_SOCIOECONOMICO = @socio AND LQ.CODIGO = 'ING_OTR_LIQ' AND L.VALOR_NUMERO IS NOT NULL AND L.VALOR_NUMERO <> 0)) " +
+            "      OR (Q.CODIGO = 'ING_REM_BRUTO' AND R.VALOR_NUMERO IS NOT NULL AND R.VALOR_NUMERO <> 0 AND EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_SE_RESPUESTA L INNER JOIN dbo.ACA_SE_PREGUNTA LQ ON LQ.CORR_PREGUNTA = L.CORR_PREGUNTA WHERE L.CORR_PROSPECTO_SOCIOECONOMICO = @socio AND LQ.CODIGO = 'ING_REM_LIQ' AND L.VALOR_NUMERO IS NOT NULL AND L.VALOR_NUMERO <> 0)) " +
+            "  )) SET @ing = 1; " +
+            "  SET @seTotal = 7; SET @seFilled = ISNULL(@centro, 0) + ISNULL(@bachNom, 0) + ISNULL(@bachCuo, 0) + @ing + ISNULL(@alim, 0) + ISNULL(@serv, 0) + ISNULL(@tran, 0); " +
+            "  IF @uniTiene = 1 BEGIN SET @seTotal = @seTotal + 1; SET @seFilled = @seFilled + ISNULL(@uniNom, 0); END " +
+            "  IF UPPER(ISNULL(@version, '')) = 'V2' BEGIN SET @seTotal = @seTotal + 1; SET @seFilled = @seFilled + @personas; END " +
+            "  SET @sePct = CASE WHEN @seTotal = 0 THEN 0 ELSE CAST(ROUND(@seFilled * 100.0 / @seTotal, 0) AS int) END; " +
+            "  IF @sePct > 100 SET @sePct = 100; " +
+            "END " +
+            "IF @becas = 1 BEGIN " +
+            "  SET @n = 4; " +
+            "  SELECT TOP 1 @beca = CORR_PROSPECTO_BECA, @becaTipo = CORR_BECA, @becaVer = CORR_FORMULARIO_VERSION " +
+            "  FROM dbo.ACA_PROSPECTO_BECA WHERE CORR_PROSPECTO = @CORR_PROSPECTO AND ACTIVO = 1 ORDER BY CORR_PROSPECTO_BECA DESC; " +
+            "  IF @beca IS NOT NULL BEGIN " +
+            "    SELECT @bTotal = COUNT(*), @bFilled = SUM(CASE WHEN Resp.Ok = 1 THEN 1 ELSE 0 END) " +
+            "    FROM dbo.ACA_PROSPECTO_BECA_SECCION S " +
+            "    INNER JOIN dbo.ACA_PROSPECTO_BECA_PREGUNTA P ON P.CORR_SECCION_BECA = S.CORR_SECCION_BECA AND P.ACTIVO = 1 AND P.REQUERIDO = 1 " +
+            "    INNER JOIN dbo.ACA_PROSPECTO_BECA_PREGUNTA_TIPO PT ON PT.CORR_PREGUNTA_BECA = P.CORR_PREGUNTA_BECA AND PT.CORR_BECA = @becaTipo AND PT.ACTIVO = 1 " +
+            "    OUTER APPLY (SELECT CASE WHEN P.TIPO_RESPUESTA = 'ACEPTACION' AND EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_BECA_RESPUESTA R WHERE R.CORR_PROSPECTO_BECA = @beca AND R.CORR_PREGUNTA_BECA = P.CORR_PREGUNTA_BECA AND (UPPER(LTRIM(RTRIM(ISNULL(R.RESPUESTA_TEXTO, '')))) IN ('TRUE', '1', 'SI', 'S') OR R.RESPUESTA_NUMERO = 1)) THEN 1 WHEN P.TIPO_RESPUESTA <> 'ACEPTACION' AND EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_BECA_RESPUESTA R WHERE R.CORR_PROSPECTO_BECA = @beca AND R.CORR_PREGUNTA_BECA = P.CORR_PREGUNTA_BECA AND (NULLIF(LTRIM(RTRIM(R.RESPUESTA_TEXTO)), '') IS NOT NULL OR R.RESPUESTA_NUMERO IS NOT NULL OR R.RESPUESTA_FECHA IS NOT NULL OR R.CORR_OPCION_BECA IS NOT NULL OR NULLIF(LTRIM(RTRIM(R.ARCHIVO_NOMBRE)), '') IS NOT NULL)) THEN 1 ELSE 0 END AS Ok) Resp " +
+            "    WHERE S.CORR_FORMULARIO_VERSION = @becaVer AND S.ACTIVO = 1 " +
+            "      AND (NOT EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_BECA_DEPENDENCIA D WHERE D.CORR_PREGUNTA_HIJA = P.CORR_PREGUNTA_BECA AND D.ACTIVO = 1) " +
+            "           OR EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_BECA_DEPENDENCIA D INNER JOIN dbo.ACA_PROSPECTO_BECA_RESPUESTA RP ON RP.CORR_PROSPECTO_BECA = @beca AND RP.CORR_PREGUNTA_BECA = D.CORR_PREGUNTA_PADRE AND RP.CORR_OPCION_BECA = D.CORR_OPCION_PADRE WHERE D.CORR_PREGUNTA_HIJA = P.CORR_PREGUNTA_BECA AND D.ACTIVO = 1)); " +
+            "    SET @bPct = CASE WHEN ISNULL(@bTotal, 0) = 0 THEN 0 ELSE CAST(ROUND(ISNULL(@bFilled, 0) * 100.0 / @bTotal, 0) AS int) END; " +
+            "  END " +
+            "END " +
+            "SET @general = CAST(ROUND((@pPct + @dPct + @sePct + CASE WHEN @becas = 1 THEN @bPct ELSE 0 END) * 1.0 / @n, 0) AS int); " +
+            "IF @general < 100 BEGIN " +
+            "  SET @mensaje = 'No se puede aprobar. Los formularios deben estar al 100%, igual que para enviar en admisión.'; " +
+            "  IF @pPct < 100 SET @mensaje = @mensaje + ' Datos personales ' + CONVERT(varchar(10), @pPct) + '%.'; " +
+            "  IF @dPct < 100 SET @mensaje = @mensaje + ' Documentación ' + CONVERT(varchar(10), @dPct) + '%.'; " +
+            "  IF @sePct < 100 SET @mensaje = @mensaje + ' Estudio socioeconómico ' + CONVERT(varchar(10), @sePct) + '%.'; " +
+            "  IF @becas = 1 AND @bPct < 100 SET @mensaje = @mensaje + ' Formulario de beca ' + CONVERT(varchar(10), @bPct) + '%.'; " +
+            "END " +
+            "SELECT @general AS PORCENTAJE, @mensaje AS MENSAJE;";
+
+        // Qué hace: mueve el flujo 104 con el login de la sesión.
+        // Cómo lo hace: 3 aprueba (exige el 100 %), 4 rechaza y 5 revierte la misma instancia.
+        public async Task<CResult> AccionFlujoAsync(int corrEmpresa, int corrProspecto, string login, string observacion, string estacion, int operacion)
         {
             CResult objResultado = new();
             const string spName = "PRAL_MTTO_ACA_PROSPECTO_NUEVO_INGRESO_AUTORIZA";
 
             try
             {
+                if (operacion == 3)
+                {
+                var incompleto = await MensajeSiNoEstaCompletaAsync(corrProspecto);
+                if (!string.IsNullOrWhiteSpace(incompleto))
+                {
+                    objResultado.Result = false;
+                    objResultado.ErrorCode = -16;
+                    objResultado.ErrorMessage = incompleto;
+                    objResultado.CodeHelper = corrProspecto;
+                    return objResultado;
+                }
+                }
+
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "@CORR_PROSPECTO", Value = corrProspecto, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "@CORR_UNIDAD_DOCUMENTO", Value = DBNull.Value, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "@OPERACION", Value = 3, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@OPERACION", Value = operacion, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "@OBSERVACION", Value = observacion ?? string.Empty, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "@ESTACION", Value = estacion ?? string.Empty, DbType = System.Data.DbType.String },
@@ -458,6 +616,22 @@ namespace sguees.Repositories
             }
 
             return objResultado;
+        }
+
+        // Qué hace: mensaje para el analista si la solicitud no está al 100 % de admisión.
+        // Cómo lo hace: la consulta devuelve MENSAJE vacío cuando el promedio de los anillos llega a 100.
+        private async Task<string> MensajeSiNoEstaCompletaAsync(int corrProspecto)
+        {
+            var parametros = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_PROSPECTO", Value = corrProspecto, DbType = System.Data.DbType.Int32 },
+            };
+            var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlCompletitudAprobar, parametros);
+            string mensaje = null;
+            if (reader.Read() && reader["MENSAJE"] != DBNull.Value)
+                mensaje = reader["MENSAJE"]?.ToString();
+            reader.Close();
+            return mensaje;
         }
 
         private static CResult OperacionNoHabilitada()

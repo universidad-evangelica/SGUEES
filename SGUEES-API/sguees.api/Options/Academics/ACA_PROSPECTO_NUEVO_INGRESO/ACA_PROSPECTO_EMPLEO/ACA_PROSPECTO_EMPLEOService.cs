@@ -51,8 +51,8 @@ namespace sguees.Services
         }
 
         // Qué hace: valida y crea la información laboral (una por prospecto).
-        // Cómo lo hace: mismas reglas que la modificación más persona y empresa obligatorias;
-        //               TRABAJA_AUN siempre en 1, como lo guarda el portal.
+        // Cómo lo hace: mismas reglas que la modificación; la empresa puede ir vacía en una solicitud
+        //               ingresada. TRABAJA_AUN siempre en 1, como lo guarda el portal.
         public async Task<CResult> CreateAsync(ACA_PROSPECTO_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data == null || Data.CORR_PROSPECTO_PERSONA <= 0)
@@ -60,9 +60,6 @@ namespace sguees.Services
 
             var validacion = Validar(Data);
             if (validacion != null) return validacion;
-
-            if (Data.EMPRESA == null)
-                return ErrorValidacion("Debe ingresar la empresa donde trabaja.");
 
             Data.TRABAJA_AUN = true;
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);

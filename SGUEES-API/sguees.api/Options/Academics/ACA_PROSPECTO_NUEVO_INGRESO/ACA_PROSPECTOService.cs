@@ -124,20 +124,22 @@ namespace sguees.Services
                 && !(permisoOpcion ?? string.Empty).Contains('U'))
             {
                 accion.PUEDE_APROBAR = false;
+                accion.PUEDE_RECHAZAR = false;
+                accion.PUEDE_REVERTIR = false;
             }
 
             return result;
         }
 
-        // Qué hace: aprueba la solicitud con el usuario que la está viendo.
-        public async Task<CResult> AprobarAsync(ACA_PROSPECTOParam xWhere, string login, string observacion, string estacion)
+        // Qué hace: aprueba (3), rechaza (4) o revierte (5) con el usuario que está viendo la solicitud.
+        public async Task<CResult> AccionFlujoAsync(ACA_PROSPECTOParam xWhere, string login, string observacion, string estacion, int operacion)
         {
             if (xWhere.CORR_PROSPECTO <= 0)
                 return ErrorValidacion("Debe indicar el prospecto");
             if (string.IsNullOrWhiteSpace(observacion))
                 return ErrorValidacion("Debe ingresar un comentario.");
 
-            return await _repo.AprobarAsync(xWhere.CORR_EMPRESA, xWhere.CORR_PROSPECTO, login?.Trim(), observacion.Trim(), estacion);
+            return await _repo.AccionFlujoAsync(xWhere.CORR_EMPRESA, xWhere.CORR_PROSPECTO, login?.Trim(), observacion.Trim(), estacion, operacion);
         }
 
         public async Task<CResult> CreateAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION)

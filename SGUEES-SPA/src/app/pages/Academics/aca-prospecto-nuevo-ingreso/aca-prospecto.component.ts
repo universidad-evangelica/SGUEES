@@ -69,8 +69,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Texto del botón "Modificar" de la barra: solo en consulta y con permiso U.
     btnModificar = '';
     btnAprobar = '';
+    btnRechazar = '';
+    btnRevertir = '';
     popupAprobarVisible = false;
     observacionAprobar = '';
+    accionFlujo: 'aprobar' | 'rechazar' | 'revertir' = 'aprobar';
     private corrAprobarConsultado = 0;
     model: any = this.fillData();
     itemsCarrera: any[] = [];
@@ -557,6 +560,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return { ...xModel, ESTADO_SOLICITUD: this.service.textoEstadoSolicitud(xModel) };
         }
         this.btnAprobar = '';
+        this.btnRechazar = '';
+        this.btnRevertir = '';
         return {
             CORR_EMPRESA: 0,
             CORR_PROSPECTO: 0,
@@ -609,11 +614,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return this.service.claseEstadoSolicitud(this.model?.CORR_ESTADO);
     }
 
-    // Qué hace: indica si el flujo ya no tiene paso en curso.
-    // Cómo lo hace: Aprobado (39) y Rechazada (46) cierran la instancia.
-    flujoFinalizado(): boolean {
-        const estado = Number(this.model?.CORR_ESTADO);
-        return estado === 39 || estado === 46;
+    // Qué hace: oculta Vence y el plazo cuando la solicitud ya fue aprobada.
+    solicitudAprobada(): boolean {
+        return this.service.solicitudAprobada(this.model);
+    }
+
+    // Qué hace: el paso Aprobación del analista es el actual mientras sigue Ingresada.
+    enPasoAnalista(): boolean {
+        return Number(this.model?.CORR_ESTADO) === 38;
+    }
+
+    // Qué hace: el paso Solicitud aprobada es el actual cuando ya se aprobó.
+    enPasoAprobado(): boolean {
+        return Number(this.model?.CORR_ESTADO) === 39;
     }
 
     // Qué hace: listado de prospectos de todos los ciclos.
@@ -708,7 +721,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: guarda copia del encabezado para Cancelar y habilita los editores; el detalle
     //               ya está cargado, no se vuelve a consultar.
     modificar(): void {
-        if (!this.permiteEdit || !this.isConsulta()) {
+        if (!this.permiteEdit || !this.isConsulta() || this.solicitudAprobada()) {
+            if (this.solicitudAprobada()) {
+                this.notifyFx('La solicitud ya está aprobada y no se puede modificar.', NotifyType.Warning);
+            }
             return;
         }
         this.modelUpdate = { ...this.model };
@@ -720,7 +736,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: Cancelar (con confirmación) y Guardar terminan en Browse; ahí se descarta el detalle.
     override AsignaStatus(xEstado: UpdateType): void {
         super.AsignaStatus(xEstado);
-        this.btnModificar = xEstado === UpdateType.Not_Defined && this.permiteEdit ? 'Modificar' : '';
+        this.btnModificar = xEstado === UpdateType.Not_Defined && this.permiteEdit && !this.solicitudAprobada() ? 'Modificar' : '';
         if (xEstado === UpdateType.Browse) {
             this.limpiarDetalle();
             this.evaluarPuedeAprobar(Number(this.model?.CORR_PROSPECTO));
@@ -733,11 +749,32 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.evaluarPuedeAprobar(Number(e?.row?.data?.CORR_PROSPECTO));
     }
 
-    // Qué hace: enciende el botón Aprobar de la solicitud seleccionada.
-    // Cómo lo hace: el API compara el login con el actor origen del paso actual.
+    // Qué hace: oculta el lápiz cuando la solicitud ya fue aprobada.
+    // Cómo lo hace: el permiso U sigue aplicando; el estado 39 no se puede volver a editar.
+    override getPermiteEditar(e: any): boolean {
+        if (Number(e?.row?.data?.CORR_ESTADO) === 39) {
+            return false;
+        }
+        return super.getPermiteEditar(e);
+    }
+
+    // Qué hace: impide abrir la edición de una solicitud aprobada.
+    override editarClick(e: any): void {
+        const estado = Number(e?.row?.data?.CORR_ESTADO ?? e?.data?.CORR_ESTADO);
+        if (estado === 39) {
+            this.notifyFx('La solicitud ya está aprobada y no se puede modificar.', NotifyType.Warning);
+            return;
+        }
+        super.editarClick(e);
+    }
+
+    // Qué hace: enciende Aprobar, Rechazar o Revertir según el ejecutor del paso.
+    // Cómo lo hace: el API compara el login con el actor origen; sin coincidencia el botón queda vacío.
     evaluarPuedeAprobar(corrProspecto: number): void {
         if (!(corrProspecto > 0)) {
             this.btnAprobar = '';
+            this.btnRechazar = '';
+            this.btnRevertir = '';
             return;
         }
         this.corrAprobarConsultado = corrProspecto;
@@ -749,33 +786,82 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     if (this.corrAprobarConsultado !== corrProspecto) {
                         return;
                     }
-                    this.btnAprobar = response?.Result && response?.Data?.PUEDE_APROBAR ? 'Aprobar' : '';
+                    const data = response?.Result ? response.Data : null;
+                    this.btnAprobar = data?.PUEDE_APROBAR ? 'Aprobar' : '';
+                    this.btnRechazar = data?.PUEDE_RECHAZAR ? 'Rechazar' : '';
+                    this.btnRevertir = data?.PUEDE_REVERTIR ? 'Revertir' : '';
                 },
                 error: () => {
                     if (this.corrAprobarConsultado === corrProspecto) {
                         this.btnAprobar = '';
+                        this.btnRechazar = '';
+                        this.btnRevertir = '';
                     }
                 },
             });
     }
 
     abrirAprobar(): void {
-        if (!this.btnAprobar || !(Number(this.model?.CORR_PROSPECTO) > 0)) {
+        this.abrirAccion('aprobar', this.btnAprobar, 'Aprobación de la solicitud de nuevo ingreso.');
+    }
+
+    abrirRechazar(): void {
+        this.abrirAccion('rechazar', this.btnRechazar, 'Rechazo de la solicitud de nuevo ingreso.');
+    }
+
+    abrirRevertir(): void {
+        this.abrirAccion('revertir', this.btnRevertir, 'Reversión de la aprobación de la solicitud de nuevo ingreso.');
+    }
+
+    private abrirAccion(accion: 'aprobar' | 'rechazar' | 'revertir', boton: string, comentario: string): void {
+        if (!boton || !(Number(this.model?.CORR_PROSPECTO) > 0)) {
             return;
         }
-        this.observacionAprobar = 'Aprobación de la solicitud de nuevo ingreso.';
+        this.accionFlujo = accion;
+        this.observacionAprobar = comentario;
         this.popupAprobarVisible = true;
+    }
+
+    tituloPopupAccion(): string {
+        if (this.accionFlujo === 'rechazar') {
+            return 'Rechazar solicitud';
+        }
+        if (this.accionFlujo === 'revertir') {
+            return 'Revertir aprobación';
+        }
+        return 'Aprobar solicitud';
+    }
+
+    textoPopupAccion(): string {
+        if (this.accionFlujo === 'rechazar') {
+            return 'La solicitud pasará a Rechazada y saldrá del listado. El comentario queda en la bitácora con su usuario.';
+        }
+        if (this.accionFlujo === 'revertir') {
+            return 'La solicitud vuelve a Ingresado en el mismo flujo, para poder editarla. El comentario queda en la bitácora.';
+        }
+        return 'La solicitud pasará a Aprobado. El comentario queda en la bitácora con su usuario.';
+    }
+
+    textoBotonAccion(): string {
+        if (this.accionFlujo === 'rechazar') {
+            return 'Rechazar';
+        }
+        if (this.accionFlujo === 'revertir') {
+            return 'Revertir';
+        }
+        return 'Aprobar';
     }
 
     cancelarAprobar(): void {
         this.popupAprobarVisible = false;
     }
 
-    // Qué hace: aprueba y deja la solicitud en el listado como Aprobado.
-    // Cómo lo hace: el API ejecuta el paso; la fila se actualiza en memoria, sin volver a consultar todo.
+    // Qué hace: ejecuta Aprobar, Rechazar o Revertir y actualiza la fila en memoria.
+    // Cómo lo hace: el API corre la acción del paso; no vuelve a consultar todo el listado.
     confirmarAprobar(): void {
         const corr = Number(this.model?.CORR_PROSPECTO);
         const observacion = (this.observacionAprobar ?? '').trim();
+        const accion = this.accionFlujo;
         if (!corr) {
             return;
         }
@@ -785,38 +871,62 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         }
         this.popupAprobarVisible = false;
         this.loadingVisible = true;
-        this.service
-            .aprobar(corr, observacion)
-            .pipe(take(1))
-            .subscribe({
-                next: (response: any) => {
-                    this.loadingVisible = false;
-                    if (response?.Result && response.ErrorCode === 0) {
+        const llamada =
+            accion === 'rechazar'
+                ? this.service.rechazar(corr, observacion)
+                : accion === 'revertir'
+                  ? this.service.revertir(corr, observacion)
+                  : this.service.aprobar(corr, observacion);
+        llamada.pipe(take(1)).subscribe({
+            next: (response: any) => {
+                this.loadingVisible = false;
+                if (response?.Result && response.ErrorCode === 0) {
+                    if (accion === 'rechazar') {
+                        this.models = (this.models || []).filter((fila: any) => Number(fila.CORR_PROSPECTO) !== corr);
+                    } else {
                         this.models = (this.models || []).map((fila: any) => {
                             if (Number(fila.CORR_PROSPECTO) !== corr) {
                                 return fila;
+                            }
+                            if (accion === 'revertir') {
+                                return {
+                                    ...fila,
+                                    CORR_ESTADO: 38,
+                                    NOMBRE_ESTADO: 'Ingresado',
+                                    NOMBRE_PASO: 'Aprobación del analista',
+                                    ORDEN_PASO: 2,
+                                };
                             }
                             return {
                                 ...fila,
                                 CORR_ESTADO: 39,
                                 NOMBRE_ESTADO: 'Aprobado',
-                                NOMBRE_PASO: '',
-                                ORDEN_PASO: null,
-                                CORR_PASO_ACTUAL: null,
+                                NOMBRE_PASO: 'Solicitud aprobada',
+                                ORDEN_PASO: 3,
+                                NOMBRE_ACTOR_PASO: 'Analista de Nuevo Ingreso',
                             };
                         });
-                        this.btnAprobar = '';
-                        this.notifyFx('Solicitud aprobada.', NotifyType.Success);
-                        this.AsignaStatus(UpdateType.Browse);
-                    } else {
-                        this.notifyFx(response?.ErrorMessage || 'No se pudo aprobar la solicitud.', NotifyType.Warning, { raw: true });
                     }
-                },
-                error: (error: any) => {
-                    this.loadingVisible = false;
-                    this.notifyApiError(error);
-                },
-            });
+                    this.btnAprobar = '';
+                    this.btnRechazar = '';
+                    this.btnRevertir = '';
+                    const aviso =
+                        accion === 'rechazar'
+                            ? 'Solicitud rechazada.'
+                            : accion === 'revertir'
+                              ? 'La solicitud volvió a Ingresado.'
+                              : 'Solicitud aprobada.';
+                    this.notifyFx(aviso, NotifyType.Success);
+                    this.AsignaStatus(UpdateType.Browse);
+                } else {
+                    this.notifyFx(response?.ErrorMessage || 'No se pudo completar la acción.', NotifyType.Warning, { raw: true });
+                }
+            },
+            error: (error: any) => {
+                this.loadingVisible = false;
+                this.notifyApiError(error);
+            },
+        });
     }
 
     override bloquear(): void {
@@ -1723,16 +1833,16 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (!this.validarFormularios()) {
             return;
         }
-        if (!this.model?.CORR_CARRERA || !this.model?.CORR_MODALIDAD) {
-            this.notifyFx('Seleccione la carrera y la modalidad del prospecto.', NotifyType.Warning, { raw: true });
-            return;
-        }
 
         const original: any = this.modelUpdate ?? {};
         const cambiaOferta =
             this.model.CICLO !== original.CICLO ||
             this.model.CORR_CARRERA !== original.CORR_CARRERA ||
             this.model.CORR_MODALIDAD !== original.CORR_MODALIDAD;
+        if (cambiaOferta && (!this.model?.CORR_CARRERA || !this.model?.CORR_MODALIDAD)) {
+            this.notifyFx('Seleccione la carrera y la modalidad del prospecto.', NotifyType.Warning, { raw: true });
+            return;
+        }
         if (!cambiaOferta) {
             this.iniciarGuardado();
             return;
@@ -1802,6 +1912,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.ejecutarPasos(pasos, 0);
     }
 
+    // Qué hace: deja guardar una solicitud ingresada aunque los formularios no estén al 100 %.
+    // Cómo lo hace: el 100 % se exige solo al aprobar. Aquí solo se evita guardar con una ficha a medias.
     private validarFormularios(): boolean {
         // Una ficha abierta (familiar, contacto, medio, limitación o deportación) se acepta o se cancela antes de guardar.
         if (this.medioModel) {
@@ -1827,47 +1939,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return false;
         }
 
-        const estudios = [
-            { seccion: SECCION_MEDIA, modelo: this.estudioMedia, form: this.formEstudioMedia, eliminar: false },
-            { seccion: SECCION_UNIVERSIDAD, modelo: this.estudioUniversidad, form: this.formEstudioUniversidad, eliminar: this.estudioUniversidadEliminar },
-            { seccion: SECCION_GRADUADO_UEES, modelo: this.estudioUees, form: this.formEstudioUees, eliminar: this.estudioUeesEliminar },
-        ];
-        // Solo se revisan las secciones de estudios que se van a guardar: una sección intacta con datos
-        // viejos incompletos no debe impedir editar o eliminar otra (son independientes, como el portal).
-        const estudiosAGuardar = estudios.filter((e) => !e.eliminar && this.estudioCambio(e.seccion, e.modelo, e.form));
-
-        const formularios = [
-            this.dataForm,
-            this.formPersona,
-            this.formEmergencia,
-            this.formEmpleo,
-            ...estudiosAGuardar.map((e) => e.form),
-        ];
-        for (const formulario of formularios) {
-            const resultado = formulario?.instance?.validate();
-            if (resultado && !resultado.isValid) {
-                this.notifyFx('Revise los campos marcados antes de guardar.', NotifyType.Warning, { raw: true });
-                return false;
-            }
-        }
-
-        // Los catálogos se pintan con template, así que el dx-form no los valida: sus obligatoriedades
-        // (las mismas del portal) se revisan aquí, sección por sección.
-        if (this.empleoModel && !this.empleoEliminar) {
-            const mensaje = this.serviceEmpleo.validar(this.leerFormData(this.formEmpleo, this.empleoModel));
-            if (mensaje) {
-                this.notifyFx(mensaje, NotifyType.Warning, { raw: true });
-                return false;
-            }
-        }
-
-        for (const estudio of estudiosAGuardar) {
-            const mensaje = this.serviceEstudio.validar(this.leerFormData(estudio.form, estudio.modelo));
-            if (mensaje) {
-                this.notifyFx(mensaje, NotifyType.Warning, { raw: true });
-                return false;
-            }
-        }
         return true;
     }
 

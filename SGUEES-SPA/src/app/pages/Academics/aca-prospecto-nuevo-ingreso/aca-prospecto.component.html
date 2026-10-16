@@ -19,6 +19,16 @@
         [btn2Type]="'success'"
         [btn2Width]="110"
         (btn2Click)="abrirAprobar()"
+        [btn3]="btnRechazar"
+        [btn3Icon]="'close'"
+        [btn3Type]="'danger'"
+        [btn3Width]="120"
+        (btn3Click)="abrirRechazar()"
+        [btn4]="btnRevertir"
+        [btn4Icon]="'revert'"
+        [btn4Type]="'default'"
+        [btn4Width]="120"
+        (btn4Click)="abrirRevertir()"
         (consultar)="consultar()"
         (guardar)="guardar()"
         (cancelar)="cancelar()"
@@ -95,27 +105,33 @@
         <aside class="sguees-section-card aca-prospecto-card aca-prospecto-flujo">
             <header class="aca-prospecto-section-head">
                 <span class="aca-prospecto-section-title">Flujo de autorización</span>
-                <span class="aca-prospecto-section-subtitle">Instancia {{ model.CORR_INSTANCIA || '—' }} · Solicitud de nuevo ingreso (tipo de documento 104)</span>
+                <span class="aca-prospecto-section-subtitle">Solicitud de nuevo ingreso</span>
             </header>
-            <div class="aca-prospecto-plazo" [ngClass]="clasePlazoInscripcion()" *ngIf="textoPlazoInscripcion()">
+            <!-- Qué hace: el plazo solo se muestra mientras la solicitud sigue pendiente. Aprobada ya no vence. -->
+            <div class="aca-prospecto-plazo" [ngClass]="clasePlazoInscripcion()" *ngIf="textoPlazoInscripcion() && !solicitudAprobada()">
                 <span class="aca-prospecto-plazo-titulo">Plazo de inscripción</span>
                 <p>{{ textoPlazoInscripcion() }}</p>
             </div>
             <!-- Qué hace: el color del badge sigue el estado del flujo 104. -->
             <span class="aca-prospecto-badge" [ngClass]="claseEstadoSolicitud()">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>
-            <!-- Qué hace: si el flujo ya finalizó (39 o 46), los dos pasos quedan con check y sin paso actual. -->
+            <!-- Qué hace: tres pasos. Ingresada está en el analista; Aprobada está en Solicitud aprobada. -->
             <ol class="aca-prospecto-flujo-pasos">
                 <li class="aca-prospecto-paso aca-prospecto-paso--hecho">
                     <span class="aca-prospecto-paso-marca aca-prospecto-paso-marca--hecho" aria-hidden="true"></span>
-                    <span class="aca-prospecto-paso-titulo">{{ model.NOMBRE_PASO_INICIAL || 'Envío de documentación' }}</span>
+                    <span class="aca-prospecto-paso-titulo">{{ model.NOMBRE_PASO_INICIAL || 'Ingreso del estudiante' }}</span>
                     <span class="aca-prospecto-paso-detalle">{{ model.NOMBRE_ACTOR_INICIAL || 'Usuario sin unidad' }}</span>
                 </li>
-                <li class="aca-prospecto-paso" [ngClass]="flujoFinalizado() ? 'aca-prospecto-paso--hecho' : 'aca-prospecto-paso--actual'">
-                    <span class="aca-prospecto-paso-marca" [class.aca-prospecto-paso-marca--hecho]="flujoFinalizado()">
-                        <ng-container *ngIf="!flujoFinalizado()">P{{ model.ORDEN_PASO || 2 }}</ng-container>
+                <li class="aca-prospecto-paso" [ngClass]="enPasoAnalista() ? 'aca-prospecto-paso--actual' : 'aca-prospecto-paso--hecho'">
+                    <span class="aca-prospecto-paso-marca" [class.aca-prospecto-paso-marca--hecho]="!enPasoAnalista()">
+                        <ng-container *ngIf="enPasoAnalista()">P2</ng-container>
                     </span>
-                    <span class="aca-prospecto-paso-titulo">{{ model.NOMBRE_PASO || 'Aprobación del analista' }}</span>
-                    <span class="aca-prospecto-paso-detalle"><ng-container *ngIf="!flujoFinalizado()">Actual · </ng-container>{{ model.NOMBRE_ACTOR_PASO || 'Analista de Nuevo Ingreso' }}</span>
+                    <span class="aca-prospecto-paso-titulo">Aprobación del analista</span>
+                    <span class="aca-prospecto-paso-detalle"><ng-container *ngIf="enPasoAnalista()">Actual · </ng-container>Analista de Nuevo Ingreso</span>
+                </li>
+                <li class="aca-prospecto-paso" [ngClass]="enPasoAprobado() ? 'aca-prospecto-paso--actual' : 'aca-prospecto-paso--pendiente'">
+                    <span class="aca-prospecto-paso-marca">P3</span>
+                    <span class="aca-prospecto-paso-titulo">Solicitud aprobada</span>
+                    <span class="aca-prospecto-paso-detalle"><ng-container *ngIf="enPasoAprobado()">Actual · </ng-container>Analista de Nuevo Ingreso</span>
                 </li>
             </ol>
         </aside>
@@ -964,7 +980,7 @@
     <dx-popup
         [(visible)]="popupAprobarVisible"
         [showTitle]="true"
-        title="Aprobar solicitud"
+        [title]="tituloPopupAccion()"
         [width]="520"
         [height]="'auto'"
         [dragEnabled]="true"
@@ -973,7 +989,7 @@
         (onHiding)="cancelarAprobar()"
     >
         <div class="aca-prospecto-aprobar">
-            <p>La solicitud pasará a Aprobado. El comentario queda en la bitácora con su usuario.</p>
+            <p>{{ textoPopupAccion() }}</p>
             <dx-text-area
                 [(value)]="observacionAprobar"
                 [height]="140"
@@ -982,7 +998,7 @@
             ></dx-text-area>
             <div class="aca-prospecto-aprobar-acciones">
                 <dx-button text="Cancelar" stylingMode="outlined" (onClick)="cancelarAprobar()"></dx-button>
-                <dx-button text="Aprobar" type="success" stylingMode="contained" (onClick)="confirmarAprobar()"></dx-button>
+                <dx-button [text]="textoBotonAccion()" [type]="accionFlujo === 'rechazar' ? 'danger' : accionFlujo === 'aprobar' ? 'success' : 'default'" stylingMode="contained" (onClick)="confirmarAprobar()"></dx-button>
             </div>
         </div>
     </dx-popup>

@@ -109,6 +109,16 @@
 	background: rgba(255, 255, 255, 0.32);
 }
 
+.aca-prospecto-paso--pendiente .aca-prospecto-paso-marca {
+	background: rgba(255, 255, 255, 0.18);
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.aca-prospecto-paso--pendiente .aca-prospecto-paso-titulo,
+.aca-prospecto-paso--pendiente .aca-prospecto-paso-detalle {
+	opacity: 0.55;
+}
+
 .aca-prospecto-paso--actual .aca-prospecto-paso-titulo {
 	color: #64b5f6;
 }
@@ -183,6 +193,11 @@
 
 	.aca-prospecto-paso--hecho:not(:last-child)::before {
 		background: rgba(15, 23, 42, 0.22);
+	}
+
+	.aca-prospecto-paso--pendiente .aca-prospecto-paso-marca {
+		background: rgba(15, 23, 42, 0.12);
+		color: rgba(15, 23, 42, 0.55);
 	}
 
 	.aca-prospecto-paso--actual .aca-prospecto-paso-titulo {
