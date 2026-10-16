@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -80,6 +81,16 @@ namespace SGUEES.Controllers
 		// Qué hace: entrega el catálogo de municipios requerido por el mantenimiento relacionado y aplica el contexto de empresa.
 		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCORR_MUNICIPIO_GEN_ESTRUCTURA_TERRITORIAL([FromQuery] GEN_MUNICIPIOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllAsync(data);
+		}
+
+		[HttpGet("GetCORR_MUNICIPIO_ACA_PROSPECTO")]
+		[Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+		// Qué hace: municipios del país y departamento indicados para residencia y empleo en la edición de prospectos.
+		// Cómo: llama a GetAllAsync del servicio, que filtra por CORR_PAIS y CORR_DEPTO cuando vienen.
+		public async Task<CResult> GetCORR_MUNICIPIO_ACA_PROSPECTO([FromQuery] GEN_MUNICIPIOParam data)
 		{
 			data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAllAsync(data);

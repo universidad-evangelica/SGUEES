@@ -1,0 +1,155 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using eFramework.Core;
+using sguees.Models;
+using sguees.Repositories;
+
+namespace sguees.Services
+{
+    public class ACA_PROSPECTOService : IACA_PROSPECTOService
+    {
+        private readonly IACA_PROSPECTORepository _repo;
+
+        public ACA_PROSPECTOService(IACA_PROSPECTORepository repo)
+        {
+            _repo = repo;
+        }
+
+        // Qué hace: listado de prospectos de un ciclo (año + número de período).
+        // Cómo lo hace: exige el ciclo porque eFramework omite del WHERE los enteros en 0
+        //               y, sin él, devolvería los prospectos de todos los ciclos.
+        public async Task<CResult> GetAllAsync(ACA_PROSPECTOParam xWhere)
+        {
+            if (xWhere.ANIO <= 0 || xWhere.NUMERO_PERIODO <= 0)
+                return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe seleccionar un ciclo" };
+
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="ANIO",Value=xWhere.ANIO,DbType=System.Data.DbType.Int16},
+                new CParameter() {ParameterName="NUMERO_PERIODO",Value=xWhere.NUMERO_PERIODO,DbType=System.Data.DbType.Byte},
+            };
+
+            return await _repo.GetAllAsync(p);
+        }
+
+        // Qué hace: encabezado de un prospecto.
+        // Cómo lo hace: exige CORR_PROSPECTO por la misma razón que GetAllAsync.
+        public async Task<CResult> GetAsync(ACA_PROSPECTOParam xWhere)
+        {
+            if (xWhere.CORR_PROSPECTO <= 0)
+                return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe indicar el prospecto" };
+
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_PROSPECTO",Value=xWhere.CORR_PROSPECTO,DbType=System.Data.DbType.Int32},
+            };
+
+            return await _repo.GetAsync(p);
+        }
+
+        // Qué hace: carreras que se pueden elegir en el ciclo que el usuario tiene en pantalla.
+        // Cómo lo hace: exige prospecto y ciclo (el ciclo puede no ser todavía el guardado).
+        public async Task<CResult> GetCORR_CARRERA_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere)
+        {
+            if (xWhere.CORR_PROSPECTO <= 0)
+                return ErrorValidacion("Debe indicar el prospecto");
+            if (xWhere.ANIO <= 0 || xWhere.NUMERO_PERIODO <= 0)
+                return ErrorValidacion("Debe indicar el ciclo");
+
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_PROSPECTO",Value=xWhere.CORR_PROSPECTO,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="ANIO",Value=xWhere.ANIO,DbType=System.Data.DbType.Int16},
+                new CParameter() {ParameterName="NUMERO_PERIODO",Value=xWhere.NUMERO_PERIODO,DbType=System.Data.DbType.Byte},
+            };
+
+            return await _repo.GetCarrerasDelCicloAsync(p);
+        }
+
+        // Qué hace: ciclos a los que se puede mover el prospecto (más el suyo actual).
+        public async Task<CResult> GetCICLO_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere)
+        {
+            if (xWhere.CORR_PROSPECTO <= 0)
+                return ErrorValidacion("Debe indicar el prospecto");
+
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_PROSPECTO",Value=xWhere.CORR_PROSPECTO,DbType=System.Data.DbType.Int32},
+            };
+
+            return await _repo.GetCiclosAsync(p);
+        }
+
+        // Qué hace: consecuencias de cambiar ciclo/carrera, sin guardar (para el aviso previo).
+        public async Task<CResult> GetVALIDAR_CAMBIO_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere)
+        {
+            if (xWhere.CORR_PROSPECTO <= 0 || xWhere.ANIO <= 0 || xWhere.NUMERO_PERIODO <= 0
+                || xWhere.CORR_CARRERA <= 0 || xWhere.CORR_MODALIDAD <= 0)
+                return ErrorValidacion("Debe indicar prospecto, ciclo, carrera y modalidad");
+
+            var p = Repositories.ACA_PROSPECTORepository.ParametrosCambio(xWhere.CORR_PROSPECTO, xWhere.ANIO,
+                xWhere.NUMERO_PERIODO, xWhere.CORR_CARRERA, xWhere.CORR_MODALIDAD, "", "", true);
+
+            return await _repo.ValidarCambioAsync(p);
+        }
+
+        // Qué hace: modalidades con plan vigente de la carrera elegida.
+        public async Task<CResult> GetCORR_MODALIDAD_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere)
+        {
+            if (xWhere.CORR_CARRERA <= 0)
+                return ErrorValidacion("Debe indicar la carrera");
+
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_CARRERA",Value=xWhere.CORR_CARRERA,DbType=System.Data.DbType.Int32},
+            };
+
+            return await _repo.GetModalidadesDeCarreraAsync(p);
+        }
+
+        public async Task<CResult> CreateAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        // Qué hace: valida el encabezado antes de actualizar.
+        // Cómo lo hace: se editan FORMA_INGRESO (NI, EQ, CC, RI), FINANCIA_ESTUDIOS y el ciclo con su
+        //               carrera y modalidad; estos tres van juntos porque el procedimiento los resuelve juntos.
+        public async Task<CResult> UpdateAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            if (Data == null || Data.CORR_PROSPECTO <= 0)
+                return ErrorValidacion("Debe indicar el prospecto a modificar.");
+
+            bool traeCiclo = Data.ANIO > 0 || Data.NUMERO_PERIODO > 0;
+            bool traeCarrera = Data.CORR_CARRERA > 0 || Data.CORR_MODALIDAD > 0;
+            if ((traeCiclo || traeCarrera)
+                && (Data.ANIO <= 0 || Data.NUMERO_PERIODO <= 0 || Data.CORR_CARRERA <= 0 || Data.CORR_MODALIDAD <= 0))
+                return ErrorValidacion("Seleccione ciclo, carrera y modalidad.");
+
+            Data.FORMA_INGRESO = Data.FORMA_INGRESO?.Trim().ToUpperInvariant();
+            Data.FINANCIA_ESTUDIOS = string.IsNullOrWhiteSpace(Data.FINANCIA_ESTUDIOS) ? null : Data.FINANCIA_ESTUDIOS.Trim();
+
+            if (string.IsNullOrWhiteSpace(Data.FORMA_INGRESO) || System.Array.IndexOf(FormasIngreso, Data.FORMA_INGRESO) < 0)
+                return ErrorValidacion("La forma de ingreso debe ser NI, EQ, CC o RI.");
+
+            if (Data.FINANCIA_ESTUDIOS != null && Data.FINANCIA_ESTUDIOS.Length > 100)
+                return ErrorValidacion("Financia estudios no puede superar 100 caracteres.");
+
+            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        private static readonly string[] FormasIngreso = { "NI", "EQ", "CC", "RI" };
+
+        private static CResult ErrorValidacion(string mensaje)
+        {
+            return new CResult() { Data = null, Result = false, CodeHelper = 0, ErrorCode = -1, ErrorMessage = mensaje, ErrorSource = "[ACA_PROSPECTOService]", RowsAffected = 0 };
+        }
+
+        public async Task<CResult> DeleteAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+    }
+}
