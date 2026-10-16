@@ -22,6 +22,7 @@ import { AcaProspectoLimitacionFisicaService } from './aca-prospecto-limitacion-
 import { AcaProspectoDeportacionService } from './aca-prospecto-deportacion/aca-prospecto-deportacion.service';
 import { AcaProspectoMedioOrigenService, MEDIO_OTRO, MEDIO_REFERIDO } from './aca-prospecto-medio-origen/aca-prospecto-medio-origen.service';
 import { AcaProspectoDocumentoService } from './aca-prospecto-documento/aca-prospecto-documento.service';
+import { AcaProspectoBitacoraService } from './aca-prospecto-bitacora/aca-prospecto-bitacora.service';
 import {
     AcaProspectoEstudioService,
     SECCION_MEDIA,
@@ -188,6 +189,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     // Documentos que aplican a esta solicitud (tipo 104 y regla del prospecto).
     documentos: any[] = [];
+    bitacoras: any[] = [];
     documentoPendiente: any = null;
     subiendoDocumento = false;
     // Qué hace: botón de carga en la columna Options de Documentación.
@@ -202,6 +204,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         },
     ];
     columnsDocumento: any[] = [];
+    columnsBitacora: any[] = [];
     summaryDocumento: any = {};
     // #endregion
 
@@ -228,6 +231,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         private serviceEstudio: AcaProspectoEstudioService,
         private serviceEmpleo: AcaProspectoEmpleoService,
         private serviceDocumento: AcaProspectoDocumentoService,
+        private serviceBitacora: AcaProspectoBitacoraService,
         // Qué hace: devuelve a Angular el hilo tras los diálogos de DevExtreme (su promesa resuelve fuera
         //           de la zona y la pantalla no se refrescaría sola).
         private zone: NgZone
@@ -237,6 +241,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.summary = this.service.getSummary();
         this.items = this.service.getItems();
         this.columnsDocumento = this.serviceDocumento.getColumns();
+        this.columnsBitacora = this.serviceBitacora.getColumns();
         this.summaryDocumento = this.serviceDocumento.getSummary();
         this.itemsCarrera = this.service.getItemsCarrera();
         this.itemsPersona = this.servicePersona.getItems();
@@ -1979,6 +1984,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.cargarDeportaciones(CORR_PROSPECTO);
         this.cargarMedios(CORR_PROSPECTO);
         this.cargarDocumentos(CORR_PROSPECTO);
+        this.cargarBitacora(CORR_PROSPECTO);
         // Solo lo de la vista abierta: lo que no se carga no tiene modelo, así que tampoco entra al guardado.
         if (this.esAcademico) {
             this.cargarEstudios(CORR_PROSPECTO);
@@ -2034,6 +2040,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.empleoEliminar = false;
         this.empleoCargado = false;
         this.documentos = [];
+        this.bitacoras = [];
         this.mCORR_DEPTO_RESIDENCIA = [];
         this.mCORR_MUNICIPIO_RESIDENCIA = [];
         this.mCORR_DEPTO_EMPLEO = [];
@@ -2141,6 +2148,14 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     cargarDocumentos(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceDocumento.getDocumentosPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.documentos = data ?? [];
+        });
+    }
+
+    // Qué hace: historial del flujo de esta solicitud.
+    // Cómo lo hace: la grilla muestra el CIF cuando el paso lo ejecutó el portal.
+    cargarBitacora(CORR_PROSPECTO: number): void {
+        this.cargarLista(this.serviceBitacora.getPorProspecto(CORR_PROSPECTO), (data: any[]) => {
+            this.bitacoras = data ?? [];
         });
     }
 

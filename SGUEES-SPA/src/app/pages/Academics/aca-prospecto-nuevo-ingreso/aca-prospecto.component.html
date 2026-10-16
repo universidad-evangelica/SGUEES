@@ -22,6 +22,10 @@
 
     <!-- Consulta o edición del prospecto; Cancelar regresa al listado. -->
     <div *ngIf="!isBrowse()" class="aca-prospecto-shell">
+        <!-- Qué hace: pestañas de arriba, como el descriptor: la solicitud completa y la bitácora del flujo. -->
+        <dx-tab-panel class="aca-prospecto-tab-principal" [animationEnabled]="false" [swipeEnabled]="false">
+            <dxi-item title="Solicitud" icon="user">
+                <div class="aca-prospecto-tab-principal-contenido">
         <div class="aca-prospecto-cabecera">
         <section class="sguees-section-card aca-prospecto-card">
             <header class="aca-prospecto-section-head">
@@ -93,8 +97,10 @@
                 <p>{{ textoPlazoInscripcion() }}</p>
             </div>
             <span class="aca-prospecto-badge aca-prospecto-badge--pendiente">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>
+            <!-- Qué hace: el paso ya recorrido lleva check y una línea hasta el paso en curso. -->
             <ol class="aca-prospecto-flujo-pasos">
                 <li class="aca-prospecto-paso aca-prospecto-paso--hecho">
+                    <span class="aca-prospecto-paso-marca aca-prospecto-paso-marca--hecho" aria-hidden="true"></span>
                     <span class="aca-prospecto-paso-titulo">{{ model.NOMBRE_PASO_INICIAL || 'Envío de documentación' }}</span>
                     <span class="aca-prospecto-paso-detalle">{{ model.NOMBRE_ACTOR_INICIAL || 'Usuario sin unidad' }}</span>
                 </li>
@@ -859,6 +865,39 @@
                 </dxi-item>
             </dx-tab-panel>
         </section>
+                </div>
+            </dxi-item>
+
+            <!-- Qué hace: historial propio de la solicitud. El paso del portal muestra el CIF, no PORTAL_ADMISION. -->
+            <dxi-item title="Bitácora" icon="event">
+                <div class="aca-prospecto-bitacora">
+                    <h3 class="aca-prospecto-bitacora-title">
+                        <span class="dx-icon-clock aca-prospecto-bitacora-title-icon" aria-hidden="true"></span>
+                        Bitácora de la solicitud
+                    </h3>
+                    <app-data-grid-mtto
+                        [isBrowse]="true"
+                        [models]="bitacoras"
+                        [columns]="columnsBitacora"
+                        [keyExpr]="'CORR_BITACORA'"
+                        [unifiedToolbar]="false"
+                        [showAdd]="false"
+                        [showSearch]="false"
+                        [showExport]="false"
+                        [showRefresh]="false"
+                        [permiteEditar]="false"
+                        [permiteDele]="false"
+                        [wordWrapEnabled]="true"
+                        [gridHeight]="'auto'"
+                        [pageSize]="100"
+                        [showEmptyState]="true"
+                        [emptyTitle]="'Sin movimientos'"
+                        [emptyMessage]="'Esta solicitud todavía no tiene movimientos en el flujo.'"
+                    >
+                    </app-data-grid-mtto>
+                </div>
+            </dxi-item>
+        </dx-tab-panel>
     </div>
 
     <!-- Listado de todos los ciclos. Buscar, exportar y recargar quedan en la barra. -->

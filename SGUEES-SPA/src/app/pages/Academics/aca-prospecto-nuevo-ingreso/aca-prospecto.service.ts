@@ -181,7 +181,8 @@ export class AcaProspectoService {
                 ? 'cierra hoy'
                 : `cierra en ${dias} ${dias === 1 ? 'día' : 'días'}`;
         const paso = this.textoPaso(row);
-        const lleva = this.textoEnPaso(row.DIAS_EN_PASO);
+        const diasPaso = Number(row.DIAS_EN_PASO);
+        const lleva = diasPaso <= 0 ? 'menos de 1 día' : this.textoEnPaso(row.DIAS_EN_PASO);
         const enPaso = paso ? ` Lleva ${lleva} en ${paso}.` : '';
         return `La inscripción del ciclo ${ciclo}${facultad} ${cierra}${fechaTexto ? ', el ' + fechaTexto : ''}.${enPaso}`;
     }
@@ -332,21 +333,21 @@ export class AcaProspectoService {
             {
                 dataField: 'FINANCIA_ESTUDIOS',
                 label: { text: 'Financia estudios' },
-                colSpan: 2,
+                colSpan: 3,
                 editorOptions: { maxLength: 100 },
-            },
-            {
-                dataField: 'ESTADO_SOLICITUD',
-                label: { text: 'Estado' },
-                colSpan: 1,
-                editorOptions: { readOnly: true },
             },
             {
                 dataField: 'FECHA_REGISTRO',
                 label: { text: 'Fecha de registro' },
-                colSpan: 2,
+                colSpan: 3,
                 editorType: 'dxDateBox',
                 editorOptions: { readOnly: true, type: 'datetime', displayFormat: 'dd/MM/yyyy HH:mm' },
+            },
+            {
+                dataField: 'ESTADO_SOLICITUD',
+                label: { text: 'Estado' },
+                colSpan: 5,
+                editorOptions: { readOnly: true },
             },
         ];
     }

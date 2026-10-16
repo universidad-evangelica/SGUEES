@@ -8,73 +8,114 @@
 // Cómo lo hace: en pantallas angostas el flujo baja debajo de los datos.
 .aca-prospecto-cabecera {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 320px;
+	grid-template-columns: minmax(0, 1fr) 520px;
 	gap: var(--sguees-content-gap, 16px);
-	align-items: start;
+	align-items: stretch;
+}
+
+// Qué hace: el flujo queda a la misma altura que Datos del prospecto.
+// Cómo lo hace: el card llena la fila y solo la lista de pasos hace scroll si no cabe.
+.aca-prospecto-flujo {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.aca-prospecto-flujo > .aca-prospecto-section-head,
+.aca-prospecto-flujo > .aca-prospecto-plazo,
+.aca-prospecto-flujo > .aca-prospecto-badge {
+	flex-shrink: 0;
+}
+
+.aca-prospecto-flujo > .aca-prospecto-badge {
+	align-self: flex-start;
 }
 
 .aca-prospecto-flujo-pasos {
-	margin: 14px 0 0;
-	padding: 0;
+	flex: 1 1 auto;
+	min-height: 0;
+	margin: 16px 0 0;
+	padding: 0 6px 0 0;
 	list-style: none;
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
 }
 
+.aca-prospecto-flujo-pasos::-webkit-scrollbar {
+	width: 6px;
+}
+
+.aca-prospecto-flujo-pasos::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.28);
+	border-radius: 999px;
+}
+
+// Qué hace: cada paso alinea la marca con el texto para que la línea caiga en el centro del círculo.
+// Cómo lo hace: columna fija de 24px; el paso hecho dibuja la línea hasta el borde inferior.
 .aca-prospecto-paso {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	padding: 8px 0 8px 28px;
-	position: relative;
-}
-
-.aca-prospecto-paso::before {
-	content: '';
-	position: absolute;
-	left: 0;
-	top: 10px;
-	width: 16px;
-	height: 16px;
-	border-radius: 50%;
-	box-sizing: border-box;
-}
-
-.aca-prospecto-paso--hecho::before {
-	background: #2e7d32;
-}
-
-.aca-prospecto-paso--actual::before {
-	background: #1565c0;
-}
-
-.aca-prospecto-paso--actual {
 	display: grid;
-	grid-template-columns: 22px 1fr;
-	column-gap: 8px;
-	align-items: center;
-	padding-left: 0;
+	grid-template-columns: 24px 1fr;
+	column-gap: 10px;
+	row-gap: 2px;
+	align-items: start;
+	position: relative;
+	padding: 0 0 18px;
 }
 
-.aca-prospecto-paso--actual::before {
-	display: none;
+.aca-prospecto-paso:last-child {
+	padding-bottom: 0;
 }
 
 .aca-prospecto-paso-marca {
+	grid-row: 1 / span 2;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	grid-row: 1 / span 2;
-	width: 22px;
-	height: 22px;
+	width: 24px;
+	height: 24px;
 	border-radius: 50%;
 	background: #1565c0;
 	color: #fff;
 	font-size: 11px;
 	font-weight: 700;
+	position: relative;
+	z-index: 1;
+}
+
+.aca-prospecto-paso-marca--hecho {
+	background: #43a047;
+}
+
+.aca-prospecto-paso-marca--hecho::after {
+	content: '';
+	width: 5px;
+	height: 9px;
+	margin-top: -2px;
+	border: solid #fff;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}
+
+.aca-prospecto-paso--hecho::before {
+	content: '';
+	position: absolute;
+	left: 11px;
+	top: 24px;
+	bottom: 0;
+	width: 2px;
+	background: rgba(255, 255, 255, 0.32);
+}
+
+.aca-prospecto-paso--actual .aca-prospecto-paso-titulo {
+	color: #64b5f6;
 }
 
 .aca-prospecto-plazo {
 	margin: 0 0 12px;
-	padding: 10px 12px;
+	padding: 12px 14px;
 	border-radius: 8px;
 	border: 1px solid transparent;
 }
@@ -107,6 +148,45 @@
 	color: #c8e6c9;
 	background: rgba(46, 125, 50, 0.16);
 	border-color: rgba(46, 125, 50, 0.4);
+}
+
+// Qué hace: en tema claro el aviso, la línea y la barra usan tonos oscuros sobre fondo blanco.
+// Cómo lo hace: el body lleva sguees-theme-light; el oscuro conserva los colores de arriba.
+:host-context(.sguees-theme-light) {
+	.aca-prospecto-plazo.aca-prospecto-vence--corto,
+	.aca-prospecto-plazo.aca-prospecto-vence--vencido {
+		color: #b71c1c;
+		background: rgba(198, 40, 40, 0.1);
+		border-color: rgba(198, 40, 40, 0.28);
+	}
+
+	.aca-prospecto-plazo.aca-prospecto-vence--medio {
+		color: #e65100;
+		background: rgba(245, 166, 35, 0.18);
+		border-color: rgba(230, 81, 0, 0.35);
+	}
+
+	.aca-prospecto-plazo.aca-prospecto-vence--largo {
+		color: #1b5e20;
+		background: rgba(46, 125, 50, 0.1);
+		border-color: rgba(27, 94, 32, 0.28);
+	}
+
+	.aca-prospecto-paso--hecho::before {
+		background: rgba(15, 23, 42, 0.22);
+	}
+
+	.aca-prospecto-paso--actual .aca-prospecto-paso-titulo {
+		color: #1565c0;
+	}
+
+	.aca-prospecto-flujo-pasos {
+		scrollbar-color: rgba(15, 23, 42, 0.28) transparent;
+	}
+
+	.aca-prospecto-flujo-pasos::-webkit-scrollbar-thumb {
+		background: rgba(15, 23, 42, 0.28);
+	}
 }
 
 .aca-prospecto-vence-leyenda {
@@ -204,7 +284,7 @@
 	background: rgba(96, 125, 139, 0.15);
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1360px) {
 	.aca-prospecto-cabecera {
 		grid-template-columns: 1fr;
 	}
@@ -216,6 +296,56 @@
 
 .aca-prospecto-tab-panel {
 	margin-top: 0;
+}
+
+.aca-prospecto-tab-principal-contenido {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
+	padding-top: var(--sguees-space-3, 12px);
+}
+
+.aca-prospecto-bitacora {
+	margin-top: 12px;
+}
+
+.aca-prospecto-bitacora-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.aca-prospecto-bitacora-title-icon {
+	font-size: 1.1rem;
+	opacity: 0.9;
+}
+
+.aca-prospecto-bitacora-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	min-height: 120px;
+	padding: 24px 20px;
+	border: 1px solid color-mix(in srgb, var(--base-text-color) 12%, transparent);
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--base-text-color) 4%, transparent);
+	text-align: center;
+}
+
+.aca-prospecto-bitacora-empty-icon {
+	font-size: 1rem;
+	opacity: 0.85;
+	flex-shrink: 0;
+}
+
+.aca-prospecto-bitacora-empty-text {
+	font-size: 0.95rem;
+	line-height: 1.45;
+	color: var(--sguees-text-secondary, color-mix(in srgb, var(--base-text-color) 72%, transparent));
 }
 
 .aca-prospecto-tab {
