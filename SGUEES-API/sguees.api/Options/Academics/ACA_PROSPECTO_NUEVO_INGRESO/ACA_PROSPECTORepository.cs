@@ -339,6 +339,125 @@ namespace sguees.Repositories
             "ORDER BY X.ANIO, X.NUMERO_PERIODO";
 
 
+        // Qué hace: indica si el login es el ejecutor del paso actual y ese paso puede aprobar.
+        // Cómo lo hace: instancia activa tipo 104 en estado 38, actor origen del paso y acción hacia 39.
+        private const string _SqlPuedeAprobar =
+            "SELECT CAST(CASE WHEN dbo.SEG_FN_UsuarioMatchActorUnidad(@LOGIN_SISTEMA, PS.CORR_ACTOR_ORIGEN, I.CORR_UNIDAD_DOCUMENTO, I.CORR_EMPRESA) = 1 " +
+            "AND EXISTS (SELECT 1 FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO A " +
+            "WHERE A.CORR_EMPRESA = I.CORR_EMPRESA AND A.CORR_PASO = I.CORR_PASO_ACTUAL " +
+            "AND A.CORR_ESTADO_DESTINO = 39 AND A.PERMITIDO = 1 AND A.ACTIVO = 1) " +
+            "THEN 1 ELSE 0 END AS bit) AS PUEDE_APROBAR " +
+            "FROM dbo.SEG_FLUJO_INSTANCIA I " +
+            "INNER JOIN dbo.SEG_FLUJO_PASO PS ON PS.CORR_EMPRESA = I.CORR_EMPRESA AND PS.CORR_PASO = I.CORR_PASO_ACTUAL " +
+            "WHERE I.CORR_EMPRESA = @CORR_EMPRESA AND I.CORR_TIPO_DOCUMENTO = 104 " +
+            "AND I.CORR_DOCUMENTO = @CORR_PROSPECTO AND I.ACTIVO = 1 AND I.CORR_ESTADO_ACTUAL = 38";
+
+        public async Task<CResult> GetPuedeAprobarAsync(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+            var corrProspecto = 0;
+            var corrParam = xWhere?.Find(p => p.ParameterName == "CORR_PROSPECTO");
+            if (corrParam?.Value != null)
+                int.TryParse(corrParam.Value.ToString(), out corrProspecto);
+
+            try
+            {
+                var puede = false;
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlPuedeAprobar, xWhere);
+                if (reader.Read() && reader["PUEDE_APROBAR"] != System.DBNull.Value)
+                    puede = Convert.ToBoolean(reader["PUEDE_APROBAR"]);
+                reader.Close();
+
+                objResultado.Data = new ACA_PROSPECTO_ACCION_FLUJOView
+                {
+                    CORR_PROSPECTO = corrProspecto,
+                    PUEDE_APROBAR = puede
+                };
+                objResultado.Result = true;
+                objResultado.RowsAffected = 1;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Qué hace: aprueba la solicitud con el login de la sesión.
+        // Cómo lo hace: OPERACION=3 del SP de autoriza; el SP rechaza si no es el ejecutor del paso.
+        public async Task<CResult> AprobarAsync(int corrEmpresa, int corrProspecto, string login, string observacion, string estacion)
+        {
+            CResult objResultado = new();
+            const string spName = "PRAL_MTTO_ACA_PROSPECTO_NUEVO_INGRESO_AUTORIZA";
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@CORR_PROSPECTO", Value = corrProspecto, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@CORR_UNIDAD_DOCUMENTO", Value = DBNull.Value, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@OPERACION", Value = 3, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@OBSERVACION", Value = observacion ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@ESTACION", Value = estacion ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@CORR_ESTADO", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 500 },
+                    new CParameter() { ParameterName = "@CORR_ACCION_USADA", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@CORR_PASO_ACTUAL", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@MODO", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 20 },
+                    new CParameter() { ParameterName = "@NOMBRE_ESTADO", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 100 },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, spName, true, p);
+
+                var mensajeError = objData.objCommand.Parameters["@MENSAJE_ERROR"].Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(mensajeError))
+                {
+                    objResultado.Result = false;
+                    objResultado.ErrorCode = -10;
+                    objResultado.ErrorMessage = mensajeError;
+                    objResultado.CodeHelper = corrProspecto;
+                    return objResultado;
+                }
+
+                objResultado.Data = new ACA_PROSPECTO_ACCION_FLUJOView
+                {
+                    CORR_PROSPECTO = corrProspecto,
+                    PUEDE_APROBAR = false
+                };
+                objResultado.Result = true;
+                objResultado.RowsAffected = 1;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.CodeHelper = corrProspecto;
+            }
+            catch (Exception e)
+            {
+                objResultado.Result = false;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
         private static CResult OperacionNoHabilitada()
         {
             return new CResult()

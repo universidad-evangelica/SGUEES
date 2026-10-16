@@ -13,5 +13,7 @@ namespace sguees.Models
         public int CORR_CARRERA { get; set; }
         // Modalidad elegida, para validar el cambio de ciclo/carrera antes de guardar.
         public int CORR_MODALIDAD { get; set; }
+        // Comentario que queda en la bitácora al aprobar.
+        public string OBSERVACION { get; set; }
     }
 }

@@ -12,6 +12,8 @@ namespace sguees.Services
         Task<CResult> GetCORR_MODALIDAD_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere);
         Task<CResult> GetCICLO_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere);
         Task<CResult> GetVALIDAR_CAMBIO_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere);
+        Task<CResult> GetPuedeAprobarAsync(ACA_PROSPECTOParam xWhere, string login, string permisoOpcion);
+        Task<CResult> AprobarAsync(ACA_PROSPECTOParam xWhere, string login, string observacion, string estacion);
         Task<CResult> CreateAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> UpdateAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> DeleteAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION);

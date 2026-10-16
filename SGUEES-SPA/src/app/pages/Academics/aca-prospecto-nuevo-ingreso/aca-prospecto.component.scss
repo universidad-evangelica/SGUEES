@@ -342,6 +342,17 @@
 	flex-shrink: 0;
 }
 
+.aca-prospecto-aprobar p {
+	margin: 0 0 12px;
+}
+
+.aca-prospecto-aprobar-acciones {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 12px;
+}
+
 .aca-prospecto-bitacora-empty-text {
 	font-size: 0.95rem;
 	line-height: 1.45;

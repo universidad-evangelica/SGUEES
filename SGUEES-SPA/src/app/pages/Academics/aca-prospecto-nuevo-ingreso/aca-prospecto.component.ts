@@ -68,6 +68,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     readOnly = true;
     // Texto del botón "Modificar" de la barra: solo en consulta y con permiso U.
     btnModificar = '';
+    btnAprobar = '';
+    popupAprobarVisible = false;
+    observacionAprobar = '';
+    private corrAprobarConsultado = 0;
     model: any = this.fillData();
     itemsCarrera: any[] = [];
 
@@ -549,8 +553,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     override fillData(xModel?: AcaProspecto): AcaProspecto {
         if (xModel !== undefined) {
             this.cargarDetalle(xModel.CORR_PROSPECTO);
+            this.evaluarPuedeAprobar(xModel.CORR_PROSPECTO);
             return { ...xModel, ESTADO_SOLICITUD: this.service.textoEstadoSolicitud(xModel) };
         }
+        this.btnAprobar = '';
         return {
             CORR_EMPRESA: 0,
             CORR_PROSPECTO: 0,
@@ -714,7 +720,88 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.btnModificar = xEstado === UpdateType.Not_Defined && this.permiteEdit ? 'Modificar' : '';
         if (xEstado === UpdateType.Browse) {
             this.limpiarDetalle();
+            this.evaluarPuedeAprobar(Number(this.model?.CORR_PROSPECTO));
         }
+    }
+
+    // Qué hace: al elegir una fila del listado, muestra Aprobar solo si este usuario ejecuta el paso.
+    override focusedRowChanged(e: any): void {
+        super.focusedRowChanged(e);
+        this.evaluarPuedeAprobar(Number(e?.row?.data?.CORR_PROSPECTO));
+    }
+
+    // Qué hace: enciende el botón Aprobar de la solicitud seleccionada.
+    // Cómo lo hace: el API compara el login con el actor origen del paso actual.
+    evaluarPuedeAprobar(corrProspecto: number): void {
+        if (!(corrProspecto > 0)) {
+            this.btnAprobar = '';
+            return;
+        }
+        this.corrAprobarConsultado = corrProspecto;
+        this.service
+            .getPuedeAprobar(corrProspecto)
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    if (this.corrAprobarConsultado !== corrProspecto) {
+                        return;
+                    }
+                    this.btnAprobar = response?.Result && response?.Data?.PUEDE_APROBAR ? 'Aprobar' : '';
+                },
+                error: () => {
+                    if (this.corrAprobarConsultado === corrProspecto) {
+                        this.btnAprobar = '';
+                    }
+                },
+            });
+    }
+
+    abrirAprobar(): void {
+        if (!this.btnAprobar || !(Number(this.model?.CORR_PROSPECTO) > 0)) {
+            return;
+        }
+        this.observacionAprobar = 'Aprobación de la solicitud de nuevo ingreso.';
+        this.popupAprobarVisible = true;
+    }
+
+    cancelarAprobar(): void {
+        this.popupAprobarVisible = false;
+    }
+
+    // Qué hace: aprueba y saca la solicitud del listado de Ingresado.
+    // Cómo lo hace: el API ejecuta el paso; la fila se quita en memoria, sin volver a consultar todo.
+    confirmarAprobar(): void {
+        const corr = Number(this.model?.CORR_PROSPECTO);
+        const observacion = (this.observacionAprobar ?? '').trim();
+        if (!corr) {
+            return;
+        }
+        if (!observacion) {
+            this.notifyFx('Debe ingresar un comentario.', NotifyType.Warning);
+            return;
+        }
+        this.popupAprobarVisible = false;
+        this.loadingVisible = true;
+        this.service
+            .aprobar(corr, observacion)
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    this.loadingVisible = false;
+                    if (response?.Result && response.ErrorCode === 0) {
+                        this.models = (this.models || []).filter((fila: any) => Number(fila.CORR_PROSPECTO) !== corr);
+                        this.btnAprobar = '';
+                        this.notifyFx('Solicitud aprobada.', NotifyType.Success);
+                        this.AsignaStatus(UpdateType.Browse);
+                    } else {
+                        this.notifyFx(response?.ErrorMessage || 'No se pudo aprobar la solicitud.', NotifyType.Warning, { raw: true });
+                    }
+                },
+                error: (error: any) => {
+                    this.loadingVisible = false;
+                    this.notifyApiError(error);
+                },
+            });
     }
 
     override bloquear(): void {

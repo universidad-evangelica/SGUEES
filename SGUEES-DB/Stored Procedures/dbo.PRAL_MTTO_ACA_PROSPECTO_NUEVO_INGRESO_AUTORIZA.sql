@@ -10,8 +10,9 @@ GO
 --   Ejecuta el primer movimiento del flujo de nuevo ingreso cuando el
 --   aspirante envía su documentación (portal /student-profile), o cuando
 --   se inicie el flujo desde el ERP.
---   Por ahora SOLO OPERACION = 1 (ENVIAR / iniciar).
---   Aprobar (39) y Rechazar (46) del analista se agregarán después.
+--   OPERACION = 1 inicia el flujo (portal).
+--   OPERACION = 3 aprueba: solo si el login es el ejecutor del paso actual
+--   y ese paso tiene acción hacia el estado 39 Aprobado.
 --
 -- Importante:
 --   Este procedimiento NO guarda datos personales ni archivos.
@@ -36,8 +37,9 @@ GO
 --   5) Inserta ACA_PROSPECTO_ESTADO (104, estado resultante) si no existe.
 --   6) Pone ACA_PROSPECTO.ESTADO = 'C' (lock del portal).
 --
--- @OPERACION (v1):
+-- @OPERACION:
 --   1 = ENVIAR / Iniciar flujo de nuevo ingreso.
+--   3 = APROBAR (ejecutor del paso actual; estado destino 39).
 --
 -- @LOGIN_SISTEMA:
 --   Debe existir en SEG_USUARIO y estar activo. El aspirante del portal
@@ -58,6 +60,9 @@ GO
 --   -8 = falta @CORR_UNIDAD_DOCUMENTO
 --  -10 = falló EjecutarFlujoProceso (detalle en @MENSAJE_ERROR)
 --  -12 = la solicitud 104 ya tiene instancia activa (ya enviada)
+--  -13 = el login no es el ejecutor del paso actual
+--  -14 = el paso actual no tiene acción hacia Aprobado (39)
+--  -15 = no hay instancia activa para aprobar
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_ACA_PROSPECTO_NUEVO_INGRESO_AUTORIZA]
 (
@@ -93,6 +98,7 @@ BEGIN
 	DECLARE @V_NOMBRE_ESTADO VARCHAR(100);
 	DECLARE @ERROR_MOTOR VARCHAR(500);
 	DECLARE @ESTADO_MOTOR INT;
+	DECLARE @ACTOR_PASO INT;
 
 	SET @CORR_ESTADO = NULL;
 	SET @MENSAJE_ERROR = NULL;
@@ -122,9 +128,9 @@ BEGIN
 		RETURN -1;
 	END
 
-	IF @OPERACION IS NULL OR @OPERACION <> 1
+	IF @OPERACION IS NULL OR @OPERACION NOT IN (1, 3)
 	BEGIN
-		SET @MENSAJE_ERROR = 'Por ahora solo OPERACION=1 (ENVIAR / iniciar flujo de nuevo ingreso).';
+		SET @MENSAJE_ERROR = 'Operacion no soportada. Use 1=ENVIAR o 3=APROBAR.';
 		RETURN -5;
 	END
 
@@ -216,14 +222,54 @@ BEGIN
 	-- =========================================================================
 	SELECT @ID_INSTANCIA = CORR_INSTANCIA,
 	       @CORR_PASO_ACTUAL = CORR_PASO_ACTUAL,
-	       @CORR_ESTADO = CORR_ESTADO_ACTUAL
+	       @CORR_ESTADO = CORR_ESTADO_ACTUAL,
+	       @UNIDAD_DOC = ISNULL(@UNIDAD_DOC, CORR_UNIDAD_DOCUMENTO)
 	FROM dbo.SEG_FLUJO_INSTANCIA
 	WHERE CORR_EMPRESA = @EMPRESA
 	  AND CORR_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO
 	  AND CORR_DOCUMENTO = @CORR_PROSPECTO
 	  AND ACTIVO = 1;
 
-	IF @ID_INSTANCIA IS NOT NULL
+	-- Aprobar: el login tiene que ser el actor origen del paso en el que está la solicitud.
+	IF @OPERACION = 3
+	BEGIN
+		IF @ID_INSTANCIA IS NULL
+		BEGIN
+			SET @MENSAJE_ERROR = 'La solicitud no tiene un flujo activo para aprobar.';
+			RETURN -15;
+		END
+
+		SELECT @ACTOR_PASO = CORR_ACTOR_ORIGEN
+		FROM dbo.SEG_FLUJO_PASO
+		WHERE CORR_EMPRESA = @EMPRESA
+		  AND CORR_PASO = @CORR_PASO_ACTUAL;
+
+		IF @ACTOR_PASO IS NULL
+		   OR ISNULL(dbo.SEG_FN_UsuarioMatchActorUnidad(LTRIM(RTRIM(@LOGIN_SISTEMA)), @ACTOR_PASO, @UNIDAD_DOC, @EMPRESA), 0) <> 1
+		BEGIN
+			SET @MENSAJE_ERROR = 'El usuario no es el ejecutor del paso actual.';
+			RETURN -13;
+		END
+
+		SET @ID_ACCION = NULL;
+		SELECT TOP 1 @ID_ACCION = CORR_ACCION
+		FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO
+		WHERE CORR_EMPRESA = @EMPRESA
+		  AND CORR_PASO = @CORR_PASO_ACTUAL
+		  AND CORR_ESTADO_DESTINO = 39
+		  AND PERMITIDO = 1
+		  AND ACTIVO = 1;
+
+		IF @ID_ACCION IS NULL
+		BEGIN
+			SET @MENSAJE_ERROR = 'El paso actual no tiene una accion de aprobacion.';
+			RETURN -14;
+		END
+
+		SET @CORR_ACCION_USADA = @ID_ACCION;
+		SET @MODO = 'APROBAR';
+	END
+	ELSE IF @ID_INSTANCIA IS NOT NULL
 	BEGIN
 		SELECT @V_NOMBRE_ESTADO = LEFT(NOMBRE_ESTADO, 100)
 		FROM dbo.SEG_FLUJO_ESTADO
@@ -235,7 +281,8 @@ BEGIN
 		RETURN -12;
 	END
 
-	SET @MODO = 'NUEVO';
+	IF @OPERACION = 1
+		SET @MODO = 'NUEVO';
 
 	IF @UNIDAD_DOC IS NULL
 	BEGIN

@@ -17,6 +17,17 @@ export class AcaProspectoService {
         return this.repo.getAll([]);
     }
 
+    // Qué hace: pregunta si este usuario puede aprobar el prospecto abierto.
+    getPuedeAprobar(CORR_PROSPECTO: number): Observable<IResult> {
+        const xWhere: IParam[] = [{ Parameter: 'CORR_PROSPECTO', Value: CORR_PROSPECTO }];
+        return this.repo.getPuedeAprobar(xWhere);
+    }
+
+    // Qué hace: envía la aprobación con el comentario de la bitácora.
+    aprobar(CORR_PROSPECTO: number, OBSERVACION: string): Observable<IResult> {
+        return this.repo.aprobar({ CORR_PROSPECTO, OBSERVACION });
+    }
+
     get(param: any): Observable<IResult> {
         let xWhere: IParam[] = [{ Parameter: 'CORR_PROSPECTO', Value: param.CORR_PROSPECTO }];
         return this.repo.get(xWhere);

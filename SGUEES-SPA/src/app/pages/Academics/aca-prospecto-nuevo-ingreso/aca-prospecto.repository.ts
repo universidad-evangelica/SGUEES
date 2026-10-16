@@ -42,4 +42,14 @@ export class AcaProspectoRepository {
     update(model: any, xWhere: IParam[]): Observable<IResult> {
         return this.objData.Put(model, this.xController, '', xWhere, environment.UrlGENERALAPI);
     }
+
+    // Qué hace: consulta si el usuario de la sesión es el ejecutor del paso actual.
+    getPuedeAprobar(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Get(this.xController, 'GetPuedeAprobar', xWhere, environment.UrlGENERALAPI);
+    }
+
+    // Qué hace: aprueba la solicitud y deja el comentario en la bitácora.
+    aprobar(model: any): Observable<IResult> {
+        return this.objData.Put(model, this.xController, 'Aprobar', [], environment.UrlGENERALAPI);
+    }
 }

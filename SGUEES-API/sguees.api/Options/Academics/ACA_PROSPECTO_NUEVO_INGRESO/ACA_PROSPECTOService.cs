@@ -103,6 +103,43 @@ namespace sguees.Services
             return await _repo.GetModalidadesDeCarreraAsync(p);
         }
 
+        // Qué hace: enciende Aprobar solo si este login ejecuta el paso actual y tiene permiso de modificar.
+        // Cómo lo hace: la consulta cruza el actor del paso; sin U en el JWT el botón queda apagado.
+        public async Task<CResult> GetPuedeAprobarAsync(ACA_PROSPECTOParam xWhere, string login, string permisoOpcion)
+        {
+            if (xWhere.CORR_PROSPECTO <= 0)
+                return ErrorValidacion("Debe indicar el prospecto");
+            if (string.IsNullOrWhiteSpace(login))
+                return ErrorValidacion("No se pudo identificar el usuario de sesion.");
+
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_PROSPECTO",Value=xWhere.CORR_PROSPECTO,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="LOGIN_SISTEMA",Value=login.Trim(),DbType=System.Data.DbType.String},
+            };
+
+            var result = await _repo.GetPuedeAprobarAsync(p);
+            if (result.Result && result.Data is ACA_PROSPECTO_ACCION_FLUJOView accion
+                && !(permisoOpcion ?? string.Empty).Contains('U'))
+            {
+                accion.PUEDE_APROBAR = false;
+            }
+
+            return result;
+        }
+
+        // Qué hace: aprueba la solicitud con el usuario que la está viendo.
+        public async Task<CResult> AprobarAsync(ACA_PROSPECTOParam xWhere, string login, string observacion, string estacion)
+        {
+            if (xWhere.CORR_PROSPECTO <= 0)
+                return ErrorValidacion("Debe indicar el prospecto");
+            if (string.IsNullOrWhiteSpace(observacion))
+                return ErrorValidacion("Debe ingresar un comentario.");
+
+            return await _repo.AprobarAsync(xWhere.CORR_EMPRESA, xWhere.CORR_PROSPECTO, login?.Trim(), observacion.Trim(), estacion);
+        }
+
         public async Task<CResult> CreateAsync(ACA_PROSPECTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);

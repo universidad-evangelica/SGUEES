@@ -83,6 +83,26 @@ namespace sguees.Controllers
             return await _service.GetVALIDAR_CAMBIO_ACA_PROSPECTOAsync(Data);
         }
 
+        // Qué hace: dice si el usuario de la sesión puede aprobar la solicitud que tiene abierta.
+        [HttpGet("GetPuedeAprobar")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
+        public async Task<CResult> GetPuedeAprobar([FromQuery] ACA_PROSPECTOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetPuedeAprobarAsync(Data, GetUsuario(), GetPermisoOpcion());
+        }
+
+        // Qué hace: aprueba la solicitud. El SP solo avanza si este login es el ejecutor del paso.
+        // Cómo lo hace: en falla de negocio responde 200 con Result=false, igual que el descriptor.
+        [HttpPut("Aprobar")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
+        public async Task<IActionResult> Aprobar(ACA_PROSPECTOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            var resultado = await _service.AprobarAsync(Data, GetUsuario(), Data.OBSERVACION, ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : Ok(resultado);
+        }
+
         [HttpPut]
         [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
         public async Task<IActionResult> Put(ACA_PROSPECTOTable Data)
@@ -97,6 +117,12 @@ namespace sguees.Controllers
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value;
+        }
+
+        // Qué hace: permiso CRUDP de esta pantalla en el token.
+        private string GetPermisoOpcion()
+        {
+            return User.Claims.FirstOrDefault(c => c.Type == "/aca-prospecto-nuevo-ingreso")?.Value ?? string.Empty;
         }
 
         private void SetUpdateAudit(ACA_PROSPECTOTable Data)

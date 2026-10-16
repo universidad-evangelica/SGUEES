@@ -14,6 +14,11 @@
         [btn1Type]="'default'"
         [btn1Width]="120"
         (btn1Click)="modificar()"
+        [btn2]="btnAprobar"
+        [btn2Icon]="'check'"
+        [btn2Type]="'success'"
+        [btn2Width]="110"
+        (btn2Click)="abrirAprobar()"
         (consultar)="consultar()"
         (guardar)="guardar()"
         (cancelar)="cancelar()"
@@ -944,4 +949,31 @@
         [shading]="true"
     >
     </dx-load-panel>
+
+    <!-- Qué hace: el analista escribe el comentario que queda en la bitácora al aprobar. -->
+    <dx-popup
+        [(visible)]="popupAprobarVisible"
+        [showTitle]="true"
+        title="Aprobar solicitud"
+        [width]="520"
+        [height]="'auto'"
+        [dragEnabled]="true"
+        [hideOnOutsideClick]="false"
+        [showCloseButton]="true"
+        (onHiding)="cancelarAprobar()"
+    >
+        <div class="aca-prospecto-aprobar">
+            <p>La solicitud pasará a Aprobado. El comentario queda en la bitácora con su usuario.</p>
+            <dx-text-area
+                [(value)]="observacionAprobar"
+                [height]="140"
+                [maxLength]="2000"
+                placeholder="Escriba el comentario..."
+            ></dx-text-area>
+            <div class="aca-prospecto-aprobar-acciones">
+                <dx-button text="Cancelar" stylingMode="outlined" (onClick)="cancelarAprobar()"></dx-button>
+                <dx-button text="Aprobar" type="success" stylingMode="contained" (onClick)="confirmarAprobar()"></dx-button>
+            </div>
+        </div>
+    </dx-popup>
 </div>
