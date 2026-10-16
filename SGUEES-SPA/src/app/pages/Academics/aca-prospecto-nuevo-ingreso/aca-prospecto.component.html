@@ -924,7 +924,7 @@
         [emptyTitle]="'Sin solicitudes'"
         [emptyMessage]="'No hay solicitudes de nuevo ingreso enviadas en estado Ingresado.'"
         (refresh)="consultar()"
-        (rowClick)="onGridRowClick($event)"
+        (rowDblClick)="rowDblClick($event)"
         (editClick)="editarClick($event)"
         (focusedRowChanged)="focusedRowChanged($event)"
     >

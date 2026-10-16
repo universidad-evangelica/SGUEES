@@ -626,16 +626,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             });
     }
 
-    // Qué hace: un clic en la fila abre la consulta del prospecto.
-    // Cómo lo hace: reutiliza el modo consulta de CBaseComponent (rowDblClick → Not_Defined):
-    //               muestra el detalle sin Guardar y Cancelar regresa al listado.
-    onGridRowClick(e: any): void {
-        if (!this.isBrowse() || e?.rowType !== 'data' || !e?.data) {
-            return;
-        }
-        this.rowDblClick(e);
-    }
-
     // Qué hace: ciclos a los que se puede mover el prospecto, carreras de su ciclo y modalidades de la actual.
     // Cómo lo hace: se consulta al abrirlo; las carreras se vuelven a pedir cada vez que cambia el ciclo.
     private cargarOfertaAcademica(CORR_PROSPECTO: number): void {
