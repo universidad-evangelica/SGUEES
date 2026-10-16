@@ -21,7 +21,7 @@ GO
 -- Requisitos previos (script Scripts/ACA_PROSPECTO_NUEVO_INGRESO_FLUJO_PREPARAR.sql):
 --   1) CODIGO_OPCION por tipo (FK a SEG_OPCION_SISTEMA / menú ya existente):
 --        104 → ACA_PROSPECTO
---        105 → ACA_PROSPECTO_ECONOMICO
+--        105 → ACA_PROSPECTO_SOCIOECONOMICO
 --        106 → ACA_PROSPECTO_BECA
 --   2) Acción del paso 18 sin notificación obligatoria, o con analistas
 --      asignados al actor 7.
@@ -151,8 +151,8 @@ BEGIN
 
 	-- =========================================================================
 	-- PASO 2 — Configuración del flujo 104
-	-- Cómo: exige que el tipo 104 apunte a la opción de menú ACA_PROSPECTO
-	--       (script PREPARAR deja 105/106 con ECONOMICO y BECA).
+	-- Cómo: exige que el tipo 104 apunte a ACA_PROSPECTO
+	--       (105 queda en ACA_PROSPECTO_SOCIOECONOMICO y 106 en ACA_PROSPECTO_BECA).
 	-- =========================================================================
 	IF NOT EXISTS (
 		SELECT 1
@@ -163,7 +163,7 @@ BEGIN
 		  AND ACTIVO = 1
 	)
 	BEGIN
-		SET @MENSAJE_ERROR = 'Tipo 104 no tiene CODIGO_OPCION=ACA_PROSPECTO activo. Ejecute Scripts/ACA_PROSPECTO_NUEVO_INGRESO_FLUJO_PREPARAR.sql.';
+		SET @MENSAJE_ERROR = 'Tipo 104 no tiene CODIGO_OPCION=ACA_PROSPECTO activo. Ejecute Scripts/ACA_PROSPECTO_CODIGO_OPCION_FLUJO.sql.';
 		RETURN -2;
 	END
 

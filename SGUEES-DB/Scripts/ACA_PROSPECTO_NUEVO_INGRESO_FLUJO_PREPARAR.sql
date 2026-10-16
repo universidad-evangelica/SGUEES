@@ -2,11 +2,11 @@
 -- Qué hace: prepara el flujo 104 (Solicitud de nuevo ingreso) para poder llamar
 --           a PRAL_MTTO_ACA_PROSPECTO_NUEVO_INGRESO_AUTORIZA / EjecutarFlujoProceso.
 -- Cómo lo hace:
---   1) Deja cada tipo de documento con el CODIGO_OPCION de menú que ya existe
---      en SEG_OPCION_SISTEMA (FK_SEG_FLUJO_TIPO_DOCUMENTO_OPCION):
---        104 → ACA_PROSPECTO           (Solicitud nuevo ingreso)
---        105 → ACA_PROSPECTO_ECONOMICO (Solicitud socioeconómica)
---        106 → ACA_PROSPECTO_BECA      (Solicitud beca)
+--   1) Deja cada tipo de documento con su CODIGO_OPCION
+--      (FK_SEG_FLUJO_TIPO_DOCUMENTO_OPCION exige que exista en SEG_OPCION_SISTEMA):
+--        104 → ACA_PROSPECTO
+--        105 → ACA_PROSPECTO_SOCIOECONOMICO
+--        106 → ACA_PROSPECTO_BECA
 --      Así el motor ya no confunde los tres flujos (antes los tres tenían
 --      ACA_PROSPECTO).
 --   2) Deja la acción inicial del 104 sin notificación obligatoria hasta que
@@ -26,10 +26,14 @@ DECLARE @NOTIF_PASO18 VARCHAR(10);
 BEGIN TRAN;
 
 -- -----------------------------------------------------------------------------
--- 1) CODIGO_OPCION por tipo = opción de menú ya registrada
--- Qué hace: SEG_FLUJO_TIPO_DOCUMENTO.CODIGO_OPCION tiene FK a SEG_OPCION_SISTEMA.
---           No se inventa un código nuevo; se usan los que ya tiene el menú.
+-- 1) CODIGO_OPCION por tipo
+-- Qué hace: crea la opción si falta (la FK lo exige) y la asigna al tipo.
+-- Cómo: no toca SEG_CONFIG_OPCION, así que no abre una vista nueva en el menú.
 -- -----------------------------------------------------------------------------
+IF NOT EXISTS (SELECT 1 FROM dbo.SEG_OPCION_SISTEMA WHERE CODIGO_OPCION = N'ACA_PROSPECTO_SOCIOECONOMICO')
+	INSERT INTO dbo.SEG_OPCION_SISTEMA (CODIGO_OPCION, NOMBRE_OPCION, URL_OPCION, IMAGEN_OPCION, USUARIO_CREA, FECHA_CREA, ESTACION_CREA)
+	VALUES (N'ACA_PROSPECTO_SOCIOECONOMICO', N'Solicitud socioeconómica', N'/aca-prospecto-socioeconomico', N'mdi mdi-undefined', N'juanh', GETDATE(), N'SCRIPT_FLUJO_NI');
+
 UPDATE dbo.SEG_FLUJO_TIPO_DOCUMENTO
 SET CODIGO_OPCION = N'ACA_PROSPECTO',
     USUARIO_ACTU = N'juanh',
@@ -40,13 +44,13 @@ WHERE CORR_EMPRESA = 1
   AND CODIGO_OPCION <> N'ACA_PROSPECTO';
 
 UPDATE dbo.SEG_FLUJO_TIPO_DOCUMENTO
-SET CODIGO_OPCION = N'ACA_PROSPECTO_ECONOMICO',
+SET CODIGO_OPCION = N'ACA_PROSPECTO_SOCIOECONOMICO',
     USUARIO_ACTU = N'juanh',
     ESTACION_ACTU = N'SCRIPT_FLUJO_NI',
     FECHA_ACTU = GETDATE()
 WHERE CORR_EMPRESA = 1
   AND CORR_TIPO_DOCUMENTO = 105
-  AND CODIGO_OPCION <> N'ACA_PROSPECTO_ECONOMICO';
+  AND CODIGO_OPCION <> N'ACA_PROSPECTO_SOCIOECONOMICO';
 
 UPDATE dbo.SEG_FLUJO_TIPO_DOCUMENTO
 SET CODIGO_OPCION = N'ACA_PROSPECTO_BECA',
