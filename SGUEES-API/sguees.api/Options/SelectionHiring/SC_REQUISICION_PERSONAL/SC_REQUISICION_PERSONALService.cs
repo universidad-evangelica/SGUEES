@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -27,20 +28,26 @@ namespace SGUEES.Services
             return await _repo.GetAllAsync(p);
         }
 
-        /// <summary>
-        /// Requisiciones disponibles para vincular desde solicitud de empleo.
-        /// Por ahora trae todas; agregar filtros de estado aquí cuando el negocio lo defina.
-        /// </summary>
+        // Qué hace: Retorna únicamente las requisiciones aprobadas (estado final / Aprobado GG = 5) para el selector de solicitud de empleo, ordenadas de la más reciente a la más antigua.
+        // Cómo lo hace: Filtra por CORR_ESTADO_REQUISICION = 5 y ordena la lista resultante por FECHA_REQUISICION DESC y CORR_REQUISICION_PERSONAL DESC.
         public async Task<CResult> GetAllForSolicitudEmpleoAsync(SC_REQUISICION_PERSONALParam xWhere)
         {
             var p = new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                // Ejemplo futuro — solo requisiciones aprobadas/publicadas:
-                // new CParameter() { ParameterName = "CORR_ESTADO_REQUISICION", Value = 5, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_ESTADO_REQUISICION", Value = 5, DbType = System.Data.DbType.Int32 },
             };
 
-            return await _repo.GetAllAsync(p);
+            var resultado = await _repo.GetAllAsync(p);
+            if (resultado.Result && resultado.Data is IEnumerable<SC_REQUISICION_PERSONALView> lista)
+            {
+                resultado.Data = lista
+                    .OrderByDescending(r => r.FECHA_REQUISICION)
+                    .ThenByDescending(r => r.CORR_REQUISICION_PERSONAL)
+                    .ToList();
+            }
+
+            return resultado;
         }
 
         public async Task<CResult> GetAsync(SC_REQUISICION_PERSONALParam xWhere)

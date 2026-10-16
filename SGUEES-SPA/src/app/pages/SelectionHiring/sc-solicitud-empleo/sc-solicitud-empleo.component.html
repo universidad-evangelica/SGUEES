@@ -196,12 +196,12 @@
             <dxi-item location="before">
               <div *dxTemplate>
                 <dx-button
-                  icon="add"
+                  icon="email"
                   text="Enviar solicitud"
                   type="success"
                   stylingMode="contained"
                   [disabled]="!puedeIntentarEnviarSolicitud()"
-                  (onClick)="generarToken()"
+                  (onClick)="abrirModalEnviarSolicitud()"
                 ></dx-button>
               </div>
             </dxi-item>
@@ -957,3 +957,73 @@
   [familiaresUees]="familiaresUees"
   (saved)="onPersonaDatosGuardados()"
 ></app-sc-solicitud-empleo-editar-persona>
+
+<!-- motivo: modal para seleccionar plantilla de correo activa por su Nombre de Plantilla y previsualizar antes de enviar la solicitud -->
+<dx-popup
+  [visible]="popupEnviarCorreoVisible"
+  [showTitle]="true"
+  title="Enviar Solicitud al Candidato"
+  [width]="740"
+  [height]="'auto'"
+  [maxHeight]="'90vh'"
+  [dragEnabled]="false"
+  [hideOnOutsideClick]="false"
+  (onHiding)="cerrarModalEnviarCorreo()"
+>
+  <div *dxTemplate="let data of 'content'" style="display: flex; flex-direction: column; gap: 14px; padding: 6px;">
+    <!-- motivo: datos generales del destinatario de la solicitud -->
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
+      <div style="font-weight: 600; font-size: 14px; color: #1e293b; margin-bottom: 4px;">
+        {{ model?.NOMBRE || 'Candidato' }}
+      </div>
+      <div style="font-size: 13px; color: #64748b;">
+        Destinatario: <strong>{{ model?.CORREO_INVITACION || 'Sin correo registrado' }}</strong>
+      </div>
+    </div>
+
+    <!-- motivo: selector de plantillas de correo activas mostradas por su Nombre de Plantilla -->
+    <div>
+      <label style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">
+        Plantilla de Correo *
+      </label>
+      <dx-select-box
+        [(value)]="plantillaSeleccionadaCorr"
+        [items]="plantillasDisponibles"
+        displayExpr="NOMBRE_PLANTILLA"
+        valueExpr="CORR_PARAMETRO_PLANTILLA"
+        placeholder="Seleccione una plantilla..."
+        [searchEnabled]="true"
+        (onValueChanged)="onPlantillaSeleccionadaChange($event)"
+      ></dx-select-box>
+    </div>
+
+    <!-- motivo: asunto en modo solo lectura de la plantilla para revisión -->
+    <div *ngIf="plantillaSeleccionadaCorr">
+      <label style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">
+        Asunto
+      </label>
+      <dx-text-box [(value)]="correoAsunto" [readOnly]="true"></dx-text-box>
+    </div>
+
+    <!-- motivo: vista previa interactiva en modo solo lectura del cuerpo con formato institucional respetando estilos y colores -->
+    <div *ngIf="plantillaSeleccionadaCorr" class="email-preview-container">
+      <label class="email-preview-label">
+        Vista Previa del Correo (Modo Lectura)
+      </label>
+      <div class="email-preview-body" [innerHTML]="correoCuerpoPreviewSafe"></div>
+    </div>
+
+    <!-- motivo: botones de acción para cancelar o generar y enviar la solicitud -->
+    <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
+      <dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarModalEnviarCorreo()"></dx-button>
+      <dx-button
+        text="Enviar solicitud"
+        icon="email"
+        type="success"
+        stylingMode="contained"
+        [disabled]="!plantillaSeleccionadaCorr || !model?.CORREO_INVITACION || generandoToken || enviandoCorreo"
+        (onClick)="generarToken()"
+      ></dx-button>
+    </div>
+  </div>
+</dx-popup>

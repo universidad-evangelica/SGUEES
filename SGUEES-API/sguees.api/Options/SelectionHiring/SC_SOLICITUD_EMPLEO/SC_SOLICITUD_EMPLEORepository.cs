@@ -650,5 +650,150 @@ namespace sguees.Repositories
 				row.SetAttributeValue(name, value.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
 			}
 		}
+
+		// Qué hace: obtiene las plantillas de correo activas configuradas para la vista de Solicitud de Empleo.
+		// Cómo lo hace: consulta GEN_PARAMETRO_PLANTILLA uniendo su versión activa, filtrando por ACTIVO_PLANTILLA = 1 y CODIGO_OPCION = 'SC_SOLICITUD_EMPLEO'.
+		public async Task<CResult> GetPlantillasDisponiblesAsync(int corrEmpresa)
+		{
+			CResult objResultado = new();
+			try
+			{
+				string sql = @"
+					SELECT 
+						p.CORR_PARAMETRO_PLANTILLA,
+						p.CODIGO_PLANTILLA,
+						p.NOMBRE_PLANTILLA,
+						ISNULL(v.ASUNTO_PLANTILLA, p.ASUNTO_PLANTILLA) AS ASUNTO_PLANTILLA,
+						ISNULL(v.CUERPO_PLANTILLA, p.CUERPO_PLANTILLA) AS CUERPO_PLANTILLA,
+						p.CORR_PARAMETRO_SMTP,
+						ISNULL(v.CORREO_CC, p.CORREO_CC) AS CORREO_CC,
+						ISNULL(v.CORREO_CCO, p.CORREO_CCO) AS CORREO_CCO
+					FROM dbo.GEN_PARAMETRO_PLANTILLA p
+					LEFT JOIN dbo.GEN_PARAMETRO_PLANTILLA_VERSION v 
+						ON v.CORR_PARAMETRO_PLANTILLA = p.CORR_PARAMETRO_PLANTILLA 
+					   AND v.CORR_EMPRESA = p.CORR_EMPRESA 
+					   AND v.ES_VERSION_ACTIVA = 1
+					WHERE p.CORR_EMPRESA = @CORR_EMPRESA
+					  AND p.ACTIVO_PLANTILLA = 1
+					  AND (
+					      p.CODIGO_OPCION = 'SC_SOLICITUD_EMPLEO'
+					      OR (p.CODIGO_SISTEMA = 'SELECCIONCONTRATACION' AND (p.CODIGO_OPCION IS NULL OR p.CODIGO_OPCION = ''))
+					  )
+					ORDER BY p.NOMBRE_PLANTILLA;";
+
+				var p = new List<CParameter>
+				{
+					new CParameter { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 }
+				};
+
+				var reader = await objData.GetDataReader(CommandType.Text, sql, p);
+				var list = new List<dynamic>();
+				while (reader.Read())
+				{
+					list.Add(new
+					{
+						CORR_PARAMETRO_PLANTILLA = Convert.ToInt32(reader["CORR_PARAMETRO_PLANTILLA"]),
+						CODIGO_PLANTILLA = reader["CODIGO_PLANTILLA"].ToString(),
+						NOMBRE_PLANTILLA = reader["NOMBRE_PLANTILLA"].ToString(),
+						ASUNTO_PLANTILLA = reader["ASUNTO_PLANTILLA"]?.ToString() ?? "",
+						CUERPO_PLANTILLA = reader["CUERPO_PLANTILLA"]?.ToString() ?? "",
+						CORR_PARAMETRO_SMTP = Convert.ToInt32(reader["CORR_PARAMETRO_SMTP"]),
+						CORREO_CC = reader["CORREO_CC"]?.ToString() ?? "",
+						CORREO_CCO = reader["CORREO_CCO"]?.ToString() ?? ""
+					});
+				}
+				reader.Close();
+				objResultado.Data = list;
+				objResultado.Result = true;
+				objResultado.RowsAffected = list.Count;
+			}
+			catch (Exception e)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+			return objResultado;
+		}
+
+		// Qué hace: obtiene los datos consolidados de la solicitud, la plantilla y la configuración SMTP para el envío.
+		// Cómo lo hace: ejecuta consultas a V_SC_SOLICITUD_EMPLEO, GEN_PARAMETRO_PLANTILLA y GEN_PARAMETRO_SMTP.
+		public async Task<dynamic> ObtenerConfiguracionEnvioAsync(int corrEmpresa, int corrSolicitudEmpleo, int corrParametroPlantilla)
+		{
+			try
+			{
+				string sql = @"
+					SELECT TOP 1 
+						s.CORR_SOLICITUD_EMPLEO,
+						s.NOMBRE AS NOMBRE_CANDIDATO,
+						s.DUI AS DUI_CANDIDATO,
+						s.CORREO_INVITACION,
+						s.NOMBRE_TIPO_CONTRATACION,
+						ISNULL(sr.NOMBRE_PUESTO, '') AS NOMBRE_PUESTO,
+						p.CORR_PARAMETRO_PLANTILLA,
+						p.NOMBRE_PLANTILLA,
+						ISNULL(v.ASUNTO_PLANTILLA, p.ASUNTO_PLANTILLA) AS ASUNTO_ORIGINAL,
+						ISNULL(v.CUERPO_PLANTILLA, p.CUERPO_PLANTILLA) AS CUERPO_ORIGINAL,
+						ISNULL(v.CORREO_CC, p.CORREO_CC) AS CORREO_CC,
+						ISNULL(v.CORREO_CCO, p.CORREO_CCO) AS CORREO_CCO,
+						smtp.SERVIDOR_CORREO,
+						smtp.PUERTO_CORREO,
+						smtp.USA_SSL_CORREO,
+						smtp.USUARIO_REMITENTE,
+						smtp.CONTRASENA_REMITENTE,
+						smtp.CORREO_REMITENTE
+					FROM dbo.V_SC_SOLICITUD_EMPLEO s
+					LEFT JOIN dbo.V_SC_SOLICITUD_REQUISICION sr
+						ON sr.CORR_EMPRESA = s.CORR_EMPRESA
+					   AND sr.CORR_SOLICITUD_EMPLEO = s.CORR_SOLICITUD_EMPLEO
+					CROSS JOIN dbo.GEN_PARAMETRO_PLANTILLA p
+					LEFT JOIN dbo.GEN_PARAMETRO_PLANTILLA_VERSION v 
+						ON v.CORR_PARAMETRO_PLANTILLA = p.CORR_PARAMETRO_PLANTILLA 
+					   AND v.CORR_EMPRESA = p.CORR_EMPRESA 
+					   AND v.ES_VERSION_ACTIVA = 1
+					JOIN dbo.GEN_PARAMETRO_SMTP smtp 
+						ON smtp.CORR_PARAMETRO_SMTP = p.CORR_PARAMETRO_SMTP
+					WHERE s.CORR_EMPRESA = @CORR_EMPRESA
+					  AND s.CORR_SOLICITUD_EMPLEO = @CORR_SOLICITUD_EMPLEO
+					  AND p.CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA;";
+
+				var p = new List<CParameter>
+				{
+					new CParameter { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new CParameter { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = corrSolicitudEmpleo, DbType = DbType.Int32 },
+					new CParameter { ParameterName = "CORR_PARAMETRO_PLANTILLA", Value = corrParametroPlantilla, DbType = DbType.Int32 }
+				};
+
+				var reader = await objData.GetDataReader(CommandType.Text, sql, p);
+				dynamic config = null;
+				if (reader.Read())
+				{
+					var expando = new System.Dynamic.ExpandoObject();
+					var dict = (IDictionary<string, object>)expando;
+					for (int i = 0; i < reader.FieldCount; i++)
+					{
+						string colName = reader.GetName(i);
+						if (reader.IsDBNull(i))
+						{
+							dict[colName] = reader.GetFieldType(i) == typeof(string) ? "" : null;
+						}
+						else
+						{
+							dict[colName] = reader.GetValue(i);
+						}
+					}
+					config = expando;
+				}
+				reader.Close();
+				return config;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+		}
     }
 }

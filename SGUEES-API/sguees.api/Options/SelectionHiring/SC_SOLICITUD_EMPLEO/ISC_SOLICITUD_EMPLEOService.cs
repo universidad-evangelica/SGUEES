@@ -16,5 +16,9 @@ namespace sguees.Services
 			string usuario,
 			string estacion,
 			SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data);
+
+		Task<CResult> GetPlantillasDisponiblesAsync(int corrEmpresa);
+
+		Task<CResult> EnviarCorreoPlantillaAsync(int corrEmpresa, string usuario, string estacion, SC_SOLICITUD_EMPLEO_ENVIAR_CORREOParam data);
 	}
 }
