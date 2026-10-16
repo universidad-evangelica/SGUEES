@@ -603,6 +603,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return this.service.claseVence(this.model?.DIAS_VENCE);
     }
 
+    // Qué hace: color del badge del flujo según el estado 104.
+    // Cómo lo hace: 38 azul, 39 verde y 46 rojo, la misma regla de la grilla.
+    claseEstadoSolicitud(): string {
+        return this.service.claseEstadoSolicitud(this.model?.CORR_ESTADO);
+    }
+
+    // Qué hace: indica si el flujo ya no tiene paso en curso.
+    // Cómo lo hace: Aprobado (39) y Rechazada (46) cierran la instancia.
+    flujoFinalizado(): boolean {
+        const estado = Number(this.model?.CORR_ESTADO);
+        return estado === 39 || estado === 46;
+    }
+
     // Qué hace: listado de prospectos de todos los ciclos.
     // Cómo lo hace: el ciclo va en cada fila; la barra ya no lo filtra.
     consultar() {
@@ -758,8 +771,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.popupAprobarVisible = false;
     }
 
-    // Qué hace: aprueba y saca la solicitud del listado de Ingresado.
-    // Cómo lo hace: el API ejecuta el paso; la fila se quita en memoria, sin volver a consultar todo.
+    // Qué hace: aprueba y deja la solicitud en el listado como Aprobado.
+    // Cómo lo hace: el API ejecuta el paso; la fila se actualiza en memoria, sin volver a consultar todo.
     confirmarAprobar(): void {
         const corr = Number(this.model?.CORR_PROSPECTO);
         const observacion = (this.observacionAprobar ?? '').trim();
@@ -779,7 +792,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 next: (response: any) => {
                     this.loadingVisible = false;
                     if (response?.Result && response.ErrorCode === 0) {
-                        this.models = (this.models || []).filter((fila: any) => Number(fila.CORR_PROSPECTO) !== corr);
+                        this.models = (this.models || []).map((fila: any) => {
+                            if (Number(fila.CORR_PROSPECTO) !== corr) {
+                                return fila;
+                            }
+                            return {
+                                ...fila,
+                                CORR_ESTADO: 39,
+                                NOMBRE_ESTADO: 'Aprobado',
+                                NOMBRE_PASO: '',
+                                ORDEN_PASO: null,
+                                CORR_PASO_ACTUAL: null,
+                            };
+                        });
                         this.btnAprobar = '';
                         this.notifyFx('Solicitud aprobada.', NotifyType.Success);
                         this.AsignaStatus(UpdateType.Browse);

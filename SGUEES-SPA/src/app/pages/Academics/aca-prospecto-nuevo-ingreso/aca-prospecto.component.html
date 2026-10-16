@@ -101,18 +101,21 @@
                 <span class="aca-prospecto-plazo-titulo">Plazo de inscripción</span>
                 <p>{{ textoPlazoInscripcion() }}</p>
             </div>
-            <span class="aca-prospecto-badge aca-prospecto-badge--pendiente">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>
-            <!-- Qué hace: el paso ya recorrido lleva check y una línea hasta el paso en curso. -->
+            <!-- Qué hace: el color del badge sigue el estado del flujo 104. -->
+            <span class="aca-prospecto-badge" [ngClass]="claseEstadoSolicitud()">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>
+            <!-- Qué hace: si el flujo ya finalizó (39 o 46), los dos pasos quedan con check y sin paso actual. -->
             <ol class="aca-prospecto-flujo-pasos">
                 <li class="aca-prospecto-paso aca-prospecto-paso--hecho">
                     <span class="aca-prospecto-paso-marca aca-prospecto-paso-marca--hecho" aria-hidden="true"></span>
                     <span class="aca-prospecto-paso-titulo">{{ model.NOMBRE_PASO_INICIAL || 'Envío de documentación' }}</span>
                     <span class="aca-prospecto-paso-detalle">{{ model.NOMBRE_ACTOR_INICIAL || 'Usuario sin unidad' }}</span>
                 </li>
-                <li class="aca-prospecto-paso aca-prospecto-paso--actual">
-                    <span class="aca-prospecto-paso-marca">P{{ model.ORDEN_PASO || 2 }}</span>
+                <li class="aca-prospecto-paso" [ngClass]="flujoFinalizado() ? 'aca-prospecto-paso--hecho' : 'aca-prospecto-paso--actual'">
+                    <span class="aca-prospecto-paso-marca" [class.aca-prospecto-paso-marca--hecho]="flujoFinalizado()">
+                        <ng-container *ngIf="!flujoFinalizado()">P{{ model.ORDEN_PASO || 2 }}</ng-container>
+                    </span>
                     <span class="aca-prospecto-paso-titulo">{{ model.NOMBRE_PASO || 'Aprobación del analista' }}</span>
-                    <span class="aca-prospecto-paso-detalle">Actual · {{ model.NOMBRE_ACTOR_PASO || 'Analista de Nuevo Ingreso' }}</span>
+                    <span class="aca-prospecto-paso-detalle"><ng-container *ngIf="!flujoFinalizado()">Actual · </ng-container>{{ model.NOMBRE_ACTOR_PASO || 'Analista de Nuevo Ingreso' }}</span>
                 </li>
             </ol>
         </aside>
@@ -905,6 +908,21 @@
         </dx-tab-panel>
     </div>
 
+    <!-- Qué hace: el texto va en el aviso; los colores quedan en una fila aparte, con un punto por rango. -->
+    <div class="aca-prospecto-vence-bloque" *ngIf="isBrowse()">
+        <div class="aca-prospecto-vence-leyenda">
+            <span class="dx-icon-info aca-prospecto-vence-leyenda-icon" aria-hidden="true"></span>
+            <p class="aca-prospecto-vence-leyenda-texto">Vence son los días que faltan para que cierre la inscripción del ciclo de esa solicitud. El color avisa qué tan cerca está esa fecha.</p>
+        </div>
+        <div class="aca-prospecto-vence-puntos">
+            <span class="aca-prospecto-vence-puntos-titulo">Vence:</span>
+            <span class="aca-prospecto-vence aca-prospecto-vence--largo">más de 15 días</span>
+            <span class="aca-prospecto-vence aca-prospecto-vence--medio">6 a 15</span>
+            <span class="aca-prospecto-vence aca-prospecto-vence--corto">5 o menos</span>
+            <span class="aca-prospecto-vence aca-prospecto-vence--vencido">vencido</span>
+        </div>
+    </div>
+
     <!-- Listado de todos los ciclos. Buscar, exportar y recargar quedan en la barra. -->
     <app-data-grid-mtto
         [isBrowse]="isBrowse()"
@@ -922,21 +940,13 @@
         [permiteDele]="false"
         [showEmptyState]="true"
         [emptyTitle]="'Sin solicitudes'"
-        [emptyMessage]="'No hay solicitudes de nuevo ingreso enviadas en estado Ingresado.'"
+        [emptyMessage]="'No hay solicitudes de nuevo ingreso enviadas.'"
         (refresh)="consultar()"
         (rowDblClick)="rowDblClick($event)"
         (editClick)="editarClick($event)"
         (focusedRowChanged)="focusedRowChanged($event)"
     >
     </app-data-grid-mtto>
-    <!-- Leyenda de Vence: más de 15 días, de 6 a 15, 5 o menos, y vencido. -->
-    <div class="aca-prospecto-vence-leyenda" *ngIf="isBrowse()">
-        <span class="aca-prospecto-vence-leyenda-titulo">Vence:</span>
-        <span class="aca-prospecto-vence aca-prospecto-vence--largo">más de 15 días</span>
-        <span class="aca-prospecto-vence aca-prospecto-vence--medio">6 a 15</span>
-        <span class="aca-prospecto-vence aca-prospecto-vence--corto">5 o menos</span>
-        <span class="aca-prospecto-vence aca-prospecto-vence--vencido">vencido</span>
-    </div>
 
     <!-- Carga del detalle (11 consultas en paralelo) y guardado en cadena. -->
     <dx-load-panel

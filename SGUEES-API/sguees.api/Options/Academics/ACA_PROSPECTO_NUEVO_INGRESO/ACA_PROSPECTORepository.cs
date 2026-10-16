@@ -20,10 +20,10 @@ namespace sguees.Repositories
         {
         }
 
-        // Qué hace: solicitudes de nuevo ingreso que el estudiante ya envió y siguen Ingresadas.
-        // Cómo lo hace: lee V_ACA_PROSPECTO (sigue en pregrado, área 5) y solo deja las que
-        //               tienen instancia activa del tipo 104 con estado actual 38.
-        //               Quien todavía edita en el portal no tiene instancia y no aparece.
+        // Qué hace: solicitudes de nuevo ingreso ya enviadas, pendientes o aprobadas.
+        // Cómo lo hace: lee V_ACA_PROSPECTO (sigue en pregrado, área 5) y deja la instancia
+        //               tipo 104 en estado 38 Ingresado (sigue activa) o 39 Aprobado
+        //               (el flujo ya cerró la instancia). Quien edita en el portal no tiene instancia.
         private const string _SqlSolicitudesIngresadas =
             "SELECT V.*, " +
             "PA.FECHA_FIN_INSCRIPCION, " +
@@ -37,8 +37,10 @@ namespace sguees.Repositories
             "  ON I.CORR_EMPRESA = V.CORR_EMPRESA " +
             " AND I.CORR_TIPO_DOCUMENTO = 104 " +
             " AND I.CORR_DOCUMENTO = V.CORR_PROSPECTO " +
-            " AND I.ACTIVO = 1 " +
-            " AND I.CORR_ESTADO_ACTUAL = 38 " +
+            " AND ( " +
+            "      (I.ACTIVO = 1 AND I.CORR_ESTADO_ACTUAL = 38) " +
+            "   OR I.CORR_ESTADO_ACTUAL = 39 " +
+            " ) " +
             "INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS AS PA " +
             "  ON PA.CORR_PERIODO_ACADEMICO = V.CORR_PERIODO_ACADEMICO " +
             "LEFT JOIN dbo.SEG_FLUJO_PASO AS PS " +

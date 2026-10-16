@@ -99,7 +99,7 @@
 	transform: rotate(45deg);
 }
 
-.aca-prospecto-paso--hecho::before {
+.aca-prospecto-paso--hecho:not(:last-child)::before {
 	content: '';
 	position: absolute;
 	left: 11px;
@@ -136,18 +136,24 @@
 	color: #ffcdd2;
 	background: rgba(198, 40, 40, 0.18);
 	border-color: rgba(198, 40, 40, 0.45);
+	border-left-width: 4px;
+	border-left-color: #ef5350;
 }
 
 .aca-prospecto-plazo.aca-prospecto-vence--medio {
 	color: #ffe082;
 	background: rgba(245, 166, 35, 0.16);
 	border-color: rgba(245, 166, 35, 0.4);
+	border-left-width: 4px;
+	border-left-color: #ffb300;
 }
 
 .aca-prospecto-plazo.aca-prospecto-vence--largo {
 	color: #c8e6c9;
 	background: rgba(46, 125, 50, 0.16);
 	border-color: rgba(46, 125, 50, 0.4);
+	border-left-width: 4px;
+	border-left-color: #66bb6a;
 }
 
 // Qué hace: en tema claro el aviso, la línea y la barra usan tonos oscuros sobre fondo blanco.
@@ -158,21 +164,24 @@
 		color: #b71c1c;
 		background: rgba(198, 40, 40, 0.1);
 		border-color: rgba(198, 40, 40, 0.28);
+		border-left-color: #c62828;
 	}
 
 	.aca-prospecto-plazo.aca-prospecto-vence--medio {
 		color: #e65100;
 		background: rgba(245, 166, 35, 0.18);
 		border-color: rgba(230, 81, 0, 0.35);
+		border-left-color: #ef6c00;
 	}
 
 	.aca-prospecto-plazo.aca-prospecto-vence--largo {
 		color: #1b5e20;
 		background: rgba(46, 125, 50, 0.1);
 		border-color: rgba(27, 94, 32, 0.28);
+		border-left-color: #2e7d32;
 	}
 
-	.aca-prospecto-paso--hecho::before {
+	.aca-prospecto-paso--hecho:not(:last-child)::before {
 		background: rgba(15, 23, 42, 0.22);
 	}
 
@@ -189,17 +198,54 @@
 	}
 }
 
+.aca-prospecto-vence-bloque {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin: 4px 0 16px;
+}
+
 .aca-prospecto-vence-leyenda {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+	border-radius: 8px;
+	border: 1px solid rgba(66, 165, 245, 0.45);
+	background: rgba(21, 101, 192, 0.14);
+	color: #90caf9;
+}
+
+.aca-prospecto-vence-puntos {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 8px;
-	margin: 8px 0 16px;
+	gap: 14px;
 }
 
-.aca-prospecto-vence-leyenda-titulo {
-	font-size: 12px;
+.aca-prospecto-vence-puntos-titulo {
+	font-size: 13px;
 	font-weight: 600;
+	color: var(--sguees-text-primary);
+}
+
+.aca-prospecto-vence-leyenda-icon {
+	flex-shrink: 0;
+	margin-top: 1px;
+	font-size: 18px;
+}
+
+.aca-prospecto-vence-leyenda-texto {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.45;
+	color: inherit;
+}
+
+:host-context(.sguees-theme-light) .aca-prospecto-vence-leyenda {
+	color: #1565c0;
+	background: rgba(21, 101, 192, 0.08);
+	border-color: rgba(21, 101, 192, 0.35);
 }
 
 :host ::ng-deep .aca-prospecto-vence {
@@ -248,9 +294,8 @@
 	color: var(--sguees-text-secondary, var(--texteditor-label-color));
 }
 
-:host ::ng-deep .aca-prospecto-badge-cell {
-	display: flex;
-	align-items: center;
+:host ::ng-deep td.aca-prospecto-badge-cell {
+	vertical-align: middle;
 }
 
 :host ::ng-deep .aca-prospecto-badge {

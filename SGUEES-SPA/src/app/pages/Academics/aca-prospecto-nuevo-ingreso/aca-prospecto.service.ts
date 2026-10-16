@@ -88,7 +88,7 @@ export class AcaProspectoService {
 
     // Qué hace: texto del estado de la solicitud de nuevo ingreso.
     // Cómo lo hace: Ingresado (38) se muestra como Pendiente nuevo ingreso.
-    //               Aprobado y Rechazada usan su nombre. El listado solo trae el 38.
+    //               Aprobado (39) y Rechazada (46) usan su nombre.
     textoEstadoSolicitud(row: any): string {
         const estado = Number(row?.CORR_ESTADO);
         if (estado === 38) {
@@ -134,7 +134,7 @@ export class AcaProspectoService {
         return n === 1 ? 'En 1 día' : `En ${n} días`;
     }
 
-    // Qué hace: clase de color de Vence, la misma de la leyenda bajo la grilla.
+    // Qué hace: clase de color de Vence, la misma de la leyenda arriba de la grilla.
     claseVence(dias: number | null | undefined): string {
         if (dias === null || dias === undefined || Number.isNaN(Number(dias))) {
             return 'aca-prospecto-vence--sin';
@@ -213,38 +213,6 @@ export class AcaProspectoService {
             { dataField: 'NOMBRE_COMPLETO', caption: 'Nombre completo', width: 280 },
             { dataField: 'NOMBRE_CARRERA', caption: 'Carrera', width: 280 },
             { dataField: 'CICLO', caption: 'Ciclo', width: 110 },
-            { dataField: 'NOMBRE_MODALIDAD', caption: 'Modalidad', width: 130 },
-            { dataField: 'FORMA_INGRESO_TEXTO', caption: 'Forma de ingreso', width: 180 },
-            { dataField: 'DUI', caption: 'DUI', width: 120 },
-            {
-                dataField: 'DIAS_VENCE',
-                caption: 'Vence',
-                width: 170,
-                minWidth: 140,
-                allowHeaderFiltering: false,
-                calculateCellValue: (row: any) => this.textoVence(row?.DIAS_VENCE),
-                cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-                    const texto = this.textoVence(cellInfo?.data?.DIAS_VENCE);
-                    cellElement.classList.add('aca-prospecto-badge-cell');
-                    const badge = document.createElement('span');
-                    badge.className = 'aca-prospecto-vence ' + this.claseVence(cellInfo?.data?.DIAS_VENCE);
-                    badge.textContent = texto;
-                    cellElement.appendChild(badge);
-                },
-            },
-            {
-                dataField: 'DIAS_EN_PASO',
-                caption: 'En el paso',
-                width: 110,
-                calculateCellValue: (row: any) => this.textoEnPaso(row?.DIAS_EN_PASO),
-            },
-            {
-                dataField: 'NOMBRE_PASO',
-                caption: 'Paso actual',
-                width: 260,
-                minWidth: 200,
-                calculateCellValue: (row: any) => this.textoPaso(row),
-            },
             {
                 dataField: 'NOMBRE_ESTADO',
                 caption: 'Estado',
@@ -261,6 +229,38 @@ export class AcaProspectoService {
                     badge.textContent = texto;
                     cellElement.appendChild(badge);
                 },
+            },
+            {
+                dataField: 'DIAS_VENCE',
+                caption: 'Vence',
+                width: 170,
+                minWidth: 140,
+                allowHeaderFiltering: false,
+                calculateCellValue: (row: any) => this.textoVence(row?.DIAS_VENCE),
+                cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
+                    const texto = this.textoVence(cellInfo?.data?.DIAS_VENCE);
+                    cellElement.classList.add('aca-prospecto-badge-cell');
+                    const badge = document.createElement('span');
+                    badge.className = 'aca-prospecto-vence ' + this.claseVence(cellInfo?.data?.DIAS_VENCE);
+                    badge.textContent = texto;
+                    cellElement.appendChild(badge);
+                },
+            },
+            { dataField: 'NOMBRE_MODALIDAD', caption: 'Modalidad', width: 130 },
+            { dataField: 'FORMA_INGRESO_TEXTO', caption: 'Forma de ingreso', width: 180 },
+            { dataField: 'DUI', caption: 'DUI', width: 120 },
+            {
+                dataField: 'DIAS_EN_PASO',
+                caption: 'En el paso',
+                width: 110,
+                calculateCellValue: (row: any) => (row?.NOMBRE_PASO ? this.textoEnPaso(row?.DIAS_EN_PASO) : '—'),
+            },
+            {
+                dataField: 'NOMBRE_PASO',
+                caption: 'Paso actual',
+                width: 260,
+                minWidth: 200,
+                calculateCellValue: (row: any) => this.textoPaso(row),
             },
             {
                 dataField: 'FECHA_REGISTRO',
