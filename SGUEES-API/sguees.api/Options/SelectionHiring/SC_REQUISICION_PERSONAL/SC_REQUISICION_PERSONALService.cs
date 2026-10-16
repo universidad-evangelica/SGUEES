@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Security.Claims;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
+using sguees.Services;
 using SGUEES.Models;
 using SGUEES.Repositories;
 
@@ -9,10 +11,17 @@ namespace SGUEES.Services
 {
     public class SC_REQUISICION_PERSONALService : ISC_REQUISICION_PERSONALService
     {
+        private const string CodigoOpcionMenuRequisicion = "SC_REQUISICION_PERSONAL";
+
         private readonly ISC_REQUISICION_PERSONALRepository _repo;
-        public SC_REQUISICION_PERSONALService(ISC_REQUISICION_PERSONALRepository repo)
+        private readonly IGEN_NOTIFICACIONService _notificacion;
+
+        public SC_REQUISICION_PERSONALService(
+            ISC_REQUISICION_PERSONALRepository repo,
+            IGEN_NOTIFICACIONService notificacion)
         {
             _repo = repo;
+            _notificacion = notificacion ?? throw new ArgumentNullException(nameof(notificacion));
         }
 
         public async Task<CResult> GetAllAsync(SC_REQUISICION_PERSONALParam xWhere)
@@ -174,7 +183,114 @@ namespace SGUEES.Services
                 Data.CORR_UNIDAD_DOCUMENTO = null;
             }
 
-            return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
+            var login = vLOGIN_SISTEMA.Trim();
+            var resultado = await _repo.AutorizaAsync(Data, login);
+            if (!resultado.Result || Data.OPERACION < 2 || Data.OPERACION > 5)
+            {
+                return resultado;
+            }
+
+            // Best-effort: el flujo ya persistió; SignalR no debe tumbar Autoriza.
+            try
+            {
+                await NotificarDesdeFlujoAsync(Data, login);
+            }
+            catch
+            {
+                // Persistencia de flujo ya confirmada.
+            }
+
+            return resultado;
+        }
+
+        /// <summary>
+        /// Mapea SEG_FLUJO → GEN_NOTIFICACION:
+        /// título = Nombre tipo + #corr + Estado; mensaje = Descripción del estado.
+        /// Destinos: Enviar/Aprobar → pendientes del paso actual; Devolver/Rechazar → solo creador.
+        /// </summary>
+        private async Task NotificarDesdeFlujoAsync(SC_REQUISICION_PERSONAL_AUTORIZAParam data, string loginActor)
+        {
+            var dto = await _repo.GetContextoNotificacionFlujoAsync(
+                data.CORR_EMPRESA,
+                data.CORR_REQUISICION_PERSONAL);
+
+            if (dto == null)
+            {
+                return;
+            }
+
+            var corrReq = dto.CORR_REQUISICION_PERSONAL > 0
+                ? dto.CORR_REQUISICION_PERSONAL
+                : data.CORR_REQUISICION_PERSONAL;
+
+            var nombreTipo = string.IsNullOrWhiteSpace(dto.NOMBRE_TIPO)
+                ? "Requisición de personal"
+                : dto.NOMBRE_TIPO.Trim();
+            var nombreEstado = string.IsNullOrWhiteSpace(dto.NOMBRE_ESTADO)
+                ? "Actualización de flujo"
+                : dto.NOMBRE_ESTADO.Trim();
+            var titulo = $"{nombreTipo} #{corrReq} - {nombreEstado}";
+            var mensaje = string.IsNullOrWhiteSpace(dto.DESCRIPCION_ESTADO)
+                ? $"La requisición No.{corrReq} cambió a estado {nombreEstado}."
+                : dto.DESCRIPCION_ESTADO.Trim();
+
+            var urlDestino = await _notificacion.ResolverUrlDestinoAsync(
+                CodigoOpcionMenuRequisicion,
+                corrReq);
+            if (string.IsNullOrWhiteSpace(urlDestino) && corrReq > 0)
+            {
+                // Fallback si SEG_OPCION_SISTEMA no tiene URL_OPCION / CODIGO_OPCION.
+                urlDestino = $"/sc-requisicion-personal?corr={corrReq}";
+            }
+
+            var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var creador = dto.LOGIN_CREADOR?.Trim();
+
+            if (data.OPERACION == 4 || data.OPERACION == 5)
+            {
+                // Devolver / Rechazar: una sola campana al dueño del documento.
+                if (!string.IsNullOrWhiteSpace(creador))
+                {
+                    destinatarios.Add(creador);
+                }
+            }
+            else
+            {
+                // Enviar / Aprobar: solo pendientes del paso actual.
+                foreach (var loginPendiente in dto.LOGINS_PENDIENTES ?? Enumerable.Empty<string>())
+                {
+                    if (!string.IsNullOrWhiteSpace(loginPendiente))
+                    {
+                        destinatarios.Add(loginPendiente.Trim());
+                    }
+                }
+
+                // Cierre de flujo (sin pendientes): avisar al creador.
+                if (destinatarios.Count == 0 && !string.IsNullOrWhiteSpace(creador))
+                {
+                    destinatarios.Add(creador);
+                }
+            }
+
+            // No notificar al mismo usuario que acaba de ejecutar la acción.
+            destinatarios.Remove(loginActor);
+
+            if (destinatarios.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var loginDestino in destinatarios)
+            {
+                await _notificacion.NotificarUsuarioAsync(
+                    corrEmpresa: data.CORR_EMPRESA,
+                    loginDestino: loginDestino,
+                    titulo: titulo,
+                    mensaje: mensaje,
+                    urlDestino: urlDestino,
+                    usuarioCrea: loginActor,
+                    estacionCrea: "API");
+            }
         }
 
         private static CResult ValidationError(string message)
