@@ -123,6 +123,10 @@
 	color: #64b5f6;
 }
 
+.aca-prospecto-paso--aprobado .aca-prospecto-paso-titulo {
+	color: #66bb6a;
+}
+
 .aca-prospecto-plazo {
 	margin: 0 0 12px;
 	padding: 12px 14px;
@@ -204,6 +208,10 @@
 		color: #1565c0;
 	}
 
+	.aca-prospecto-paso--aprobado .aca-prospecto-paso-titulo {
+		color: #2e7d32;
+	}
+
 	.aca-prospecto-flujo-pasos {
 		scrollbar-color: rgba(15, 23, 42, 0.28) transparent;
 	}
@@ -218,6 +226,10 @@
 	flex-direction: column;
 	gap: 16px;
 	margin: 4px 0 16px;
+}
+
+.aca-prospecto-flujo-vencida {
+	margin: 0 0 12px;
 }
 
 .aca-prospecto-vence-leyenda {

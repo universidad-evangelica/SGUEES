@@ -112,6 +112,11 @@
                 <span class="aca-prospecto-plazo-titulo">Plazo de inscripción</span>
                 <p>{{ textoPlazoInscripcion() }}</p>
             </div>
+            <!-- Qué hace: avisa solo cuando la inscripción ya cerró y por eso no hay Aprobar, Rechazar ni Revertir. -->
+            <div class="aca-prospecto-vence-leyenda aca-prospecto-flujo-vencida" *ngIf="inscripcionVencida()">
+                <span class="dx-icon-info aca-prospecto-vence-leyenda-icon" aria-hidden="true"></span>
+                <p class="aca-prospecto-vence-leyenda-texto">La inscripción de este ciclo ya cerró. No se puede aprobar, rechazar ni revertir esta solicitud.</p>
+            </div>
             <!-- Qué hace: el color del badge sigue el estado del flujo 104. -->
             <span class="aca-prospecto-badge" [ngClass]="claseEstadoSolicitud()">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>
             <!-- Qué hace: tres pasos. Ingresada está en el analista; Aprobada está en Solicitud aprobada. -->
@@ -128,10 +133,13 @@
                     <span class="aca-prospecto-paso-titulo">Aprobación del analista</span>
                     <span class="aca-prospecto-paso-detalle"><ng-container *ngIf="enPasoAnalista()">Actual · </ng-container>Analista de Nuevo Ingreso</span>
                 </li>
-                <li class="aca-prospecto-paso" [ngClass]="enPasoAprobado() ? 'aca-prospecto-paso--actual' : 'aca-prospecto-paso--pendiente'">
-                    <span class="aca-prospecto-paso-marca">P3</span>
+                <!-- Qué hace: al llegar aquí la solicitud ya está aprobada, así que el paso cierra en verde. -->
+                <li class="aca-prospecto-paso" [ngClass]="enPasoAprobado() ? 'aca-prospecto-paso--hecho aca-prospecto-paso--aprobado' : 'aca-prospecto-paso--pendiente'">
+                    <span class="aca-prospecto-paso-marca" [class.aca-prospecto-paso-marca--hecho]="enPasoAprobado()">
+                        <ng-container *ngIf="!enPasoAprobado()">P3</ng-container>
+                    </span>
                     <span class="aca-prospecto-paso-titulo">Solicitud aprobada</span>
-                    <span class="aca-prospecto-paso-detalle"><ng-container *ngIf="enPasoAprobado()">Actual · </ng-container>Analista de Nuevo Ingreso</span>
+                    <span class="aca-prospecto-paso-detalle">Analista de Nuevo Ingreso</span>
                 </li>
             </ol>
         </aside>

@@ -629,6 +629,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return Number(this.model?.CORR_ESTADO) === 39;
     }
 
+    // Qué hace: la inscripción del ciclo ya cerró, así que no hay acciones de flujo.
+    // Cómo lo hace: el mismo corte de Vence: días negativos frente a FECHA_FIN_INSCRIPCION.
+    inscripcionVencida(): boolean {
+        const dias = this.model?.DIAS_VENCE;
+        return dias !== null && dias !== undefined && !Number.isNaN(Number(dias)) && Number(dias) < 0;
+    }
+
     // Qué hace: listado de prospectos de todos los ciclos.
     // Cómo lo hace: el ciclo va en cada fila; la barra ya no lo filtra.
     consultar() {

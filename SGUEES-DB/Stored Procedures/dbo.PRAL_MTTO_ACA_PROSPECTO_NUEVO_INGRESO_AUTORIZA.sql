@@ -70,6 +70,7 @@ GO
 --  -14 = el paso no tiene la acción pedida
 --  -15 = no hay instancia para la operación
 --  -16 = Revertir solo aplica si el estado actual es Aprobado (39)
+--  -17 = la inscripción del ciclo ya cerró (no se aprueba, rechaza ni revierte)
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_ACA_PROSPECTO_NUEVO_INGRESO_AUTORIZA]
 (
@@ -262,6 +263,19 @@ BEGIN
 				THEN 'La solicitud no está aprobada para revertir.'
 				ELSE 'La solicitud no tiene un flujo activo.' END;
 			RETURN -15;
+		END
+
+		IF EXISTS (
+			SELECT 1
+			FROM dbo.ACA_PROSPECTO AS PR
+			INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS AS PA
+				ON PA.CORR_PERIODO_ACADEMICO = PR.CORR_PERIODO_ACADEMICO
+			WHERE PR.CORR_PROSPECTO = @CORR_PROSPECTO
+			  AND CAST(PA.FECHA_FIN_INSCRIPCION AS date) < CAST(GETDATE() AS date)
+		)
+		BEGIN
+			SET @MENSAJE_ERROR = 'La inscripción de este ciclo ya cerró. No se puede aprobar, rechazar ni revertir la solicitud.';
+			RETURN -17;
 		END
 
 		IF @OPERACION = 5
