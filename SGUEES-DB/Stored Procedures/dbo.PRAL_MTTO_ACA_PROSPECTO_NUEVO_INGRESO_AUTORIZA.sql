@@ -163,7 +163,7 @@ BEGIN
 		  AND ACTIVO = 1
 	)
 	BEGIN
-		SET @MENSAJE_ERROR = 'Tipo 104 no tiene CODIGO_OPCION=ACA_PROSPECTO activo. Ejecute Scripts/ACA_PROSPECTO_CODIGO_OPCION_FLUJO.sql.';
+		SET @MENSAJE_ERROR = 'No existe tipo de documento activo para ACA_PROSPECTO.';
 		RETURN -2;
 	END
 
