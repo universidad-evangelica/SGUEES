@@ -589,5 +589,108 @@ namespace sguees.Repositories
             resultado.ErrorMessage = error.Message;
             resultado.ErrorSource = error.Source ?? "";
         }
+
+        // Qué hace: obtiene los datos consolidados de la solicitud, la plantilla y la configuración SMTP para el envío del token.
+        // Cómo lo hace: consulta V_SC_SOLICITUD_EMPLEO, GEN_PARAMETRO_PLANTILLA y GEN_PARAMETRO_SMTP retornando un objeto dinámico con todas las columnas.
+        public async Task<dynamic> ObtenerConfiguracionEnvioAsync(int corrEmpresa, int corrSolicitudEmpleo, int corrParametroPlantilla)
+        {
+            try
+            {
+                string sql = @"
+                    SELECT TOP 1 
+                        s.CORR_SOLICITUD_EMPLEO,
+                        s.NOMBRE AS NOMBRE_CANDIDATO,
+                        s.DUI AS DUI_CANDIDATO,
+                        s.CORREO_INVITACION,
+                        s.NOMBRE_TIPO_CONTRATACION,
+                        ISNULL(sr.NOMBRE_PUESTO, '') AS NOMBRE_PUESTO,
+                        p.CORR_PARAMETRO_PLANTILLA,
+                        p.NOMBRE_PLANTILLA,
+                        ISNULL(v.ASUNTO_PLANTILLA, p.ASUNTO_PLANTILLA) AS ASUNTO_ORIGINAL,
+                        ISNULL(v.CUERPO_PLANTILLA, p.CUERPO_PLANTILLA) AS CUERPO_ORIGINAL,
+                        smtp.SERVIDOR_CORREO,
+                        smtp.PUERTO_CORREO,
+                        smtp.USA_SSL_CORREO,
+                        smtp.USUARIO_REMITENTE,
+                        smtp.CONTRASENA_REMITENTE,
+                        smtp.CORREO_REMITENTE
+                    FROM dbo.V_SC_SOLICITUD_EMPLEO s
+                    LEFT JOIN dbo.V_SC_SOLICITUD_REQUISICION sr
+                        ON sr.CORR_EMPRESA = s.CORR_EMPRESA
+                       AND sr.CORR_SOLICITUD_EMPLEO = s.CORR_SOLICITUD_EMPLEO
+                    CROSS JOIN dbo.GEN_PARAMETRO_PLANTILLA p
+                    LEFT JOIN dbo.GEN_PARAMETRO_PLANTILLA_VERSION v 
+                        ON v.CORR_PARAMETRO_PLANTILLA = p.CORR_PARAMETRO_PLANTILLA 
+                       AND v.CORR_EMPRESA = p.CORR_EMPRESA 
+                       AND v.ES_VERSION_ACTIVA = 1
+                    JOIN dbo.GEN_PARAMETRO_SMTP smtp 
+                        ON smtp.CORR_PARAMETRO_SMTP = p.CORR_PARAMETRO_SMTP
+                    WHERE s.CORR_EMPRESA = @CORR_EMPRESA
+                      AND s.CORR_SOLICITUD_EMPLEO = @CORR_SOLICITUD_EMPLEO
+                      AND p.CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA;";
+
+                var p = new List<CParameter>
+                {
+                    new CParameter { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+                    new CParameter { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = corrSolicitudEmpleo, DbType = DbType.Int32 },
+                    new CParameter { ParameterName = "CORR_PARAMETRO_PLANTILLA", Value = corrParametroPlantilla, DbType = DbType.Int32 }
+                };
+
+                var reader = await objData.GetDataReader(CommandType.Text, sql, p);
+                dynamic config = null;
+                if (reader.Read())
+                {
+                    var expando = new System.Dynamic.ExpandoObject();
+                    var dict = (IDictionary<string, object>)expando;
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        string colName = reader.GetName(i);
+                        dict[colName] = reader.IsDBNull(i) ? (reader.GetFieldType(i) == typeof(string) ? "" : null) : reader.GetValue(i);
+                    }
+                    config = expando;
+                }
+                reader.Close();
+                return config;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        // Qué hace: obtiene el correlativo de la plantilla activa predeterminada para Solicitud de Empleo en caso de que no se especifique una.
+        // Cómo lo hace: consulta GEN_PARAMETRO_PLANTILLA por la opción SC_SOLICITUD_EMPLEO con versión activa.
+        public async Task<int?> ObtenerPlantillaDefaultAsync(int corrEmpresa)
+        {
+            try
+            {
+                string sql = @"
+                    SELECT TOP 1 p.CORR_PARAMETRO_PLANTILLA
+                    FROM dbo.GEN_PARAMETRO_PLANTILLA p
+                    JOIN dbo.SEG_OPCION o ON o.CORR_OPCION = p.CORR_OPCION
+                    WHERE p.CORR_EMPRESA = @CORR_EMPRESA
+                      AND p.ACTIVO = 1
+                      AND (o.CODIGO_OPCION = 'SC_SOLICITUD_EMPLEO' OR p.NOMBRE_PLANTILLA LIKE '%SOLICITUD%')
+                    ORDER BY p.CORR_PARAMETRO_PLANTILLA DESC;";
+
+                var p = new List<CParameter>
+                {
+                    new CParameter { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 }
+                };
+
+                var reader = await objData.GetDataReader(CommandType.Text, sql, p);
+                int? corrPlantilla = null;
+                if (reader.Read())
+                {
+                    corrPlantilla = reader.GetInt32(0);
+                }
+                reader.Close();
+                return corrPlantilla;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
     }
 }

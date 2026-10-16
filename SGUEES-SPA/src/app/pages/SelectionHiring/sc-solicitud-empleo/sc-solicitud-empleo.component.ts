@@ -1,4 +1,5 @@
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
@@ -69,6 +70,15 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	asociandoExpediente = false;
 	ultimoMensajeAsociacion = '';
 
+	/** Propiedades para el modal de envío de correo basado en plantilla. */
+	popupEnviarCorreoVisible = false;
+	plantillasDisponibles: any[] = [];
+	plantillaSeleccionadaCorr: number | null = null;
+	correoAsunto = '';
+	correoCuerpoPreview = '';
+	correoCuerpoPreviewSafe: SafeHtml = '';
+	enviandoCorreo = false;
+
 	/**
 	 * Visible en formulario editable. Oculto en browse, consulta o ya asociada (congelada).
 	 */
@@ -77,6 +87,25 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			return '';
 		}
 		return 'Asociar Expediente';
+	}
+
+	/**
+	 * Qué hace: define el texto del botón Enviar Correo en la barra de herramientas superior.
+	 * Cómo lo hace: retorna 'Enviar Correo' solo si está en modo browse y hay un registro seleccionado.
+	 */
+	get btnEnviarCorreo(): string {
+		if (!this.isBrowse() || !this.tieneFilaSeleccionada()) {
+			return '';
+		}
+		return 'Enviar Correo';
+	}
+
+	/**
+	 * Qué hace: determina si existe una solicitud de empleo seleccionada.
+	 * Cómo lo hace: valida que el modelo tenga un CORR_SOLICITUD_EMPLEO válido mayor a cero.
+	 */
+	tieneFilaSeleccionada(): boolean {
+		return (this.model?.CORR_SOLICITUD_EMPLEO ?? 0) > 0;
 	}
 
 	/** Solicitud ya asociada a expediente: solo consulta (sin mutaciones). */
@@ -90,7 +119,8 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		public override router: ActivatedRoute,
 		private service: ScSolicitudEmpleoService,
 		private expedienteService: ScExpedienteCandidatoService,
-		private messageService: MessageService
+		private messageService: MessageService,
+		private sanitizer: DomSanitizer
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -1118,9 +1148,31 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		return this.puedeIntentarEnviarSolicitud() && this.motivoNoPuedeGenerarToken() === null;
 	}
 
-	async generarToken(): Promise<void> {
+	// Qué hace: valida las condiciones para generar el enlace y abre el modal de selección de plantilla en modo lectura.
+	// Cómo lo hace: valida motivoNoPuedeGenerarToken() y delega en abrirModalEnviarCorreo().
+	abrirModalEnviarSolicitud(): void {
 		const motivo = this.motivoNoPuedeGenerarToken();
-		if (motivo || this.generandoToken) {
+		if (motivo) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Flujo de solicitud',
+				detail: motivo,
+			});
+			return;
+		}
+		this.abrirModalEnviarCorreo();
+	}
+
+	// Qué hace: genera el token único de solicitud y envía la invitación por correo al candidato usando la plantilla seleccionada.
+	// Cómo lo hace: solicita confirmación si hay token vigente, invoca service.generarToken() con la plantilla elegida, actualiza el estado local y cierra el modal.
+	async generarToken(): Promise<void> {
+		if (!this.plantillaSeleccionadaCorr) {
+			this.notifyFx('Debe seleccionar una plantilla de correo.', NotifyType.Warning);
+			return;
+		}
+
+		const motivo = this.motivoNoPuedeGenerarToken();
+		if (motivo || this.generandoToken || this.enviandoCorreo) {
 			if (motivo) {
 				this.messageService.add({
 					severity: 'warn',
@@ -1147,9 +1199,10 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		}
 
 		this.generandoToken = true;
+		this.enviandoCorreo = true;
 		this.loadingVisible = true;
 		this.service
-			.generarToken(this.model.CORR_SOLICITUD_EMPLEO)
+			.generarToken(this.model.CORR_SOLICITUD_EMPLEO, this.plantillaSeleccionadaCorr)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -1165,21 +1218,20 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 								FECHA_GENERACION: this.model.FECHA_GENERACION,
 							};
 						}
-						this.messageService.add({
-							severity: 'success',
-							summary: 'Éxito',
-							detail: 'La solicitud ha sido generada y enviada correctamente.',
-						});
+						this.notifyFx('La solicitud ha sido generada y enviada correctamente.', NotifyType.Success);
+						this.cerrarModalEnviarCorreo();
 						this.consultarToken();
 					} else {
 						this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
 					}
 					this.generandoToken = false;
+					this.enviandoCorreo = false;
 					this.loadingVisible = false;
 				},
 				error: (error: any) => {
 					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
 					this.generandoToken = false;
+					this.enviandoCorreo = false;
 					this.loadingVisible = false;
 					this.consultarToken();
 				},
@@ -1378,4 +1430,149 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	// 		});
 	// 	})
 	// }
+
+	// Qué hace: abre el popup modal para seleccionar la plantilla y enviar correo al candidato.
+	// Cómo lo hace: verifica selección, reinicia el estado, consulta las plantillas activas y muestra el dx-popup.
+	// Qué hace: abre el modal de envío de correo, reiniciando variables y cargando plantillas activas.
+	// Cómo lo hace: verifica selección, consulta requisiciones si no están cargadas, obtiene plantillas y muestra el popup.
+	abrirModalEnviarCorreo(): void {
+		if (!this.tieneFilaSeleccionada()) {
+			this.notifyFx('Seleccione una solicitud de empleo para enviar el correo.', NotifyType.Warning);
+			return;
+		}
+
+		if (!this.model?.CORREO_INVITACION || !this.model.CORREO_INVITACION.trim()) {
+			this.notifyFx('La solicitud seleccionada no tiene correo electrónico registrado.', NotifyType.Warning);
+			return;
+		}
+
+		if ((this.requisicionesSolicitud?.length ?? 0) === 0 && (this.model?.CORR_SOLICITUD_EMPLEO ?? 0) > 0) {
+			this.consultarRequisicionesSolicitud();
+		}
+
+		this.plantillaSeleccionadaCorr = null;
+		this.correoAsunto = '';
+		this.correoCuerpoPreview = '';
+		this.correoCuerpoPreviewSafe = '';
+		this.enviandoCorreo = false;
+
+		this.loadingVisible = true;
+		this.service
+			.getPlantillasDisponibles()
+			.pipe(take(1))
+			.subscribe({
+				next: (res) => {
+					this.loadingVisible = false;
+					if (res?.Result && Array.isArray(res.Data)) {
+						this.plantillasDisponibles = res.Data;
+						if (this.plantillasDisponibles.length > 0 && !this.plantillaSeleccionadaCorr) {
+							this.plantillaSeleccionadaCorr = this.plantillasDisponibles[0].CORR_PARAMETRO_PLANTILLA;
+							this.onPlantillaSeleccionadaChange({ value: this.plantillaSeleccionadaCorr });
+						}
+					} else {
+						this.plantillasDisponibles = [];
+					}
+					this.popupEnviarCorreoVisible = true;
+				},
+				error: () => {
+					this.loadingVisible = false;
+					this.plantillasDisponibles = [];
+					this.notifyFx('No fue posible cargar las plantillas de correo.', NotifyType.Error);
+				},
+			});
+	}
+
+	// Qué hace: cierra el popup modal de envío de correo y limpia las variables temporales.
+	// Cómo lo hace: asigna false a popupEnviarCorreoVisible y reinicia la plantilla seleccionada.
+	cerrarModalEnviarCorreo(): void {
+		this.popupEnviarCorreoVisible = false;
+		this.plantillaSeleccionadaCorr = null;
+		this.correoAsunto = '';
+		this.correoCuerpoPreview = '';
+		this.correoCuerpoPreviewSafe = '';
+	}
+
+	// Qué hace: reacciona a la selección de una plantilla para previsualizar el asunto y cuerpo con parámetros sustituidos.
+	// Cómo lo hace: busca la plantilla elegida, extrae su versión activa, reemplaza tokens y genera SafeHtml para preservar estilos CSS.
+	onPlantillaSeleccionadaChange(e: any): void {
+		const corr = e?.value;
+		if (!corr) {
+			this.correoAsunto = '';
+			this.correoCuerpoPreview = '';
+			this.correoCuerpoPreviewSafe = '';
+			return;
+		}
+
+		const plantilla = this.plantillasDisponibles.find((p) => p.CORR_PARAMETRO_PLANTILLA === corr);
+		if (!plantilla) {
+			this.correoAsunto = '';
+			this.correoCuerpoPreview = '';
+			this.correoCuerpoPreviewSafe = '';
+			return;
+		}
+
+		this.correoAsunto = this.sustituirParametrosCorreo(plantilla.ASUNTO_PLANTILLA || '');
+		this.correoCuerpoPreview = this.sustituirParametrosCorreo(plantilla.CUERPO_PLANTILLA || '');
+		this.correoCuerpoPreviewSafe = this.sanitizer.bypassSecurityTrustHtml(this.correoCuerpoPreview);
+	}
+
+	// Qué hace: sustituye dinámicamente cualquier parámetro de la solicitud, requisición o sistema en el texto o HTML de la plantilla.
+	// Cómo lo hace: construye un diccionario contextual a partir de las propiedades del modelo y requisición, variables de flujo y del sistema, y reemplaza los tokens {{CLAVE}} mediante expresión regular sin distinción de mayúsculas/minúsculas.
+	private sustituirParametrosCorreo(texto: string): string {
+		if (!texto) return '';
+
+		const contexto: Record<string, string> = {};
+
+		// Cargar todas las propiedades del modelo de la solicitud
+		if (this.model) {
+			Object.keys(this.model).forEach((key) => {
+				const val = (this.model as any)[key];
+				contexto[key.toUpperCase()] = val !== null && val !== undefined ? `${val}` : '';
+			});
+		}
+
+		// Cargar todas las propiedades de la primera requisición asociada si existe
+		const req = this.requisicionesSolicitud?.[0];
+		if (req) {
+			Object.keys(req).forEach((key) => {
+				const val = (req as any)[key];
+				contexto[key.toUpperCase()] = val !== null && val !== undefined ? `${val}` : '';
+			});
+		}
+
+		// Variables institucionales, temporales y de flujo
+		contexto['HORAS_VIGENCIA'] = '24';
+		contexto['CORREO_DESTINO'] = this.model?.CORREO_INVITACION || '';
+		contexto['NOMBRE_INSTITUCION'] = 'Universidad Evangélica de El Salvador';
+		contexto['FECHA_ACTUAL'] = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+		contexto['ANIO_ACTUAL'] = new Date().getFullYear().toString();
+		contexto['ENLACE_FORMULARIO'] = '#';
+		contexto['URL_FORMULARIO_SOLICITUD'] = '#';
+		contexto['URL_FORMULARIO'] = '#';
+
+		// Compatibilidad de alias comunes
+		const nombre = this.model?.NOMBRE || '';
+		if (!contexto['NOMBRE']) contexto['NOMBRE'] = nombre;
+		if (!contexto['NOMBRE_CANDIDATO']) contexto['NOMBRE_CANDIDATO'] = nombre;
+
+		const dui = this.model?.DUI || '';
+		if (!contexto['DUI']) contexto['DUI'] = dui;
+		if (!contexto['DUI_CANDIDATO']) contexto['DUI_CANDIDATO'] = dui;
+
+		const nombrePuesto = req?.NOMBRE_PUESTO || (this.model as any)?.NOMBRE_PUESTO || '';
+		if (!contexto['NOMBRE_PUESTO']) contexto['NOMBRE_PUESTO'] = nombrePuesto;
+		if (!contexto['PUESTO']) contexto['PUESTO'] = nombrePuesto;
+
+		// Reemplazar tokens dinámicos {{CLAVE}}
+		return texto.replace(/\{\{([A-Za-z0-9_]+)\}\}/gi, (match, clave) => {
+			const upperKey = clave.toUpperCase();
+			return Object.prototype.hasOwnProperty.call(contexto, upperKey) ? contexto[upperKey] : match;
+		});
+	}
+
+	// Qué hace: despacha la generación de token y envío de correo al candidato de la solicitud.
+	// Cómo lo hace: delega la ejecución en generarToken() para unificar el flujo con la plantilla seleccionada.
+	enviarCorreo(): void {
+		this.generarToken();
+	}
 }

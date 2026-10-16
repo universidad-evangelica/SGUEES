@@ -147,4 +147,17 @@ export class ScSolicitudEmpleoRepository {
 	// 		environment.UrlSELECCIONCONTRATACIONAPI
 	// 	);
 	// }
+
+	// Qué hace: consulta las plantillas de correo activas disponibles para Solicitud de Empleo.
+	// Cómo lo hace: llama al endpoint GetPlantillasDisponibles de SC_SOLICITUD_EMPLEO en SELECCIONCONTRATACIONAPI.
+	getPlantillasDisponibles(): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetPlantillasDisponibles', [], environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	// Qué hace: envía la plantilla seleccionada por correo electrónico al candidato.
+	// Cómo lo hace: realiza una petición POST al endpoint EnviarCorreoPlantilla en SELECCIONCONTRATACIONAPI.
+	enviarCorreoPlantilla(payload: any): Observable<IResult> {
+		return this.objData.Post(payload, this.xController, 'EnviarCorreoPlantilla', environment.UrlSELECCIONCONTRATACIONAPI);
+	}
 }
+

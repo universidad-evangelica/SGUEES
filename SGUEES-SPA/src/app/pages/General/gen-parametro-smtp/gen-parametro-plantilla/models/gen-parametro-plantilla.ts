@@ -10,6 +10,10 @@ export interface GenParametroPlantilla {
 	CORR_PARAMETRO_SMTP?: number | null;
 	CORREO_CC: string;
 	CORREO_CCO: string;
+	CODIGO_SISTEMA?: string | null;
+	NOMBRE_SISTEMA?: string | null;
+	CODIGO_OPCION?: string | null;
+	NOMBRE_OPCION?: string | null;
 	ACTIVO_PLANTILLA: boolean;
 	CORREO_REMITENTE?: string | null;
 	USUARIO_REMITENTE?: string | null;

@@ -4,6 +4,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { confirm } from 'devextreme/ui/dialog';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -30,6 +31,10 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 	plantillaModel!: GenParametroPlantilla;
 	columnasPlantilla: any[] = [];
 	cargandoPlantillas = false;
+	mSISTEMAS: Array<{ Key: string; Value: string }> = [];
+	mOPCIONES: Array<{ Key: string; Value: string }> = [];
+	cargandoOpciones = false;
+	parametrosDisponibles: Array<{ key: string; label: string; descripcion?: string; tipo?: string }> = [];
 
 	versiones: GenParametroPlantillaVersion[] = [];
 	versionSeleccionada: GenParametroPlantillaVersion | null = null;
@@ -337,6 +342,8 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 		if (item) {
 			return {
 				...item,
+				CODIGO_SISTEMA: item.CODIGO_SISTEMA ?? null,
+				CODIGO_OPCION: item.CODIGO_OPCION ?? null,
 				CORREO_CC: item.CORREO_CC ?? '',
 				CORREO_CCO: item.CORREO_CCO ?? '',
 				CUERPO_PLANTILLA: item.CUERPO_PLANTILLA ?? '',
@@ -350,6 +357,8 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 			ASUNTO_PLANTILLA: '',
 			CUERPO_PLANTILLA: '',
 			CORR_PARAMETRO_SMTP: this.model?.CORR_PARAMETRO_SMTP ?? 0,
+			CODIGO_SISTEMA: null,
+			CODIGO_OPCION: null,
 			CORREO_CC: '',
 			CORREO_CCO: '',
 			ACTIVO_PLANTILLA: true,
@@ -361,6 +370,13 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 	cargarFormatoBaseUEES(): void {
 		this.plantillaModel.CUERPO_PLANTILLA = this.plantillaService.obtenerFormatoBaseUEES();
 		this.notifyFx('Formato institucional cargado en el editor.', NotifyType.Success);
+	}
+
+	// Qué hace: limpia exclusivamente el contenido HTML redactado en el editor de correo.
+	// Cómo lo hace: asigna cadena vacía a plantillaModel.CUERPO_PLANTILLA preservando intactos el código, nombre, asunto y demás datos de la plantilla, y emite una notificación al usuario.
+	limpiarEditorPlantilla(): void {
+		this.plantillaModel.CUERPO_PLANTILLA = '';
+		this.notifyFx('Contenido del editor limpiado.', NotifyType.Success);
 	}
 
 	// Qué hace: determina si hay una cuenta de correo seleccionada en la grilla para mostrar el botón de plantillas.
@@ -387,6 +403,23 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 		return !!this.versionSeleccionada?.ES_VERSION_ACTIVA;
 	}
 
+	// Qué hace: determina si la plantilla ya cuenta con su módulo y proceso fijados y guardados en base de datos.
+	// Cómo lo hace: verifica que exista identificador de plantilla válido y que CODIGO_OPCION esté definido y no vacío.
+	tieneModuloYProcesoFijado(): boolean {
+		return (
+			!!this.plantillaModel?.CORR_PARAMETRO_PLANTILLA &&
+			this.plantillaModel.CORR_PARAMETRO_PLANTILLA > 0 &&
+			!!this.plantillaModel?.CODIGO_OPCION &&
+			this.plantillaModel.CODIGO_OPCION.trim() !== ''
+		);
+	}
+
+	// Qué hace: determina si el editor de texto enriquecido debe estar habilitado para la edición.
+	// Cómo lo hace: valida que el módulo y proceso ya hayan sido fijados y guardados, y que la versión seleccionada sea la activa.
+	esEditorHabilitado(): boolean {
+		return this.tieneModuloYProcesoFijado() && this.esVersionActivaSeleccionada();
+	}
+
 	// Qué hace: formatea el texto a mostrar en el selector desplegable de versiones.
 	// Cómo lo hace: concatena número de versión, estado activa/histórica y fecha de creación.
 	formatVersionDisplay = (item: GenParametroPlantillaVersion): string => {
@@ -406,6 +439,14 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 				if (res?.Result && Array.isArray(res.Data) && res.Data.length > 0) {
 					this.versiones = res.Data as GenParametroPlantillaVersion[];
 					const activa = this.versiones.find((v) => v.ES_VERSION_ACTIVA) ?? this.versiones[0];
+					// Qué hace: sincroniza la versión activa con el contenido de la cabecera si ya fue cargado.
+					// Cómo lo hace: asegura que la versión activa en memoria refleje el CUERPO_PLANTILLA y ASUNTO_PLANTILLA recién consultados de la cabecera.
+					if (activa && this.plantillaModel?.CUERPO_PLANTILLA && activa.ES_VERSION_ACTIVA) {
+						activa.CUERPO_PLANTILLA = this.plantillaModel.CUERPO_PLANTILLA;
+						activa.ASUNTO_PLANTILLA = this.plantillaModel.ASUNTO_PLANTILLA;
+						activa.CORREO_CC = this.plantillaModel.CORREO_CC;
+						activa.CORREO_CCO = this.plantillaModel.CORREO_CCO;
+					}
 					this.seleccionarVersion(activa, true);
 				} else {
 					this.versiones = [];
@@ -541,7 +582,7 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 	}
 
 	// Qué hace: cambia la pantalla a la vista de plantilla del correo seleccionado cargando sus datos y versiones.
-	// Cómo lo hace: valida selección, activa esVistaPlantillas, consulta plantilla asociada y si existe carga sus versiones.
+	// Cómo lo hace: activa banderas de carga inicial, consulta plantilla asociada y si existe carga sus versiones.
 	abrirVistaPlantillas(): void {
 		if (!this.tieneRegistroSeleccionado()) {
 			this.notifyFx('Seleccione un correo para gestionar sus plantillas.', NotifyType.Warning);
@@ -549,31 +590,138 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 		}
 		this.esVistaPlantillas = true;
 		this.cargandoPlantillas = true;
+		this.cargandoVersiones = true;
 		this.versiones = [];
 		this.versionSeleccionada = null;
+		this.cargarModulos();
 
 		this.plantillaService.getAll({ CORR_PARAMETRO_SMTP: this.model.CORR_PARAMETRO_SMTP }).subscribe({
 			next: (res) => {
 				this.cargandoPlantillas = false;
 				if (res?.Result && Array.isArray(res.Data) && res.Data.length > 0) {
 					this.plantillaModel = this.initPlantillaModel(res.Data[0]);
+					if (this.plantillaModel.CODIGO_SISTEMA) {
+						this.cargarOpcionesModulo(this.plantillaModel.CODIGO_SISTEMA, () => {
+							this.cargarParametrosDisponibles();
+						});
+					} else {
+						this.cargarParametrosDisponibles();
+					}
 					this.cargarVersionesPlantilla(this.plantillaModel.CORR_PARAMETRO_PLANTILLA);
 				} else {
+					this.cargandoVersiones = false;
 					this.plantillaModel = this.initPlantillaModel();
 					this.plantillaModel.CORR_PARAMETRO_SMTP = this.model.CORR_PARAMETRO_SMTP;
 					this.versiones = [];
 					this.versionSeleccionada = null;
+					this.cargarParametrosDisponibles();
 				}
 			},
 			error: (err) => {
 				this.cargandoPlantillas = false;
+				this.cargandoVersiones = false;
 				this.notifyFx(err?.message || 'Error al consultar la plantilla.', NotifyType.Error);
 				this.plantillaModel = this.initPlantillaModel();
 				this.plantillaModel.CORR_PARAMETRO_SMTP = this.model.CORR_PARAMETRO_SMTP;
 				this.versiones = [];
 				this.versionSeleccionada = null;
+				this.cargarParametrosDisponibles();
 			},
 		});
+	}
+
+	// Qué hace: carga el catálogo de módulos o sistemas registrados para el formulario de plantillas.
+	// Cómo lo hace: invoca plantillaService.getModulos y almacena el resultado en mSISTEMAS.
+	cargarModulos(): void {
+		this.plantillaService.getModulos().subscribe({
+			next: (res) => {
+				if (res?.Result && Array.isArray(res.Data)) {
+					this.mSISTEMAS = res.Data;
+				} else {
+					this.mSISTEMAS = [];
+				}
+			},
+			error: () => {
+				this.mSISTEMAS = [];
+			},
+		});
+	}
+
+	// Qué hace: carga las opciones o menús asociados al módulo seleccionado.
+	// Cómo lo hace: invoca plantillaService.getOpcionesPorModulo filtrando por CODIGO_SISTEMA.
+	cargarOpcionesModulo(codigoSistema?: string | null, callback?: () => void): void {
+		if (!codigoSistema) {
+			this.mOPCIONES = [];
+			if (callback) callback();
+			return;
+		}
+		this.cargandoOpciones = true;
+		this.plantillaService.getOpcionesPorModulo(codigoSistema).subscribe({
+			next: (res) => {
+				this.cargandoOpciones = false;
+				if (res?.Result && Array.isArray(res.Data)) {
+					this.mOPCIONES = res.Data;
+				} else {
+					this.mOPCIONES = [];
+				}
+				if (callback) callback();
+			},
+			error: () => {
+				this.cargandoOpciones = false;
+				this.mOPCIONES = [];
+				if (callback) callback();
+			},
+		});
+	}
+
+	// Qué hace: obtiene los parámetros dinámicos específicos para la opción y módulo actuales.
+	// Cómo lo hace: consulta plantillaService.getParametrosDisponibles y actualiza parametrosDisponibles.
+	cargarParametrosDisponibles(): void {
+		const codigoOpcion = this.plantillaModel?.CODIGO_OPCION ?? '';
+		const codigoSistema = this.plantillaModel?.CODIGO_SISTEMA ?? '';
+		this.plantillaService.getParametrosDisponibles(codigoOpcion, codigoSistema).subscribe({
+			next: (res) => {
+				if (res?.Result && Array.isArray(res.Data)) {
+					this.parametrosDisponibles = res.Data;
+				} else {
+					this.parametrosDisponibles = [];
+				}
+			},
+			error: () => {
+				this.parametrosDisponibles = [];
+			},
+		});
+	}
+
+	// Qué hace: reacciona al cambio manual de módulo en el selector de la plantilla.
+	// Cómo lo hace: valida la existencia de e.event para ignorar inicializaciones programáticas y actualiza el módulo limpiando la opción solo si el usuario interactuó directamente.
+	onModuloPlantillaChange(e: any): void {
+		if (!e?.event) {
+			return;
+		}
+		const nuevoModulo = e?.value;
+		if (nuevoModulo === e?.previousValue) {
+			return;
+		}
+		this.plantillaModel.CODIGO_SISTEMA = nuevoModulo;
+		this.plantillaModel.CODIGO_OPCION = null;
+		this.cargarOpcionesModulo(nuevoModulo, () => {
+			this.cargarParametrosDisponibles();
+		});
+	}
+
+	// Qué hace: reacciona al cambio manual de opción o menú en el selector de la plantilla.
+	// Cómo lo hace: valida la existencia de e.event para ignorar eventos programáticos, actualizando CODIGO_OPCION y recargando parámetros solo ante interacción directa del usuario.
+	onOpcionPlantillaChange(e: any): void {
+		if (!e?.event) {
+			return;
+		}
+		const nuevaOpcion = e?.value;
+		if (nuevaOpcion === e?.previousValue) {
+			return;
+		}
+		this.plantillaModel.CODIGO_OPCION = nuevaOpcion ?? null;
+		this.cargarParametrosDisponibles();
 	}
 
 	// Qué hace: regresa desde la vista de plantilla hacia el catálogo de correos SMTP.
@@ -584,15 +732,36 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 	}
 
 	// Qué hace: guarda la plantilla y crea su primera versión si es nuevo registro, o actualiza la activa existente.
-	// Cómo lo hace: valida datos, previene modificar versiones históricas, ejecuta inserción o actualización y mantiene sincronizado el estado en memoria.
-	guardarPlantilla(): void {
+	// Cómo lo hace: valida datos, solicita confirmación si es el primer guardado de módulo/proceso, ejecuta inserción o actualización y mantiene sincronizado el estado en memoria.
+	async guardarPlantilla(): Promise<void> {
 		if (this.tienePrimeraVersionGuardada() && !this.esVersionActivaSeleccionada()) {
 			this.notifyFx('No se puede modificar una versión histórica. Establezca la versión como activa o cree una nueva versión.', NotifyType.Warning);
 			return;
 		}
 
+		// Si aún no tiene cuerpo redactado y es el primer guardado, precargar el formato base institucional automáticamente
+		if (!this.plantillaModel.CUERPO_PLANTILLA || this.plantillaModel.CUERPO_PLANTILLA.trim() === '') {
+			this.plantillaModel.CUERPO_PLANTILLA = this.plantillaService.obtenerFormatoBaseUEES();
+		}
+
 		if (!this.plantillaService.esValido(this.plantillaModel, this.notifyFx.bind(this))) {
 			return;
+		}
+
+		// Confirmación previa si es la primera vez que se fijará el módulo y menú de la plantilla
+		if (!this.tieneModuloYProcesoFijado()) {
+			const nombreModulo =
+				this.mSISTEMAS.find((s) => s.Key === this.plantillaModel.CODIGO_SISTEMA)?.Value ??
+				this.plantillaModel.CODIGO_SISTEMA;
+			const nombreOpcion =
+				this.mOPCIONES.find((o) => o.Key === this.plantillaModel.CODIGO_OPCION)?.Value ??
+				this.plantillaModel.CODIGO_OPCION;
+
+			const mensaje = `¿Está seguro de asociar esta plantilla a:\n\n• Módulo: ${nombreModulo}\n• Menú / Proceso: ${nombreOpcion}\n\nUna vez guardada la información principal, el módulo y proceso quedarán fijos y se habilitará el editor para redactar el correo.`;
+			const confirmado = await confirm(mensaje, 'Confirmar Módulo y Proceso');
+			if (!confirmado) {
+				return;
+			}
 		}
 
 		this.plantillaModel.CORR_PARAMETRO_SMTP = this.model?.CORR_PARAMETRO_SMTP ?? 0;
@@ -606,13 +775,19 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 			next: (res) => {
 				if (res?.Result) {
 					this.notifyFx(
-						esNuevo ? 'Plantilla y primera versión registradas correctamente.' : 'Plantilla actualizada correctamente.',
+						esNuevo
+							? 'Información principal registrada. Ahora puede redactar el contenido en el editor.'
+							: 'Plantilla actualizada correctamente.',
 						NotifyType.Success
 					);
 					if (res.Data) {
 						this.plantillaModel = res.Data as GenParametroPlantilla;
 
-						if (esNuevo) {
+						// Qué hace: determina si se debe generar la primera versión (Versión 1).
+						// Cómo lo hace: valida si es nuevo o si la plantilla existente carece de historial de versiones.
+						const debeCrearPrimeraVersion = esNuevo || !Array.isArray(this.versiones) || this.versiones.length === 0;
+
+						if (debeCrearPrimeraVersion) {
 							// Crear automáticamente la primera versión (Versión 1)
 							const primeraVersionPayload: GenParametroPlantillaVersion = {
 								CORR_EMPRESA: this.plantillaModel.CORR_EMPRESA,
@@ -643,6 +818,17 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 								this.versionSeleccionada.CORREO_CC = this.plantillaModel.CORREO_CC;
 								this.versionSeleccionada.CORREO_CCO = this.plantillaModel.CORREO_CCO;
 							}
+							this.versiones = this.versiones.map((v) =>
+								v.ES_VERSION_ACTIVA
+									? {
+											...v,
+											ASUNTO_PLANTILLA: this.plantillaModel.ASUNTO_PLANTILLA,
+											CUERPO_PLANTILLA: this.plantillaModel.CUERPO_PLANTILLA,
+											CORREO_CC: this.plantillaModel.CORREO_CC,
+											CORREO_CCO: this.plantillaModel.CORREO_CCO,
+									  }
+									: v
+							);
 						}
 					}
 				} else {

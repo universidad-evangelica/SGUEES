@@ -79,6 +79,34 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		// Qué hace: devuelve la lista unificada de parámetros dinámicos institucionales y del proceso seleccionado.
+		// Cómo lo hace: llama a GetParametrosDisponiblesAsync del servicio bajo la política /gen-parametro-smtp|R.
+		[HttpGet("GetParametrosDisponibles")]
+		[Authorize(Policy = "/gen-parametro-smtp|R")]
+		public async Task<IActionResult> GetParametrosDisponibles([FromQuery] string codigoOpcion, [FromQuery] string codigoSistema)
+		{
+			var resultado = await _service.GetParametrosDisponiblesAsync(codigoOpcion, codigoSistema);
+			return resultado.Result ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		// Qué hace: obtiene la lista de módulos / sistemas registrados a los que el usuario tiene acceso.
+		// Cómo lo hace: llama a GetModulosAsync pasando el LOGIN_SISTEMA de la sesión bajo la política /gen-parametro-smtp|R.
+		[HttpGet("GetModulos")]
+		[Authorize(Policy = "/gen-parametro-smtp|R")]
+		public async Task<CResult> GetModulos()
+		{
+			return await _service.GetModulosAsync(GetUsuario());
+		}
+
+		// Qué hace: obtiene la lista de menús / opciones vinculados al módulo seleccionado permitidos para el usuario.
+		// Cómo lo hace: llama a GetOpcionesPorModuloAsync filtrando por CODIGO_SISTEMA y LOGIN_SISTEMA bajo la política /gen-parametro-smtp|R.
+		[HttpGet("GetOpcionesPorModulo")]
+		[Authorize(Policy = "/gen-parametro-smtp|R")]
+		public async Task<CResult> GetOpcionesPorModulo([FromQuery] string codigoSistema)
+		{
+			return await _service.GetOpcionesPorModuloAsync(codigoSistema, GetUsuario());
+		}
+
 		private int GetCorrEmpresa()
 		{
 			return int.Parse(User.Claims.Single(e => e.Type == "CORR_EMPRESA").Value);

@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using eFramework.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -138,40 +140,81 @@ namespace sguees.Services
             }
 
             var tokenGenerado = (SC_SOLICITUD_EMPLEO_TOKENView)tokenResultado.Data;
-            var parametroCorreo = await ObtenerParametroCorreoAsync(data.CORR_EMPRESA);
-            if (parametroCorreo == null)
+            var urlFormulario = ConstruirUrlFormulario(token);
+
+            int? corrPlantilla = data.CORR_PARAMETRO_PLANTILLA;
+            if (!corrPlantilla.HasValue || corrPlantilla.Value <= 0)
             {
-                await _repo.ActualizarEstadoTokenAsync(data.CORR_EMPRESA, tokenGenerado.CORR_TOKEN, "ERROR_ENVIO");
-                return Error("No existe configuración de correo válida para enviar la invitación.");
+                corrPlantilla = await _repo.ObtenerPlantillaDefaultAsync(data.CORR_EMPRESA);
             }
 
-            var urlFormulario = ConstruirUrlFormulario(token);
-            var mensaje = "<p><strong>Solicitud de empleo</strong></p>";
-            mensaje += "<p>Has recibido una invitación para completar tu información personal.</p>";
-            mensaje += "<p><a href='" + urlFormulario + "'>Completar formulario de empleo</a></p>";
-            mensaje += "<p>Este enlace expira en " + horasVigencia + " horas y puede utilizarse una sola vez.</p>";
-            mensaje += "<p>Si no esperabas esta invitación, puedes ignorar este correo.</p>";
+            if (!corrPlantilla.HasValue || corrPlantilla.Value <= 0)
+            {
+                await _repo.ActualizarEstadoTokenAsync(data.CORR_EMPRESA, tokenGenerado.CORR_TOKEN, "ERROR_ENVIO");
+                return Error("Debe seleccionar una plantilla de correo válida. No existe plantilla predeterminada activa en Parámetros SMTP.");
+            }
+
+            var cfg = await _repo.ObtenerConfiguracionEnvioAsync(data.CORR_EMPRESA, data.CORR_SOLICITUD_EMPLEO, corrPlantilla.Value);
+            if (cfg == null || string.IsNullOrWhiteSpace((string)cfg.SERVIDOR_CORREO) || string.IsNullOrWhiteSpace((string)cfg.CORREO_REMITENTE))
+            {
+                await _repo.ActualizarEstadoTokenAsync(data.CORR_EMPRESA, tokenGenerado.CORR_TOKEN, "ERROR_ENVIO");
+                return Error("No se encontró la configuración SMTP o plantilla requerida para el envío.");
+            }
 
             var configuracionCorreo = new MailSetting
             {
-                Host = parametroCorreo.SERVIDOR_CORREO.Trim(),
-                Port = parametroCorreo.PUERTO_CORREO,
-                UseSSL = parametroCorreo.USA_SSL_CORREO,
-                User = parametroCorreo.USUARIO_REMITENTE.Trim(),
-                Password = parametroCorreo.CONTRASENA_REMITENTE,
-                FromName = parametroCorreo.USUARIO_REMITENTE.Trim(),
-                FromAddress = parametroCorreo.CORREO_REMITENTE.Trim(),
+                Host = ((string)cfg.SERVIDOR_CORREO).Trim(),
+                Port = (int)cfg.PUERTO_CORREO,
+                UseSSL = (bool)cfg.USA_SSL_CORREO,
+                User = ((string)cfg.USUARIO_REMITENTE).Trim(),
+                Password = (string)cfg.CONTRASENA_REMITENTE,
+                FromName = "Universidad Evangélica de El Salvador",
+                FromAddress = ((string)cfg.CORREO_REMITENTE).Trim(),
                 BodyType = "html",
             };
 
-            var envio = CRoutines.SendEmail(
-                "Solicitud de empleo - SGUEES",
-                CRoutines.BodyEmailUEES(mensaje),
-                new List<ToEMail>
+            var contexto = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (cfg is IDictionary<string, object> dict)
+            {
+                foreach (var kvp in dict)
                 {
-                    new() { Name = solicitud.CORREO_INVITACION.Trim(), Address = solicitud.CORREO_INVITACION.Trim() },
-                },
-                configuracionCorreo);
+                    contexto[kvp.Key] = kvp.Value?.ToString() ?? "";
+                }
+            }
+
+            contexto["ENLACE_FORMULARIO"] = urlFormulario;
+            contexto["URL_FORMULARIO_SOLICITUD"] = urlFormulario;
+            contexto["URL_FORMULARIO"] = urlFormulario;
+            contexto["HORAS_VIGENCIA"] = horasVigencia.ToString();
+            contexto["CORREO_DESTINO"] = solicitud.CORREO_INVITACION.Trim();
+            contexto["NOMBRE_INSTITUCION"] = "Universidad Evangélica de El Salvador";
+            contexto["FECHA_ACTUAL"] = DateTime.Now.ToString("dd/MM/yyyy");
+            contexto["ANIO_ACTUAL"] = DateTime.Now.Year.ToString();
+
+            if (!contexto.ContainsKey("NOMBRE") && contexto.ContainsKey("NOMBRE_CANDIDATO"))
+                contexto["NOMBRE"] = contexto["NOMBRE_CANDIDATO"];
+            if (!contexto.ContainsKey("DUI") && contexto.ContainsKey("DUI_CANDIDATO"))
+                contexto["DUI"] = contexto["DUI_CANDIDATO"];
+            if (!contexto.ContainsKey("PUESTO") && contexto.ContainsKey("NOMBRE_PUESTO"))
+                contexto["PUESTO"] = contexto["NOMBRE_PUESTO"];
+
+            string asuntoOriginal = (string)cfg.ASUNTO_ORIGINAL ?? "Solicitud de empleo - SGUEES";
+            string cuerpoOriginal = (string)cfg.CUERPO_ORIGINAL ?? "";
+
+            string asuntoCorreo = Regex.Replace(asuntoOriginal, @"\{\{([A-Za-z0-9_]+)\}\}", m =>
+                contexto.TryGetValue(m.Groups[1].Value, out var v) ? v : m.Value, RegexOptions.IgnoreCase);
+
+            string cuerpoCorreo = Regex.Replace(cuerpoOriginal, @"\{\{([A-Za-z0-9_]+)\}\}", m =>
+                contexto.TryGetValue(m.Groups[1].Value, out var v) ? v : m.Value, RegexOptions.IgnoreCase);
+
+            cuerpoCorreo = NormalizarEspaciadoHtml(cuerpoCorreo);
+
+            var destinatarios = new List<ToEMail>
+            {
+                new() { Name = (string)cfg.NOMBRE_CANDIDATO ?? solicitud.CORREO_INVITACION.Trim(), Address = solicitud.CORREO_INVITACION.Trim() }
+            };
+
+            var envio = CRoutines.SendEmail(asuntoCorreo, cuerpoCorreo, destinatarios, configuracionCorreo);
 
             if (!envio.Result)
             {
@@ -495,6 +538,109 @@ namespace sguees.Services
                 ErrorMessage = mensaje,
                 RowsAffected = 0,
             };
+        }
+
+        // Qué hace: normaliza el espaciado vertical del HTML y asegura compatibilidad de ancho y centrado en Outlook Desktop y clientes web.
+        // Cómo lo hace: inyecta atributos nativos align="center" y width="650" en tablas y celdas, compacta paddings/márgenes y envuelve el cuerpo en una tabla condicional MSO para confinar el diseño a 650px en el motor de Microsoft Word.
+        private static string NormalizarEspaciadoHtml(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html)) return "";
+
+            // Reducir padding excesivo de celdas y tarjetas institucionales
+            var resultado = Regex.Replace(html, @"padding:\s*32px\s+24px;?", "padding: 8px 16px;", RegexOptions.IgnoreCase);
+            resultado = Regex.Replace(resultado, @"padding:\s*22px\s+20px;?", "padding: 12px 16px;", RegexOptions.IgnoreCase);
+
+            // Asegurar align="center" y width="650" en tablas para que Outlook Desktop no las estire al 100%
+            resultado = Regex.Replace(resultado, @"<table(\s+[^>]*)?>", match =>
+            {
+                var tag = match.Value;
+                if (!Regex.IsMatch(tag, @"\balign\s*=", RegexOptions.IgnoreCase))
+                {
+                    tag = tag.Insert(6, " align=\"center\"");
+                }
+                if (!Regex.IsMatch(tag, @"\bwidth\s*=", RegexOptions.IgnoreCase))
+                {
+                    tag = tag.Insert(6, " width=\"650\"");
+                }
+                else
+                {
+                    tag = Regex.Replace(tag, @"\bwidth\s*=\s*[""']100%?[""']", "width=\"650\"", RegexOptions.IgnoreCase);
+                }
+                return tag;
+            }, RegexOptions.IgnoreCase);
+
+            // Asegurar align="center" en celdas con texto o imágenes centradas para compatibilidad con Word MSO
+            resultado = Regex.Replace(resultado, @"<td(\s+[^>]*)?>", match =>
+            {
+                var tag = match.Value;
+                if (Regex.IsMatch(tag, @"text-align\s*:\s*center", RegexOptions.IgnoreCase) &&
+                    !Regex.IsMatch(tag, @"\balign\s*=", RegexOptions.IgnoreCase))
+                {
+                    tag = tag.Insert(3, " align=\"center\"");
+                }
+                return tag;
+            }, RegexOptions.IgnoreCase);
+
+            // Normalizar etiquetas <p> para anular márgenes automáticos de clientes de correo (Outlook, Gmail)
+            resultado = Regex.Replace(resultado, @"<p(\s+[^>]*)?>", match =>
+            {
+                var tag = match.Value;
+
+                // Respetar líneas divisorias con border-top
+                if (tag.IndexOf("border-top", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return tag;
+                }
+
+                // Si es un párrafo separador con fuente mínima (font-size: 1px / 4px)
+                if (tag.IndexOf("font-size: 1px", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    tag.IndexOf("font-size: 4px", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    if (Regex.IsMatch(tag, @"style\s*=\s*[""'][^""']*[""']", RegexOptions.IgnoreCase))
+                    {
+                        return Regex.Replace(tag, @"style\s*=\s*([""'])([^""']*)\1", mStyle =>
+                        {
+                            return "style=\"margin: 0; padding: 0; line-height: 2px; font-size: 2px; height: 2px; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; " + mStyle.Groups[2].Value + "\"";
+                        }, RegexOptions.IgnoreCase);
+                    }
+                    return "<p style=\"margin: 0; padding: 0; line-height: 2px; font-size: 2px; height: 2px; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0;\">";
+                }
+
+                if (Regex.IsMatch(tag, @"style\s*=\s*[""'][^""']*[""']", RegexOptions.IgnoreCase))
+                {
+                    return Regex.Replace(tag, @"style\s*=\s*([""'])([^""']*)\1", mStyle =>
+                    {
+                        var estilo = mStyle.Groups[2].Value;
+                        // Eliminar márgenes y paddings previos que agreguen separación
+                        estilo = Regex.Replace(estilo, @"(?:margin|padding)(?:-top|-bottom)?\s*:\s*[^;]+;?", "", RegexOptions.IgnoreCase).Trim();
+                        return "style=\"margin: 0; margin-top: 0; margin-bottom: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; padding: 0; line-height: 1.4; " + estilo + "\"";
+                    }, RegexOptions.IgnoreCase);
+                }
+
+                return "<p style=\"margin: 0; margin-top: 0; margin-bottom: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; padding: 0; line-height: 1.4;\">";
+            }, RegexOptions.IgnoreCase);
+
+            // Envolver en contenedor centrado con tabla condicional MSO para fijar ancho de 650px en Outlook Desktop
+            if (resultado.IndexOf("mso 9", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                resultado = $@"<center style=""width: 100%; table-layout: fixed; background-color: #ffffff;"">
+<!--[if (gte mso 9)|(IE)]>
+<table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""650"" style=""width:650px;"">
+<tr>
+<td align=""center"" valign=""top"" width=""650"">
+<![endif]-->
+<div style=""max-width: 650px; margin: 0 auto; text-align: left;"">
+{resultado}
+</div>
+<!--[if (gte mso 9)|(IE)]>
+</td>
+</tr>
+</table>
+<![endif]-->
+</center>";
+            }
+
+            return resultado;
         }
     }
 }

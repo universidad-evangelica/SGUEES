@@ -27,36 +27,6 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     @ViewChild('fDataJefe') fDataJefe: any;
     //#endregion
 
-    constructor(
-        public override appInfoService: AppInfoService,
-        public override router: ActivatedRoute,
-        private service: SC_OrganigramaEstructuralUnidadesService,
-        private nivelService: SC_OrganigramaEstructuralNivelService,
-        private jefeService: SC_OrganigramaEstructuralJefesService
-    ) {
-        super(appInfoService, router);
-        this.columns = this.service.getColumns();
-        this.summary = this.service.getSummary();
-        this.items = this.service.getItems();
-
-        //  Inicializar columnas y items de jefes
-        this.jefesColumns = this.jefeService.getColumns();
-        this.jefesItems = this.jefeService.getItems();
-    }
-
-    private configurarItemsJefe(esEdicion: boolean): void {
-        this.jefesItems = this.jefeService.getItems().map((item: any) => {
-            if (item.dataField === 'CORR_EMPLEADO' || item.dataField === 'FECHA_INICIO') {
-                return {
-                    ...item,
-                    visible: !esEdicion,
-                };
-            }
-
-            return { ...item };
-        });
-    }
-
     //#region <Declarando Variables>
     // Variables para Unidades
     unidades: SC_OrganigramaEstructuralUnidad[] = [];
@@ -84,6 +54,40 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     // Estado del componente
     mostrarFormulario = false;
     //#endregion
+
+    // Qué hace: inicializa dependencias y estructura de columnas/items para unidades y jefes.
+    // Cómo lo hace: invoca super() e inicializa columns, items y summary mediante los servicios inyectados.
+    constructor(
+        public override appInfoService: AppInfoService,
+        public override router: ActivatedRoute,
+        private service: SC_OrganigramaEstructuralUnidadesService,
+        private nivelService: SC_OrganigramaEstructuralNivelService,
+        private jefeService: SC_OrganigramaEstructuralJefesService
+    ) {
+        super(appInfoService, router);
+        this.columns = this.service.getColumns();
+        this.summary = this.service.getSummary();
+        this.items = this.service.getItems();
+
+        //  Inicializar columnas y items de jefes
+        this.jefesColumns = this.jefeService.getColumns();
+        this.jefesItems = this.jefeService.getItems();
+    }
+
+    // Qué hace: ajusta la visibilidad de campos del formulario de jefes según si es modo edición o alta.
+    // Cómo lo hace: mapea la definición de items del servicio alternando la propiedad visible de campos clave.
+    private configurarItemsJefe(esEdicion: boolean): void {
+        this.jefesItems = this.jefeService.getItems().map((item: any) => {
+            if (item.dataField === 'CORR_EMPLEADO' || item.dataField === 'FECHA_INICIO') {
+                return {
+                    ...item,
+                    visible: !esEdicion,
+                };
+            }
+
+            return { ...item };
+        });
+    }
 
     //#region <Inicializando Opciones>
     ngOnInit(): void {

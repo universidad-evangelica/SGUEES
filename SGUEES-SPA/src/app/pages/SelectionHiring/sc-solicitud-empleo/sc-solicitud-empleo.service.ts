@@ -89,9 +89,12 @@ export class ScSolicitudEmpleoService {
 		]);
 	}
 
-	generarToken(corrSolicitudEmpleo: number): Observable<IResult> {
+	// Qué hace: genera el token de seguridad y envía la invitación usando opcionalmente la plantilla seleccionada.
+	// Cómo lo hace: despacha la petición POST a GenerarToken con CORR_SOLICITUD_EMPLEO y CORR_PARAMETRO_PLANTILLA.
+	generarToken(corrSolicitudEmpleo: number, corrParametroPlantilla?: number | null): Observable<IResult> {
 		return this.repo.generarToken({
 			CORR_SOLICITUD_EMPLEO: corrSolicitudEmpleo,
+			CORR_PARAMETRO_PLANTILLA: corrParametroPlantilla || null,
 		});
 	}
 
@@ -272,4 +275,17 @@ export class ScSolicitudEmpleoService {
 			{ dataField: 'CORREO_DESTINO', caption: 'Correo destino', width: 260 },
 		];
 	}
+
+	// Qué hace: obtiene las plantillas de correo activas disponibles para Solicitud de Empleo.
+	// Cómo lo hace: delega la consulta a repo.getPlantillasDisponibles().
+	getPlantillasDisponibles(): Observable<IResult> {
+		return this.repo.getPlantillasDisponibles();
+	}
+
+	// Qué hace: despacha el envío de la plantilla seleccionada por correo electrónico al candidato.
+	// Cómo lo hace: delega la petición a repo.enviarCorreoPlantilla(payload).
+	enviarCorreoPlantilla(payload: any): Observable<IResult> {
+		return this.repo.enviarCorreoPlantilla(payload);
+	}
 }
+

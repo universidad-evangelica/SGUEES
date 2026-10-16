@@ -37,6 +37,16 @@ namespace sguees.Services
 				p.Add(new CParameter() { ParameterName = "CODIGO_PLANTILLA", Value = xWhere.CODIGO_PLANTILLA, DbType = System.Data.DbType.String });
 			}
 
+			if (!string.IsNullOrWhiteSpace(xWhere.CODIGO_SISTEMA))
+			{
+				p.Add(new CParameter() { ParameterName = "CODIGO_SISTEMA", Value = xWhere.CODIGO_SISTEMA, DbType = System.Data.DbType.String });
+			}
+
+			if (!string.IsNullOrWhiteSpace(xWhere.CODIGO_OPCION))
+			{
+				p.Add(new CParameter() { ParameterName = "CODIGO_OPCION", Value = xWhere.CODIGO_OPCION, DbType = System.Data.DbType.String });
+			}
+
 			return await _repo.GetAllAsync(p);
 		}
 
@@ -75,6 +85,27 @@ namespace sguees.Services
 		public async Task<CResult> DeleteAsync(GEN_PARAMETRO_PLANTILLATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		// Qué hace: obtiene la lista de módulos / sistemas registrados a los que el usuario tiene acceso.
+		// Cómo lo hace: delega la consulta a _repo.GetModulosAsync filtrando por LOGIN_SISTEMA.
+		public async Task<CResult> GetModulosAsync(string loginSistema = "")
+		{
+			return await _repo.GetModulosAsync(loginSistema);
+		}
+
+		// Qué hace: obtiene las opciones de menú de un módulo a las que el usuario tiene permiso asignado.
+		// Cómo lo hace: delega la consulta a _repo.GetOpcionesPorModuloAsync filtrando por CODIGO_SISTEMA y LOGIN_SISTEMA.
+		public async Task<CResult> GetOpcionesPorModuloAsync(string codigoSistema, string loginSistema = "")
+		{
+			return await _repo.GetOpcionesPorModuloAsync(codigoSistema, loginSistema);
+		}
+
+		// Qué hace: obtiene los parámetros dinámicos institucionales y de BD para la opción seleccionada.
+		// Cómo lo hace: delega la consulta a _repo.GetParametrosDisponiblesAsync.
+		public async Task<CResult> GetParametrosDisponiblesAsync(string codigoOpcion, string codigoSistema)
+		{
+			return await _repo.GetParametrosDisponiblesAsync(codigoOpcion, codigoSistema);
 		}
 	}
 }

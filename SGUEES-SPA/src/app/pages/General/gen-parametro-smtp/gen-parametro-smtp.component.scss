@@ -169,8 +169,8 @@
 		}
 	}
 
-	// Qué hace: elimina bordes de grilla en las tablas de la plantilla institucional dentro del editor y compacta los separadores.
-	// Cómo lo hace: fuerza border: none en table.plantilla-uees-table y sus celdas, y reduce los párrafos separadores table + p a un margen mínimo.
+	// Qué hace: elimina bordes de grilla en las tablas de la plantilla institucional dentro del editor y define la línea divisoria.
+	// Cómo lo hace: fuerza border: none en table.plantilla-uees-table y sus celdas, renderiza la línea separadora gris en el primer párrafo post-tabla y compacta los separadores posteriores.
 	::ng-deep .dx-htmleditor-content {
 		table.plantilla-uees-table,
 		table[style*="max-width: 650px"],
@@ -184,7 +184,23 @@
 			}
 		}
 
-		table + p {
+		table:first-of-type + p {
+			border: none !important;
+			border-top: 1px solid #cccccc !important;
+			margin: 16px auto !important;
+			max-width: 650px !important;
+			width: 100% !important;
+			height: 1px !important;
+			min-height: 1px !important;
+			max-height: 1px !important;
+			line-height: 1px !important;
+			font-size: 1px !important;
+			padding: 0 !important;
+			overflow: visible !important;
+		}
+
+		table:not(:first-of-type) + p {
+			border-top: none !important;
 			margin: 3px 0 !important;
 			padding: 0 !important;
 			font-size: 2px !important;
@@ -193,6 +209,23 @@
 			min-height: 4px !important;
 			max-height: 4px !important;
 			overflow: hidden !important;
+		}
+
+		// Qué hace: asegura legibilidad del texto en el pie de página azul.
+		// Cómo lo hace: fuerza color de fuente #ffffff en párrafos y span internos, manteniendo el color celeste en enlaces.
+		table.plantilla-uees-pie,
+		table.plantilla-uees-table td[style*="#034ea2"],
+		table.plantilla-uees-table td[style*="rgb(3, 78, 162)"] {
+			color: #ffffff !important;
+
+			p, span, .ql-table-cell-line {
+				color: #ffffff;
+			}
+
+			a {
+				color: #60a5fa !important;
+				text-decoration: underline;
+			}
 		}
 	}
 }

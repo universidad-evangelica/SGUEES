@@ -42,4 +42,23 @@ export class GenParametroPlantillaRepository {
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
 	}
+
+	// Qué hace: obtiene los parámetros dinámicos disponibles para un proceso u opción.
+	// Cómo lo hace: invoca CData.Get hacia el endpoint GetParametrosDisponibles de GENERAL API.
+	getParametrosDisponibles(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetParametrosDisponibles', xWhere, environment.UrlGENERALAPI);
+	}
+
+	// Qué hace: obtiene la lista de módulos / sistemas registrados en SEG_SISTEMA.
+	// Cómo lo hace: invoca CData.Get hacia el endpoint GetModulos de GENERAL API.
+	getModulos(): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetModulos', [], environment.UrlGENERALAPI);
+	}
+
+	// Qué hace: obtiene la lista de menús / opciones asociadas a un módulo específico.
+	// Cómo lo hace: invoca CData.Get hacia el endpoint GetOpcionesPorModulo de GENERAL API pasando el parámetro codigoSistema.
+	getOpcionesPorModulo(codigoSistema: string): Observable<IResult> {
+		const where: IParam[] = [{ Parameter: 'codigoSistema', Value: codigoSistema }];
+		return this.objData.Get(this.xController, 'GetOpcionesPorModulo', where, environment.UrlGENERALAPI);
+	}
 }

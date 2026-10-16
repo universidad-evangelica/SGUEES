@@ -15,6 +15,8 @@ namespace sguees.Models
 		public int CORR_PARAMETRO_SMTP { get; set; }
 		public string CORREO_CC { get; set; }
 		public string CORREO_CCO { get; set; }
+		public string CODIGO_SISTEMA { get; set; }
+		public string CODIGO_OPCION { get; set; }
 		public bool ACTIVO_PLANTILLA { get; set; }
 	}
 }

@@ -13,5 +13,8 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(GEN_PARAMETRO_PLANTILLATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(GEN_PARAMETRO_PLANTILLATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(GEN_PARAMETRO_PLANTILLATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetModulosAsync(string loginSistema = "");
+		Task<CResult> GetOpcionesPorModuloAsync(string codigoSistema, string loginSistema = "");
+		Task<CResult> GetParametrosDisponiblesAsync(string codigoOpcion, string codigoSistema);
 	}
 }

@@ -122,13 +122,17 @@ namespace sguees.Repositories
 						new CParameter() { ParameterName = "FECHA_ACTU", Value = System.DateTime.Now, DbType = System.Data.DbType.DateTime }
 					};
 
-					await objData.Update(_TableName, pDesactivar, pWherePlantilla);
+					var readerDesactivar = await objData.Update(_TableName, pDesactivar, pWherePlantilla);
+					readerDesactivar.Close();
 				}
 
+				// Qué hace: define la lista de parámetros para la inserción de la versión de plantilla.
+				// Cómo lo hace: incluye NUMERO_VERSION para que CSQLBuilder genere la columna e inserte el correlativo calculado.
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PARAMETRO_PLANTILLA", Value = Data.CORR_PARAMETRO_PLANTILLA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "NUMERO_VERSION", Value = Data.NUMERO_VERSION, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ASUNTO_PLANTILLA", Value = Data.ASUNTO_PLANTILLA, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "CUERPO_PLANTILLA", Value = Data.CUERPO_PLANTILLA, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "CORREO_CC", Value = Data.CORREO_CC, DbType = System.Data.DbType.String },
@@ -157,7 +161,8 @@ namespace sguees.Repositories
 						new CParameter() { ParameterName = "FECHA_ACTU", Value = System.DateTime.Now, DbType = System.Data.DbType.DateTime }
 					};
 
-					await objData.Update("GEN_PARAMETRO_PLANTILLA", pCabecera, pWherePlantilla);
+					var readerCabecera = await objData.Update("GEN_PARAMETRO_PLANTILLA", pCabecera, pWherePlantilla);
+					readerCabecera.Close();
 				}
 
 				objResultado.Data = response;
@@ -207,7 +212,8 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "FECHA_ACTU", Value = System.DateTime.Now, DbType = System.Data.DbType.DateTime }
 				};
 
-				await objData.Update(_TableName, pDesactivar, pWherePlantilla);
+				var readerDesactivar = await objData.Update(_TableName, pDesactivar, pWherePlantilla);
+				readerDesactivar.Close();
 
 				var pWhereVersion = new List<CParameter>
 				{
@@ -241,7 +247,8 @@ namespace sguees.Repositories
 						new CParameter() { ParameterName = "FECHA_ACTU", Value = System.DateTime.Now, DbType = System.Data.DbType.DateTime }
 					};
 
-					await objData.Update("GEN_PARAMETRO_PLANTILLA", pCabecera, pWherePlantilla);
+					var readerCabecera = await objData.Update("GEN_PARAMETRO_PLANTILLA", pCabecera, pWherePlantilla);
+					readerCabecera.Close();
 				}
 
 				objResultado.Data = versionActiva;

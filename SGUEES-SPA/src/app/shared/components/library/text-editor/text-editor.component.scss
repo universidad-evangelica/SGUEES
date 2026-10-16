@@ -40,54 +40,81 @@
 				padding: 0 !important;
 			}
 
-			// Botones compactos con iconos legibles
+			// Qué hace: botones compactos con iconos legibles y altura homogénea de 24px.
+			// Cómo lo hace: fija height en 24px y ajusta paddings para evitar saltos de línea innecesarios.
 			.dx-button {
-				height: 28px !important;
-				min-width: 28px !important;
-				padding: 2px 4px !important;
+				height: 24px !important;
+				min-height: 24px !important;
+				max-height: 24px !important;
+				min-width: 24px !important;
+				padding: 0 4px !important;
 				border-radius: 4px;
 
 				.dx-icon {
-					font-size: 14px !important;
-					width: 16px !important;
-					height: 16px !important;
-					line-height: 16px !important;
+					font-size: 13px !important;
+					width: 14px !important;
+					height: 14px !important;
+					line-height: 14px !important;
 				}
 			}
 
-			// Dropdowns y SelectBoxes calibrados
-			.dx-selectbox {
-				height: 28px !important;
-				min-height: 28px !important;
-				font-size: 12px !important;
+			// Qué hace: calibración compacta de altura y ancho para size, font, header y dropdowns.
+			// Cómo lo hace: reduce min-height a 24px, fuente a 11px y ajusta anchos específicos.
+			.dx-selectbox,
+			.dx-dropdownbutton {
+				height: 24px !important;
+				min-height: 24px !important;
+				max-height: 24px !important;
+				font-size: 11px !important;
 
 				&.dx-htmleditor-toolbar-size {
-					width: 78px !important;
+					width: 80px !important;
+
+					.dx-texteditor-input {
+						padding: 0 2px 0 6px !important;
+					}
+
+					.dx-dropdowneditor-button {
+						min-width: 15px !important;
+						width: 15px !important;
+					}
 				}
 
 				&.dx-htmleditor-toolbar-font {
-					width: 98px !important;
+					width: 90px !important;
 				}
 
 				&.dx-htmleditor-toolbar-header {
-					width: 114px !important;
+					width: 115px !important;
 				}
 
 				.dx-texteditor-input-container {
-					min-height: 28px !important;
+					min-height: 24px !important;
+					height: 25px !important;
 				}
 
 				.dx-texteditor-input {
-					min-height: 28px !important;
-					padding: 2px 6px !important;
-					font-size: 12px !important;
+					min-height: 22px !important;
+					height: 22px !important;
+					padding: 0 4px !important;
+					font-size: 11px !important;
+					line-height: 22px !important;
+				}
+
+				.dx-dropdowneditor-button {
+					min-width: 18px !important;
+					width: 18px !important;
+
+					.dx-dropdowneditor-icon {
+						font-size: 11px !important;
+					}
 				}
 			}
 
 			// Separadores verticales discretos
 			.dx-htmleditor-toolbar-separator {
-				height: 20px !important;
-				margin: 4px 3px !important;
+				height: 18px !important;
+				margin: 3px 2px !important;
 				opacity: 0.4;
 			}
 		}
@@ -100,8 +127,8 @@
 			min-height: 380px !important;
 
 			// Qué hace: estilos para tablas creadas manualmente por el usuario dentro del editor.
-			// Cómo lo hace: define table-layout: fixed para distribuir equitativamente el ancho entre todas las columnas, bordes continuos sólidos y min-width para evitar que columnas nuevas se compriman.
-			table:not(.plantilla-uees-table) {
+			// Cómo lo hace: define table-layout: fixed para distribuir equitativamente el ancho entre todas las columnas, bordes continuos sólidos y min-width para evitar que columnas nuevas se compriman, excluyendo tablas de formato institucional.
+			table:not(.plantilla-uees-table):not([data-tipo]) {
 				width: 100%;
 				border-collapse: collapse;
 				table-layout: fixed;
@@ -120,6 +147,7 @@
 			// Qué hace: estilos para tablas de formato institucional.
 			// Cómo lo hace: asegura que no muestren bordes de cuadrícula ni líneas divisorias internas y mantengan separación vertical compacta.
 			table.plantilla-uees-table,
+			table[data-tipo],
 			table[style*="max-width: 650px"],
 			table[style*="max-width:650px"] {
 				border: none !important;
@@ -130,9 +158,27 @@
 				}
 			}
 
-			// Qué hace: reduce al mínimo el espacio negro de los párrafos separadores entre bloques de tablas.
+			// Qué hace: renderiza la línea divisoria horizontal institucional idéntica a sc-solicitud-empleo (primer párrafo después de tabla).
+			// Cómo lo hace: aplica border-top de 1px sólido color #cccccc, margen vertical de 16px y altura de 1px.
+			table:first-of-type + p {
+				border: none !important;
+				border-top: 1px solid #cccccc !important;
+				margin: 16px auto !important;
+				max-width: 650px !important;
+				width: 100% !important;
+				height: 1px !important;
+				min-height: 1px !important;
+				max-height: 1px !important;
+				line-height: 1px !important;
+				font-size: 1px !important;
+				padding: 0 !important;
+				overflow: visible !important;
+			}
+
+			// Qué hace: reduce al mínimo el espacio negro de los párrafos separadores entre la tarjeta gris y el pie azul.
 			// Cómo lo hace: anula los márgenes por defecto de párrafo del navegador (1em) y fuerza altura y margen mínimos de 3px.
-			table + p {
+			table:not(:first-of-type) + p {
+				border-top: none !important;
 				margin: 3px 0 !important;
 				padding: 0 !important;
 				font-size: 2px !important;
@@ -142,6 +188,567 @@
 				max-height: 4px !important;
 				overflow: hidden !important;
 			}
+
+			// Qué hace: asegura legibilidad del texto en el pie de página azul.
+			// Cómo lo hace: fuerza color de fuente #ffffff en párrafos y span internos, manteniendo el color celeste en enlaces.
+			table.plantilla-uees-pie,
+			table.plantilla-uees-table[data-tipo="pie"],
+			table[data-tipo="pie"],
+			table.plantilla-uees-table td[style*="#034ea2"],
+			table.plantilla-uees-table td[style*="rgb(3, 78, 162)"] {
+				border: none !important;
+				margin: 2px auto !important;
+				color: #ffffff !important;
+
+				td, th {
+					background-color: #034ea2 !important;
+					color: #ffffff !important;
+					border: none !important;
+					text-align: center !important;
+				}
+
+				p, span, .ql-table-cell-line {
+					color: #ffffff !important;
+				}
+
+				a {
+					color: #60a5fa !important;
+					text-decoration: underline !important;
+				}
+			}
+
+			// Encabezado institucional amarillo (#ffdc00)
+			table.plantilla-uees-table[data-tipo="encabezado"],
+			table[data-tipo="encabezado"] {
+				border: none !important;
+				margin: 2px auto !important;
+
+				td, th {
+					background-color: #ffdc00 !important;
+					border: none !important;
+					text-align: center !important;
+				}
+			}
+
+			// Tarjeta central institucional gris (#cccccc)
+			table.plantilla-uees-table[data-tipo="cuerpo"],
+			table[data-tipo="cuerpo"] {
+				border: none !important;
+				margin: 2px auto !important;
+
+				td, th {
+					background-color: #cccccc !important;
+					color: #1e293b !important;
+					border: none !important;
+					padding: 24px 20px !important;
+					text-align: center !important;
+				}
+
+				p, span, .ql-table-cell-line {
+					color: #1e293b !important;
+				}
+			}
 		}
+	}
+
+	// Qué hace: protección global de alta especificidad cuando la plantilla institucional está activa en el componente.
+	// Cómo lo hace: anula bordes y asigna los fondos oficiales a las tablas por posición estructural sin depender de atributos en línea que Quill purgue.
+	&.plantilla-uees-activa {
+		::ng-deep .dx-htmleditor {
+			.dx-htmleditor-content {
+				table {
+					border: none !important;
+					margin: 2px auto !important;
+
+					td, th {
+						border: none !important;
+					}
+				}
+
+				// Encabezado institucional amarillo (#ffdc00)
+				table:first-of-type,
+				table[data-tipo="encabezado"] {
+					border: none !important;
+					margin: 2px auto !important;
+
+					td, th {
+						background-color: #ffdc00 !important;
+						border: none !important;
+						text-align: center !important;
+					}
+				}
+
+				// Tarjeta central institucional gris (#cccccc)
+				table:nth-of-type(2),
+				table[data-tipo="cuerpo"] {
+					border: none !important;
+					margin: 2px auto !important;
+
+					td, th {
+						background-color: #cccccc !important;
+						color: #1e293b !important;
+						border: none !important;
+						padding: 24px 20px !important;
+						text-align: center !important;
+					}
+
+					p, span, .ql-table-cell-line {
+						color: #1e293b !important;
+					}
+				}
+
+				// Pie de página institucional azul (#034ea2)
+				table:nth-of-type(3),
+				table:last-of-type,
+				table[data-tipo="pie"] {
+					border: none !important;
+					margin: 2px auto !important;
+
+					td, th {
+						background-color: #034ea2 !important;
+						color: #ffffff !important;
+						border: none !important;
+						text-align: center !important;
+					}
+
+					p, span, .ql-table-cell-line {
+						color: #ffffff !important;
+					}
+
+					a {
+						color: #60a5fa !important;
+						text-decoration: underline !important;
+					}
+				}
+			}
+		}
+	}
+}
+
+// Qué hace: estilos para el panel emergente y tarjetas interactivas de parámetros adaptables a modo claro y oscuro.
+// Cómo lo hace: ubica ::ng-deep en la raíz de los selectores para evitar problemas de encapsulación con body y soporta modo oscuro por clase directa (.modo-oscuro) y por clases de tema global.
+::ng-deep {
+	// ==================== TEMA CLARO (PREDETERMINADO) ====================
+	.editor-parametros-popover-wrapper,
+	.dx-popover-wrapper:has(.parametros-panel-container) {
+		.dx-popup-content {
+			padding: 0 !important;
+			background-color: #ffffff !important;
+			border: 1px solid #cbd5e1 !important;
+			border-radius: 10px !important;
+			box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06) !important;
+			overflow: hidden !important;
+		}
+	}
+
+	.parametros-panel-container {
+		display: flex;
+		flex-direction: column;
+		width: 360px;
+		max-height: 470px;
+		background-color: #ffffff;
+		color: #1e293b;
+		font-family: inherit;
+
+		// Cabecera del panel
+		.panel-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 12px 14px 10px;
+			border-bottom: 1px solid #e2e8f0;
+			background-color: #f8fafc;
+
+			.header-title {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+
+				.icon-brackets {
+					color: #0284c7;
+					font-weight: 800;
+					font-size: 14px;
+				}
+
+				.title-text {
+					font-size: 13px;
+					font-weight: 700;
+					color: #0f172a;
+					letter-spacing: 0.2px;
+				}
+			}
+
+			.badge-hint {
+				font-size: 10px;
+				color: #475569;
+				background-color: #f1f5f9;
+				border: 1px solid #cbd5e1;
+				padding: 2px 8px;
+				border-radius: 10px;
+				font-weight: 500;
+			}
+		}
+
+		// Input de búsqueda interactivo
+		.panel-search-box {
+			position: relative;
+			padding: 10px 14px;
+			background-color: #ffffff;
+
+			.search-icon {
+				position: absolute;
+				left: 24px;
+				top: 50%;
+				transform: translateY(-50%);
+				font-size: 11px;
+				opacity: 0.7;
+			}
+
+			.search-input {
+				width: 100% !important;
+				box-sizing: border-box !important;
+				background-color: #f8fafc !important;
+				border: 1px solid #cbd5e1 !important;
+				color: #0f172a !important;
+				padding: 7px 28px 7px 32px !important;
+				font-size: 12px !important;
+				border-radius: 18px !important;
+				outline: none !important;
+				transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+				&::placeholder {
+					color: #94a3b8;
+				}
+
+				&:focus {
+					border-color: #0284c7 !important;
+					box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15) !important;
+				}
+			}
+
+			.clear-search {
+				position: absolute;
+				right: 24px;
+				top: 50%;
+				transform: translateY(-50%);
+				font-size: 11px;
+				color: #64748b;
+				cursor: pointer;
+				padding: 2px;
+
+				&:hover {
+					color: #0f172a;
+				}
+			}
+		}
+
+		// Lista desplazable de tarjetas con scroll suave y contenido aislado
+		.panel-cards-list {
+			flex: 1;
+			overflow-y: auto !important;
+			overscroll-behavior: contain !important;
+			padding: 0 14px 10px;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			max-height: 290px;
+
+			&::-webkit-scrollbar {
+				width: 5px;
+			}
+
+			&::-webkit-scrollbar-thumb {
+				background-color: #cbd5e1;
+				border-radius: 4px;
+			}
+
+			.parametro-card-item {
+				background-color: #ffffff !important;
+				border: 1px solid #e2e8f0 !important;
+				border-radius: 8px;
+				padding: 8px 10px;
+				cursor: grab;
+				user-select: none;
+				transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+
+				&:hover {
+					background-color: #f8fafc !important;
+					border-color: #0284c7 !important;
+					box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06) !important;
+				}
+
+				&:active {
+					cursor: grabbing;
+				}
+
+				.card-header {
+					display: flex;
+					align-items: center;
+					justify-content: space-between;
+					gap: 6px;
+				}
+
+				.card-title-group {
+					display: flex;
+					align-items: center;
+					gap: 6px;
+
+					.drag-handle {
+						color: #94a3b8;
+						font-size: 13px;
+						letter-spacing: -1px;
+					}
+
+					.card-title {
+						font-size: 12px;
+						font-weight: 600;
+						color: #0f172a;
+					}
+				}
+
+				.card-token-badge {
+					font-size: 10.5px;
+					font-family: 'Consolas', 'Courier New', monospace;
+					background-color: #eff6ff !important;
+					color: #1d4ed8 !important;
+					padding: 2px 6px;
+					border-radius: 4px;
+					border: 1px solid #bfdbfe !important;
+					font-weight: 600;
+					white-space: nowrap;
+				}
+
+				.card-desc {
+					font-size: 11px;
+					color: #64748b;
+					margin-top: 4px;
+					padding-left: 14px;
+					line-height: 1.3;
+				}
+			}
+
+			.no-results {
+				padding: 20px;
+				text-align: center;
+				color: #64748b;
+				font-size: 12px;
+			}
+		}
+
+		// Pie del panel
+		.panel-footer {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 8px 14px;
+			background-color: #f8fafc !important;
+			border-top: 1px solid #e2e8f0 !important;
+			font-size: 10px;
+
+			.footer-left {
+				color: #64748b;
+			}
+
+			.footer-right {
+				color: #0284c7;
+				font-weight: 700;
+				letter-spacing: 0.5px;
+			}
+		}
+	}
+
+	// Botón de parámetros en modo claro
+	.editor-toolbar-parametros-btn {
+		height: 24px !important;
+		min-height: 24px !important;
+		max-height: 24px !important;
+		background-color: #f0f9ff !important;
+		border: 1px solid #bae6fd !important;
+		color: #0284c7 !important;
+		font-weight: 600 !important;
+		font-size: 11px !important;
+		border-radius: 6px !important;
+		padding: 0 !important;
+		transition: background-color 0.2s ease, border-color 0.2s ease;
+
+		.dx-button-content {
+			padding: 0 8px !important;
+			height: 22px !important;
+			min-height: 22px !important;
+			display: flex !important;
+			align-items: center !important;
+			gap: 4px !important;
+		}
+
+		.dx-icon {
+			font-size: 13px !important;
+			color: #0284c7 !important;
+		}
+
+		.dx-button-text {
+			font-size: 11px !important;
+			color: #0369a1 !important;
+		}
+
+		&:hover {
+			background-color: #e0f2fe !important;
+			border-color: #0284c7 !important;
+		}
+	}
+
+	// ==================== TEMA OSCURO (ADAPTATIVO VÍA BODY) ====================
+	// Qué hace: adapta los colores del popover de parámetros y su botón al modo oscuro estándar del sistema SGUEES (Fluent Dark).
+	// Cómo lo hace: reemplaza tonos azulados por los colores neutros oficiales (--base-bg #292929 y --card-background #1f1f1f) cuando body tiene la clase sguees-theme-dark.
+	body.sguees-theme-dark {
+		.editor-parametros-popover-wrapper {
+			.dx-popup-content {
+				background-color: var(--base-bg, #292929) !important;
+				border: 1px solid var(--border-color, #444444) !important;
+				box-shadow: 0 14px 28px rgba(0, 0, 0, 0.55) !important;
+			}
+
+			.parametros-panel-container {
+				background-color: var(--base-bg, #292929) !important;
+				color: #ffffff !important;
+
+				.panel-header {
+					background-color: var(--base-bg, #292929) !important;
+					border-bottom-color: #383838 !important;
+
+					.header-title {
+						.icon-brackets {
+							color: var(--accent-color, #479ef5) !important;
+						}
+
+						.title-text {
+							color: #ffffff !important;
+						}
+					}
+
+					.badge-hint {
+						background-color: var(--card-background, #1f1f1f) !important;
+						border-color: #444444 !important;
+						color: #a6a6a6 !important;
+					}
+				}
+
+				.panel-search-box {
+					background-color: var(--base-bg, #292929) !important;
+
+					.search-input {
+						background-color: var(--card-background, #1f1f1f) !important;
+						border-color: #444444 !important;
+						color: #ffffff !important;
+
+						&::placeholder {
+							color: #8c8c8c !important;
+						}
+
+						&:focus {
+							border-color: var(--accent-color, #479ef5) !important;
+							box-shadow: 0 0 0 2px rgba(71, 158, 245, 0.25) !important;
+						}
+					}
+
+					.clear-search {
+						color: #8c8c8c !important;
+
+						&:hover {
+							color: #ffffff !important;
+						}
+					}
+				}
+
+				.panel-cards-list {
+					&::-webkit-scrollbar-thumb {
+						background-color: #444444 !important;
+					}
+
+					.parametro-card-item {
+						background-color: var(--card-background, #1f1f1f) !important;
+						border-color: #383838 !important;
+
+						&:hover {
+							background-color: #333333 !important;
+							border-color: var(--accent-color, #479ef5) !important;
+							box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+						}
+
+						.card-title-group {
+							.drag-handle {
+								color: #737373 !important;
+							}
+
+							.card-title {
+								color: #ffffff !important;
+							}
+						}
+
+						.card-token-badge {
+							background-color: rgba(71, 158, 245, 0.15) !important;
+							border-color: rgba(71, 158, 245, 0.35) !important;
+							color: #479ef5 !important;
+						}
+
+						.card-desc {
+							color: #a6a6a6 !important;
+						}
+					}
+
+					.no-results {
+						color: #8c8c8c !important;
+					}
+				}
+
+				.panel-footer {
+					background-color: #202020 !important;
+					border-top-color: #383838 !important;
+
+					.footer-left {
+						color: #8c8c8c !important;
+					}
+
+					.footer-right {
+						color: var(--accent-color, #479ef5) !important;
+					}
+				}
+			}
+		}
+
+		.editor-toolbar-parametros-btn {
+			background-color: var(--base-bg, #292929) !important;
+			border-color: #474747 !important;
+			color: var(--accent-color, #479ef5) !important;
+
+			.dx-icon {
+				color: var(--accent-color, #479ef5) !important;
+			}
+
+			.dx-button-text {
+				color: #ffffff !important;
+			}
+
+			&:hover {
+				background-color: #333333 !important;
+				border-color: var(--accent-color, #479ef5) !important;
+			}
+		}
+	}
+}
+
+// Qué hace: asegura que los menús emergentes de los selectores (fuentes, encabezados y tamaños) nunca se recorten con puntos suspensivos.
+// Cómo lo hace: establece min-width holgado y white-space nowrap en el overlay del desplegable.
+::ng-deep .dx-selectbox-popup-wrapper {
+	.dx-overlay-content {
+		min-width: 160px !important;
+		width: auto !important;
+	}
+
+	.dx-list-item-content {
+		white-space: nowrap !important;
+		overflow: visible !important;
+		text-overflow: clip !important;
+		font-size: 12px !important;
+		padding: 5px 10px !important;
 	}
 }

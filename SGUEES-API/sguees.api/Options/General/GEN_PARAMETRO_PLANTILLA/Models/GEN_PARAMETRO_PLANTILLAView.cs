@@ -17,6 +17,10 @@ namespace sguees.Models
 		public string SERVIDOR_CORREO { get; set; }
 		public string CORREO_CC { get; set; }
 		public string CORREO_CCO { get; set; }
+		public string CODIGO_SISTEMA { get; set; }
+		public string NOMBRE_SISTEMA { get; set; }
+		public string CODIGO_OPCION { get; set; }
+		public string NOMBRE_OPCION { get; set; }
 		public bool ACTIVO_PLANTILLA { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
