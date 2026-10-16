@@ -15,8 +15,8 @@ namespace sguees.Services
             _repo = repo;
         }
 
-        // Qué hace: listado de prospectos de nuevo ingreso, de todos los ciclos.
-        // Cómo lo hace: filtra solo por empresa. El ciclo va en la fila, no como filtro.
+        // Qué hace: listado de solicitudes de nuevo ingreso ya enviadas y todavía Ingresadas.
+        // Cómo lo hace: filtra por empresa. El repositorio exige instancia activa del flujo 104 en estado 38.
         public async Task<CResult> GetAllAsync(ACA_PROSPECTOParam xWhere)
         {
             var p = new List<CParameter>

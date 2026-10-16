@@ -582,6 +582,16 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         };
     }
 
+    // Qué hace: texto del aviso de plazo en el panel del flujo.
+    textoPlazoInscripcion(): string {
+        return this.service.textoPlazo(this.model);
+    }
+
+    // Qué hace: color del aviso según los días que faltan para cerrar la inscripción.
+    clasePlazoInscripcion(): string {
+        return this.service.claseVence(this.model?.DIAS_VENCE);
+    }
+
     // Qué hace: listado de prospectos de todos los ciclos.
     // Cómo lo hace: el ciclo va en cada fila; la barra ya no lo filtra.
     consultar() {

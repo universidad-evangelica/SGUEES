@@ -75,14 +75,115 @@ export class AcaProspectoService {
         return this.repo.getModalidades(xWhere);
     }
 
-    // Qué hace: catálogo fijo de formas de ingreso (mismos códigos que el portal de admisiones).
     // Qué hace: texto del estado de la solicitud de nuevo ingreso.
-    // Cómo lo hace: Ingresado (38) se muestra como Pendiente. Los demás usan el nombre del flujo.
+    // Cómo lo hace: Ingresado (38) se muestra como Pendiente nuevo ingreso.
+    //               Aprobado y Rechazada usan su nombre. El listado solo trae el 38.
     textoEstadoSolicitud(row: any): string {
-        if (Number(row?.CORR_ESTADO) === 38) {
-            return 'Pendiente';
+        const estado = Number(row?.CORR_ESTADO);
+        if (estado === 38) {
+            return 'Pendiente nuevo ingreso';
+        }
+        if (estado === 39) {
+            return 'Aprobado';
+        }
+        if (estado === 46) {
+            return 'Rechazada';
         }
         return row?.NOMBRE_ESTADO || '';
+    }
+
+    // Qué hace: clase del badge según el estado del flujo 104.
+    claseEstadoSolicitud(corrEstado: number): string {
+        if (Number(corrEstado) === 38) {
+            return 'aca-prospecto-badge--pendiente';
+        }
+        if (Number(corrEstado) === 39) {
+            return 'aca-prospecto-badge--aprobado';
+        }
+        if (Number(corrEstado) === 46) {
+            return 'aca-prospecto-badge--rechazada';
+        }
+        return 'aca-prospecto-badge--default';
+    }
+
+    // Qué hace: texto de la columna Vence según los días que faltan para cerrar la inscripción.
+    // Cómo lo hace: más de 15 días, de 6 a 15, 5 o menos, o vencido. La fecha es FECHA_FIN_INSCRIPCION del ciclo.
+    textoVence(dias: number | null | undefined): string {
+        if (dias === null || dias === undefined || Number.isNaN(Number(dias))) {
+            return '—';
+        }
+        const n = Number(dias);
+        if (n < 0) {
+            const cantidad = Math.abs(n);
+            return cantidad === 1 ? 'Vencido hace 1 día' : `Vencido hace ${cantidad} días`;
+        }
+        if (n === 0) {
+            return 'Vence hoy';
+        }
+        return n === 1 ? 'En 1 día' : `En ${n} días`;
+    }
+
+    // Qué hace: clase de color de Vence, la misma de la leyenda bajo la grilla.
+    claseVence(dias: number | null | undefined): string {
+        if (dias === null || dias === undefined || Number.isNaN(Number(dias))) {
+            return 'aca-prospecto-vence--sin';
+        }
+        const n = Number(dias);
+        if (n < 0) {
+            return 'aca-prospecto-vence--vencido';
+        }
+        if (n <= 5) {
+            return 'aca-prospecto-vence--corto';
+        }
+        if (n <= 15) {
+            return 'aca-prospecto-vence--medio';
+        }
+        return 'aca-prospecto-vence--largo';
+    }
+
+    // Qué hace: días que la solicitud lleva en el paso actual.
+    textoEnPaso(dias: number | null | undefined): string {
+        if (dias === null || dias === undefined || Number.isNaN(Number(dias))) {
+            return '—';
+        }
+        const n = Number(dias);
+        if (n <= 0) {
+            return 'Hoy';
+        }
+        return n === 1 ? '1 día' : `${n} días`;
+    }
+
+    // Qué hace: texto del paso actual, por ejemplo P2 - Aprobación del analista.
+    textoPaso(row: any): string {
+        const orden = Number(row?.ORDEN_PASO);
+        const nombre = row?.NOMBRE_PASO || '';
+        if (!orden || !nombre) {
+            return '';
+        }
+        return `P${orden} - ${nombre}`;
+    }
+
+    // Qué hace: aviso del plazo de inscripción en el panel del flujo.
+    textoPlazo(row: any): string {
+        if (row?.DIAS_VENCE === null || row?.DIAS_VENCE === undefined || !row?.FECHA_FIN_INSCRIPCION) {
+            return '';
+        }
+        const fecha = new Date(row.FECHA_FIN_INSCRIPCION);
+        const fechaTexto = Number.isNaN(fecha.getTime())
+            ? ''
+            : fecha.toLocaleDateString('es-SV');
+        const ciclo = row.CICLO || '';
+        const facultad = row.NOMBRE_FACULTAD ? ` (${row.NOMBRE_FACULTAD})` : '';
+        const dias = Number(row.DIAS_VENCE);
+        const cierra = dias < 0
+            ? `cerró hace ${Math.abs(dias)} ${Math.abs(dias) === 1 ? 'día' : 'días'}`
+            : dias === 0
+                ? 'cierra hoy'
+                : `cierra en ${dias} ${dias === 1 ? 'día' : 'días'}`;
+        const paso = this.textoPaso(row);
+        const lleva = this.textoEnPaso(row.DIAS_EN_PASO);
+        const enPaso = paso ? ` Lleva ${lleva} en ${paso}.` : '';
+        return `La inscripción del ciclo ${ciclo}${facultad} ${cierra}${fechaTexto ? ', el ' + fechaTexto : ''}.${enPaso}`;
     }
 
     getFormasIngreso(): any[] {
@@ -104,10 +205,50 @@ export class AcaProspectoService {
             { dataField: 'FORMA_INGRESO_TEXTO', caption: 'Forma de ingreso', width: 180 },
             { dataField: 'DUI', caption: 'DUI', width: 120 },
             {
+                dataField: 'DIAS_VENCE',
+                caption: 'Vence',
+                width: 170,
+                minWidth: 140,
+                allowHeaderFiltering: false,
+                calculateCellValue: (row: any) => this.textoVence(row?.DIAS_VENCE),
+                cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
+                    const texto = this.textoVence(cellInfo?.data?.DIAS_VENCE);
+                    cellElement.classList.add('aca-prospecto-badge-cell');
+                    const badge = document.createElement('span');
+                    badge.className = 'aca-prospecto-vence ' + this.claseVence(cellInfo?.data?.DIAS_VENCE);
+                    badge.textContent = texto;
+                    cellElement.appendChild(badge);
+                },
+            },
+            {
+                dataField: 'DIAS_EN_PASO',
+                caption: 'En el paso',
+                width: 110,
+                calculateCellValue: (row: any) => this.textoEnPaso(row?.DIAS_EN_PASO),
+            },
+            {
+                dataField: 'NOMBRE_PASO',
+                caption: 'Paso actual',
+                width: 260,
+                minWidth: 200,
+                calculateCellValue: (row: any) => this.textoPaso(row),
+            },
+            {
                 dataField: 'NOMBRE_ESTADO',
                 caption: 'Estado',
-                width: 140,
+                width: 220,
+                minWidth: 180,
+                cssClass: 'aca-prospecto-grid-badge-col',
+                allowHeaderFiltering: false,
                 calculateCellValue: (row: any) => this.textoEstadoSolicitud(row),
+                cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
+                    const texto = this.textoEstadoSolicitud(cellInfo?.data);
+                    cellElement.classList.add('aca-prospecto-badge-cell');
+                    const badge = document.createElement('span');
+                    badge.className = 'aca-prospecto-badge ' + this.claseEstadoSolicitud(cellInfo?.data?.CORR_ESTADO);
+                    badge.textContent = texto;
+                    cellElement.appendChild(badge);
+                },
             },
             {
                 dataField: 'FECHA_REGISTRO',

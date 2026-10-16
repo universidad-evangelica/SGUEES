@@ -20,15 +20,50 @@ namespace sguees.Repositories
         {
         }
 
-        // Qué hace: prospectos del ciclo solicitado.
-        // Cómo lo hace: lee V_ACA_PROSPECTO ordenado por fecha de registro, los más recientes primero.
+        // Qué hace: solicitudes de nuevo ingreso que el estudiante ya envió y siguen Ingresadas.
+        // Cómo lo hace: lee V_ACA_PROSPECTO (sigue en pregrado, área 5) y solo deja las que
+        //               tienen instancia activa del tipo 104 con estado actual 38.
+        //               Quien todavía edita en el portal no tiene instancia y no aparece.
+        private const string _SqlSolicitudesIngresadas =
+            "SELECT V.*, " +
+            "PA.FECHA_FIN_INSCRIPCION, " +
+            "I.CORR_INSTANCIA, I.CORR_PASO_ACTUAL, " +
+            "CAST(PS.ORDEN AS int) AS ORDEN_PASO, PS.NOMBRE_PASO, AD.NOMBRE_ACTOR AS NOMBRE_ACTOR_PASO, " +
+            "P0.NOMBRE_PASO AS NOMBRE_PASO_INICIAL, AO.NOMBRE_ACTOR AS NOMBRE_ACTOR_INICIAL, " +
+            "DATEDIFF(DAY, CAST(GETDATE() AS date), CAST(PA.FECHA_FIN_INSCRIPCION AS date)) AS DIAS_VENCE, " +
+            "DATEDIFF(DAY, CAST(ISNULL(B.FECHA_ENTRADA, I.FECHA_INICIO) AS date), CAST(GETDATE() AS date)) AS DIAS_EN_PASO " +
+            "FROM dbo.V_ACA_PROSPECTO AS V " +
+            "INNER JOIN dbo.SEG_FLUJO_INSTANCIA AS I " +
+            "  ON I.CORR_EMPRESA = V.CORR_EMPRESA " +
+            " AND I.CORR_TIPO_DOCUMENTO = 104 " +
+            " AND I.CORR_DOCUMENTO = V.CORR_PROSPECTO " +
+            " AND I.ACTIVO = 1 " +
+            " AND I.CORR_ESTADO_ACTUAL = 38 " +
+            "INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS AS PA " +
+            "  ON PA.CORR_PERIODO_ACADEMICO = V.CORR_PERIODO_ACADEMICO " +
+            "LEFT JOIN dbo.SEG_FLUJO_PASO AS PS " +
+            "  ON PS.CORR_EMPRESA = I.CORR_EMPRESA AND PS.CORR_PASO = I.CORR_PASO_ACTUAL " +
+            "LEFT JOIN dbo.SEG_FLUJO_ACTOR AS AD " +
+            "  ON AD.CORR_EMPRESA = PS.CORR_EMPRESA AND AD.CORR_ACTOR = PS.CORR_ACTOR_DESTINO " +
+            "LEFT JOIN dbo.SEG_FLUJO_PASO AS P0 " +
+            "  ON P0.CORR_EMPRESA = I.CORR_EMPRESA AND P0.CORR_FLUJO_PROCESO = I.CORR_FLUJO_PROCESO AND P0.ORDEN = 1 " +
+            "LEFT JOIN dbo.SEG_FLUJO_ACTOR AS AO " +
+            "  ON AO.CORR_EMPRESA = P0.CORR_EMPRESA AND AO.CORR_ACTOR = P0.CORR_ACTOR_ORIGEN " +
+            "OUTER APPLY ( " +
+            "  SELECT MAX(BT.FECHA_ACCION) AS FECHA_ENTRADA " +
+            "  FROM dbo.SEG_FLUJO_BITACORA AS BT " +
+            "  WHERE BT.CORR_EMPRESA = I.CORR_EMPRESA AND BT.CORR_INSTANCIA = I.CORR_INSTANCIA AND BT.CORR_PASO = I.CORR_PASO_ACTUAL " +
+            ") AS B " +
+            "WHERE V.CORR_EMPRESA = @CORR_EMPRESA " +
+            "ORDER BY V.FECHA_REGISTRO DESC";
+
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader(_ViewName, xWhere, "FECHA_REGISTRO DESC");
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlSolicitudesIngresadas, xWhere);
                 var response = new List<ACA_PROSPECTOView>().FromDataReader(reader).ToList();
 
                 reader.Close();

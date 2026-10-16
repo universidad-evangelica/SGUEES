@@ -31,4 +31,14 @@ export interface AcaProspecto {
     ESTADO_SOLICITUD?: string;
     FINANCIA_ESTUDIOS: string;
     FECHA_REGISTRO: Date | null;
+    FECHA_FIN_INSCRIPCION?: string | null;
+    CORR_INSTANCIA?: number | null;
+    CORR_PASO_ACTUAL?: number | null;
+    ORDEN_PASO?: number | null;
+    NOMBRE_PASO?: string;
+    NOMBRE_ACTOR_PASO?: string;
+    NOMBRE_PASO_INICIAL?: string;
+    NOMBRE_ACTOR_INICIAL?: string;
+    DIAS_VENCE?: number | null;
+    DIAS_EN_PASO?: number | null;
 }

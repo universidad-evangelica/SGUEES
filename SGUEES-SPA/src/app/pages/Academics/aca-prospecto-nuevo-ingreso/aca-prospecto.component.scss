@@ -13,22 +13,195 @@
 	align-items: start;
 }
 
-.aca-prospecto-flujo-actual {
+.aca-prospecto-flujo-pasos {
+	margin: 14px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.aca-prospecto-paso {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 8px 0 8px 28px;
+	position: relative;
+}
+
+.aca-prospecto-paso::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 10px;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	box-sizing: border-box;
+}
+
+.aca-prospecto-paso--hecho::before {
+	background: #2e7d32;
+}
+
+.aca-prospecto-paso--actual::before {
+	background: #1565c0;
+}
+
+.aca-prospecto-paso--actual {
+	display: grid;
+	grid-template-columns: 22px 1fr;
+	column-gap: 8px;
+	align-items: center;
+	padding-left: 0;
+}
+
+.aca-prospecto-paso--actual::before {
+	display: none;
+}
+
+.aca-prospecto-paso-marca {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	grid-row: 1 / span 2;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: #1565c0;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.aca-prospecto-plazo {
 	margin: 0 0 12px;
-	font-size: 14px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	border: 1px solid transparent;
+}
+
+.aca-prospecto-plazo p {
+	margin: 4px 0 0;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.aca-prospecto-plazo-titulo {
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.aca-prospecto-plazo.aca-prospecto-vence--corto,
+.aca-prospecto-plazo.aca-prospecto-vence--vencido {
+	color: #ffcdd2;
+	background: rgba(198, 40, 40, 0.18);
+	border-color: rgba(198, 40, 40, 0.45);
+}
+
+.aca-prospecto-plazo.aca-prospecto-vence--medio {
+	color: #ffe082;
+	background: rgba(245, 166, 35, 0.16);
+	border-color: rgba(245, 166, 35, 0.4);
+}
+
+.aca-prospecto-plazo.aca-prospecto-vence--largo {
+	color: #c8e6c9;
+	background: rgba(46, 125, 50, 0.16);
+	border-color: rgba(46, 125, 50, 0.4);
+}
+
+.aca-prospecto-vence-leyenda {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin: 8px 0 16px;
+}
+
+.aca-prospecto-vence-leyenda-titulo {
+	font-size: 12px;
+	font-weight: 600;
+}
+
+:host ::ng-deep .aca-prospecto-vence {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 18px;
+	white-space: nowrap;
+}
+
+:host ::ng-deep .aca-prospecto-vence--largo {
+	color: #2e7d32;
+	background: rgba(46, 125, 50, 0.15);
+}
+
+:host ::ng-deep .aca-prospecto-vence--medio {
+	color: #f9a825;
+	background: rgba(249, 168, 37, 0.18);
+}
+
+:host ::ng-deep .aca-prospecto-vence--corto {
+	color: #e53935;
+	background: rgba(229, 57, 53, 0.16);
+}
+
+:host ::ng-deep .aca-prospecto-vence--vencido {
+	color: #b0bec5;
+	background: rgba(120, 144, 156, 0.2);
+}
+
+:host ::ng-deep .aca-prospecto-vence--sin {
+	color: var(--sguees-text-secondary, #90a4ae);
+}
+
+.aca-prospecto-paso-titulo {
+	font-size: 13px;
 	font-weight: 600;
 	color: var(--sguees-text-primary);
 }
 
-.aca-prospecto-flujo-pasos {
-	margin: 0;
-	padding-left: 18px;
+.aca-prospecto-paso-detalle {
+	font-size: 12px;
 	color: var(--sguees-text-secondary, var(--texteditor-label-color));
-	font-size: 13px;
 }
 
-.aca-prospecto-flujo-pasos li + li {
-	margin-top: 8px;
+:host ::ng-deep .aca-prospecto-badge-cell {
+	display: flex;
+	align-items: center;
+}
+
+:host ::ng-deep .aca-prospecto-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 18px;
+	white-space: nowrap;
+}
+
+:host ::ng-deep .aca-prospecto-badge--pendiente {
+	color: #1565c0;
+	background: rgba(21, 101, 192, 0.15);
+}
+
+:host ::ng-deep .aca-prospecto-badge--aprobado {
+	color: #2e7d32;
+	background: rgba(46, 125, 50, 0.15);
+}
+
+:host ::ng-deep .aca-prospecto-badge--rechazada {
+	color: #c62828;
+	background: rgba(198, 40, 40, 0.15);
+}
+
+:host ::ng-deep .aca-prospecto-badge--default {
+	color: var(--sguees-text-secondary, #607d8b);
+	background: rgba(96, 125, 139, 0.15);
 }
 
 @media (max-width: 1100px) {
