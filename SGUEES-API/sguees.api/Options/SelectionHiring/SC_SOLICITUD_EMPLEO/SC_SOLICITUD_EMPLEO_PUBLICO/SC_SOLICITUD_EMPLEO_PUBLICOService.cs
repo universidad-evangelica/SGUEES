@@ -581,6 +581,23 @@ namespace sguees.Services
                 return tag;
             }, RegexOptions.IgnoreCase);
 
+            // Asegurar centrado de imágenes y logo UEES para Outlook Desktop (Word MSO):
+            // Word MSO ignora margin: auto y con display: block alinea la imagen a la izquierda ignorando text-align: center.
+            // Sustituir display: block por display: inline-block, asegurar align="center" y envolver con contenedor centrado.
+            resultado = Regex.Replace(resultado, @"<img(\s+[^>]*)?>", match =>
+            {
+                var tag = match.Value;
+                tag = Regex.Replace(tag, @"display\s*:\s*block;?", "display: inline-block; border: 0;", RegexOptions.IgnoreCase);
+                if (!Regex.IsMatch(tag, @"\balign\s*=", RegexOptions.IgnoreCase))
+                {
+                    tag = tag.Insert(4, " align=\"center\"");
+                }
+                return tag;
+            }, RegexOptions.IgnoreCase);
+
+            // Si la imagen está directamente en una celda centrada sin párrafo contenedor, envolver en párrafo centrado para Word MSO
+            resultado = Regex.Replace(resultado, @"(<td[^>]*align\s*=\s*[""']center[""'][^>]*>)\s*(<img[^>]*>)\s*(</td>)", "$1<p align=\"center\" style=\"text-align: center; margin: 0; padding: 0;\">$2</p>$3", RegexOptions.IgnoreCase);
+
             // Normalizar etiquetas <p> para anular márgenes automáticos de clientes de correo (Outlook, Gmail)
             resultado = Regex.Replace(resultado, @"<p(\s+[^>]*)?>", match =>
             {

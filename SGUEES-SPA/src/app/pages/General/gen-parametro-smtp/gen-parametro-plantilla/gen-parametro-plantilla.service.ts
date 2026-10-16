@@ -194,7 +194,9 @@ export class GenParametroPlantillaService {
 	<tbody>
 		<tr>
 			<td align="center" style="background-color: #ffdc00; text-align: center; padding: 12px 15px; border: none;">
-				<img src="${_Mensaje}" alt="Universidad Evangélica de El Salvador" width="135" style="width: 135px; max-width: 135px; height: auto; display: block; margin: 0 auto;" />
+				<p align="center" style="text-align: center; margin: 0; padding: 0;">
+					<img src="${_Mensaje}" alt="Universidad Evangélica de El Salvador" width="135" align="center" style="width: 135px; max-width: 135px; height: auto; border: 0; display: inline-block; margin: 0 auto;" />
+				</p>
 			</td>
 		</tr>
 	</tbody>
