@@ -13,5 +13,9 @@ namespace sguees.Repositories
 			string usuario,
 			string estacion,
 			SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data);
+
+		Task<CResult> GetPlantillasDisponiblesAsync(int corrEmpresa);
+
+		Task<dynamic> ObtenerConfiguracionEnvioAsync(int corrEmpresa, int corrSolicitudEmpleo, int corrParametroPlantilla);
 	}
 }
