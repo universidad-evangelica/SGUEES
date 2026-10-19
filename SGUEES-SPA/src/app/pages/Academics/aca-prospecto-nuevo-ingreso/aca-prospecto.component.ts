@@ -75,6 +75,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     observacionAprobar = '';
     accionFlujo: 'aprobar' | 'rechazar' | 'revertir' = 'aprobar';
     private corrAprobarConsultado = 0;
+    private corrAprobarResuelto = 0;
+    private filaGuardada: any = null;
     model: any = this.fillData();
     itemsCarrera: any[] = [];
 
@@ -206,7 +208,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             hint: 'Subir archivo',
             icon: 'upload',
             stylingMode: 'text',
-            visible: () => !this.subiendoDocumento,
+            visible: () => !this.readOnly && !this.subiendoDocumento,
             onClick: (e: any) => this.elegirArchivoDocumento(e),
         },
     ];
@@ -776,14 +778,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: enciende Aprobar, Rechazar o Revertir según el ejecutor del paso.
-    // Cómo lo hace: el API compara el login con el actor origen; sin coincidencia el botón queda vacío.
+    // Cómo lo hace: el API compara el login con el actor origen. La misma fila no se vuelve a consultar.
     evaluarPuedeAprobar(corrProspecto: number): void {
         if (!(corrProspecto > 0)) {
             this.btnAprobar = '';
             this.btnRechazar = '';
             this.btnRevertir = '';
+            this.corrAprobarResuelto = 0;
             return;
         }
+        if (this.corrAprobarResuelto === corrProspecto) {
+            return;
+        }
+        this.corrAprobarResuelto = corrProspecto;
         this.corrAprobarConsultado = corrProspecto;
         this.service
             .getPuedeAprobar(corrProspecto)
@@ -803,6 +810,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                         this.btnAprobar = '';
                         this.btnRechazar = '';
                         this.btnRevertir = '';
+                        this.corrAprobarResuelto = 0;
                     }
                 },
             });
@@ -917,6 +925,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     this.btnAprobar = '';
                     this.btnRechazar = '';
                     this.btnRevertir = '';
+                    this.corrAprobarResuelto = 0;
                     const aviso =
                         accion === 'rechazar'
                             ? 'Solicitud rechazada.'
@@ -1915,6 +1924,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     private iniciarGuardado(): void {
         const pasos = this.armarPasosGuardado();
+        this.filaGuardada = null;
         this.loadingVisible = true;
         this.ejecutarPasos(pasos, 0);
     }
@@ -2122,8 +2132,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (indice >= pasos.length) {
             this.loadingVisible = false;
             this.notifyFx('Prospecto modificado con exito!', NotifyType.Success, { raw: true });
+            this.aplicarFilaEnListado(this.filaGuardada);
+            this.filaGuardada = null;
+            this.corrAprobarResuelto = 0;
             this.AsignaStatus(UpdateType.Browse);
-            this.consultar();
             return;
         }
 
@@ -2133,6 +2145,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             .subscribe({
                 next: (response: any) => {
                     if (response?.Result) {
+                        if (Number(response?.Data?.CORR_PROSPECTO) > 0) {
+                            this.filaGuardada = response.Data;
+                        }
                         this.ejecutarPasos(pasos, indice + 1);
                     } else {
                         this.loadingVisible = false;
@@ -2148,6 +2163,17 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // #endregion
 
     //#region <Metodos Detalle - Carga>
+    // Qué hace: deja en la grilla la fila que devolvió el guardado, sin volver a consultar el listado.
+    private aplicarFilaEnListado(fila: any): void {
+        const corr = Number(fila?.CORR_PROSPECTO);
+        if (!(corr > 0)) {
+            return;
+        }
+        this.models = (this.models || []).map((actual: any) =>
+            Number(actual?.CORR_PROSPECTO) === corr ? { ...actual, ...fila } : actual
+        );
+    }
+
     // Qué hace: carga las tablas hijas de las pestañas al abrir la consulta o la edición.
     // Cómo lo hace: 11 consultas en paralelo; el load panel se apaga cuando termina la última.
     cargarDetalle(CORR_PROSPECTO: number): void {
@@ -2343,7 +2369,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: guarda la fila y limita el input a los formatos de ese documento.
     elegirArchivoDocumento(e: any): void {
         const fila = e?.row?.data;
-        if (!fila || this.subiendoDocumento) return;
+        if (this.readOnly || !fila || this.subiendoDocumento) return;
         this.documentoPendiente = fila;
         const input = this.archivoDocumento?.nativeElement;
         if (!input) return;
@@ -2359,7 +2385,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         const fila = this.documentoPendiente;
         input.value = '';
         const corr = this.model?.CORR_PROSPECTO;
-        if (!file || !fila || !corr) return;
+        if (this.readOnly || !file || !fila || !corr) return;
 
         const aviso = this.serviceDocumento.validarArchivo(fila, file);
         if (aviso) {
