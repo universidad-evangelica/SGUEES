@@ -143,12 +143,12 @@
                     <span class="aca-prospecto-paso-titulo">Aprobación del analista</span>
                     <span class="aca-prospecto-paso-detalle"><ng-container *ngIf="enPasoAnalista()">Actual · </ng-container>Analista de Nuevo Ingreso</span>
                 </li>
-                <!-- Qué hace: al llegar aquí la solicitud ya está aprobada, así que el paso cierra en verde. -->
-                <li class="aca-prospecto-paso" [ngClass]="enPasoAprobado() ? 'aca-prospecto-paso--hecho aca-prospecto-paso--aprobado' : 'aca-prospecto-paso--pendiente'">
-                    <span class="aca-prospecto-paso-marca" [class.aca-prospecto-paso-marca--hecho]="enPasoAprobado()">
-                        <ng-container *ngIf="!enPasoAprobado()">P3</ng-container>
+                <!-- Qué hace: aprobada cierra en verde. Rechazada usa este mismo lugar para no dejar "Solicitud aprobada". -->
+                <li class="aca-prospecto-paso" [ngClass]="clasePasoCierre()">
+                    <span class="aca-prospecto-paso-marca" [ngClass]="marcaPasoCierre()">
+                        <ng-container *ngIf="!enPasoAprobado() && !solicitudRechazada()">P3</ng-container>
                     </span>
-                    <span class="aca-prospecto-paso-titulo">Solicitud aprobada</span>
+                    <span class="aca-prospecto-paso-titulo">{{ tituloPasoCierre() }}</span>
                     <span class="aca-prospecto-paso-detalle">Analista de Nuevo Ingreso</span>
                 </li>
             </ol>
@@ -948,10 +948,17 @@
         [animationEnabled]="false"
         [swipeEnabled]="false"
         [deferRendering]="true"
+        itemTitleTemplate="tituloTabLista"
         (onSelectionChanged)="onTabListaChanged($event)"
     >
-        <dxi-item title="Solicitudes pendientes" [icon]="'folder'"></dxi-item>
-        <dxi-item title="Solicitudes borrador" [icon]="'edit'"></dxi-item>
+        <dxi-item title="Solicitudes pendientes" icon="folder"></dxi-item>
+        <dxi-item title="Solicitudes borrador" icon="edit"></dxi-item>
+        <!-- Qué hace: mismo ícono y texto del tab; el total va en un círculo a la derecha. -->
+        <div *dxTemplate="let data of 'tituloTabLista'" class="aca-prospecto-tab-lista">
+            <i class="dx-icon" [ngClass]="'dx-icon-' + data.icon"></i>
+            <span class="dx-tab-text">{{ data.title }}</span>
+            <span class="aca-prospecto-tab-conteo">{{ conteoTabLista(data) }}</span>
+        </div>
     </dx-tab-panel>
 
     <!-- Qué hace: el texto va en el aviso; los colores quedan en una fila aparte, con un punto por rango. -->

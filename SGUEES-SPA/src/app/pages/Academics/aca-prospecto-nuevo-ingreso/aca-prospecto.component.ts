@@ -625,6 +625,38 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return Number(this.model?.CORR_ESTADO) === 39;
     }
 
+    // Qué hace: la solicitud cerró en rechazo. No se edita y el flujo muestra Rechazada.
+    solicitudRechazada(): boolean {
+        return Number(this.model?.CORR_ESTADO) === 46;
+    }
+
+    // Qué hace: el último lugar del flujo. Rechazada ocupa el de Solicitud aprobada, que no se alcanzó.
+    tituloPasoCierre(): string {
+        return this.solicitudRechazada() ? 'Rechazada' : 'Solicitud aprobada';
+    }
+
+    // Qué hace: verde si ya se aprobó, rojo si se rechazó y gris si todavía no llega.
+    clasePasoCierre(): string {
+        if (this.enPasoAprobado()) {
+            return 'aca-prospecto-paso--hecho aca-prospecto-paso--aprobado';
+        }
+        if (this.solicitudRechazada()) {
+            return 'aca-prospecto-paso--hecho aca-prospecto-paso--rechazado';
+        }
+        return 'aca-prospecto-paso--pendiente';
+    }
+
+    // Qué hace: la marca del último paso. Rechazada no muestra P3.
+    marcaPasoCierre(): string {
+        if (this.enPasoAprobado()) {
+            return 'aca-prospecto-paso-marca--hecho';
+        }
+        if (this.solicitudRechazada()) {
+            return 'aca-prospecto-paso-marca--rechazado';
+        }
+        return '';
+    }
+
     // Qué hace: la inscripción del ciclo ya cerró, así que no hay acciones de flujo.
     // Cómo lo hace: el mismo corte de Vence: días negativos frente a FECHA_FIN_INSCRIPCION.
     inscripcionVencida(): boolean {
@@ -673,6 +705,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 this.loadingVisible = false;
             },
         });
+    }
+
+    // Qué hace: el número del círculo de cada pestaña de la lista.
+    conteoTabLista(data: any): number {
+        const total = data?.icon === 'edit' ? this.modelsBorrador : this.modelsPendientes;
+        return total?.length || 0;
     }
 
     // Qué hace: el listado visible es el de la pestaña abierta.
@@ -866,9 +904,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: guarda copia del encabezado para Cancelar y habilita los editores; el detalle
     //               ya está cargado, no se vuelve a consultar.
     modificar(): void {
-        if (!this.permiteEdit || !this.isConsulta() || this.solicitudAprobada() || this.inscripcionVencida()) {
+        if (!this.permiteEdit || !this.isConsulta() || this.solicitudAprobada() || this.solicitudRechazada() || this.inscripcionVencida()) {
             if (this.solicitudAprobada()) {
                 this.notifyFx('La solicitud ya está aprobada y no se puede modificar.', NotifyType.Warning);
+            } else if (this.solicitudRechazada()) {
+                this.notifyFx('La solicitud está rechazada y no se puede modificar.', NotifyType.Warning);
             } else if (this.inscripcionVencida()) {
                 this.notifyFx('No se puede modificar. La inscripción de este ciclo ya venció.', NotifyType.Warning);
             }
@@ -883,7 +923,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: Cancelar (con confirmación) y Guardar terminan en Browse; ahí se descarta el detalle.
     override AsignaStatus(xEstado: UpdateType): void {
         super.AsignaStatus(xEstado);
-        this.btnModificar = xEstado === UpdateType.Not_Defined && this.permiteEdit && !this.solicitudAprobada() && !this.inscripcionVencida() ? 'Modificar' : '';
+        this.btnModificar = xEstado === UpdateType.Not_Defined && this.permiteEdit && !this.solicitudAprobada() && !this.solicitudRechazada() && !this.inscripcionVencida() ? 'Modificar' : '';
         if (xEstado === UpdateType.Browse) {
             this.limpiarDetalle();
             this.evaluarPuedeAprobar(Number(this.model?.CORR_PROSPECTO));
@@ -961,21 +1001,27 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             });
     }
 
-    // Qué hace: oculta el lápiz cuando la solicitud ya fue aprobada o el ciclo ya venció.
-    // Cómo lo hace: el permiso U sigue aplicando; el estado 39 y DIAS_VENCE negativo no se editan.
+    // Qué hace: oculta el lápiz cuando la solicitud ya fue aprobada, rechazada o el ciclo ya venció.
+    // Cómo lo hace: el permiso U sigue aplicando; los estados 39 y 46, y DIAS_VENCE negativo, no se editan.
     override getPermiteEditar(e: any): boolean {
         const fila = e?.row?.data ?? e?.data;
-        if (Number(fila?.CORR_ESTADO) === 39 || this.filaVencida(fila)) {
+        const estado = Number(fila?.CORR_ESTADO);
+        if (estado === 39 || estado === 46 || this.filaVencida(fila)) {
             return false;
         }
         return super.getPermiteEditar(e);
     }
 
-    // Qué hace: impide abrir la edición de una solicitud aprobada o con la inscripción vencida.
+    // Qué hace: impide abrir la edición de una solicitud aprobada, rechazada o con la inscripción vencida.
     override editarClick(e: any): void {
         const fila = e?.row?.data ?? e?.data;
-        if (Number(fila?.CORR_ESTADO) === 39) {
+        const estado = Number(fila?.CORR_ESTADO);
+        if (estado === 39) {
             this.notifyFx('La solicitud ya está aprobada y no se puede modificar.', NotifyType.Warning);
+            return;
+        }
+        if (estado === 46) {
+            this.notifyFx('La solicitud está rechazada y no se puede modificar.', NotifyType.Warning);
             return;
         }
         if (this.filaVencida(fila)) {

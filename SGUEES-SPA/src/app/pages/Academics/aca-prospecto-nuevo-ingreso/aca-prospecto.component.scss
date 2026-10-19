@@ -127,6 +127,23 @@
 	color: #66bb6a;
 }
 
+.aca-prospecto-paso-marca--rechazado {
+	background: #e53935;
+}
+
+.aca-prospecto-paso-marca--rechazado::after {
+	content: '\00d7';
+	color: #fff;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1;
+	margin-top: -1px;
+}
+
+.aca-prospecto-paso--rechazado .aca-prospecto-paso-titulo {
+	color: #ef5350;
+}
+
 .aca-prospecto-borrador-nota {
 	margin: 12px 0 0;
 	font-size: 13px;
@@ -216,6 +233,10 @@
 
 	.aca-prospecto-paso--aprobado .aca-prospecto-paso-titulo {
 		color: #2e7d32;
+	}
+
+	.aca-prospecto-paso--rechazado .aca-prospecto-paso-titulo {
+		color: #c62828;
 	}
 
 	.aca-prospecto-flujo-pasos {
@@ -410,6 +431,32 @@
 
 :host ::ng-deep .aca-prospecto-tabs-lista .dx-multiview-wrapper {
 	display: none;
+}
+
+:host ::ng-deep .aca-prospecto-tabs-lista .aca-prospecto-tab-lista {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+:host ::ng-deep .aca-prospecto-tabs-lista .aca-prospecto-tab-conteo {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: rgba(100, 181, 246, 0.18);
+	color: #64b5f6;
+	font-size: 11.5px;
+	font-weight: 800;
+	line-height: 1;
+}
+
+:host-context(.sguees-theme-light) ::ng-deep .aca-prospecto-tabs-lista .aca-prospecto-tab-conteo {
+	background: rgba(21, 101, 192, 0.12);
+	color: #1565c0;
 }
 
 .aca-prospecto-tab-panel {
