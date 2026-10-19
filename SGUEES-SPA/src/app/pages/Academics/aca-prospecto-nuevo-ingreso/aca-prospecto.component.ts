@@ -251,7 +251,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         private zone: NgZone
     ) {
         super(appInfoService, router);
-        this.columns = this.service.getColumns();
+        this.aplicarColumnasLista();
         this.summary = this.service.getSummary();
         this.items = this.service.getItems();
         this.columnsDocumento = this.serviceDocumento.getColumns();
@@ -700,6 +700,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.esBorrador = false;
         this.btnEnviar = '';
         this.corrAprobarResuelto = 0;
+        this.aplicarColumnasLista();
         this.aplicarLista();
     }
 
@@ -712,7 +713,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.btnRechazar = '';
         this.btnRevertir = '';
         this.corrAprobarResuelto = 0;
+        this.aplicarColumnasLista();
         this.aplicarLista();
+    }
+
+    // Qué hace: En el paso y Paso actual solo se pintan en Solicitudes pendientes.
+    private aplicarColumnasLista(): void {
+        this.columns = this.service.getColumns(!this.esBorrador);
     }
 
     // Qué hace: cambia la lista al pulsar la pestaña, igual que Datos personales y Contacto.
@@ -2294,6 +2301,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             ESTADO_SOLICITUD: 'Borrador',
         });
         this.dataForm?.instance?.option('formData', this.model);
+        this.model.DIAS_VENCE = fila?.DIAS_VENCE;
+        this.model.FECHA_FIN_INSCRIPCION = fila?.FECHA_FIN_INSCRIPCION;
         this.quitarContactosRegistrados(correo, telefono);
         this.propagarLlaveAlta(Number(fila.CORR_PROSPECTO), Number(fila.CORR_PROSPECTO_PERSONA));
         this.modelUpdate = { ...this.model };
@@ -2344,7 +2353,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         const actual = this.modelsBorrador || [];
         const indice = actual.findIndex((item: any) => Number(item?.CORR_PROSPECTO) === corr);
         if (indice >= 0) {
-            actual[indice] = { ...actual[indice], ...fila };
+            actual[indice] = this.unirFila(fila, actual[indice]);
             this.modelsBorrador = actual;
         } else {
             this.modelsBorrador = [fila, ...actual];
@@ -2355,7 +2364,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     private iniciarGuardado(conservarFila = false): void {
         const pasos = this.armarPasosGuardado();
         if (!conservarFila) {
-            this.filaGuardada = null;
+            this.filaGuardada = this.filaListadoActual();
             this.mensajeGuardado = '';
         }
         this.loadingVisible = true;
@@ -2579,17 +2588,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             .subscribe({
                 next: (response: any) => {
                     if (response?.Result) {
-                        if (Number(response?.Data?.CORR_PROSPECTO) > 0) {
-                            const previo = this.filaGuardada || {};
-                            const data = response.Data;
-                            this.filaGuardada = {
-                                ...previo,
-                                ...data,
-                                DIAS_VENCE: data.DIAS_VENCE ?? previo.DIAS_VENCE,
-                                DIAS_EN_PASO: data.DIAS_EN_PASO ?? previo.DIAS_EN_PASO,
-                                FECHA_FIN_INSCRIPCION: data.FECHA_FIN_INSCRIPCION ?? previo.FECHA_FIN_INSCRIPCION,
-                                ESTADO: data.ESTADO || previo.ESTADO,
-                            };
+                        if (response?.Data?.CODIGO_PROSPECTO) {
+                            this.filaGuardada = this.unirFila(response.Data, this.filaGuardada || this.model);
+                            if (this.valorDeListado(this.filaGuardada?.DIAS_VENCE) || this.filaGuardada?.DIAS_VENCE === 0) {
+                                this.model.DIAS_VENCE = this.filaGuardada.DIAS_VENCE;
+                                this.model.FECHA_FIN_INSCRIPCION = this.filaGuardada.FECHA_FIN_INSCRIPCION;
+                            }
                         }
                         this.ejecutarPasos(pasos, indice + 1);
                     } else {
@@ -2606,6 +2610,46 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // #endregion
 
     //#region <Metodos Detalle - Carga>
+    // Qué hace: la fila que ya está en la grilla, para no perder Vence al empezar a editar.
+    // Cómo lo hace: busca el mismo CORR_PROSPECTO en borradores o pendientes.
+    private filaListadoActual(): any | null {
+        const corr = Number(this.model?.CORR_PROSPECTO);
+        const lista = this.esBorrador ? this.modelsBorrador : this.modelsPendientes;
+        const fila = (lista || []).find((item: any) => Number(item?.CORR_PROSPECTO) === corr);
+        return fila ? { ...fila } : null;
+    }
+
+    // Qué hace: un dato de la grilla sirve si viene con valor. El cero de Vence también cuenta.
+    private valorDeListado(valor: any): boolean {
+        return valor !== null && valor !== undefined && valor !== '';
+    }
+
+    // Qué hace: junta la fila guardada con la que ya se veía, sin borrar Vence ni el paso.
+    // Cómo lo hace: el encabezado no devuelve esas columnas. Si el dato nuevo viene vacío, se queda el anterior.
+    private unirFila(nueva: any, previa: any): any {
+        const campos = [
+            'DIAS_VENCE',
+            'FECHA_FIN_INSCRIPCION',
+            'DIAS_EN_PASO',
+            'NOMBRE_PASO',
+            'ORDEN_PASO',
+            'NOMBRE_ACTOR_PASO',
+            'NOMBRE_PASO_INICIAL',
+            'NOMBRE_ACTOR_INICIAL',
+            'CORR_INSTANCIA',
+            'CORR_PASO_ACTUAL',
+            'CORR_ESTADO',
+            'NOMBRE_ESTADO',
+        ];
+        const unida = { ...(previa || {}), ...(nueva || {}) };
+        campos.forEach((campo) => {
+            if (!this.valorDeListado(nueva?.[campo]) && this.valorDeListado(previa?.[campo])) {
+                unida[campo] = previa[campo];
+            }
+        });
+        return unida;
+    }
+
     // Qué hace: deja en la grilla la fila que devolvió el guardado, sin volver a consultar el listado.
     private aplicarFilaEnListado(fila: any): void {
         const corr = Number(fila?.CORR_PROSPECTO);
@@ -2615,7 +2659,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         const lista = this.esBorrador ? this.modelsBorrador || [] : this.modelsPendientes || [];
         const indice = lista.findIndex((actual: any) => Number(actual?.CORR_PROSPECTO) === corr);
         if (indice >= 0) {
-            lista[indice] = { ...lista[indice], ...fila };
+            lista[indice] = this.unirFila(fila, lista[indice]);
         } else if (fila?.ESTADO === 'P' || fila?.ESTADO === 'p') {
             this.modelsBorrador = [{ ...fila }, ...(this.modelsBorrador || [])];
         }

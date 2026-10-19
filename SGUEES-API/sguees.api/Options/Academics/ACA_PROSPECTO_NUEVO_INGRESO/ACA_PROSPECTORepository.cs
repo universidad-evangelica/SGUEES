@@ -183,6 +183,7 @@ namespace sguees.Repositories
                 if (prospecto == null)
                     throw new System.Exception("La solicitud se creó, pero no se pudo leer para el listado.");
 
+                await CompletarPlazoAsync(prospecto);
                 objResultado.Data = prospecto;
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
@@ -458,6 +459,8 @@ namespace sguees.Repositories
                 reader.Close();
                 reader = null;
 
+                // La tabla no tiene Vence. Se completa con el período que quedó guardado.
+                await CompletarPlazoAsync(response);
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
@@ -804,6 +807,37 @@ namespace sguees.Repositories
             "  END " +
             "END " +
             "SELECT @general AS PORCENTAJE, @mensaje AS MENSAJE;";
+
+        // Qué hace: deja en la fila los días que faltan para que cierre la inscripción.
+        // Cómo lo hace: DIAS_VENCE no es columna de ACA_PROSPECTO. Se lee del período ya guardado.
+        private const string _SqlPlazoProspecto =
+            "SELECT PA.FECHA_FIN_INSCRIPCION, " +
+            "DATEDIFF(DAY, CAST(GETDATE() AS date), CAST(PA.FECHA_FIN_INSCRIPCION AS date)) AS DIAS_VENCE " +
+            "FROM dbo.ACA_PROSPECTO PR " +
+            "INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS PA ON PA.CORR_PERIODO_ACADEMICO = PR.CORR_PERIODO_ACADEMICO " +
+            "WHERE PR.CORR_PROSPECTO = @CORR_PROSPECTO";
+
+        private async Task CompletarPlazoAsync(ACA_PROSPECTOView fila)
+        {
+            if (fila == null || fila.CORR_PROSPECTO <= 0)
+                return;
+
+            var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlPlazoProspecto, new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_PROSPECTO", Value = fila.CORR_PROSPECTO, DbType = System.Data.DbType.Int32 },
+            });
+            if (reader.Read())
+            {
+                fila.FECHA_FIN_INSCRIPCION = reader["FECHA_FIN_INSCRIPCION"] == DBNull.Value
+                    ? (DateTime?)null
+                    : System.Convert.ToDateTime(reader["FECHA_FIN_INSCRIPCION"]);
+                fila.DIAS_VENCE = reader["DIAS_VENCE"] == DBNull.Value
+                    ? (int?)null
+                    : System.Convert.ToInt32(reader["DIAS_VENCE"]);
+            }
+            reader.Close();
+            objData.objConnection.Close();
+        }
 
         // Qué hace: dice si el ciclo del prospecto ya cerró la inscripción.
         // Cómo lo hace: el mismo corte de la grilla, FECHA_FIN_INSCRIPCION anterior a hoy. El día de cierre sigue abierto.

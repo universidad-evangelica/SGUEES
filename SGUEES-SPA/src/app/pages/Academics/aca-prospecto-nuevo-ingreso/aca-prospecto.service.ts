@@ -253,8 +253,10 @@ export class AcaProspectoService {
         ];
     }
 
-    getColumns(): any {
-        return [
+    // Qué hace: columnas del listado. En el paso y Paso actual solo van en solicitudes pendientes.
+    // Cómo lo hace: el borrador todavía no tiene flujo; esas columnas aparecen cuando ya fue enviada.
+    getColumns(mostrarPaso = true): any {
+        const columnas: any[] = [
             { dataField: 'CODIGO_PROSPECTO', caption: 'CIF', width: 120 },
             { dataField: 'NOMBRE_COMPLETO', caption: 'Nombre completo', width: 280 },
             { dataField: 'NOMBRE_CARRERA', caption: 'Carrera', width: 280 },
@@ -299,27 +301,32 @@ export class AcaProspectoService {
             { dataField: 'NOMBRE_MODALIDAD', caption: 'Modalidad', width: 130 },
             { dataField: 'FORMA_INGRESO_TEXTO', caption: 'Forma de ingreso', width: 180 },
             { dataField: 'DUI', caption: 'DUI', width: 120 },
-            {
-                dataField: 'DIAS_EN_PASO',
-                caption: 'En el paso',
-                width: 110,
-                calculateCellValue: (row: any) => (row?.NOMBRE_PASO ? this.textoEnPaso(row?.DIAS_EN_PASO) : '—'),
-            },
-            {
-                dataField: 'NOMBRE_PASO',
-                caption: 'Paso actual',
-                width: 260,
-                minWidth: 200,
-                calculateCellValue: (row: any) => this.textoPaso(row),
-            },
-            {
-                dataField: 'FECHA_REGISTRO',
-                caption: 'Fecha de registro',
-                width: 160,
-                dataType: 'datetime',
-                format: 'dd/MM/yyyy HH:mm',
-            },
         ];
+        if (mostrarPaso) {
+            columnas.push(
+                {
+                    dataField: 'DIAS_EN_PASO',
+                    caption: 'En el paso',
+                    width: 110,
+                    calculateCellValue: (row: any) => (row?.NOMBRE_PASO ? this.textoEnPaso(row?.DIAS_EN_PASO) : '—'),
+                },
+                {
+                    dataField: 'NOMBRE_PASO',
+                    caption: 'Paso actual',
+                    width: 260,
+                    minWidth: 200,
+                    calculateCellValue: (row: any) => this.textoPaso(row),
+                }
+            );
+        }
+        columnas.push({
+            dataField: 'FECHA_REGISTRO',
+            caption: 'Fecha de registro',
+            width: 160,
+            dataType: 'datetime',
+            format: 'dd/MM/yyyy HH:mm',
+        });
+        return columnas;
     }
 
     getSummary(): any {
