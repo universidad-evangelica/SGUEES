@@ -2181,7 +2181,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 next: (response: any) => {
                     this.loadingVisible = false;
                     if (!response?.Result || !(Number(response?.Data?.CORR_PROSPECTO) > 0)) {
-                        this.notifyFx(response?.ErrorMessage ?? 'No se pudo crear la solicitud.', NotifyType.Error, { raw: true });
+                        this.avisarNoCreada(response?.ErrorMessage ?? 'No se pudo crear la solicitud.');
                         return;
                     }
                     this.aplicarAltaCreada(response.Data, alta.CORREO, alta.TELEFONO);
@@ -2189,9 +2189,32 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 },
                 error: (error: any) => {
                     this.loadingVisible = false;
-                    this.notifyFx(this.mensajeError(error), NotifyType.Error, { raw: true });
+                    this.avisarNoCreada(this.mensajeError(error));
                 },
             });
+    }
+
+    // Qué hace: si el nombre y la fecha, o el correo, ya están en otra solicitud, lo avisa en amarillo.
+    // Cómo lo hace: reconoce el texto que devuelve el registro y lo cambia por un mensaje que el usuario entienda.
+    private avisarNoCreada(mensaje: string): void {
+        const texto = mensaje || 'No se pudo crear la solicitud.';
+        if (/nombre y .*fecha de nacimiento/i.test(texto)) {
+            this.notifyFx(
+                'Ya existe una solicitud con este nombre y esta fecha de nacimiento. Búsquela en el listado o cambie el nombre o la fecha para crear otra.',
+                NotifyType.Warning,
+                { raw: true }
+            );
+            return;
+        }
+        if (/correo/i.test(texto) && /registrad|otra solicitud/i.test(texto)) {
+            this.notifyFx(
+                'Este correo ya está en otra solicitud. Use otro correo o abra la solicitud que ya existe.',
+                NotifyType.Warning,
+                { raw: true }
+            );
+            return;
+        }
+        this.notifyFx(texto, NotifyType.Error, { raw: true });
     }
 
     // Qué hace: junta los datos que pide el registro de admisión.

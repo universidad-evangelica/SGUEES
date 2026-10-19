@@ -245,14 +245,14 @@ namespace sguees.Repositories
         private const string _SqlRegistroDuplicado =
             "SELECT CASE " +
             "WHEN EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_CONTACTO C WHERE C.ES_CORREO = 1 AND C.CONTACTO = @CORREO) " +
-            "THEN 'El correo electrónico ya está registrado.' " +
+            "THEN 'Este correo ya está en otra solicitud. Use otro correo o abra la solicitud que ya existe.' " +
             "WHEN EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_PERSONA P " +
             "WHERE dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(P.NOMBRES) = dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(@NOMBRES) " +
             "AND dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(P.APELLIDO1) = dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(@APELLIDO1) " +
             "AND ((P.APELLIDO2 IS NULL AND dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(@APELLIDO2) = '') " +
             "OR dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(P.APELLIDO2) = dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(@APELLIDO2)) " +
             "AND CONVERT(date, P.FECHA_NACIMIENTO) = @FECHA_NACIMIENTO) " +
-            "THEN 'Ya existe un usuario con el mismo nombre y fecha de nacimiento.' " +
+            "THEN 'Ya existe una solicitud con este nombre y esta fecha de nacimiento. Búsquela en el listado o cambie el nombre o la fecha para crear otra.' " +
             "ELSE '' END AS MENSAJE";
 
         private const string _SqlErrorRegistro =
