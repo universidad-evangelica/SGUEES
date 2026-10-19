@@ -90,6 +90,14 @@ BEGIN
         IF ISNULL(@CORR_EMPRESA,0)<=0 THROW 51000,N'No se encontró la empresa de la sesión.',1;
         IF @TIPO_ACTUALIZA IS NULL OR @TIPO_ACTUALIZA NOT IN (1,2,3) THROW 51000,N'Operación no válida.',1;
         IF NULLIF(LTRIM(RTRIM(@SYS_LOGIN_USUARIO)),'') IS NULL THROW 51000,N'No se encontró el usuario de la sesión.',1;
+        IF OBJECT_ID('dbo.ACA_CICLOS_ACADEMICOS') IS NOT NULL
+        BEGIN
+            IF EXISTS(SELECT 1 FROM dbo.ACA_CICLOS_ACADEMICOS C WHERE C.CORR_EMPRESA=@CORR_EMPRESA AND
+                ((@TIPO_ACTUALIZA=1 AND C.CORR_AREA_ACADEMICA=@CORR_AREA_ACADEMICA AND C.ANIO=@ANIO AND C.NUMERO_PERIODO=@NUMERO_PERIODO)
+                 OR EXISTS(SELECT 1 FROM dbo.ACA_PERIODOS_ACADEMICOS P WHERE P.CORR_PERIODO_ACADEMICO=@CORR_PERIODO_ACADEMICO
+                    AND P.CORR_AREA_ACADEMICA=C.CORR_AREA_ACADEMICA AND P.ANIO=C.ANIO AND P.NUMERO_PERIODO=C.NUMERO_PERIODO)))
+                THROW 51000,N'Este período pertenece a un ciclo por área. Gestione su calendario y apertura desde Ciclos por área.',1;
+        END;
         IF @TRAN_INICIAL=0 BEGIN TRANSACTION;
         ELSE SAVE TRANSACTION ACA_PERIODOS_MTTO;
         -- Serializa escrituras por empresa, incluyendo altas concurrentes del mismo alcance.

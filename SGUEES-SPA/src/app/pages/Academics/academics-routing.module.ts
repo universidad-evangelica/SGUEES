@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { AcaCarrerasComponent } from './aca-carreras/aca-carreras.component';
-import { AcaPeriodosAcademicosComponent } from './aca-periodos-academicos/aca-periodos-academicos.component';
+import { AcaCiclosComponent } from './aca-periodos-academicos/ciclos/aca-ciclos.component';
 import { RouterModule, Routes } from '@angular/router';
 import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
 import { AuthGuardService } from 'src/app/shared/services/auth.service';
@@ -16,8 +16,8 @@ import { AcaProspectoBecaComponent } from './aca-prospecto-beca/aca-prospecto-be
 
 const routes: Routes = [
   {
-    path: 'aca-periodos-academicos', component: AcaPeriodosAcademicosComponent,
-    canActivate: [AuthGuardService], canDeactivate: [AppCanDeactivateGuard], data: { titulo: 'Períodos académicos' },
+    path: 'aca-periodos-academicos', component: AcaCiclosComponent,
+    canActivate: [AuthGuardService], canDeactivate: [AppCanDeactivateGuard], data: { titulo: 'Ciclos académicos por área' },
     loadChildren: () => import('./aca-periodos-academicos/aca-periodos-academicos.module').then(m => m.AcaPeriodosAcademicosModule),
   },
   {

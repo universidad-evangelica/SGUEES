@@ -1,0 +1,165 @@
+<div class="sguees-mtto-view">
+    <div class="content-block dx-card responsive-paddings">
+        <h2>Ciclos académicos por área</h2>
+        <p *ngIf="vista === 'areas'">Primero prepara la carrera, sus sedes y planes en <a routerLink="/aca-carreras">Carreras</a>. Después elige aquí su área académica para abrir un ciclo y seleccionar dónde se ofrecerá.</p>
+        <p *ngIf="vista === 'ciclos'"><strong>{{areaElegida.NOMBRE_AREA}}</strong> · Ciclos definidos para esta área</p>
+        <p *ngIf="vista === 'ficha'"><strong>{{model.NOMBRE_AREA}} · {{model.ANIO}}-{{model.NUMERO_PERIODO | number:'2.0-0'}}</strong> · {{model.ESTADO}}</p>
+        <dx-button *ngIf="vista !== 'areas'" text="Volver" icon="back" [disabled]="loadingVisible" (onClick)="volver()"></dx-button>
+        <dx-button *ngIf="vista === 'areas'" text="Actualizar áreas" icon="refresh" [disabled]="loadingVisible" (onClick)="cargarInicio()"></dx-button>
+        <dx-button *ngIf="vista === 'ciclos' && permiteAdd" text="Nuevo ciclo" icon="add" type="default" [disabled]="loadingVisible || !areaElegida.ACTIVO" (onClick)="nuevoCiclo()"></dx-button>
+        <ng-container *ngIf="vista === 'ficha'">
+            <dx-button text="Actualizar validaciones" icon="refresh" [disabled]="loadingVisible || cambiosPendientes || !model.CORR_CICLO_ACADEMICO" (onClick)="actualizarValidaciones()"></dx-button>
+            <dx-button *ngIf="model.ESTADO === 'BORRADOR' && (model.CORR_CICLO_ACADEMICO ? permiteEdit : permiteAdd)" text="Guardar calendario" icon="save" type="default" [disabled]="!editaCabecera" (onClick)="guardarCiclo()"></dx-button>
+            <dx-button *ngIf="permiteEdit && model.CORR_CICLO_ACADEMICO && model.ESTADO !== 'HABILITADO'" text="Habilitar ciclo" icon="check" type="default" [disabled]="!puedeHabilitar" (onClick)="cambiarEstado('Habilitar')"></dx-button>
+            <dx-button *ngIf="permiteEdit && model.ESTADO !== 'BORRADOR'" text="Pasar a borrador" icon="edit" [disabled]="loadingVisible" (onClick)="cambiarEstado('Borrador')"></dx-button>
+            <dx-button *ngIf="permiteEdit && model.ESTADO === 'HABILITADO'" text="Cerrar ciclo" icon="close" [disabled]="loadingVisible" (onClick)="cambiarEstado('Cerrar')"></dx-button>
+        </ng-container>
+    </div>
+
+    <div class="content-block dx-card responsive-paddings" *ngIf="vista === 'areas'">
+        <dx-data-grid id="ciclos-areas-grid" [dataSource]="areas" keyExpr="CORR_AREA_ACADEMICA" [columns]="areaColumns" [showBorders]="true" [rowAlternationEnabled]="true" (onRowDblClick)="verCiclos($event.data)">
+            <div *dxTemplate="let cell of 'abrirArea'"><dx-button text="Ver ciclos" (onClick)="verCiclos(cell.data)"></dx-button></div>
+            <dxo-filter-row [visible]="true"></dxo-filter-row>
+        </dx-data-grid>
+    </div>
+    <div class="content-block dx-card responsive-paddings" *ngIf="vista === 'ciclos'">
+        <p *ngIf="!loadingVisible && !ciclos.length">Esta área aún no tiene ciclos definidos.</p>
+        <p>Las sedes y facultades se muestran por nombre. En un ciclo en borrador, use Revisar y activar para completar su configuración.</p>
+        <dx-data-grid id="ciclos-listado-grid" [dataSource]="ciclos" keyExpr="CORR_CICLO_ACADEMICO" [columns]="cicloColumns" [showBorders]="true" [allowColumnResizing]="true" [wordWrapEnabled]="true" (onRowDblClick)="abrirCiclo($event.data)">
+            <div *dxTemplate="let cell of 'nombresAsignados'" class="nombres-asignados">{{cell.value}}</div>
+            <div *dxTemplate="let cell of 'abrirCiclo'" class="acciones-listado">
+                <dx-button text="Configurar" (onClick)="abrirCiclo(cell.data)"></dx-button>
+                <dx-button *ngIf="permiteEdit && cell.data.ESTADO !== 'HABILITADO'" text="Revisar y activar" icon="check" (onClick)="abrirCiclo(cell.data, true)"></dx-button>
+            </div>
+            <dxo-filter-row [visible]="true"></dxo-filter-row><dxo-paging [pageSize]="15"></dxo-paging>
+        </dx-data-grid>
+    </div>
+    <div class="content-block dx-card responsive-paddings" *ngIf="vista === 'ficha'">
+        <nav class="pasos-apertura" aria-label="Pasos para abrir el ciclo">
+            <button type="button" [class.actual]="tab === 0" [attr.aria-current]="tab === 0 ? 'step' : null" [disabled]="loadingVisible" (click)="irPaso(0)"><b>1</b><span>Calendario<small>Área, ciclo y fechas</small></span></button>
+            <button type="button" [class.actual]="tab === 1" [attr.aria-current]="tab === 1 ? 'step' : null" [disabled]="loadingVisible || !model.CORR_CICLO_ACADEMICO || cambiosPendientes" (click)="irPaso(1)"><b>2</b><span>Carreras por sede<small>Facultades, carreras y planes</small></span></button>
+            <button type="button" [class.actual]="tab === 2" [attr.aria-current]="tab === 2 ? 'step' : null" [disabled]="loadingVisible || !model.CORR_CICLO_ACADEMICO || cambiosPendientes" (click)="irPaso(2)"><b>3</b><span>Revisar y habilitar<small>Confirma la oferta del área</small></span></button>
+        </nav>
+        <section *ngIf="model.ESTADO !== 'HABILITADO'" class="guia-activacion" aria-label="Activación del ciclo">
+            <h3>Cómo activar este ciclo</h3>
+            <p>La carrera ya pertenece a un área. Aquí eliges el ciclo y las sedes donde abrirá. El sistema comprueba sus planes con el inicio académico del calendario.</p>
+            <ng-container *ngIf="pendientesActivacion.length; else listoParaActivar">
+                <strong>Pendiente antes de habilitar:</strong>
+                <ul><li *ngFor="let pendiente of pendientesActivacion">{{pendiente}}</li></ul>
+                <dx-button text="Ir al paso pendiente" [disabled]="loadingVisible" (onClick)="revisarActivacion()"></dx-button>
+            </ng-container>
+            <ng-template #listoParaActivar><p>La configuración está lista. Pulsa Habilitar ciclo y confirma para salir de Borrador o reabrir el ciclo.</p></ng-template>
+        </section>
+        <p *ngIf="model.REQUIERE_REVISION" role="status">Configuración importada pendiente de revisión. Revise los períodos originales y guarde el calendario común antes de habilitar. Las selecciones explícitas fueron conservadas; un alcance general no selecciona automáticamente todas las carreras.</p>
+        <p *ngIf="cambiosPendientes && model.CORR_CICLO_ACADEMICO">Guarde el calendario antes de modificar sedes, facultades o carreras.</p>
+        <p *ngIf="!model.CORR_CICLO_ACADEMICO">Guarde primero el ciclo para configurar su oferta por sede.</p>
+        <dx-tab-panel [(selectedIndex)]="tab" [deferRendering]="false">
+            <dxi-item title="Datos generales">
+                <p>Un calendario común para el área. Las selecciones de oferta se guardan inmediatamente y se publican al habilitar el ciclo.</p>
+                <p *ngIf="anioDifiere" role="status">Atención: el año del ciclo difiere del año de inicio académico. Revise el calendario.</p>
+                <dx-form #fData [formData]="model" labelLocation="top" [colCount]="2" [colCountByScreen]="{xs: 1, sm: 2, md: 2, lg: 2}" [disabled]="!editaCabecera" (onFieldDataChanged)="cambiado()">
+                    <dxi-item dataField="ANIO" editorType="dxNumberBox" [label]="{text: 'Año del ciclo'}" [editorOptions]="{min: 1, max: 9999, format: '#0', readOnly: !!model.CORR_CICLO_ACADEMICO}"><dxi-validation-rule type="required"></dxi-validation-rule><dxi-validation-rule type="pattern" pattern="^[0-9]+$" message="Ingrese un año entero."></dxi-validation-rule></dxi-item>
+                    <dxi-item dataField="NUMERO_PERIODO" editorType="dxNumberBox" [label]="{text: 'Número del ciclo'}" [editorOptions]="{min: 1, max: 255, format: '#0', readOnly: !!model.CORR_CICLO_ACADEMICO}"><dxi-validation-rule type="required"></dxi-validation-rule><dxi-validation-rule type="pattern" pattern="^[0-9]+$" message="Ingrese un número entero."></dxi-validation-rule></dxi-item>
+                    <dxi-item dataField="FECHA_INICIO" editorType="dxDateBox" [label]="{text: 'Inicio académico'}" [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                    <dxi-item dataField="FECHA_FIN" editorType="dxDateBox" [label]="{text: 'Fin académico'}" [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                    <dxi-item dataField="FECHA_INICIO_INSCRIPCION" editorType="dxDateBox" [label]="{text: 'Apertura de inscripción'}" [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                    <dxi-item dataField="FECHA_FIN_INSCRIPCION" editorType="dxDateBox" [label]="{text: 'Cierre de inscripción'}" [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                </dx-form>
+                <ng-container *ngIf="periodos.length"><h3>Períodos vinculados</h3><p>Se conservan los identificadores y registros históricos. Al habilitar se aplica el calendario común a los períodos específicos de las carreras seleccionadas.</p>
+                    <p>Se muestran los nombres asociados al período original. Sin facultad específica o Sin carrera específica indica que ese registro no tiene esa asociación.</p>
+                    <dx-data-grid id="ciclos-periodos-grid" [dataSource]="periodos" [columns]="periodoColumns" [showBorders]="true" [wordWrapEnabled]="true" [allowColumnResizing]="true"><dxo-paging [pageSize]="5"></dxo-paging></dx-data-grid>
+                </ng-container>
+            </dxi-item>
+            <dxi-item title="Sedes y oferta">
+                <p>Selecciona una sede, una facultad y las carreras que abrirán. Junto a cada carrera verás qué planes podrá utilizar o qué debes corregir.</p>
+                <p><strong>Inicio académico del ciclo: {{model.FECHA_INICIO | date:'dd/MM/yyyy'}}</strong>. Los planes deben estar vigentes en esa fecha. Las asignaciones se guardan al seleccionarlas. Si corriges un plan en otra pestaña, vuelve y pulsa Actualizar validaciones.</p>
+                <div class="asignaciones-ciclo"><section>
+                <h3>1. Sedes del ciclo</h3>
+                <dx-select-box [dataSource]="sedesDisponibles" valueExpr="Key" displayExpr="Value" [(value)]="sedeNueva" placeholder="Seleccione una sede" [disabled]="!puedeAsignar"></dx-select-box>
+                <dx-button text="Agregar sede" icon="add" [disabled]="!puedeAsignar || !sedeNueva" (onClick)="agregarSede()"></dx-button>
+                <dx-button [text]="sedeActual?.ACTIVO ? 'Retirar sede' : 'Habilitar sede'" [disabled]="!puedeAsignar || !sedeActual" (onClick)="estadoSede()"></dx-button>
+                <dx-data-grid id="ciclos-sedes-grid" [dataSource]="sedes" keyExpr="CORR_SEDE" [columns]="sedeColumns" [selectedRowKeys]="sedeKeys" [showBorders]="true" (onSelectionChanged)="seleccionarSede($event)"><dxo-selection mode="single"></dxo-selection></dx-data-grid>
+                </section><section *ngIf="sedeId">
+                    <h3>2. Facultades en {{sedeActual?.NOMBRE_SEDE}}</h3>
+                    <p *ngIf="!facultadesDisponibles.length">No hay facultades disponibles con carreras de esta área y autorización activa en la sede. Revise las asociaciones institucionales.</p>
+                    <dx-select-box [dataSource]="facultadesDisponibles" valueExpr="Key" displayExpr="Value" [(value)]="facultadNueva" placeholder="Seleccione una facultad" [disabled]="!puedeAsignar || !sedeActual?.ACTIVO"></dx-select-box>
+                    <dx-button text="Agregar facultad" icon="add" [disabled]="!puedeAsignar || !sedeActual?.ACTIVO || !facultadNueva" (onClick)="agregarFacultad()"></dx-button>
+                    <dx-button [text]="facultadActual?.ACTIVO ? 'Retirar facultad' : 'Habilitar facultad'" [disabled]="!puedeAsignar || !sedeActual?.ACTIVO || !facultadActual" (onClick)="estadoFacultad()"></dx-button>
+                    <dx-data-grid id="ciclos-facultades-grid" [dataSource]="facultadesSede" keyExpr="CORR_FACULTAD" [columns]="facultadColumns" [selectedRowKeys]="facultadKeys" [showBorders]="true" (onSelectionChanged)="seleccionarFacultad($event)"><dxo-selection mode="single"></dxo-selection></dx-data-grid>
+                </section></div>
+                <ng-container *ngIf="facultadId">
+                    <h3>3. Carreras de {{facultadActual?.NOMBRE_FACULTAD}}</h3>
+                    <dx-button text="Seleccionar todas las disponibles" [disabled]="!puedeAsignar || !sedeActual?.ACTIVO || !facultadActual?.ACTIVO" (onClick)="todas()"></dx-button>
+                    <dx-data-grid id="ciclos-carreras-grid" [dataSource]="carrerasDisponibles" keyExpr="Key" [columns]="carreraColumns" [showBorders]="true" [wordWrapEnabled]="true" [allowColumnResizing]="true">
+                        <div *dxTemplate="let cell of 'planesCarrera'"><ng-container *ngTemplateOutlet="detallePlanes; context: {$implicit: cell.data, carreraId: cell.data.Key}"></ng-container></div>
+                        <div *dxTemplate="let cell of 'seleccionarCarrera'"><dx-button [width]="165" [text]="cell.data.SELECCIONADA ? 'Retirar carrera' : 'Seleccionar carrera'" [disabled]="!puedeAsignar || !sedeActual?.ACTIVO || !facultadActual?.ACTIVO || (!cell.data.ACTIVO && !cell.data.SELECCIONADA)" (onClick)="estadoCarrera(cell.data)"></dx-button></div>
+                        <dxo-paging [pageSize]="10"></dxo-paging><dxo-filter-row [visible]="true"></dxo-filter-row>
+                    </dx-data-grid>
+                </ng-container>
+            </dxi-item>
+            <dxi-item title="Resumen de apertura">
+                <p><strong>{{carrerasIncluidas}} carrera(s) por sede incluidas · {{carrerasConPendientes.length}} con observaciones.</strong> Comprueba los planes y las fechas antes de habilitar. Una sede o facultad retirada excluye todas sus carreras.</p>
+                <p *ngIf="cambiosPendientes">Guarda el calendario para actualizar los planes aplicables.</p>
+                <dx-data-grid id="ciclos-resumen-grid" [dataSource]="carreras" [columns]="resumenColumns" [showBorders]="true" [wordWrapEnabled]="true" [allowColumnResizing]="true">
+                    <div *dxTemplate="let cell of 'planesResumen'"><ng-container *ngTemplateOutlet="detallePlanes; context: {$implicit: cell.data, carreraId: cell.data.CORR_CARRERA}"></ng-container></div>
+                    <dxo-paging [pageSize]="10"></dxo-paging><dxo-filter-row [visible]="true"></dxo-filter-row>
+                </dx-data-grid>
+                <section class="consulta-inscripcion" aria-labelledby="titulo-consulta-inscripcion">
+                    <h3 id="titulo-consulta-inscripcion">¿Qué carreras se pueden inscribir?</h3>
+                    <p>Elige una sede y una fecha para comprobar qué carreras tendrán inscripción abierta ese día. Esta consulta no modifica el ciclo ni inscribe estudiantes.</p>
+                    <p><strong>Estado del ciclo: {{model.ESTADO}}</strong> · Inscripción del <strong>{{model.FECHA_INICIO_INSCRIPCION | date:'dd/MM/yyyy'}}</strong> al <strong>{{model.FECHA_FIN_INSCRIPCION | date:'dd/MM/yyyy'}}</strong>, ambos días incluidos.</p>
+                    <p *ngIf="!ofertaConsultada && model.ESTADO !== 'HABILITADO'" class="aviso-consulta">Mientras el ciclo esté en {{model.ESTADO}}, la consulta no mostrará carreras. La selección que estás preparando se revisa en la tabla superior.</p>
+                    <div class="campos-consulta">
+                        <div><label>Sede a consultar</label><dx-select-box [dataSource]="sedes" valueExpr="CORR_SEDE" displayExpr="NOMBRE_SEDE" [value]="sedeId" [inputAttr]="{'aria-label': 'Sede a consultar'}" [disabled]="loadingVisible" (onValueChanged)="sedeId = $event.value; oferta = []; ofertaConsultada = false" placeholder="Elige una sede"></dx-select-box></div>
+                        <div><label>Fecha de inscripción a comprobar</label><dx-date-box [(value)]="fechaConsulta" [inputAttr]="{'aria-label': 'Fecha de inscripción a comprobar'}" type="date" dateSerializationFormat="yyyy-MM-dd" displayFormat="dd/MM/yyyy" [disabled]="loadingVisible" (onValueChanged)="oferta = []; ofertaConsultada = false"></dx-date-box></div>
+                    </div>
+                    <dx-button text="Usar fecha de apertura" [disabled]="loadingVisible || !model.FECHA_INICIO_INSCRIPCION" (onClick)="usarAperturaInscripcion()"></dx-button>
+                    <dx-button text="Comprobar carreras disponibles" icon="search" type="default" [disabled]="loadingVisible || !model.CORR_CICLO_ACADEMICO || !sedeId || !fechaConsulta || cambiosPendientes" (onClick)="consultarOferta()"></dx-button>
+                    <p class="ayuda-consulta">La fecha elegida comprueba la inscripción. La vigencia de los planes se valida con el inicio académico del ciclo: {{model.FECHA_INICIO | date:'dd/MM/yyyy'}}.</p>
+                    <div *ngIf="ofertaConsultada" aria-live="polite" class="resultado-consulta">
+                        <ng-container *ngIf="oferta.length; else sinInscripcion">
+                            <p><strong>Inscripción disponible en {{sedeActual?.NOMBRE_SEDE}} para el {{fechaConsulta | date:'dd/MM/yyyy'}}.</strong> Se encontraron {{oferta.length}} opciones de carrera y modalidad:</p>
+                            <dx-data-grid id="ciclos-oferta-grid" [dataSource]="oferta" [columns]="ofertaColumns" [width]="'100%'" [wordWrapEnabled]="true" [allowColumnResizing]="true" [showBorders]="true"><dxo-paging [pageSize]="10"></dxo-paging></dx-data-grid>
+                        </ng-container>
+                        <ng-template #sinInscripcion>
+                            <strong>No hay carreras con inscripción abierta en {{sedeActual?.NOMBRE_SEDE}} para el {{fechaConsulta | date:'dd/MM/yyyy'}}.</strong>
+                            <p>Revisa estos puntos según la configuración cargada:</p><ul><li *ngFor="let motivo of motivosSinOferta">{{motivo}}</li></ul>
+                            <dx-button text="Revisar calendario" [disabled]="loadingVisible" (onClick)="irPaso(0)"></dx-button>
+                            <dx-button text="Revisar carreras por sede" [disabled]="loadingVisible" (onClick)="irPaso(1)"></dx-button>
+                        </ng-template>
+                    </div>
+                </section>
+            </dxi-item>
+            <dxi-item title="Bitácora">
+                <p>Se conserva una versión completa del calendario y las selecciones por cada operación.</p>
+                <dx-data-grid id="ciclos-bitacora-grid" [dataSource]="historial" keyExpr="ID_BITACORA" [columns]="historialColumns" [showBorders]="true"><dxo-paging [pageSize]="10"></dxo-paging></dx-data-grid>
+            </dxi-item>
+        </dx-tab-panel>
+        <div class="navegacion-pasos">
+            <dx-button *ngIf="tab > 0 && tab < 3" text="Anterior" icon="chevronleft" [disabled]="loadingVisible" (onClick)="irPaso(tab - 1)"></dx-button>
+            <dx-button *ngIf="tab === 0 && editaCabecera" text="Guardar y continuar" type="default" [disabled]="loadingVisible" (onClick)="guardarCiclo(true)"></dx-button>
+            <dx-button *ngIf="tab === 0 && !editaCabecera" text="Continuar a carreras por sede" [disabled]="loadingVisible || !model.CORR_CICLO_ACADEMICO || cambiosPendientes" (onClick)="irPaso(1)"></dx-button>
+            <dx-button *ngIf="tab === 1" text="Continuar a revisión" type="default" [disabled]="loadingVisible || !model.CORR_CICLO_ACADEMICO || cambiosPendientes" (onClick)="irPaso(2)"></dx-button>
+            <dx-button *ngIf="tab === 2 && permiteEdit && model.ESTADO !== 'HABILITADO'" text="Habilitar ciclo" icon="check" type="default" [disabled]="!puedeHabilitar" (onClick)="cambiarEstado('Habilitar')"></dx-button>
+        </div>
+    </div>
+</div>
+<ng-template #detallePlanes let-row let-carreraId="carreraId">
+    <div class="detalle-planes">
+        <strong *ngIf="!cambiosPendientes && planesAplicables(carreraId).length">{{model.ESTADO === 'HABILITADO' ? 'Planes compatibles con el calendario' : 'Al habilitar se utilizará por modalidad:'}}</strong>
+        <div *ngFor="let plan of (!cambiosPendientes ? planesAplicables(carreraId) : [])">{{plan.CODIGO_PLAN}} · {{plan.NOMBRE_MODALIDAD}}</div>
+        <p class="observacion-plan" [class.pendiente]="row.DIAGNOSTICO !== 'Lista para apertura'">{{observacionCarrera(row)}}</p>
+        <details *ngIf="planesCarrera(carreraId).length"><summary>Ver planes y vigencias</summary>
+            <div class="plan-vigencia" *ngFor="let plan of planesCarrera(carreraId)">
+                <strong>{{plan.CODIGO_PLAN || 'Sin plan académico'}}</strong><span *ngIf="plan.CODIGO_PLAN"> · {{plan.NOMBRE_MODALIDAD || 'Sin modalidad disponible'}}</span>
+                <div *ngIf="plan.CODIGO_PLAN">Vigencia: {{plan.FECHA_VIGENCIA_INICIO | date:'dd/MM/yyyy'}} – {{plan.FECHA_VIGENCIA_FIN ? (plan.FECHA_VIGENCIA_FIN | date:'dd/MM/yyyy') : 'Sin fecha final'}}</div>
+                <div *ngIf="!cambiosPendientes">{{plan.ES_APLICABLE ? 'Plan que se utilizará en esta modalidad.' : plan.ES_ELEGIBLE ? 'Compatible; se utilizará el plan más reciente de esta modalidad.' : plan.MOTIVO_PLAN}}</div>
+            </div>
+        </details>
+        <div class="corregir-plan">
+            <a [routerLink]="['/aca-carreras']" [queryParams]="{carrera: carreraId, seccion: 'planes'}" target="_blank" rel="noopener">Revisar planes ↗</a>
+            <button *ngIf="row.DIAGNOSTICO === 'Sin plan y modalidad elegibles al inicio académico'" type="button" [disabled]="loadingVisible" (click)="irPaso(0)">Revisar calendario</button>
+        </div>
+    </div>
+</ng-template>
+<dx-load-panel [(visible)]="loadingVisible" [showIndicator]="true" [showPane]="true" [shading]="true" shadingColor="rgba(0,0,0,0.4)"></dx-load-panel>

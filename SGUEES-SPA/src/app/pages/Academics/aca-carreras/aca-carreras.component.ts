@@ -112,8 +112,18 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
         };
     }
     consultar(): void {
-        this.consultarMtto({ load: () => this.service.getAll() });
+        const carrera = Number(this.router.snapshot.queryParamMap.get('carrera'));
+        this.consultarMtto({ load: () => this.service.getAll(), onData: (data: AcaCarrera[]) => {
+            if (!this.enlaceAtendido && Number.isInteger(carrera) && carrera > 0) {
+                this.enlaceAtendido = true;
+                const row = data.find(c => c.CORR_CARRERA === carrera);
+                if (!row) { this.notifyFx('La carrera solicitada no está disponible en su empresa.', NotifyType.Warning); return; }
+                this.rowDblClick({ data: row });
+                this.tabSeleccionada = this.router.snapshot.queryParamMap.get('seccion') === 'planes' ? 2 : 0;
+            }
+        } });
     }
+    private enlaceAtendido = false;
     override nuevo(): void {
         if (!this.asegurarEmpresaSesion()) return;
         super.nuevo();
