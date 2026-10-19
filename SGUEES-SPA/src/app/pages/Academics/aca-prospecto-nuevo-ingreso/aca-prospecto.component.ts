@@ -1,6 +1,6 @@
 import { Component, ElementRef, NgZone, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
 import { DxCheckBoxComponent } from 'devextreme-angular/ui/check-box';
@@ -71,6 +71,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     btnAprobar = '';
     btnRechazar = '';
     btnRevertir = '';
+    btnEnviar = '';
+    esBorrador = false;
+    modelsPendientes: any[] = [];
+    modelsBorrador: any[] = [];
     popupAprobarVisible = false;
     observacionAprobar = '';
     accionFlujo: 'aprobar' | 'rechazar' | 'revertir' = 'aprobar';
@@ -642,23 +646,65 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: el ciclo va en cada fila; la barra ya no lo filtra.
     consultar() {
         this.loadingVisible = true;
-        this.service
-            .getAll()
-            .pipe(take(1))
-            .subscribe({
-                next: (response: any) => {
-                    if (response.Result) {
-                        this.models = response.Data;
-                    } else {
-                        this.notifyApiResponse(response);
-                    }
-                    this.loadingVisible = false;
-                },
-                error: (error: any) => {
-                    this.notifyApiError(error);
-                    this.loadingVisible = false;
-                },
-            });
+        forkJoin({
+            pendientes: this.service.getAll().pipe(take(1)),
+            borradores: this.service.getBorradores().pipe(take(1)),
+        }).subscribe({
+            next: ({ pendientes, borradores }: any) => {
+                if (pendientes?.Result) {
+                    this.modelsPendientes = pendientes.Data || [];
+                } else {
+                    this.notifyApiResponse(pendientes);
+                }
+                if (borradores?.Result) {
+                    this.modelsBorrador = borradores.Data || [];
+                } else {
+                    this.notifyApiResponse(borradores);
+                }
+                this.aplicarLista();
+                this.loadingVisible = false;
+            },
+            error: (error: any) => {
+                this.notifyApiError(error);
+                this.loadingVisible = false;
+            },
+        });
+    }
+
+    // Qué hace: el listado visible es el de la pestaña abierta.
+    aplicarLista(): void {
+        this.models = this.esBorrador ? this.modelsBorrador : this.modelsPendientes;
+    }
+
+    mostrarPendientes(): void {
+        if (!this.esBorrador) {
+            return;
+        }
+        this.esBorrador = false;
+        this.btnEnviar = '';
+        this.corrAprobarResuelto = 0;
+        this.aplicarLista();
+    }
+
+    mostrarBorrador(): void {
+        if (this.esBorrador) {
+            return;
+        }
+        this.esBorrador = true;
+        this.btnAprobar = '';
+        this.btnRechazar = '';
+        this.btnRevertir = '';
+        this.corrAprobarResuelto = 0;
+        this.aplicarLista();
+    }
+
+    // Qué hace: el alta del CIF y la clave siguen en el registro de admisión.
+    // Cómo lo hace: esta pantalla no genera cliente ni contraseña; el borrador se edita y se envía.
+    override nuevo(): void {
+        this.notifyFx(
+            'El registro del estudiante (CIF y clave) se crea en admisión. En Solicitudes borrador se editan y se envían las que todavía no tienen flujo.',
+            NotifyType.Warning
+        );
     }
 
     // Qué hace: ciclos a los que se puede mover el prospecto, carreras de su ciclo y modalidades de la actual.
@@ -755,7 +801,63 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Qué hace: al elegir una fila del listado, muestra Aprobar solo si este usuario ejecuta el paso.
     override focusedRowChanged(e: any): void {
         super.focusedRowChanged(e);
-        this.evaluarPuedeAprobar(Number(e?.row?.data?.CORR_PROSPECTO));
+        const corr = Number(e?.row?.data?.CORR_PROSPECTO);
+        if (this.esBorrador) {
+            this.btnAprobar = '';
+            this.btnRechazar = '';
+            this.btnRevertir = '';
+            this.btnEnviar = this.permiteEdit && corr > 0 ? 'Enviar solicitud' : '';
+            this.corrAprobarResuelto = 0;
+            return;
+        }
+        this.btnEnviar = '';
+        this.evaluarPuedeAprobar(corr);
+    }
+
+    // Qué hace: envía el borrador enfocado al flujo, sin ventana de comentario.
+    // Cómo lo hace: el comentario queda fijo y la fila pasa a Solicitudes pendientes en memoria.
+    enviarSolicitud(): void {
+        const corr = Number(this.model?.CORR_PROSPECTO);
+        if (!this.esBorrador || !(corr > 0) || !this.btnEnviar) {
+            return;
+        }
+        this.loadingVisible = true;
+        this.service
+            .enviar(corr, 'Envío de la solicitud de nuevo ingreso.')
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    this.loadingVisible = false;
+                    if (response?.Result && response.ErrorCode === 0) {
+                        const fila = (this.modelsBorrador || []).find((item: any) => Number(item.CORR_PROSPECTO) === corr);
+                        this.modelsBorrador = (this.modelsBorrador || []).filter((item: any) => Number(item.CORR_PROSPECTO) !== corr);
+                        if (fila) {
+                            this.modelsPendientes = [
+                                {
+                                    ...fila,
+                                    CORR_ESTADO: 38,
+                                    NOMBRE_ESTADO: 'Ingresado',
+                                    ESTADO: 'C',
+                                    ESTADO_TEXTO: 'Completado',
+                                    NOMBRE_PASO: 'Aprobación del analista',
+                                    ORDEN_PASO: 2,
+                                    NOMBRE_ACTOR_PASO: 'Analista de Nuevo Ingreso',
+                                },
+                                ...this.modelsPendientes,
+                            ];
+                        }
+                        this.aplicarLista();
+                        this.btnEnviar = '';
+                        this.notifyFx('La solicitud de nuevo ingreso fue enviada.', NotifyType.Success);
+                    } else {
+                        this.notifyFx(response?.ErrorMessage || 'No se pudo enviar la solicitud.', NotifyType.Warning, { raw: true });
+                    }
+                },
+                error: (error: any) => {
+                    this.loadingVisible = false;
+                    this.notifyApiError(error);
+                },
+            });
     }
 
     // Qué hace: oculta el lápiz cuando la solicitud ya fue aprobada.
@@ -784,9 +886,18 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.btnAprobar = '';
             this.btnRechazar = '';
             this.btnRevertir = '';
+            this.btnEnviar = '';
             this.corrAprobarResuelto = 0;
             return;
         }
+        if (this.esBorrador) {
+            this.btnAprobar = '';
+            this.btnRechazar = '';
+            this.btnRevertir = '';
+            this.btnEnviar = this.permiteEdit ? 'Enviar solicitud' : '';
+            return;
+        }
+        this.btnEnviar = '';
         if (this.corrAprobarResuelto === corrProspecto) {
             return;
         }
@@ -803,7 +914,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     const data = response?.Result ? response.Data : null;
                     this.btnAprobar = data?.PUEDE_APROBAR ? 'Aprobar' : '';
                     this.btnRechazar = data?.PUEDE_RECHAZAR ? 'Rechazar' : '';
-                    this.btnRevertir = data?.PUEDE_REVERTIR ? 'Revertir' : '';
+                    this.btnRevertir = data?.PUEDE_REVERTIR ? 'Reaperturar solicitud' : '';
                 },
                 error: () => {
                     if (this.corrAprobarConsultado === corrProspecto) {
@@ -816,8 +927,15 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             });
     }
 
+    // Qué hace: aprueba sin pedir comentario. El texto de la bitácora queda fijo.
+    // Cómo lo hace: igual que Aprobar del descriptor cuando el popup está apagado: arma la observación y ejecuta.
     abrirAprobar(): void {
-        this.abrirAccion('aprobar', this.btnAprobar, 'Aprobación de la solicitud de nuevo ingreso.');
+        if (!this.btnAprobar || !(Number(this.model?.CORR_PROSPECTO) > 0)) {
+            return;
+        }
+        this.accionFlujo = 'aprobar';
+        this.observacionAprobar = 'Aprobación de la solicitud de nuevo ingreso.';
+        this.confirmarAprobar();
     }
 
     abrirRechazar(): void {
@@ -862,7 +980,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return 'Rechazar';
         }
         if (this.accionFlujo === 'revertir') {
-            return 'Revertir';
+            return 'Reaperturar solicitud';
         }
         return 'Aprobar';
     }
@@ -897,7 +1015,17 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 this.loadingVisible = false;
                 if (response?.Result && response.ErrorCode === 0) {
                     if (accion === 'rechazar') {
-                        this.models = (this.models || []).filter((fila: any) => Number(fila.CORR_PROSPECTO) !== corr);
+                        this.models = (this.models || []).map((fila: any) => {
+                            if (Number(fila.CORR_PROSPECTO) !== corr) {
+                                return fila;
+                            }
+                            return {
+                                ...fila,
+                                CORR_ESTADO: 46,
+                                NOMBRE_ESTADO: 'Rechazada',
+                            };
+                        });
+                        this.modelsPendientes = this.models;
                     } else {
                         this.models = (this.models || []).map((fila: any) => {
                             if (Number(fila.CORR_PROSPECTO) !== corr) {
@@ -921,6 +1049,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                                 NOMBRE_ACTOR_PASO: 'Analista de Nuevo Ingreso',
                             };
                         });
+                        this.modelsPendientes = this.models;
                     }
                     this.btnAprobar = '';
                     this.btnRechazar = '';
@@ -931,7 +1060,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                             ? 'Solicitud rechazada.'
                             : accion === 'revertir'
                               ? 'La solicitud volvió a Ingresado.'
-                              : 'Solicitud aprobada.';
+                              : 'La solicitud de nuevo ingreso fue aprobada.';
                     this.notifyFx(aviso, NotifyType.Success);
                     this.AsignaStatus(UpdateType.Browse);
                 } else {
@@ -2172,6 +2301,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.models = (this.models || []).map((actual: any) =>
             Number(actual?.CORR_PROSPECTO) === corr ? { ...actual, ...fila } : actual
         );
+        if (this.esBorrador) {
+            this.modelsBorrador = this.models;
+        } else {
+            this.modelsPendientes = this.models;
+        }
     }
 
     // Qué hace: carga las tablas hijas de las pestañas al abrir la consulta o la edición.

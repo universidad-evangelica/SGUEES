@@ -39,7 +39,7 @@ namespace sguees.Repositories
             " AND I.CORR_DOCUMENTO = V.CORR_PROSPECTO " +
             " AND ( " +
             "      (I.ACTIVO = 1 AND I.CORR_ESTADO_ACTUAL = 38) " +
-            "   OR I.CORR_ESTADO_ACTUAL = 39 " +
+            "   OR I.CORR_ESTADO_ACTUAL IN (39, 46) " +
             " ) " +
             "INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS AS PA " +
             "  ON PA.CORR_PERIODO_ACADEMICO = V.CORR_PERIODO_ACADEMICO " +
@@ -59,13 +59,45 @@ namespace sguees.Repositories
             "WHERE V.CORR_EMPRESA = @CORR_EMPRESA " +
             "ORDER BY V.FECHA_REGISTRO DESC";
 
-        public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
+        // Qué hace: prospectos de pregrado que todavía no tienen instancia del flujo 104.
+        // Cómo lo hace: la misma vista del listado, sin paso ni estado de flujo. Enviar los pasa a pendientes.
+        private const string _SqlSolicitudesBorrador =
+            "SELECT V.*, " +
+            "PA.FECHA_FIN_INSCRIPCION, " +
+            "CAST(NULL AS int) AS CORR_INSTANCIA, CAST(NULL AS int) AS CORR_PASO_ACTUAL, " +
+            "CAST(NULL AS int) AS ORDEN_PASO, CAST(NULL AS varchar(200)) AS NOMBRE_PASO, CAST(NULL AS varchar(200)) AS NOMBRE_ACTOR_PASO, " +
+            "CAST(NULL AS varchar(200)) AS NOMBRE_PASO_INICIAL, CAST(NULL AS varchar(200)) AS NOMBRE_ACTOR_INICIAL, " +
+            "DATEDIFF(DAY, CAST(GETDATE() AS date), CAST(PA.FECHA_FIN_INSCRIPCION AS date)) AS DIAS_VENCE, " +
+            "CAST(NULL AS int) AS DIAS_EN_PASO " +
+            "FROM dbo.V_ACA_PROSPECTO AS V " +
+            "INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS AS PA " +
+            "  ON PA.CORR_PERIODO_ACADEMICO = V.CORR_PERIODO_ACADEMICO " +
+            "WHERE V.CORR_EMPRESA = @CORR_EMPRESA " +
+            "AND NOT EXISTS ( " +
+            "  SELECT 1 FROM dbo.SEG_FLUJO_INSTANCIA AS I " +
+            "  WHERE I.CORR_EMPRESA = V.CORR_EMPRESA " +
+            "    AND I.CORR_TIPO_DOCUMENTO = 104 " +
+            "    AND I.CORR_DOCUMENTO = V.CORR_PROSPECTO " +
+            ") " +
+            "ORDER BY V.FECHA_REGISTRO DESC";
+
+        public Task<CResult> GetAllAsync(List<CParameter> xWhere)
+        {
+            return LeerSolicitudesAsync(_SqlSolicitudesIngresadas, xWhere);
+        }
+
+        public Task<CResult> GetBorradoresAsync(List<CParameter> xWhere)
+        {
+            return LeerSolicitudesAsync(_SqlSolicitudesBorrador, xWhere);
+        }
+
+        private async Task<CResult> LeerSolicitudesAsync(string sql, List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlSolicitudesIngresadas, xWhere);
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, xWhere);
                 var response = new List<ACA_PROSPECTOView>().FromDataReader(reader).ToList();
 
                 reader.Close();
@@ -572,7 +604,7 @@ namespace sguees.Repositories
                 {
                     new CParameter() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "@CORR_PROSPECTO", Value = corrProspecto, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "@CORR_UNIDAD_DOCUMENTO", Value = DBNull.Value, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@CORR_UNIDAD_DOCUMENTO", Value = operacion == 1 ? 6 : DBNull.Value, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "@OPERACION", Value = operacion, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "@OBSERVACION", Value = observacion ?? string.Empty, DbType = System.Data.DbType.String },

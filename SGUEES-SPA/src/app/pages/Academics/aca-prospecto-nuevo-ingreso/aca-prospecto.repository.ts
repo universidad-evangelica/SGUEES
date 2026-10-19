@@ -17,6 +17,10 @@ export class AcaProspectoRepository {
         return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
     }
 
+    getBorradores(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Get(this.xController, 'GetBorradores', xWhere, environment.UrlGENERALAPI);
+    }
+
     get(xWhere: IParam[]): Observable<IResult> {
         return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlGENERALAPI);
     }
@@ -61,5 +65,9 @@ export class AcaProspectoRepository {
     // Qué hace: devuelve una solicitud aprobada a Ingresado, en la misma instancia.
     revertir(model: any): Observable<IResult> {
         return this.objData.Put(model, this.xController, 'Revertir', [], environment.UrlGENERALAPI);
+    }
+
+    enviar(model: any): Observable<IResult> {
+        return this.objData.Put(model, this.xController, 'Enviar', [], environment.UrlGENERALAPI);
     }
 }

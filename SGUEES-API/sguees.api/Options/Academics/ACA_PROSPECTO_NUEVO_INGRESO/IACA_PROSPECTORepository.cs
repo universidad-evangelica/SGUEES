@@ -14,6 +14,7 @@ namespace sguees.Repositories
         Task<CResult> GetCiclosAsync(List<CParameter> xWhere);
         Task<CResult> ValidarCambioAsync(List<CParameter> xWhere);
         Task<CResult> GetPuedeAprobarAsync(List<CParameter> xWhere);
+        Task<CResult> GetBorradoresAsync(List<CParameter> xWhere);
         Task<CResult> AccionFlujoAsync(int corrEmpresa, int corrProspecto, string login, string observacion, string estacion, int operacion);
     }
 }

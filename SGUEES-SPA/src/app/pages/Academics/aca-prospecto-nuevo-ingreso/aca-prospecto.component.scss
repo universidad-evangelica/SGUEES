@@ -302,12 +302,29 @@
 }
 
 :host ::ng-deep .aca-prospecto-vence--vencido {
-	color: #b0bec5;
-	background: rgba(120, 144, 156, 0.2);
+	color: #fff;
+	background: #e53935;
 }
 
 :host ::ng-deep .aca-prospecto-vence--sin {
 	color: var(--sguees-text-secondary, #90a4ae);
+}
+
+:host ::ng-deep .dx-button-mode-contained.dx-button-default[title='Reaperturar solicitud'] {
+	background-color: #f9a825;
+	border-color: #f9a825;
+
+	.dx-icon,
+	.dx-button-text {
+		color: #1b1b1b;
+	}
+
+	&.dx-state-hover,
+	&.dx-state-focused,
+	&.dx-state-active {
+		background-color: #f57f17;
+		border-color: #f57f17;
+	}
 }
 
 .aca-prospecto-paso-titulo {
@@ -337,8 +354,8 @@
 }
 
 :host ::ng-deep .aca-prospecto-badge--pendiente {
-	color: #1565c0;
-	background: rgba(21, 101, 192, 0.15);
+	color: #ef6c00;
+	background: rgba(239, 108, 0, 0.18);
 }
 
 :host ::ng-deep .aca-prospecto-badge--aprobado {
@@ -362,8 +379,27 @@
 	}
 }
 
-.aca-prospecto-card {
-	margin-bottom: 0;
+.aca-prospecto-tabs-lista {
+	display: flex;
+	gap: 8px;
+	margin: 0 0 12px;
+}
+
+.aca-prospecto-tabs-lista button {
+	padding: 8px 14px;
+	border-radius: 999px;
+	border: 1px solid var(--sguees-border, rgba(255, 255, 255, 0.12));
+	background: transparent;
+	color: var(--sguees-text-secondary, #90a4ae);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.aca-prospecto-tabs-lista button.activa {
+	color: #fff;
+	background: #1565c0;
+	border-color: #1565c0;
 }
 
 .aca-prospecto-tab-panel {

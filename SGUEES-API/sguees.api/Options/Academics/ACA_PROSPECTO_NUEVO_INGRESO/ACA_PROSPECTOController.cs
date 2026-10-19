@@ -34,6 +34,15 @@ namespace sguees.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Qué hace: borradores de nuevo ingreso, sin instancia del flujo.
+        [HttpGet("GetBorradores")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
+        public async Task<CResult> GetBorradores([FromQuery] ACA_PROSPECTOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetBorradoresAsync(Data);
+        }
+
         [HttpGet("Get")]
         [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTOParam Data)
@@ -90,6 +99,17 @@ namespace sguees.Controllers
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetPuedeAprobarAsync(Data, GetUsuario(), GetPermisoOpcion());
+        }
+
+        // Qué hace: el analista envía un borrador al flujo, sin pedir comentario.
+        // Cómo lo hace: OPERACION 1 del SP, con la unidad 6 que ya usa el portal al enviar.
+        [HttpPut("Enviar")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
+        public async Task<IActionResult> Enviar(ACA_PROSPECTOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            var resultado = await _service.AccionFlujoAsync(Data, GetUsuario(), Data.OBSERVACION, ClientInfoHelper.GetClientStation(HttpContext), 1);
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : Ok(resultado);
         }
 
         // Qué hace: aprueba la solicitud. El SP solo avanza si este login es el ejecutor del paso.

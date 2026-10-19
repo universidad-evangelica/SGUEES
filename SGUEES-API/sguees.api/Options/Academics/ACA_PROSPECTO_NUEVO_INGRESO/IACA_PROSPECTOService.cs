@@ -7,6 +7,7 @@ namespace sguees.Services
     public interface IACA_PROSPECTOService
     {
         Task<CResult> GetAllAsync(ACA_PROSPECTOParam xWhere);
+        Task<CResult> GetBorradoresAsync(ACA_PROSPECTOParam xWhere);
         Task<CResult> GetAsync(ACA_PROSPECTOParam xWhere);
         Task<CResult> GetCORR_CARRERA_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere);
         Task<CResult> GetCORR_MODALIDAD_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere);

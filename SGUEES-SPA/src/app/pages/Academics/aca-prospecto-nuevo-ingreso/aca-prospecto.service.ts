@@ -38,6 +38,15 @@ export class AcaProspectoService {
         return this.repo.revertir({ CORR_PROSPECTO, OBSERVACION });
     }
 
+    // Qué hace: manda un borrador al flujo de nuevo ingreso.
+    enviar(CORR_PROSPECTO: number, OBSERVACION: string): Observable<IResult> {
+        return this.repo.enviar({ CORR_PROSPECTO, OBSERVACION });
+    }
+
+    getBorradores(): Observable<IResult> {
+        return this.repo.getBorradores([]);
+    }
+
     get(param: any): Observable<IResult> {
         let xWhere: IParam[] = [{ Parameter: 'CORR_PROSPECTO', Value: param.CORR_PROSPECTO }];
         return this.repo.get(xWhere);
@@ -109,6 +118,9 @@ export class AcaProspectoService {
         }
         if (estado === 46) {
             return 'Rechazada';
+        }
+        if (!estado && (row?.ESTADO === 'P' || row?.ESTADO === 'p')) {
+            return 'Borrador';
         }
         return row?.NOMBRE_ESTADO || '';
     }

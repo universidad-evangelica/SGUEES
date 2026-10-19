@@ -6,7 +6,7 @@
         [isBrowse]="isBrowse()"
         [isForm]="isForm()"
         [showRibbon]="isBrowse()"
-        [permiteAdd]="permiteAdd"
+        [permiteAdd]="permiteAdd && esBorrador"
         [showRefresh]="true"
         [showExport]="permitePrint"
         [btn1]="btnModificar"
@@ -14,21 +14,26 @@
         [btn1Type]="'default'"
         [btn1Width]="120"
         (btn1Click)="modificar()"
-        [btn2]="btnAprobar"
+        [btn2]="esBorrador ? '' : btnAprobar"
         [btn2Icon]="'check'"
         [btn2Type]="'success'"
         [btn2Width]="110"
         (btn2Click)="abrirAprobar()"
-        [btn3]="btnRechazar"
+        [btn3]="esBorrador ? '' : btnRechazar"
         [btn3Icon]="'close'"
         [btn3Type]="'danger'"
         [btn3Width]="120"
         (btn3Click)="abrirRechazar()"
-        [btn4]="btnRevertir"
+        [btn4]="esBorrador ? '' : btnRevertir"
         [btn4Icon]="'revert'"
         [btn4Type]="'default'"
-        [btn4Width]="120"
+        [btn4Width]="200"
         (btn4Click)="abrirRevertir()"
+        [btn5]="btnEnviar"
+        [btn5Icon]="'send'"
+        [btn5Type]="'success'"
+        [btn5Width]="170"
+        (btn5Click)="enviarSolicitud()"
         (consultar)="consultar()"
         (guardar)="guardar()"
         (cancelar)="cancelar()"
@@ -932,8 +937,14 @@
         </dx-tab-panel>
     </div>
 
+    <!-- Qué hace: separa las solicitudes que ya están en el flujo de las que todavía no se enviaron. -->
+    <div class="aca-prospecto-tabs-lista" *ngIf="isBrowse()">
+        <button type="button" [class.activa]="!esBorrador" (click)="mostrarPendientes()">Solicitudes pendientes</button>
+        <button type="button" [class.activa]="esBorrador" (click)="mostrarBorrador()">Solicitudes borrador</button>
+    </div>
+
     <!-- Qué hace: el texto va en el aviso; los colores quedan en una fila aparte, con un punto por rango. -->
-    <div class="aca-prospecto-vence-bloque" *ngIf="isBrowse()">
+    <div class="aca-prospecto-vence-bloque" *ngIf="isBrowse() && !esBorrador">
         <div class="aca-prospecto-vence-leyenda">
             <span class="dx-icon-info aca-prospecto-vence-leyenda-icon" aria-hidden="true"></span>
             <p class="aca-prospecto-vence-leyenda-texto">Vence son los días que faltan para que cierre la inscripción del ciclo de esa solicitud. El color avisa qué tan cerca está esa fecha.</p>
@@ -963,8 +974,8 @@
         [permiteEditar]="getPermiteEditar"
         [permiteDele]="false"
         [showEmptyState]="true"
-        [emptyTitle]="'Sin solicitudes'"
-        [emptyMessage]="'No hay solicitudes de nuevo ingreso enviadas.'"
+        [emptyTitle]="esBorrador ? 'Sin borradores' : 'Sin solicitudes'"
+        [emptyMessage]="esBorrador ? 'No hay solicitudes de nuevo ingreso sin enviar.' : 'No hay solicitudes de nuevo ingreso enviadas.'"
         (refresh)="consultar()"
         (rowDblClick)="rowDblClick($event)"
         (editClick)="editarClick($event)"
@@ -984,7 +995,7 @@
     >
     </dx-load-panel>
 
-    <!-- Qué hace: el analista escribe el comentario que queda en la bitácora al aprobar. -->
+    <!-- Qué hace: el analista escribe el comentario al rechazar o reaperturar. Aprobar no abre esta ventana. -->
     <dx-popup
         [(visible)]="popupAprobarVisible"
         [showTitle]="true"

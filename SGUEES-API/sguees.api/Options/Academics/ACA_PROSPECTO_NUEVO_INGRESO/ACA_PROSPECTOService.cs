@@ -27,6 +27,17 @@ namespace sguees.Services
             return await _repo.GetAllAsync(p);
         }
 
+        // Qué hace: solicitudes registradas que todavía no entraron al flujo 104.
+        public async Task<CResult> GetBorradoresAsync(ACA_PROSPECTOParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+            };
+
+            return await _repo.GetBorradoresAsync(p);
+        }
+
         // Qué hace: encabezado de un prospecto.
         // Cómo lo hace: exige CORR_PROSPECTO por la misma razón que GetAllAsync.
         public async Task<CResult> GetAsync(ACA_PROSPECTOParam xWhere)
