@@ -43,6 +43,17 @@ namespace sguees.Controllers
             return await _service.GetBorradoresAsync(Data);
         }
 
+        // Qué hace: el analista crea una solicitud de nuevo ingreso y la deja en borrador.
+        // Cómo lo hace: el registro de admisión genera el CIF y no abre el flujo. Enviar es otra acción.
+        [HttpPost("Registrar")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|C")]
+        public async Task<IActionResult> Registrar(ACA_PROSPECTOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            var resultado = await _service.RegistrarAsync(Data);
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : Ok(resultado);
+        }
+
         [HttpGet("Get")]
         [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTOParam Data)

@@ -1,6 +1,7 @@
 <div class="sguees-mtto-view" id="LoadPanel">
     <!-- Barra estándar: título, refrescar y exportar. Guardar/Cancelar en edición y
-         "Modificar" (btn1) en consulta cuando el usuario tiene permiso U. -->
+         "Modificar" (btn1) en consulta cuando el usuario tiene permiso U.
+         Enviar solicitud solo en el listado de borradores: en Nuevo todavía no hay solicitud. -->
     <app-barra-data-mtto
         [tituloVentana]="tituloVentana"
         [isBrowse]="isBrowse()"
@@ -29,11 +30,12 @@
         [btn4Type]="'default'"
         [btn4Width]="200"
         (btn4Click)="abrirRevertir()"
-        [btn5]="btnEnviar"
+        [btn5]="isBrowse() && esBorrador ? btnEnviar : ''"
         [btn5Icon]="'send'"
-        [btn5Type]="'success'"
+        [btn5Type]="'default'"
         [btn5Width]="170"
         (btn5Click)="enviarSolicitud()"
+        (nuevo)="nuevo()"
         (consultar)="consultar()"
         (guardar)="guardar()"
         (cancelar)="cancelar()"
@@ -50,7 +52,7 @@
         <section class="sguees-section-card aca-prospecto-card">
             <header class="aca-prospecto-section-head">
                 <span class="aca-prospecto-section-title">Datos del prospecto</span>
-                <span class="aca-prospecto-section-subtitle">{{ isForm() && esAcademico ? 'Edición: ciclo, carrera, modalidad, forma de ingreso y financia estudios' : (isForm() ? 'Solo lectura: se edita desde Prospectos Académica' : 'Consulta de solo lectura') }}</span>
+                <span class="aca-prospecto-section-subtitle">{{ textoSubtituloCabecera() }}</span>
             </header>
             <dx-form
                 #fData
@@ -124,8 +126,10 @@
             </div>
             <!-- Qué hace: el color del badge sigue el estado del flujo 104. -->
             <span class="aca-prospecto-badge" [ngClass]="claseEstadoSolicitud()">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>
+            <!-- Qué hace: un borrador todavía no tiene pasos. Enviar solicitud es el que abre el flujo. -->
+            <p class="aca-prospecto-borrador-nota" *ngIf="!model.CORR_ESTADO">Esta solicitud está en borrador. Guardar no la envía. Enviar solicitud la manda al flujo.</p>
             <!-- Qué hace: tres pasos. Ingresada está en el analista; Aprobada está en Solicitud aprobada. -->
-            <ol class="aca-prospecto-flujo-pasos">
+            <ol class="aca-prospecto-flujo-pasos" *ngIf="model.CORR_ESTADO">
                 <li class="aca-prospecto-paso aca-prospecto-paso--hecho">
                     <span class="aca-prospecto-paso-marca aca-prospecto-paso-marca--hecho" aria-hidden="true"></span>
                     <span class="aca-prospecto-paso-titulo">{{ model.NOMBRE_PASO_INICIAL || 'Ingreso del estudiante' }}</span>

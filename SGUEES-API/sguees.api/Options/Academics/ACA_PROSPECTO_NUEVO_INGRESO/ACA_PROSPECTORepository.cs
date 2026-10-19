@@ -91,6 +91,168 @@ namespace sguees.Repositories
             return LeerSolicitudesAsync(_SqlSolicitudesBorrador, xWhere);
         }
 
+        // Qué hace: da de alta un prospecto en borrador, con CIF y clave inicial.
+        // Cómo lo hace: usa NI_PERSONALINFORMATION_REGISTER (ESTADO 'P', sin flujo) y guarda
+        //               la clave como el hash del CIF, igual que el registro del portal.
+        public async Task<CResult> RegistrarAsync(ACA_PROSPECTOParam data)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var codigos = await LeerCodigosOfertaAsync(data.CORR_CARRERA, data.CORR_MODALIDAD);
+                if (codigos.carrera == null || codigos.modalidad == null)
+                    throw new System.Exception("No se encontró el código de la carrera o de la modalidad.");
+
+                var duplicado = await LeerTextoAsync(_SqlRegistroDuplicado, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "NOMBRES", Value = data.NOMBRES, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "APELLIDO1", Value = data.APELLIDO1, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "APELLIDO2", Value = data.APELLIDO2 ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "FECHA_NACIMIENTO", Value = data.FECHA_NACIMIENTO.Value.Date, DbType = System.Data.DbType.Date },
+                    new CParameter() { ParameterName = "CORREO", Value = data.CORREO, DbType = System.Data.DbType.String },
+                });
+                if (!string.IsNullOrWhiteSpace(duplicado))
+                    throw new System.Exception(duplicado);
+
+                var guid = Guid.NewGuid().ToString();
+                var periodo = data.ANIO.ToString("0000") + "-" + data.NUMERO_PERIODO.ToString("00");
+                var registro = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "@Names", Value = data.NOMBRES, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@FirstLastName", Value = data.APELLIDO1, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SecondLastName", Value = data.APELLIDO2 ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@CareerCode", Value = codigos.carrera, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@TypeModality", Value = codigos.modalidad, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@Email", Value = data.CORREO, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@PhoneNumber", Value = data.TELEFONO, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@BirthDate", Value = data.FECHA_NACIMIENTO.Value.Date, DbType = System.Data.DbType.Date },
+                    new CParameter() { ParameterName = "@PersonalGuid", Value = guid, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@TypeAdmission", Value = data.FORMA_INGRESO, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@PeriodoCod", Value = periodo, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@Result", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@Cif", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 50 },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "NI_PERSONALINFORMATION_REGISTER", true, registro);
+                var resultSp = objData.objCommand.Parameters["@Result"].Value;
+                var cif = objData.objCommand.Parameters["@Cif"].Value?.ToString();
+                objData.objConnection.Close();
+
+                var creado = resultSp != null && resultSp != DBNull.Value && System.Convert.ToInt32(resultSp) > 0 && !string.IsNullOrWhiteSpace(cif);
+                if (!creado)
+                {
+                    var error = await LeerTextoAsync(_SqlErrorRegistro, new List<CParameter>
+                    {
+                        new CParameter() { ParameterName = "GUID", Value = guid, DbType = System.Data.DbType.String },
+                    });
+                    throw new System.Exception(string.IsNullOrWhiteSpace(error) ? "No se pudo crear la solicitud." : error);
+                }
+
+                await objData.ExecCmd(System.Data.CommandType.Text, _SqlClaveInicial, true, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CLAVE", Value = BCrypt.Net.BCrypt.HashPassword(cif), DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CIF", Value = cif, DbType = System.Data.DbType.String },
+                });
+                objData.objConnection.Close();
+
+                var fila = await LeerSolicitudesAsync(
+                    _SqlSolicitudesBorrador.Replace(
+                        "WHERE V.CORR_EMPRESA = @CORR_EMPRESA ",
+                        "WHERE V.CORR_EMPRESA = @CORR_EMPRESA AND V.CODIGO_PROSPECTO = @CODIGO_PROSPECTO "),
+                    new List<CParameter>
+                    {
+                        new CParameter() { ParameterName = "CORR_EMPRESA", Value = data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                        new CParameter() { ParameterName = "CODIGO_PROSPECTO", Value = cif, DbType = System.Data.DbType.String },
+                    });
+
+                if (!fila.Result)
+                    return fila;
+
+                var lista = fila.Data as System.Collections.Generic.List<ACA_PROSPECTOView>;
+                var prospecto = lista?.FirstOrDefault();
+                if (prospecto == null)
+                    throw new System.Exception("La solicitud se creó, pero no se pudo leer para el listado.");
+
+                objResultado.Data = prospecto;
+                objResultado.Result = true;
+                objResultado.RowsAffected = 1;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.CodeHelper = prospecto.CORR_PROSPECTO;
+            }
+            catch (System.Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        private async Task<(string carrera, string modalidad)> LeerCodigosOfertaAsync(int corrCarrera, int corrModalidad)
+        {
+            var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlCodigosOferta, new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_CARRERA", Value = corrCarrera, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_MODALIDAD", Value = corrModalidad, DbType = System.Data.DbType.Int32 },
+            });
+            string carrera = null;
+            string modalidad = null;
+            if (reader.Read())
+            {
+                carrera = reader["CODIGO_CARRERA"] == DBNull.Value ? null : reader["CODIGO_CARRERA"].ToString();
+                modalidad = reader["CODIGO_MODALIDAD"] == DBNull.Value ? null : reader["CODIGO_MODALIDAD"].ToString();
+            }
+            reader.Close();
+            objData.objConnection.Close();
+            return (carrera, modalidad);
+        }
+
+        private async Task<string> LeerTextoAsync(string sql, List<CParameter> parametros)
+        {
+            var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, parametros);
+            string texto = null;
+            if (reader.Read() && reader["MENSAJE"] != DBNull.Value)
+                texto = reader["MENSAJE"]?.ToString();
+            reader.Close();
+            objData.objConnection.Close();
+            return texto;
+        }
+
+        private const string _SqlCodigosOferta =
+            "SELECT C.CODIGO_CARRERA, M.CODIGO_MODALIDAD " +
+            "FROM dbo.ACA_CARRERAS C " +
+            "CROSS JOIN dbo.ACA_MODALIDADES_ACADEMICAS M " +
+            "WHERE C.CORR_CARRERA = @CORR_CARRERA AND M.CORR_MODALIDAD = @CORR_MODALIDAD";
+
+        private const string _SqlRegistroDuplicado =
+            "SELECT CASE " +
+            "WHEN EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_CONTACTO C WHERE C.ES_CORREO = 1 AND C.CONTACTO = @CORREO) " +
+            "THEN 'El correo electrónico ya está registrado.' " +
+            "WHEN EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_PERSONA P " +
+            "WHERE dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(P.NOMBRES) = dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(@NOMBRES) " +
+            "AND dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(P.APELLIDO1) = dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(@APELLIDO1) " +
+            "AND ((P.APELLIDO2 IS NULL AND dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(@APELLIDO2) = '') " +
+            "OR dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(P.APELLIDO2) = dbo.FN_NI_LIMPIAR_ACENTOS_Y_ESPACIOS(@APELLIDO2)) " +
+            "AND CONVERT(date, P.FECHA_NACIMIENTO) = @FECHA_NACIMIENTO) " +
+            "THEN 'Ya existe un usuario con el mismo nombre y fecha de nacimiento.' " +
+            "ELSE '' END AS MENSAJE";
+
+        private const string _SqlErrorRegistro =
+            "SELECT TOP 1 ErrorMessage AS MENSAJE FROM dbo.GEN_ADMISIONES_MESSAGES_ERRORS " +
+            "WHERE ErrorGuid = @GUID ORDER BY ErrorId DESC";
+
+        private const string _SqlClaveInicial =
+            "UPDATE dbo.ACA_PROSPECTO SET CONTRASENA_PROSPECTO = @CLAVE WHERE CODIGO_PROSPECTO = @CIF";
+
         private async Task<CResult> LeerSolicitudesAsync(string sql, List<CParameter> xWhere)
         {
             CResult objResultado = new();

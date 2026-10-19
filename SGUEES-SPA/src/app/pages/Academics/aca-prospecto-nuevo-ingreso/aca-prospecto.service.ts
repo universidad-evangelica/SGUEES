@@ -47,6 +47,23 @@ export class AcaProspectoService {
         return this.repo.getBorradores([]);
     }
 
+    // Qué hace: crea la solicitud en borrador. No la envía al flujo.
+    registrar(model: any): Observable<IResult> {
+        return this.repo.registrar({
+            NOMBRES: model.NOMBRES,
+            APELLIDO1: model.APELLIDO1,
+            APELLIDO2: model.APELLIDO2,
+            FECHA_NACIMIENTO: model.FECHA_NACIMIENTO,
+            ANIO: model.ANIO,
+            NUMERO_PERIODO: model.NUMERO_PERIODO,
+            CORR_CARRERA: model.CORR_CARRERA,
+            CORR_MODALIDAD: model.CORR_MODALIDAD,
+            FORMA_INGRESO: model.FORMA_INGRESO,
+            CORREO: model.CORREO,
+            TELEFONO: model.TELEFONO,
+        });
+    }
+
     get(param: any): Observable<IResult> {
         let xWhere: IParam[] = [{ Parameter: 'CORR_PROSPECTO', Value: param.CORR_PROSPECTO }];
         return this.repo.get(xWhere);

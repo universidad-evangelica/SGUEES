@@ -81,6 +81,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     private corrAprobarConsultado = 0;
     private corrAprobarResuelto = 0;
     private filaGuardada: any = null;
+    private mensajeGuardado = '';
     model: any = this.fillData();
     itemsCarrera: any[] = [];
 
@@ -708,13 +709,81 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.mostrarPendientes();
     }
 
-    // Qué hace: el alta del CIF y la clave siguen en el registro de admisión.
-    // Cómo lo hace: esta pantalla no genera cliente ni contraseña; el borrador se edita y se envía.
+    // Qué hace: abre el formulario para crear una solicitud y dejarla en borrador.
+    // Cómo lo hace: no genera el CIF hasta Guardar y no llama al flujo. Enviar sigue siendo otro botón.
     override nuevo(): void {
-        this.notifyFx(
-            'El registro del estudiante (CIF y clave) se crea en admisión. En Solicitudes borrador se editan y se envían las que todavía no tienen flujo.',
-            NotifyType.Warning
-        );
+        if (!this.permiteAdd || !this.esBorrador) {
+            return;
+        }
+        this.limpiarDetalle();
+        this.model = this.fillData();
+        this.model.ESTADO = 'P';
+        this.model.ESTADO_SOLICITUD = 'Borrador';
+        this.model.FORMA_INGRESO = 'NI';
+        this.modelUpdate = { ...this.model };
+        this.personaModel = this.personaVacia();
+        this.AsignaStatus(UpdateType.Add);
+        this.habilitar();
+        this.cargarOfertaAcademica(0);
+    }
+
+    // Qué hace: el formulario está creando una solicitud que todavía no tiene CIF.
+    esAlta(): boolean {
+        return this.banderaMtto === UpdateType.Add;
+    }
+
+    // Qué hace: explica el encabezado según si se está creando o editando.
+    textoSubtituloCabecera(): string {
+        if (this.esAlta()) {
+            return 'Alta: al guardar se genera el CIF y queda en Solicitudes borrador, sin enviar';
+        }
+        if (this.isForm() && this.esAcademico) {
+            return 'Edición: ciclo, carrera, modalidad, forma de ingreso y financia estudios';
+        }
+        return this.isForm() ? 'Solo lectura: se edita desde Prospectos Académica' : 'Consulta de solo lectura';
+    }
+
+    // Qué hace: persona en blanco para llenar el alta antes de que exista el prospecto.
+    private personaVacia(): any {
+        return {
+            CORR_EMPRESA: 0,
+            CORR_PROSPECTO: 0,
+            CORR_PROSPECTO_PERSONA: 0,
+            NOMBRES: '',
+            APELLIDO1: '',
+            APELLIDO2: '',
+            NOMBRE_COMPLETO: '',
+            DUI: '',
+            NIE: '',
+            CARNET_RESIDENCIA: '',
+            NIT: '',
+            FECHA_NACIMIENTO: null,
+            EDAD: null,
+            LUGAR_NACIMIENTO: '',
+            CORR_SEXO: null,
+            SEXO: '',
+            CORR_ESTADO_CIVIL: null,
+            ESTADO_CIVIL: '',
+            CORR_TIPO_SANGRE: null,
+            TIPO_SANGRE: '',
+            CORR_PAIS_NACIONALIDAD: null,
+            NACIONALIDAD: '',
+            CORR_PAIS_PROCEDENCIA: null,
+            PAIS_PROCEDENCIA: '',
+            CORR_PAIS_RESIDENCIA: null,
+            PAIS_RESIDENCIA: '',
+            CORR_DEPTO_RESIDENCIA: null,
+            DEPTO_RESIDENCIA: '',
+            CORR_MUNICIPIO_RESIDENCIA: null,
+            MUNICIPIO_RESIDENCIA: '',
+            DIRECCION_ACTUAL: '',
+            CORR_RELIGION: null,
+            RELIGION: '',
+            IGLESIA_ACTUAL: '',
+            TRABAJA: false,
+            HA_SIDO_DEPORTADO: false,
+            POSEE_DISCAPACIDAD: false,
+        };
     }
 
     // Qué hace: ciclos a los que se puede mover el prospecto, carreras de su ciclo y modalidades de la actual.
@@ -1988,6 +2057,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (!this.validarFormularios()) {
             return;
         }
+        if (this.esAlta()) {
+            this.crearBorrador();
+            return;
+        }
 
         const original: any = this.modelUpdate ?? {};
         const cambiaOferta =
@@ -2061,9 +2134,175 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             });
     }
 
-    private iniciarGuardado(): void {
+    // Qué hace: crea el CIF y deja la solicitud en borrador, y después guarda el resto de la ficha.
+    // Cómo lo hace: el registro genera prospecto, persona, correo y teléfono. Esos contactos no se vuelven a insertar.
+    private crearBorrador(): void {
+        const alta = this.datosAlta();
+        if (!alta) {
+            return;
+        }
+        this.loadingVisible = true;
+        this.service
+            .registrar(alta)
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    this.loadingVisible = false;
+                    if (!response?.Result || !(Number(response?.Data?.CORR_PROSPECTO) > 0)) {
+                        this.notifyFx(response?.ErrorMessage ?? 'No se pudo crear la solicitud.', NotifyType.Error, { raw: true });
+                        return;
+                    }
+                    this.aplicarAltaCreada(response.Data, alta.CORREO, alta.TELEFONO);
+                    this.iniciarGuardado(true);
+                },
+                error: (error: any) => {
+                    this.loadingVisible = false;
+                    this.notifyFx(this.mensajeError(error), NotifyType.Error, { raw: true });
+                },
+            });
+    }
+
+    // Qué hace: junta los datos que pide el registro de admisión.
+    // Cómo lo hace: nombres y nacimiento salen de Datos personales; correo y teléfono, de Contacto.
+    private datosAlta(): any | null {
+        const persona = this.leerFormData(this.formPersona, this.personaModel);
+        const cabecera = this.leerFormData(this.dataForm, this.model);
+        const ciclo = this.cicloAlta(cabecera);
+        const correo = this.contactoAlta(true);
+        const telefono = this.contactoAlta(false);
+        if (!persona?.NOMBRES?.trim() || !persona?.APELLIDO1?.trim()) {
+            this.notifyFx('Ingrese los nombres y el primer apellido.', NotifyType.Warning, { raw: true });
+            return null;
+        }
+        if (!persona?.FECHA_NACIMIENTO) {
+            this.notifyFx('Ingrese la fecha de nacimiento.', NotifyType.Warning, { raw: true });
+            return null;
+        }
+        if (!ciclo) {
+            this.notifyFx('Seleccione el ciclo.', NotifyType.Warning, { raw: true });
+            return null;
+        }
+        if (!(Number(cabecera?.CORR_CARRERA) > 0) || !(Number(cabecera?.CORR_MODALIDAD) > 0)) {
+            this.notifyFx('Seleccione la carrera y la modalidad.', NotifyType.Warning, { raw: true });
+            return null;
+        }
+        if (!cabecera?.FORMA_INGRESO) {
+            this.notifyFx('Seleccione la forma de ingreso.', NotifyType.Warning, { raw: true });
+            return null;
+        }
+        if (!correo || !telefono) {
+            this.notifyFx('Agregue un correo y un teléfono en la pestaña Contacto antes de guardar.', NotifyType.Warning, { raw: true });
+            return null;
+        }
+        return {
+            NOMBRES: persona.NOMBRES,
+            APELLIDO1: persona.APELLIDO1,
+            APELLIDO2: persona.APELLIDO2,
+            FECHA_NACIMIENTO: persona.FECHA_NACIMIENTO,
+            ANIO: ciclo.ANIO,
+            NUMERO_PERIODO: ciclo.NUMERO_PERIODO,
+            CORR_CARRERA: cabecera.CORR_CARRERA,
+            CORR_MODALIDAD: cabecera.CORR_MODALIDAD,
+            FORMA_INGRESO: cabecera.FORMA_INGRESO,
+            CORREO: correo,
+            TELEFONO: telefono,
+        };
+    }
+
+    private cicloAlta(cabecera: any): { ANIO: number; NUMERO_PERIODO: number } | null {
+        let anio = Number(cabecera?.ANIO);
+        let periodo = Number(cabecera?.NUMERO_PERIODO);
+        if (!(anio > 0) || !(periodo > 0)) {
+            const partes = String(cabecera?.CICLO || '').split('-');
+            anio = Number(partes[0]);
+            periodo = Number(partes[1]);
+        }
+        return anio > 0 && periodo > 0 ? { ANIO: anio, NUMERO_PERIODO: periodo } : null;
+    }
+
+    private contactoAlta(esCorreo: boolean): string {
+        const lista = (this.contactos || []).filter((contacto: any) => !!contacto?.ES_CORREO === esCorreo);
+        const elegido = lista.find((contacto: any) => contacto?.ES_PRINCIPAL) || lista[0];
+        return (elegido?.CONTACTO || '').trim();
+    }
+
+    // Qué hace: pasa el formulario de alta a edición del prospecto recién creado.
+    // Cómo lo hace: copia el CIF y la persona, quita el correo y el teléfono que ya guardó el registro
+    //               y deja la fila en Solicitudes borrador sin volver a consultar.
+    private aplicarAltaCreada(fila: any, correo: string, telefono: string): void {
+        const financia = this.model.FINANCIA_ESTUDIOS;
+        const forma = this.model.FORMA_INGRESO;
+        Object.assign(this.model, fila, {
+            FINANCIA_ESTUDIOS: financia,
+            FORMA_INGRESO: forma,
+            ESTADO: 'P',
+            ESTADO_SOLICITUD: 'Borrador',
+        });
+        this.dataForm?.instance?.option('formData', this.model);
+        this.quitarContactosRegistrados(correo, telefono);
+        this.propagarLlaveAlta(Number(fila.CORR_PROSPECTO), Number(fila.CORR_PROSPECTO_PERSONA));
+        this.modelUpdate = { ...this.model };
+        this.filaGuardada = { ...this.model };
+        this.mensajeGuardado = `La solicitud quedó en borrador. CIF ${fila.CODIGO_PROSPECTO}. La clave inicial del aspirante es ese CIF.`;
+        this.insertarBorradorEnLista(this.filaGuardada);
+        this.AsignaStatus(UpdateType.Update);
+    }
+
+    private quitarContactosRegistrados(correo: string, telefono: string): void {
+        const correoClave = correo.trim().toLowerCase();
+        const telefonoClave = telefono.trim();
+        this.contactos = (this.contactos || []).filter((contacto: any) => {
+            if (Number(contacto?.CORR_PROSPECTO_CONTACTO) > 0) {
+                return true;
+            }
+            const valor = (contacto?.CONTACTO || '').trim();
+            if (contacto?.ES_CORREO && valor.toLowerCase() === correoClave) {
+                return false;
+            }
+            return !(contacto?.ES_TELEFONO && valor === telefonoClave);
+        });
+    }
+
+    private propagarLlaveAlta(corr: number, persona: number): void {
+        const marcar = (fila: any) => {
+            if (!fila) {
+                return;
+            }
+            fila.CORR_PROSPECTO = corr;
+            fila.CORR_PROSPECTO_PERSONA = persona;
+        };
+        marcar(this.personaModel);
+        marcar(this.empleoModel);
+        marcar(this.estudioMedia);
+        marcar(this.estudioUniversidad);
+        marcar(this.estudioUees);
+        (this.contactos || []).forEach(marcar);
+        (this.familiares || []).forEach(marcar);
+        (this.limitaciones || []).forEach(marcar);
+        (this.deportaciones || []).forEach(marcar);
+        (this.medios || []).forEach(marcar);
+        (this.documentos || []).forEach(marcar);
+    }
+
+    private insertarBorradorEnLista(fila: any): void {
+        const corr = Number(fila?.CORR_PROSPECTO);
+        const actual = this.modelsBorrador || [];
+        const indice = actual.findIndex((item: any) => Number(item?.CORR_PROSPECTO) === corr);
+        if (indice >= 0) {
+            actual[indice] = { ...actual[indice], ...fila };
+            this.modelsBorrador = actual;
+        } else {
+            this.modelsBorrador = [fila, ...actual];
+        }
+        this.aplicarLista();
+    }
+
+    private iniciarGuardado(conservarFila = false): void {
         const pasos = this.armarPasosGuardado();
-        this.filaGuardada = null;
+        if (!conservarFila) {
+            this.filaGuardada = null;
+            this.mensajeGuardado = '';
+        }
         this.loadingVisible = true;
         this.ejecutarPasos(pasos, 0);
     }
@@ -2270,7 +2509,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     private ejecutarPasos(pasos: { nombre: string; accion: () => Observable<IResult> }[], indice: number): void {
         if (indice >= pasos.length) {
             this.loadingVisible = false;
-            this.notifyFx('Prospecto modificado con exito!', NotifyType.Success, { raw: true });
+            this.notifyFx(this.mensajeGuardado || 'Prospecto modificado con exito!', NotifyType.Success, { raw: true });
+            this.mensajeGuardado = '';
             this.aplicarFilaEnListado(this.filaGuardada);
             this.filaGuardada = null;
             this.corrAprobarResuelto = 0;
@@ -2285,7 +2525,16 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 next: (response: any) => {
                     if (response?.Result) {
                         if (Number(response?.Data?.CORR_PROSPECTO) > 0) {
-                            this.filaGuardada = response.Data;
+                            const previo = this.filaGuardada || {};
+                            const data = response.Data;
+                            this.filaGuardada = {
+                                ...previo,
+                                ...data,
+                                DIAS_VENCE: data.DIAS_VENCE ?? previo.DIAS_VENCE,
+                                DIAS_EN_PASO: data.DIAS_EN_PASO ?? previo.DIAS_EN_PASO,
+                                FECHA_FIN_INSCRIPCION: data.FECHA_FIN_INSCRIPCION ?? previo.FECHA_FIN_INSCRIPCION,
+                                ESTADO: data.ESTADO || previo.ESTADO,
+                            };
                         }
                         this.ejecutarPasos(pasos, indice + 1);
                     } else {
@@ -2308,14 +2557,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (!(corr > 0)) {
             return;
         }
-        this.models = (this.models || []).map((actual: any) =>
-            Number(actual?.CORR_PROSPECTO) === corr ? { ...actual, ...fila } : actual
-        );
-        if (this.esBorrador) {
-            this.modelsBorrador = this.models;
-        } else {
-            this.modelsPendientes = this.models;
+        const lista = this.esBorrador ? this.modelsBorrador || [] : this.modelsPendientes || [];
+        const indice = lista.findIndex((actual: any) => Number(actual?.CORR_PROSPECTO) === corr);
+        if (indice >= 0) {
+            lista[indice] = { ...lista[indice], ...fila };
+        } else if (fila?.ESTADO === 'P' || fila?.ESTADO === 'p') {
+            this.modelsBorrador = [{ ...fila }, ...(this.modelsBorrador || [])];
         }
+        if (this.esBorrador) {
+            this.modelsBorrador = indice >= 0 ? lista : this.modelsBorrador;
+        } else if (indice >= 0) {
+            this.modelsPendientes = lista;
+        }
+        this.aplicarLista();
     }
 
     // Qué hace: carga las tablas hijas de las pestañas al abrir la consulta o la edición.

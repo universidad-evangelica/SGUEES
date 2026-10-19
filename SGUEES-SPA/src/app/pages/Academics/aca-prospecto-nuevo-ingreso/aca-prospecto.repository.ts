@@ -70,4 +70,9 @@ export class AcaProspectoRepository {
     enviar(model: any): Observable<IResult> {
         return this.objData.Put(model, this.xController, 'Enviar', [], environment.UrlGENERALAPI);
     }
+
+    // Qué hace: crea el prospecto en borrador y devuelve la fila del listado.
+    registrar(model: any): Observable<IResult> {
+        return this.objData.Post(model, this.xController, 'Registrar', environment.UrlGENERALAPI);
+    }
 }

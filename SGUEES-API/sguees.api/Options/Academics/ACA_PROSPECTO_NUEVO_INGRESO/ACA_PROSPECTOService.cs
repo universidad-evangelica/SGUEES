@@ -38,6 +38,42 @@ namespace sguees.Services
             return await _repo.GetBorradoresAsync(p);
         }
 
+        // Qué hace: crea una solicitud de nuevo ingreso en borrador, sin mandarla al flujo.
+        // Cómo lo hace: valida los datos del registro de admisión y deja ESTADO = 'P'. Enviar es otro botón.
+        public async Task<CResult> RegistrarAsync(ACA_PROSPECTOParam data)
+        {
+            if (data == null)
+                return ErrorValidacion("Debe indicar los datos de la solicitud.");
+
+            data.NOMBRES = data.NOMBRES?.Trim();
+            data.APELLIDO1 = data.APELLIDO1?.Trim();
+            data.APELLIDO2 = data.APELLIDO2?.Trim() ?? string.Empty;
+            data.CORREO = data.CORREO?.Trim();
+            data.TELEFONO = data.TELEFONO?.Trim();
+            data.FORMA_INGRESO = data.FORMA_INGRESO?.Trim().ToUpperInvariant();
+
+            if (string.IsNullOrWhiteSpace(data.NOMBRES) || string.IsNullOrWhiteSpace(data.APELLIDO1))
+                return ErrorValidacion("Ingrese los nombres y el primer apellido.");
+            if (data.NOMBRES.Length > 150)
+                return ErrorValidacion("Los nombres no pueden superar 150 caracteres.");
+            if (data.APELLIDO1.Length > 50 || data.APELLIDO2.Length > 50)
+                return ErrorValidacion("Cada apellido no puede superar 50 caracteres.");
+            if (data.FECHA_NACIMIENTO == null || data.FECHA_NACIMIENTO.Value.Date > DateTime.Today)
+                return ErrorValidacion("Ingrese una fecha de nacimiento válida.");
+            if (data.ANIO <= 0 || data.NUMERO_PERIODO <= 0)
+                return ErrorValidacion("Seleccione el ciclo.");
+            if (data.CORR_CARRERA <= 0 || data.CORR_MODALIDAD <= 0)
+                return ErrorValidacion("Seleccione la carrera y la modalidad.");
+            if (string.IsNullOrWhiteSpace(data.FORMA_INGRESO) || Array.IndexOf(FormasIngreso, data.FORMA_INGRESO) < 0)
+                return ErrorValidacion("La forma de ingreso debe ser NI, EQ, CC o RI.");
+            if (string.IsNullOrWhiteSpace(data.CORREO) || data.CORREO.IndexOf('@') < 1 || data.CORREO.Length > 100)
+                return ErrorValidacion("Ingrese un correo de hasta 100 caracteres.");
+            if (string.IsNullOrWhiteSpace(data.TELEFONO) || data.TELEFONO.Length > 20)
+                return ErrorValidacion("Ingrese un teléfono de hasta 20 caracteres.");
+
+            return await _repo.RegistrarAsync(data);
+        }
+
         // Qué hace: encabezado de un prospecto.
         // Cómo lo hace: exige CORR_PROSPECTO por la misma razón que GetAllAsync.
         public async Task<CResult> GetAsync(ACA_PROSPECTOParam xWhere)
@@ -58,7 +94,7 @@ namespace sguees.Services
         // Cómo lo hace: exige prospecto y ciclo (el ciclo puede no ser todavía el guardado).
         public async Task<CResult> GetCORR_CARRERA_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere)
         {
-            if (xWhere.CORR_PROSPECTO <= 0)
+            if (xWhere.CORR_PROSPECTO < 0)
                 return ErrorValidacion("Debe indicar el prospecto");
             if (xWhere.ANIO <= 0 || xWhere.NUMERO_PERIODO <= 0)
                 return ErrorValidacion("Debe indicar el ciclo");
@@ -76,7 +112,7 @@ namespace sguees.Services
         // Qué hace: ciclos a los que se puede mover el prospecto (más el suyo actual).
         public async Task<CResult> GetCICLO_ACA_PROSPECTOAsync(ACA_PROSPECTOParam xWhere)
         {
-            if (xWhere.CORR_PROSPECTO <= 0)
+            if (xWhere.CORR_PROSPECTO < 0)
                 return ErrorValidacion("Debe indicar el prospecto");
 
             var p = new List<CParameter>

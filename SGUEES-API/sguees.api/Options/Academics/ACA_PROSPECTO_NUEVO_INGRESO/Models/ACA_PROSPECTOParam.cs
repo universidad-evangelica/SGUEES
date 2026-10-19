@@ -15,5 +15,13 @@ namespace sguees.Models
         public int CORR_MODALIDAD { get; set; }
         // Comentario que queda en la bitácora al aprobar.
         public string OBSERVACION { get; set; }
+        // Datos mínimos del alta. El CIF, el plan y el período los resuelve el registro de admisión.
+        public string NOMBRES { get; set; }
+        public string APELLIDO1 { get; set; }
+        public string APELLIDO2 { get; set; }
+        public DateTime? FECHA_NACIMIENTO { get; set; }
+        public string FORMA_INGRESO { get; set; }
+        public string CORREO { get; set; }
+        public string TELEFONO { get; set; }
     }
 }
