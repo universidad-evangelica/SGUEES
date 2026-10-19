@@ -1,0 +1,159 @@
+<!-- motivo: editor de texto enriquecido DevExtreme con barra de herramientas completa -->
+<div class="sguees-text-editor-wrapper" [class.plantilla-uees-activa]="esPlantillaActiva">
+	<dx-html-editor
+		[height]="height"
+		[readOnly]="readOnly"
+		[value]="value"
+		[placeholder]="placeholder"
+		(valueChange)="onValueChange($event)"
+		(onInitialized)="onEditorInitialized($event)"
+	>
+		<dxo-toolbar [multiline]="true">
+			<dxi-item name="undo"></dxi-item>
+			<dxi-item name="redo"></dxi-item>
+			<dxi-item name="separator"></dxi-item>
+			<!-- motivo: selector de tamaño con ancho de 80px para que la palabra Size no se corte -->
+			<dxi-item
+				name="size"
+				[acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
+				[options]="{ width: 80, dropDownOptions: { minWidth: 100, width: 'auto' }, inputAttr: { 'aria-label': 'Tamaño' } }"
+			></dxi-item>
+
+			<!-- motivo: selector de tipografía con menú desplegable amplio de 165px para que nombres largos no se recorten -->
+			<dxi-item
+				name="font"
+				[acceptedValues]="[
+					'Arial',
+					'Courier New',
+					'Georgia',
+					'Impact',
+					'Lucida Console',
+					'Tahoma',
+					'Times New Roman',
+					'Verdana'
+				]"
+				[options]="{ width: 90, dropDownOptions: { minWidth: 165, width: 'auto' }, inputAttr: { 'aria-label': 'Fuente' } }"
+			></dxi-item>
+			<dxi-item name="separator"></dxi-item>
+			<dxi-item name="bold"></dxi-item>
+			<dxi-item name="italic"></dxi-item>
+			<dxi-item name="strike"></dxi-item>
+			<dxi-item name="underline"></dxi-item>
+			<dxi-item name="separator"></dxi-item>
+			<dxi-item name="alignLeft"></dxi-item>
+			<dxi-item name="alignCenter"></dxi-item>
+			<dxi-item name="alignRight"></dxi-item>
+			<dxi-item name="alignJustify"></dxi-item>
+			<dxi-item name="separator"></dxi-item>
+			<dxi-item name="orderedList"></dxi-item>
+			<dxi-item name="bulletList"></dxi-item>
+
+			<!-- motivo: botón desplegable de parámetros dinámicos ubicado en la primera fila al final de las listas -->
+			<dxi-item *ngIf="parametros && parametros.length > 0" name="separator"></dxi-item>
+			<dxi-item
+				*ngIf="parametros && parametros.length > 0"
+				widget="dxButton"
+				[options]="opcionesBotonParametros"
+			></dxi-item>
+
+			<dxi-item name="separator"></dxi-item>
+			<!-- motivo: selector de encabezados con menú desplegable amplio de 160px para que Encabezado 1..5 se lean completos -->
+			<dxi-item
+				name="header"
+				[acceptedValues]="[false, 1, 2, 3, 4, 5]"
+				[options]="{ width: 115, dropDownOptions: { minWidth: 160, width: 'auto' }, inputAttr: { 'aria-label': 'Encabezados' } }"
+			></dxi-item>
+			<dxi-item name="separator"></dxi-item>
+			<dxi-item name="color"></dxi-item>
+			<dxi-item name="background"></dxi-item>
+			<dxi-item name="separator"></dxi-item>
+			<dxi-item name="link"></dxi-item>
+			<dxi-item name="image"></dxi-item>
+			<dxi-item name="separator"></dxi-item>
+			<dxi-item name="clear"></dxi-item>
+			<dxi-item name="codeBlock"></dxi-item>
+			<dxi-item name="blockquote"></dxi-item>
+			<dxi-item name="separator"></dxi-item>
+			<dxi-item name="insertTable"></dxi-item>
+			<dxi-item name="deleteTable"></dxi-item>
+			<dxi-item name="insertRowAbove"></dxi-item>
+			<dxi-item name="insertRowBelow"></dxi-item>
+			<dxi-item name="deleteRow"></dxi-item>
+			<dxi-item name="insertColumnLeft"></dxi-item>
+			<dxi-item name="insertColumnRight"></dxi-item>
+			<dxi-item name="deleteColumn"></dxi-item>
+		</dxo-toolbar>
+		<dxo-media-resizing [enabled]="true"></dxo-media-resizing>
+		<dxo-image-upload fileUploadMode="base64"></dxo-image-upload>
+		<dxo-table-context-menu [enabled]="true"></dxo-table-context-menu>
+		<dxo-table-resizing [enabled]="true"></dxo-table-resizing>
+	</dx-html-editor>
+
+	<!-- motivo: panel desplegable de parámetros con diseño adaptable al tema claro y oscuro -->
+	<dx-popover
+		[target]="'.editor-toolbar-parametros-btn'"
+		[(visible)]="menuParametrosVisible"
+		[width]="360"
+		position="bottom"
+		[shading]="false"
+		[hideOnOutsideClick]="true"
+		[hideOnParentScroll]="false"
+		[wrapperAttr]="{ class: 'editor-parametros-popover-wrapper' }"
+	>
+		<div *dxTemplate="let data of 'content'" class="parametros-panel-container">
+			<!-- motivo: cabecera del panel con icono de llaves y badge explicativo -->
+			<div class="panel-header">
+				<div class="header-title">
+					<span class="icon-brackets">&#123;&#125;</span>
+					<span class="title-text">Variables Disponibles</span>
+				</div>
+				<span class="badge-hint">Arrastra o haz clic</span>
+			</div>
+
+			<!-- motivo: campo de búsqueda para filtrar rápidamente entre los parámetros -->
+			<div class="panel-search-box">
+				<span class="search-icon">🔍</span>
+				<input
+					type="text"
+					class="search-input"
+					placeholder="Filtrar parámetro..."
+					[value]="filtroParametro"
+					(input)="onSearchInput($event)"
+				/>
+				<span *ngIf="filtroParametro" class="clear-search" (click)="limpiarFiltro()">✕</span>
+			</div>
+
+			<!-- motivo: lista desplazable con tarjetas interactivas y detención de propagación de scroll -->
+			<div class="panel-cards-list" (wheel)="$event.stopPropagation()">
+				<div
+					*ngFor="let item of parametrosFiltrados"
+					class="parametro-card-item"
+					draggable="true"
+					[attr.data-token]="getParamToken(item.key)"
+					(dragstart)="onParamDragStart($event, item)"
+					(click)="onParamCardClick(item)"
+					title="Arrastra este parámetro o haz clic para insertarlo"
+				>
+					<div class="card-header">
+						<div class="card-title-group">
+							<span class="drag-handle">⠿</span>
+							<span class="card-title">{{ item.label || item.key }}</span>
+						</div>
+						<span class="card-token-badge">{{ getParamToken(item.key) }}</span>
+					</div>
+					<div *ngIf="item.descripcion" class="card-desc">{{ item.descripcion }}</div>
+				</div>
+
+				<div *ngIf="parametrosFiltrados.length === 0" class="no-results">
+					No se encontraron parámetros coincidentes
+				</div>
+			</div>
+
+			<!-- motivo: pie del panel con instrucciones de arrastre y etiqueta DRAG & DROP -->
+			<div class="panel-footer">
+				<span class="footer-left">⊙ Sujeta desde ⠿</span>
+				<span class="footer-right">DRAG & DROP</span>
+			</div>
+		</div>
+	</dx-popover>
+</div>

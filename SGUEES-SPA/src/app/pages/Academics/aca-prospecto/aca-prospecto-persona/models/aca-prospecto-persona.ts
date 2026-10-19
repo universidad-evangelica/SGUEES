@@ -1,0 +1,40 @@
+// Qué hace: fila de V_ACA_PROSPECTO_PERSONA (datos personales del prospecto).
+export interface AcaProspectoPersona {
+    CORR_EMPRESA: number;
+    CORR_PROSPECTO: number;
+    CORR_PROSPECTO_PERSONA: number;
+    NOMBRES: string;
+    APELLIDO1: string;
+    APELLIDO2: string;
+    NOMBRE_COMPLETO: string;
+    DUI: string;
+    NIE: string;
+    CARNET_RESIDENCIA: string;
+    NIT: string;
+    FECHA_NACIMIENTO: Date | null;
+    EDAD: number | null;
+    LUGAR_NACIMIENTO: string;
+    CORR_SEXO: number | null;
+    SEXO: string;
+    CORR_ESTADO_CIVIL: number | null;
+    ESTADO_CIVIL: string;
+    CORR_TIPO_SANGRE: number | null;
+    TIPO_SANGRE: string;
+    CORR_PAIS_NACIONALIDAD: number | null;
+    NACIONALIDAD: string;
+    CORR_PAIS_PROCEDENCIA: number | null;
+    PAIS_PROCEDENCIA: string;
+    CORR_PAIS_RESIDENCIA: number | null;
+    PAIS_RESIDENCIA: string;
+    CORR_DEPTO_RESIDENCIA: number | null;
+    DEPTO_RESIDENCIA: string;
+    CORR_MUNICIPIO_RESIDENCIA: number | null;
+    MUNICIPIO_RESIDENCIA: string;
+    DIRECCION_ACTUAL: string;
+    CORR_RELIGION: number | null;
+    RELIGION: string;
+    IGLESIA_ACTUAL: string;
+    TRABAJA: boolean;
+    HA_SIDO_DEPORTADO: boolean;
+    POSEE_DISCAPACIDAD: boolean;
+}

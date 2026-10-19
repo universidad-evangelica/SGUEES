@@ -618,3 +618,54 @@
 	font-size: 12px;
 	color: var(--sguees-text-muted, var(--sguees-text-secondary));
 }
+
+/* ===========================
+   Vista Previa de Correo Institucional
+=========================== */
+
+.email-preview-container {
+	max-height: 420px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	background: #e2e8f0;
+	border: 1px solid #cbd5e1;
+	border-radius: 8px;
+	padding: 16px;
+}
+
+.email-preview-label {
+	font-weight: 600;
+	font-size: 11px;
+	color: #64748b;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin-bottom: 8px;
+	display: block;
+}
+
+::ng-deep .email-preview-body {
+	table {
+		max-width: 100% !important;
+		margin: 0 auto !important;
+	}
+	td {
+		box-sizing: border-box;
+	}
+	img {
+		max-width: 100% !important;
+		height: auto;
+	}
+
+	// Qué hace: normaliza los párrafos en el modo lectura para que coincidan fielmente con el editor de la plantilla.
+	// Cómo lo hace: anula los márgenes externos por defecto del navegador en p y establece line-height para replicar la vista del editor.
+	p {
+		margin: 0;
+		padding: 0;
+		line-height: 1.6;
+
+		&[style*="border-top"] {
+			margin: 16px auto !important;
+		}
+	}
+}
+

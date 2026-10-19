@@ -116,7 +116,12 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "FECHA_CREA", Value = System.DateTime.Now, DbType = System.Data.DbType.DateTime },
 				};
 
-				var reader = await objData.Insert(_TableName, p, "CORR_PARAMETRO_SMTP", new List<CParameter>());
+				var pWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 }
+				};
+
+				var reader = await objData.Insert(_TableName, p, "CORR_PARAMETRO_SMTP", pWhere);
 				var response = new List<GEN_PARAMETRO_SMTPView>().FromDataReader(reader).FirstOrDefault();
 
 				objResultado.Data = response;

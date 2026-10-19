@@ -266,7 +266,8 @@
       </div>
     </dxi-item>
 
-    <!-- TAB 3: Candidatos activos con expediente en proceso de selección -->
+    <!-- TAB 3: Candidatos asociados a la requisición -->
+    <!-- motivo: Grid de candidatos asociados con estados en selección o dictaminados -->
     <dxi-item title="Candidatos" [icon]="'group'">
       <div class="dx-grid-deta">
         <dx-data-grid
@@ -286,7 +287,7 @@
           [columnAutoWidth]="true"
           [height]="'100%'"
           [width]="'100%'"
-          [noDataText]="'La requisición aún no posee candidatos en proceso de selección.'"
+          [noDataText]="'La requisición aún no posee candidatos asociados.'"
           (onFocusedRowChanged)="onCandidatoFocusedRowChanged($event)"
         >
           <dxo-toolbar>
@@ -306,12 +307,15 @@
                   stylingMode="contained"
                   (onClick)="abrirEntrevistasCandidatoSeleccionado()"
                 ></dx-button>
+                <!-- motivo: Botón para generar movimiento de personal, deshabilitado si las vacantes están completas -->
                 <dx-button
                   text="Generar movimiento personal"
                   icon="check"
                   type="success"
                   stylingMode="contained"
                   [visible]="puedeDecidirCandidato"
+                  [disabled]="vacantesCompletas"
+                  [hint]="vacantesCompletas ? 'Vacantes completas' : 'Generar movimiento personal'"
                   (onClick)="abrirDecisionCandidato('APLICA')"
                 ></dx-button>
                 <dx-button
@@ -476,12 +480,16 @@
       stylingMode="outlined"
       (onClick)="cerrarWorkspaceEntrevistas()"
     ></dx-button>
+    <!-- motivo: Título del workspace con indicador de solo lectura cuando el candidato ya está en estado Contratado -->
     <div class="entrevistas-detalle-workspace__title">
       <h3>Entrevistas del candidato</h3>
       <span *ngIf="candidatoEntrevistaSeleccionado">
         {{ candidatoEntrevistaSeleccionado.NOMBRE_PERSONA }}
         · Solicitud {{ candidatoEntrevistaSeleccionado.CORR_SOLICITUD_EMPLEO }}
         · Requisición {{ model?.CORR_REQUISICION_PERSONAL }}
+        <strong *ngIf="candidatoEntrevistasSoloLectura" style="margin-left: 6px; color: #f39c12;">
+          (Solo lectura — Candidato contratado)
+        </strong>
       </span>
     </div>
   </header>
@@ -491,10 +499,11 @@
       <div class="entrevistas-detalle-workspace__content">
         <div class="entrevista-tab">
           <section class="entrevista-form-card">
+            <!-- motivo: Título del card adaptado a modo consulta cuando el candidato está seleccionado -->
             <div class="entrevista-form-card__header">
               <h4>
                 {{
-                  entrevistaReadOnly
+                  candidatoEntrevistasSoloLectura || entrevistaReadOnly
                     ? 'Consulta de entrevista'
                     : editandoEntrevista
                       ? 'Editar entrevista'
@@ -518,7 +527,8 @@
               [items]="entrevistaItems"
             ></dx-form>
 
-            <div class="entrevista-form-actions" *ngIf="!entrevistaReadOnly">
+            <!-- motivo: Botones de agregar o actualizar ocultos cuando está en solo lectura o seleccionado -->
+            <div class="entrevista-form-actions" *ngIf="!entrevistaReadOnly && !candidatoEntrevistasSoloLectura">
               <dx-button
                 text="Limpiar"
                 stylingMode="outlined"
@@ -535,7 +545,8 @@
                 (onClick)="guardarEntrevista()"
               ></dx-button>
             </div>
-            <div class="entrevista-form-actions" *ngIf="entrevistaReadOnly">
+            <!-- motivo: Botón de nueva entrevista visible solo si no está seleccionado/contratado -->
+            <div class="entrevista-form-actions" *ngIf="entrevistaReadOnly && !candidatoEntrevistasSoloLectura">
               <dx-button
                 text="Nueva entrevista"
                 icon="plus"

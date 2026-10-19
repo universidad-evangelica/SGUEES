@@ -1,0 +1,231 @@
+// Qué hace: estilos visuales para el catálogo de Parámetros SMTP.
+// Cómo lo hace: define badges para el estado SSL/TLS y adaptabilidad responsiva del toolbar.
+
+:host ::ng-deep .badge-ssl-si {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 50px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 700;
+	color: #16a34a;
+	background: rgba(34, 197, 94, 0.15);
+	border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+:host ::ng-deep .badge-ssl-no {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 50px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 700;
+	color: #94a3b8;
+	background: rgba(148, 163, 184, 0.15);
+	border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+@media (max-width: 575.98px) {
+	:host ::ng-deep {
+		.dx-datagrid-header-panel {
+			padding: 12px !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar,
+		.dx-datagrid-header-panel .dx-toolbar-items-container {
+			height: auto !important;
+			min-height: 0;
+			overflow: visible;
+			flex-wrap: wrap;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-before,
+		.dx-datagrid-header-panel .dx-toolbar-after {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 8px;
+			position: static !important;
+			transform: none !important;
+			left: auto !important;
+			right: auto !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-before {
+			flex: 1 1 100%;
+			width: 100% !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after {
+			flex: 1 1 100%;
+			width: 100% !important;
+			justify-content: flex-end;
+		}
+	}
+}
+
+// Qué hace: estilos para la barra de acciones de la plantilla.
+// Cómo lo hace: añade separación entre los botones y margen inferior amplio antes de los campos del formulario.
+.plantilla-toolbar-container {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	margin-top: 4px;
+	margin-bottom: 24px !important;
+	padding-bottom: 16px !important;
+	border-bottom: 1px solid rgba(148, 163, 184, 0.25) !important;
+
+	dx-button {
+		margin-right: 0;
+	}
+}
+
+// Qué hace: estilos para el selector de versiones y su alineación.
+// Cómo lo hace: agrupa la etiqueta, el dx-select-box y el badge visual al extremo derecho.
+.version-selector-wrapper {
+	display: inline-flex;
+	align-items: center;
+	margin-left: auto;
+	gap: 10px;
+
+	.version-selector-label {
+		font-weight: 600;
+		font-size: 13px;
+		color: #475569;
+	}
+}
+
+// Qué hace: badge indicador del estado de la versión (activa vs histórica).
+// Cómo lo hace: aplica estilos tipo píldora con colores verde o naranja y bordes sutiles.
+.version-status-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 700;
+	white-space: nowrap;
+
+	i {
+		font-size: 13px;
+	}
+}
+
+.version-badge-activa {
+	color: #16a34a;
+	background: rgba(34, 197, 94, 0.12);
+	border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.version-badge-historica {
+	color: #ea580c;
+	background: rgba(249, 115, 22, 0.12);
+	border: 1px solid rgba(249, 115, 22, 0.35);
+}
+
+// Qué hace: banner informativo que advierte cuando se consulta una versión histórica.
+// Cómo lo hace: muestra un contenedor cálido de advertencia con ícono informativo.
+.version-alert-banner {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	margin-bottom: 18px;
+	background: #fff7ed;
+	border: 1px solid #fed7aa;
+	border-radius: 6px;
+	color: #9a3412;
+	font-size: 13px;
+	line-height: 1.4;
+
+	i {
+		font-size: 18px;
+		color: #ea580c;
+		flex-shrink: 0;
+	}
+}
+
+// Qué hace: establece la separación estándar entre la barra de herramientas (ribbon) y la grilla de datos.
+// Cómo lo hace: aplica margen inferior a app-barra-data-mtto y restaura el diseño de tarjeta apilada independiente en app-data-grid-mtto.
+:host {
+	app-barra-data-mtto {
+		display: block;
+		margin-bottom: var(--sguees-space-3, 12px) !important;
+	}
+
+	app-data-grid-mtto {
+		display: block;
+
+		::ng-deep .sguees-grid-module-card {
+			border-radius: var(--sguees-radius-lg, 12px) !important;
+			border-top: 1px solid var(--sguees-border-subtle, var(--border-color)) !important;
+			box-shadow: var(--sguees-shadow-md) !important;
+		}
+	}
+
+	// Qué hace: elimina bordes de grilla en las tablas de la plantilla institucional dentro del editor y define la línea divisoria.
+	// Cómo lo hace: fuerza border: none en table.plantilla-uees-table y sus celdas, renderiza la línea separadora gris en el primer párrafo post-tabla y compacta los separadores posteriores.
+	::ng-deep .dx-htmleditor-content {
+		table.plantilla-uees-table,
+		table[style*="max-width: 650px"],
+		table[style*="max-width:650px"] {
+			border-collapse: collapse !important;
+			border: none !important;
+			margin: 2px auto !important;
+
+			td {
+				border: none !important;
+			}
+		}
+
+		table:first-of-type + p {
+			border: none !important;
+			border-top: 1px solid #cccccc !important;
+			margin: 16px auto !important;
+			max-width: 650px !important;
+			width: 100% !important;
+			height: 1px !important;
+			min-height: 1px !important;
+			max-height: 1px !important;
+			line-height: 1px !important;
+			font-size: 1px !important;
+			padding: 0 !important;
+			overflow: visible !important;
+		}
+
+		table:not(:first-of-type) + p {
+			border-top: none !important;
+			margin: 3px 0 !important;
+			padding: 0 !important;
+			font-size: 2px !important;
+			line-height: 4px !important;
+			height: 4px !important;
+			min-height: 4px !important;
+			max-height: 4px !important;
+			overflow: hidden !important;
+		}
+
+		// Qué hace: asegura legibilidad del texto en el pie de página azul.
+		// Cómo lo hace: fuerza color de fuente #ffffff en párrafos y span internos, manteniendo el color celeste en enlaces.
+		table.plantilla-uees-pie,
+		table.plantilla-uees-table td[style*="#034ea2"],
+		table.plantilla-uees-table td[style*="rgb(3, 78, 162)"] {
+			color: #ffffff !important;
+
+			p, span, .ql-table-cell-line {
+				color: #ffffff;
+			}
+
+			a {
+				color: #60a5fa !important;
+				text-decoration: underline;
+			}
+		}
+	}
+}
