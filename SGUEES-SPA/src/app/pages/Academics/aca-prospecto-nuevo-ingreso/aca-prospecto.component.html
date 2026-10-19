@@ -937,11 +937,19 @@
         </dx-tab-panel>
     </div>
 
-    <!-- Qué hace: separa las solicitudes que ya están en el flujo de las que todavía no se enviaron. -->
-    <div class="aca-prospecto-tabs-lista" *ngIf="isBrowse()">
-        <button type="button" [class.activa]="!esBorrador" (click)="mostrarPendientes()">Solicitudes pendientes</button>
-        <button type="button" [class.activa]="esBorrador" (click)="mostrarBorrador()">Solicitudes borrador</button>
-    </div>
+    <!-- Qué hace: las dos listas usan la misma barra de pestañas que Datos personales y Contacto. -->
+    <dx-tab-panel
+        *ngIf="isBrowse()"
+        class="aca-prospecto-tab-panel aca-prospecto-tabs-lista"
+        [selectedIndex]="esBorrador ? 1 : 0"
+        [animationEnabled]="false"
+        [swipeEnabled]="false"
+        [deferRendering]="true"
+        (onSelectionChanged)="onTabListaChanged($event)"
+    >
+        <dxi-item title="Solicitudes pendientes" [icon]="'folder'"></dxi-item>
+        <dxi-item title="Solicitudes borrador" [icon]="'edit'"></dxi-item>
+    </dx-tab-panel>
 
     <!-- Qué hace: el texto va en el aviso; los colores quedan en una fila aparte, con un punto por rango. -->
     <div class="aca-prospecto-vence-bloque" *ngIf="isBrowse() && !esBorrador">

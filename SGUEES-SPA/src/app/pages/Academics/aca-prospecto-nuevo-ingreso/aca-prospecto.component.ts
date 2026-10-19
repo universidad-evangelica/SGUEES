@@ -698,6 +698,16 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.aplicarLista();
     }
 
+    // Qué hace: cambia la lista al pulsar la pestaña, igual que Datos personales y Contacto.
+    onTabListaChanged(e: any): void {
+        const indice = Number(e?.component?.option('selectedIndex'));
+        if (indice === 1) {
+            this.mostrarBorrador();
+            return;
+        }
+        this.mostrarPendientes();
+    }
+
     // Qué hace: el alta del CIF y la clave siguen en el registro de admisión.
     // Cómo lo hace: esta pantalla no genera cliente ni contraseña; el borrador se edita y se envía.
     override nuevo(): void {

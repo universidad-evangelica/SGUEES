@@ -380,26 +380,11 @@
 }
 
 .aca-prospecto-tabs-lista {
-	display: flex;
-	gap: 8px;
-	margin: 0 0 12px;
+	margin: 0 0 16px;
 }
 
-.aca-prospecto-tabs-lista button {
-	padding: 8px 14px;
-	border-radius: 999px;
-	border: 1px solid var(--sguees-border, rgba(255, 255, 255, 0.12));
-	background: transparent;
-	color: var(--sguees-text-secondary, #90a4ae);
-	font-size: 13px;
-	font-weight: 600;
-	cursor: pointer;
-}
-
-.aca-prospecto-tabs-lista button.activa {
-	color: #fff;
-	background: #1565c0;
-	border-color: #1565c0;
+:host ::ng-deep .aca-prospecto-tabs-lista .dx-multiview-wrapper {
+	display: none;
 }
 
 .aca-prospecto-tab-panel {
