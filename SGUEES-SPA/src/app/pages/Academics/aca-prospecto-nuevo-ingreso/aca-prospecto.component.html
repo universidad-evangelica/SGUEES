@@ -122,8 +122,8 @@
             <!-- Qué hace: avisa cuando la inscripción ya cerró y por eso no hay Enviar, Aprobar, Rechazar ni Revertir. -->
             <div class="aca-prospecto-vence-leyenda aca-prospecto-flujo-vencida" *ngIf="inscripcionVencida()">
                 <span class="dx-icon-info aca-prospecto-vence-leyenda-icon" aria-hidden="true"></span>
-                <p class="aca-prospecto-vence-leyenda-texto" *ngIf="esBorrador">La inscripción de este ciclo ya cerró. No se puede enviar esta solicitud.</p>
-                <p class="aca-prospecto-vence-leyenda-texto" *ngIf="!esBorrador">La inscripción de este ciclo ya cerró. No se puede aprobar, rechazar ni revertir esta solicitud.</p>
+                <p class="aca-prospecto-vence-leyenda-texto" *ngIf="esBorrador">La inscripción de este ciclo ya cerró. No se puede editar ni enviar esta solicitud.</p>
+                <p class="aca-prospecto-vence-leyenda-texto" *ngIf="!esBorrador">La inscripción de este ciclo ya cerró. No se puede editar, aprobar, rechazar ni revertir esta solicitud.</p>
             </div>
             <!-- Qué hace: el color del badge sigue el estado del flujo 104. -->
             <span class="aca-prospecto-badge" [ngClass]="claseEstadoSolicitud()">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>

@@ -872,9 +872,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: guarda copia del encabezado para Cancelar y habilita los editores; el detalle
     //               ya está cargado, no se vuelve a consultar.
     modificar(): void {
-        if (!this.permiteEdit || !this.isConsulta() || this.solicitudAprobada()) {
+        if (!this.permiteEdit || !this.isConsulta() || this.solicitudAprobada() || this.inscripcionVencida()) {
             if (this.solicitudAprobada()) {
                 this.notifyFx('La solicitud ya está aprobada y no se puede modificar.', NotifyType.Warning);
+            } else if (this.inscripcionVencida()) {
+                this.notifyFx('No se puede modificar. La inscripción de este ciclo ya venció.', NotifyType.Warning);
             }
             return;
         }
@@ -887,7 +889,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: Cancelar (con confirmación) y Guardar terminan en Browse; ahí se descarta el detalle.
     override AsignaStatus(xEstado: UpdateType): void {
         super.AsignaStatus(xEstado);
-        this.btnModificar = xEstado === UpdateType.Not_Defined && this.permiteEdit && !this.solicitudAprobada() ? 'Modificar' : '';
+        this.btnModificar = xEstado === UpdateType.Not_Defined && this.permiteEdit && !this.solicitudAprobada() && !this.inscripcionVencida() ? 'Modificar' : '';
         if (xEstado === UpdateType.Browse) {
             this.limpiarDetalle();
             this.evaluarPuedeAprobar(Number(this.model?.CORR_PROSPECTO));
@@ -964,20 +966,25 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             });
     }
 
-    // Qué hace: oculta el lápiz cuando la solicitud ya fue aprobada.
-    // Cómo lo hace: el permiso U sigue aplicando; el estado 39 no se puede volver a editar.
+    // Qué hace: oculta el lápiz cuando la solicitud ya fue aprobada o el ciclo ya venció.
+    // Cómo lo hace: el permiso U sigue aplicando; el estado 39 y DIAS_VENCE negativo no se editan.
     override getPermiteEditar(e: any): boolean {
-        if (Number(e?.row?.data?.CORR_ESTADO) === 39) {
+        const fila = e?.row?.data ?? e?.data;
+        if (Number(fila?.CORR_ESTADO) === 39 || this.filaVencida(fila)) {
             return false;
         }
         return super.getPermiteEditar(e);
     }
 
-    // Qué hace: impide abrir la edición de una solicitud aprobada.
+    // Qué hace: impide abrir la edición de una solicitud aprobada o con la inscripción vencida.
     override editarClick(e: any): void {
-        const estado = Number(e?.row?.data?.CORR_ESTADO ?? e?.data?.CORR_ESTADO);
-        if (estado === 39) {
+        const fila = e?.row?.data ?? e?.data;
+        if (Number(fila?.CORR_ESTADO) === 39) {
             this.notifyFx('La solicitud ya está aprobada y no se puede modificar.', NotifyType.Warning);
+            return;
+        }
+        if (this.filaVencida(fila)) {
+            this.notifyFx('No se puede modificar. La inscripción de este ciclo ya venció.', NotifyType.Warning);
             return;
         }
         super.editarClick(e);
@@ -2079,6 +2086,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     //               socioeconómico → respuestas → prospecto; se detiene en el primer error e indica
     //               la sección. Al terminar regresa al listado y lo refresca.
     guardar(): void {
+        if (!this.esAlta() && this.inscripcionVencida()) {
+            this.notifyFx('No se puede modificar. La inscripción de este ciclo ya venció.', NotifyType.Warning);
+            return;
+        }
         if (!this.validarFormularios()) {
             return;
         }

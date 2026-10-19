@@ -413,6 +413,15 @@ namespace sguees.Repositories
 
             try
             {
+                if (await InscripcionVencidaAsync(Data.CORR_PROSPECTO))
+                {
+                    objResultado.Result = false;
+                    objResultado.ErrorCode = -16;
+                    objResultado.ErrorMessage = "No se puede modificar. La inscripción de este ciclo ya venció.";
+                    objResultado.CodeHelper = Data.CORR_PROSPECTO;
+                    return objResultado;
+                }
+
                 if (Data.ANIO > 0 && Data.NUMERO_PERIODO > 0 && Data.CORR_CARRERA > 0 && Data.CORR_MODALIDAD > 0)
                 {
                     var pCambio = ParametrosCambio(Data.CORR_PROSPECTO, Data.ANIO, Data.NUMERO_PERIODO,
