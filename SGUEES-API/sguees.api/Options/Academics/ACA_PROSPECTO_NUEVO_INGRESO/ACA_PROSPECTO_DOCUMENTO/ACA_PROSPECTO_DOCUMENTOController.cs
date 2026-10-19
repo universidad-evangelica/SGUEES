@@ -59,5 +59,44 @@ namespace sguees.Controllers
                 CORR_DOCUMENTO_ADMISION,
                 Archivo);
         }
+
+        // Qué hace: abre el archivo cargado para verlo en el navegador.
+        // Cómo lo hace: lo lee de la carpeta de admisión y lo envía en línea, no como descarga forzada.
+        [HttpGet("GetArchivo")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
+        public async Task<IActionResult> GetArchivo([FromQuery] int CORR_PROSPECTO, [FromQuery] int CORR_DOCUMENTO_ADMISION)
+        {
+            var empresa = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            var archivo = await _service.AbrirArchivoAsync(empresa, CORR_PROSPECTO, CORR_DOCUMENTO_ADMISION);
+            if (archivo?.Stream == null)
+                return NotFound();
+            Response.Headers.ContentDisposition = "inline; filename=\"" + (archivo.Nombre ?? "documento").Replace("\"", "") + "\"";
+            Response.RegisterForDispose(archivo.Stream);
+            return File(archivo.Stream, archivo.ContentType ?? "application/octet-stream");
+        }
+
+        // Qué hace: quita el archivo cargado de un documento de esta solicitud.
+        // Cómo lo hace: el requisito sigue en la lista; solo se borra el archivo.
+        [HttpPost("QuitarArchivo")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
+        public async Task<CResult> QuitarArchivo([FromForm] int CORR_PROSPECTO, [FromForm] int CORR_DOCUMENTO_ADMISION)
+        {
+            var usuario = User?.Identity?.Name;
+            if (string.IsNullOrWhiteSpace(usuario))
+                usuario = "SGUEES";
+            if (usuario.Length > 100)
+                usuario = usuario.Substring(0, 100);
+
+            var estacion = ClientInfoHelper.GetClientStation(HttpContext) ?? "";
+            if (estacion.Length > 50)
+                estacion = estacion.Substring(0, 50);
+
+            return await _service.QuitarArchivoAsync(
+                int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value),
+                usuario,
+                estacion,
+                CORR_PROSPECTO,
+                CORR_DOCUMENTO_ADMISION);
+        }
     }
 }

@@ -877,23 +877,21 @@
 
                 <!-- Documentos del tipo 104 que además cumplen la regla de este prospecto. -->
                 <dxi-item title="Documentación" [icon]="'file'">
-                    <div class="aca-prospecto-tab">
+                    <div class="aca-prospecto-tab aca-prospecto-docs">
                         <header class="aca-prospecto-section-head">
                             <span class="aca-prospecto-section-title">Documentación obligatoria</span>
                             <span class="aca-prospecto-section-subtitle">Solo los documentos marcados en la solicitud de nuevo ingreso y que aplican a este prospecto</span>
                         </header>
-                        <!-- La carga usa el mismo destino que el portal. En lectura no se puede reemplazar un documento. -->
-                        <input *ngIf="!readOnly" #archivoDocumento type="file" hidden (change)="onArchivoDocumento($event)" />
+                        <!-- La carga va en la fila. El ojo abre el PDF o la imagen en otra pestaña. -->
                         <app-data-grid-mtto
                             [isBrowse]="true"
                             [models]="documentos"
                             [columns]="columnsDocumento"
                             [summary]="summaryDocumento"
-                            [customButtons]="readOnly ? [] : botonesDocumento"
                             [keyExpr]="'CORR_DOCUMENTO_ADMISION'"
                             [unifiedToolbar]="false"
                             [showAdd]="false"
-                            [showSearch]="true"
+                            [showSearch]="false"
                             [showExport]="false"
                             [showRefresh]="false"
                             [permiteEditar]="false"

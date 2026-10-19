@@ -1,4 +1,4 @@
-import { Component, ElementRef, NgZone, OnInit, ViewChild } from '@angular/core';
+import { Component, NgZone, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, forkJoin } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -62,7 +62,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     @ViewChild('chkDeportado', { static: false }) chkDeportado?: DxCheckBoxComponent;
     @ViewChild('chkUniversidad', { static: false }) chkUniversidad?: DxCheckBoxComponent;
     @ViewChild('chkUees', { static: false }) chkUees?: DxCheckBoxComponent;
-    @ViewChild('archivoDocumento', { static: false }) archivoDocumento?: ElementRef<HTMLInputElement>;
 
     protected override mttoGridKeyExpr = 'CORR_PROSPECTO';
     readOnly = true;
@@ -204,19 +203,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Documentos que aplican a esta solicitud (tipo 104 y regla del prospecto).
     documentos: any[] = [];
     bitacoras: any[] = [];
-    documentoPendiente: any = null;
     subiendoDocumento = false;
-    // Qué hace: botón de carga en la columna Options de Documentación.
-    // Cómo lo hace: abre el selector de archivo de esa fila.
-    botonesDocumento = [
-        {
-            hint: 'Subir archivo',
-            icon: 'upload',
-            stylingMode: 'text',
-            visible: () => !this.readOnly && !this.subiendoDocumento,
-            onClick: (e: any) => this.elegirArchivoDocumento(e),
-        },
-    ];
     columnsDocumento: any[] = [];
     columnsBitacora: any[] = [];
     summaryDocumento: any = {};
@@ -254,7 +241,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.aplicarColumnasLista();
         this.summary = this.service.getSummary();
         this.items = this.service.getItems();
-        this.columnsDocumento = this.serviceDocumento.getColumns();
+        this.prepararColumnasDocumento();
         this.columnsBitacora = this.serviceBitacora.getColumns();
         this.summaryDocumento = this.serviceDocumento.getSummary();
         this.itemsCarrera = this.service.getItemsCarrera();
@@ -950,6 +937,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                                     NOMBRE_PASO: 'Aprobación del analista',
                                     ORDEN_PASO: 2,
                                     NOMBRE_ACTOR_PASO: 'Analista de Nuevo Ingreso',
+                                    DIAS_EN_PASO: 0,
                                 },
                                 ...this.modelsPendientes,
                             ];
@@ -1141,6 +1129,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                                 ...fila,
                                 CORR_ESTADO: 46,
                                 NOMBRE_ESTADO: 'Rechazada',
+                                DIAS_EN_PASO: 0,
                             };
                         });
                         this.modelsPendientes = this.models;
@@ -1156,6 +1145,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                                     NOMBRE_ESTADO: 'Ingresado',
                                     NOMBRE_PASO: 'Aprobación del analista',
                                     ORDEN_PASO: 2,
+                                    DIAS_EN_PASO: 0,
                                 };
                             }
                             return {
@@ -1165,6 +1155,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                                 NOMBRE_PASO: 'Solicitud aprobada',
                                 ORDEN_PASO: 3,
                                 NOMBRE_ACTOR_PASO: 'Analista de Nuevo Ingreso',
+                                DIAS_EN_PASO: 0,
                             };
                         });
                         this.modelsPendientes = this.models;
@@ -2862,34 +2853,148 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         });
     }
 
-    // Qué hace: abre el selector de archivo de la fila elegida en Documentación.
-    // Cómo lo hace: guarda la fila y limita el input a los formatos de ese documento.
-    elegirArchivoDocumento(e: any): void {
-        const fila = e?.row?.data;
-        if (this.readOnly || !fila || this.subiendoDocumento) return;
-        this.documentoPendiente = fila;
-        const input = this.archivoDocumento?.nativeElement;
-        if (!input) return;
-        input.accept = this.serviceDocumento.acepta(fila);
-        input.value = '';
-        input.click();
+    // Qué hace: Options lleva subir, eliminar y ver. El nombre del archivo va en su columna.
+    // Cómo lo hace: el botón Subir es la etiqueta del input, así el selector no se cierra solo.
+    private prepararColumnasDocumento(): void {
+        const columnas = this.serviceDocumento.getColumns().map((columna: any) => {
+            if (columna?.dataField !== 'NOMBRE_ARCHIVO') {
+                return columna;
+            }
+            return {
+                ...columna,
+                calculateCellValue: (fila: any) => fila?.NOMBRE_ARCHIVO || 'Sin archivo',
+            };
+        });
+        columnas.unshift({
+            name: 'btnAcciones',
+            caption: 'Options',
+            width: 140,
+            minWidth: 130,
+            allowFiltering: false,
+            allowHeaderFiltering: false,
+            allowSorting: false,
+            alignment: 'center',
+            cellTemplate: (celda: HTMLElement, info: any) => this.pintarOpcionesDocumento(celda, info?.data),
+        });
+        this.columnsDocumento = columnas;
     }
 
-    // Qué hace: sube el archivo y deja el nombre en la fila, sin volver a consultar toda la grilla.
-    onArchivoDocumento(event: Event): void {
-        const input = event.target as HTMLInputElement;
-        const file = input.files?.[0];
-        const fila = this.documentoPendiente;
-        input.value = '';
-        const corr = this.model?.CORR_PROSPECTO;
-        if (this.readOnly || !file || !fila || !corr) return;
+    private pintarOpcionesDocumento(celda: HTMLElement, fila: any): void {
+        const acciones = document.createElement('div');
+        acciones.className = 'aca-prospecto-doc-acciones';
+        const hayArchivo = !!fila?.NOMBRE_ARCHIVO;
 
+        if (!this.readOnly) {
+            acciones.appendChild(this.botonSubirDocumento(fila));
+            acciones.appendChild(this.botonDocumento('dx-icon-trash', 'Eliminar archivo', (evento) => {
+                evento.preventDefault();
+                this.zone.run(() => this.quitarDocumento(fila));
+            }));
+        }
+        if (hayArchivo) {
+            acciones.appendChild(this.botonDocumento('dx-icon-eyeopen', 'Ver archivo', (evento) => {
+                evento.preventDefault();
+                this.zone.run(() => this.verDocumento(fila));
+            }));
+        }
+        celda.appendChild(acciones);
+    }
+
+    private botonDocumento(icono: string, titulo: string, alClick: (evento: Event) => void): HTMLButtonElement {
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'aca-prospecto-doc-ver';
+        boton.title = titulo;
+        const marca = document.createElement('span');
+        marca.className = icono;
+        boton.appendChild(marca);
+        boton.addEventListener('click', (evento: Event) => {
+            evento.stopPropagation();
+            alClick(evento);
+        });
+        return boton;
+    }
+
+    private botonSubirDocumento(fila: any): HTMLLabelElement {
+        const etiqueta = document.createElement('label');
+        etiqueta.className = 'aca-prospecto-doc-ver';
+        etiqueta.title = 'Subir archivo';
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = this.serviceDocumento.acepta(fila);
+        input.className = 'aca-prospecto-doc-input';
+        input.addEventListener('click', (evento: Event) => evento.stopPropagation());
+        input.addEventListener('change', () => {
+            const archivo = input.files?.[0];
+            input.value = '';
+            if (archivo) {
+                this.zone.run(() => this.subirDocumento(fila, archivo));
+            }
+        });
+        etiqueta.addEventListener('click', (evento: Event) => evento.stopPropagation());
+        const icono = document.createElement('span');
+        icono.className = 'dx-icon-upload';
+        etiqueta.append(input, icono);
+        return etiqueta;
+    }
+
+    private quitarDocumento(fila: any): void {
+        const corr = Number(this.model?.CORR_PROSPECTO);
+        const documento = Number(fila?.CORR_DOCUMENTO_ADMISION);
+        if (this.readOnly || !(corr > 0) || !(documento > 0) || this.subiendoDocumento) {
+            return;
+        }
+        if (!fila?.NOMBRE_ARCHIVO) {
+            this.notifyFx('Este documento no tiene un archivo cargado.', NotifyType.Warning, { raw: true });
+            return;
+        }
+        confirm('¿Eliminar el archivo de este documento?', 'Eliminar archivo').then((acepta: boolean) => {
+            this.zone.run(() => {
+                if (!acepta) {
+                    return;
+                }
+                this.subiendoDocumento = true;
+                this.serviceDocumento.quitarArchivo(corr, documento).pipe(take(1)).subscribe({
+                    next: (response: any) => {
+                        this.subiendoDocumento = false;
+                        if (!response?.Result) {
+                            this.notifyApiResponse(response);
+                            return;
+                        }
+                        const data = response.Data || {};
+                        this.documentos = this.documentos.map((d) =>
+                            d.CORR_DOCUMENTO_ADMISION === documento
+                                ? {
+                                      ...d,
+                                      ...data,
+                                      NOMBRE_ARCHIVO: data.NOMBRE_ARCHIVO || null,
+                                      FECHA_CARGA: data.FECHA_CARGA || null,
+                                      ESTADO_REVISION: data.ESTADO_REVISION || null,
+                                      CORR_PROSPECTO_DOCUMENTO: data.CORR_PROSPECTO_DOCUMENTO || null,
+                                  }
+                                : d
+                        );
+                        this.notifyFx('Archivo eliminado', NotifyType.Success);
+                    },
+                    error: (error: any) => {
+                        this.subiendoDocumento = false;
+                        this.notifyApiError(error);
+                    },
+                });
+            });
+        });
+    }
+
+    private subirDocumento(fila: any, file: File): void {
+        const corr = this.model?.CORR_PROSPECTO;
+        if (this.readOnly || !file || !fila || !corr || this.subiendoDocumento) {
+            return;
+        }
         const aviso = this.serviceDocumento.validarArchivo(fila, file);
         if (aviso) {
             this.notifyFx(aviso, NotifyType.Warning, { raw: true });
             return;
         }
-
         this.subiendoDocumento = true;
         this.serviceDocumento.cargarArchivo(corr, fila.CORR_DOCUMENTO_ADMISION, file).pipe(take(1)).subscribe({
             next: (response: any) => {
@@ -2908,6 +3013,35 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 this.notifyApiError(error);
             },
         });
+    }
+
+    private verDocumento(fila: any): void {
+        const corr = Number(this.model?.CORR_PROSPECTO);
+        const documento = Number(fila?.CORR_DOCUMENTO_ADMISION);
+        if (!(corr > 0) || !(documento > 0) || !fila?.NOMBRE_ARCHIVO) {
+            return;
+        }
+        this.serviceDocumento.getArchivo(corr, documento).pipe(take(1)).subscribe({
+            next: (blob: Blob) => {
+                const tipo = blob?.type && blob.type !== 'application/octet-stream' ? blob.type : this.tipoDocumento(fila.NOMBRE_ARCHIVO);
+                const archivo = new Blob([blob], { type: tipo });
+                const url = window.URL.createObjectURL(archivo);
+                const ventana = window.open(url, '_blank');
+                if (!ventana) {
+                    this.appInfoService.downloadFile(archivo, fila.NOMBRE_ARCHIVO);
+                }
+                setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+            },
+            error: () => this.notifyFx('No se pudo abrir el archivo.', NotifyType.Warning, { raw: true }),
+        });
+    }
+
+    private tipoDocumento(nombre: string): string {
+        const extension = (nombre || '').split('.').pop()?.toLowerCase();
+        if (extension === 'pdf') return 'application/pdf';
+        if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
+        if (extension === 'png') return 'image/png';
+        return 'application/octet-stream';
     }
 
     cargarMedios(CORR_PROSPECTO: number): void {

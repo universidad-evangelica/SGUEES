@@ -580,3 +580,80 @@
 	border-left: 4px solid var(--base-accent, #164194);
 	border-radius: var(--sguees-radius-md, 10px);
 }
+
+// Qué hace: en cada documento, Subir abre el archivo y el ojo lo muestra.
+// Cómo lo hace: el input queda dentro del botón para que el navegador no cierre el selector.
+:host ::ng-deep .aca-prospecto-doc-celda {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+:host ::ng-deep .aca-prospecto-doc-acciones {
+	display: inline-flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+:host ::ng-deep .aca-prospecto-doc-subir,
+:host ::ng-deep .aca-prospecto-doc-ver {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	height: 26px;
+	margin: 0;
+	padding: 0 8px;
+	border: 1px solid var(--sguees-border, rgba(255, 255, 255, 0.24));
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 12px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+:host ::ng-deep .aca-prospecto-doc-ver {
+	width: 26px;
+	padding: 0;
+}
+
+:host ::ng-deep .aca-prospecto-doc-input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	border: 0;
+}
+
+:host ::ng-deep .aca-prospecto-doc-nombre {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+// Qué hace: oculta el basurero azul que la grilla pinta al final de la fila.
+// Cómo lo hace: esa columna la agrega el modo de edición; en documentos no se elimina nada.
+:host ::ng-deep .aca-prospecto-docs .dx-command-edit {
+	width: 0 !important;
+	min-width: 0 !important;
+	max-width: 0 !important;
+	padding: 0 !important;
+	border: none !important;
+	font-size: 0 !important;
+}
+
+:host ::ng-deep .aca-prospecto-docs .dx-command-edit .dx-link {
+	display: none !important;
+}

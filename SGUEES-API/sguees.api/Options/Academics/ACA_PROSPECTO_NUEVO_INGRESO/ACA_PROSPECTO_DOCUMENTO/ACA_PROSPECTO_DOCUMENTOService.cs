@@ -50,6 +50,135 @@ namespace sguees.Services
             return await _repo.GetAllAsync(p);
         }
 
+        // Qué hace: entrega el archivo cargado de esa solicitud para previsualizarlo.
+        // Cómo lo hace: usa la ruta guardada en la base y solo si sigue dentro de la carpeta de admisión.
+        public async Task<ACA_PROSPECTO_DOCUMENTOArchivo> AbrirArchivoAsync(int corrEmpresa, int corrProspecto, int corrDocumentoAdmision)
+        {
+            if (corrProspecto <= 0 || corrDocumentoAdmision <= 0)
+                return null;
+
+            string ruta;
+            string nombre;
+            await using (var cn = new SqlConnection(_connectionString))
+            {
+                await cn.OpenAsync();
+                await using var cmd = cn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT C.RUTA_ARCHIVO, C.NOMBRE_ARCHIVO
+                    FROM dbo.ACA_PROSPECTO_DOCUMENTO C
+                    INNER JOIN dbo.ACA_PROSPECTO P ON P.CORR_PROSPECTO = C.CORR_PROSPECTO
+                    WHERE P.CORR_EMPRESA = @Empresa
+                      AND C.CORR_PROSPECTO = @Prospecto
+                      AND C.CORR_DOCUMENTO_ADMISION = @Documento
+                      AND C.ACTIVO = 1;";
+                cmd.Parameters.Add(new SqlParameter("@Empresa", corrEmpresa));
+                cmd.Parameters.Add(new SqlParameter("@Prospecto", corrProspecto));
+                cmd.Parameters.Add(new SqlParameter("@Documento", corrDocumentoAdmision));
+                await using var rd = await cmd.ExecuteReaderAsync();
+                if (!await rd.ReadAsync() || rd.IsDBNull(0))
+                    return null;
+                ruta = rd.GetString(0);
+                nombre = rd.IsDBNull(1) ? "documento" : rd.GetString(1);
+            }
+
+            var raiz = Path.GetFullPath(RaizDocumentos);
+            var destino = Path.GetFullPath(Path.Combine(raiz, ruta));
+            if (!EstaDentro(destino, raiz) || !File.Exists(destino))
+                return null;
+
+            var extension = Path.GetExtension(destino).ToLowerInvariant();
+            var tipo = extension switch
+            {
+                ".pdf" => "application/pdf",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                _ => "application/octet-stream",
+            };
+            return new ACA_PROSPECTO_DOCUMENTOArchivo
+            {
+                Stream = new FileStream(destino, FileMode.Open, FileAccess.Read, FileShare.Read),
+                ContentType = tipo,
+                Nombre = nombre,
+            };
+        }
+
+        // Qué hace: quita el archivo cargado y deja el documento pendiente otra vez.
+        // Cómo lo hace: apaga la fila del archivo, borra el archivo de la carpeta y devuelve la fila de la vista.
+        public async Task<CResult> QuitarArchivoAsync(int corrEmpresa, string usuario, string estacion, int corrProspecto, int corrDocumentoAdmision)
+        {
+            if (corrProspecto <= 0 || corrDocumentoAdmision <= 0)
+                return Error("Debe indicar el prospecto y el documento");
+
+            int? corrDocumento = null;
+            string ruta = null;
+            await using (var cn = new SqlConnection(_connectionString))
+            {
+                await cn.OpenAsync();
+                await using (var cmd = cn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT C.CORR_PROSPECTO_DOCUMENTO, C.RUTA_ARCHIVO
+                        FROM dbo.ACA_PROSPECTO_DOCUMENTO C
+                        INNER JOIN dbo.ACA_PROSPECTO P ON P.CORR_PROSPECTO = C.CORR_PROSPECTO
+                        WHERE P.CORR_EMPRESA = @Empresa
+                          AND C.CORR_PROSPECTO = @Prospecto
+                          AND C.CORR_DOCUMENTO_ADMISION = @Documento
+                          AND C.ACTIVO = 1;";
+                    cmd.Parameters.Add(new SqlParameter("@Empresa", corrEmpresa));
+                    cmd.Parameters.Add(new SqlParameter("@Prospecto", corrProspecto));
+                    cmd.Parameters.Add(new SqlParameter("@Documento", corrDocumentoAdmision));
+                    await using var rd = await cmd.ExecuteReaderAsync();
+                    if (!await rd.ReadAsync())
+                        return Error("Este documento no tiene un archivo cargado.");
+                    corrDocumento = rd.GetInt32(0);
+                    ruta = rd.IsDBNull(1) ? null : rd.GetString(1);
+                }
+
+                await using (var cmd = cn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        UPDATE dbo.ACA_PROSPECTO_DOCUMENTO
+                        SET ACTIVO = 0,
+                            USUARIO_ACTU = @Usuario,
+                            ESTACION_ACTU = @Estacion,
+                            FECHA_ACTU = GETDATE()
+                        WHERE CORR_PROSPECTO_DOCUMENTO = @Id
+                          AND CORR_PROSPECTO = @Prospecto
+                          AND ACTIVO = 1;";
+                    cmd.Parameters.Add(new SqlParameter("@Id", corrDocumento.Value));
+                    cmd.Parameters.Add(new SqlParameter("@Prospecto", corrProspecto));
+                    cmd.Parameters.Add(new SqlParameter("@Usuario", usuario ?? ""));
+                    cmd.Parameters.Add(new SqlParameter("@Estacion", estacion ?? ""));
+                    if (await cmd.ExecuteNonQueryAsync() != 1)
+                        return Error("No se pudo quitar el archivo.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(ruta))
+            {
+                var raiz = Path.GetFullPath(RaizDocumentos);
+                var destino = Path.GetFullPath(Path.Combine(raiz, ruta));
+                if (EstaDentro(destino, raiz))
+                    TryDelete(destino);
+            }
+
+            var lectura = await _repo.GetAllAsync(new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_PROSPECTO", Value = corrProspecto, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_DOCUMENTO_ADMISION", Value = corrDocumentoAdmision, DbType = System.Data.DbType.Int32 },
+            });
+            var fila = (lectura.Data as List<ACA_PROSPECTO_DOCUMENTOView>)?.FirstOrDefault();
+            return new CResult()
+            {
+                Data = fila,
+                Result = fila != null,
+                ErrorCode = fila != null ? 0 : -1,
+                ErrorMessage = fila != null ? "Archivo eliminado" : "No se pudo leer el documento.",
+                RowsAffected = fila != null ? 1 : 0,
+            };
+        }
+
         // Qué hace: guarda o reemplaza el archivo de un documento que ya aplica a la solicitud.
         // Cómo lo hace: valida formato, tamaño y contenido como el portal, escribe el archivo
         //               y actualiza ACA_PROSPECTO_DOCUMENTO. Devuelve la fila de la vista.

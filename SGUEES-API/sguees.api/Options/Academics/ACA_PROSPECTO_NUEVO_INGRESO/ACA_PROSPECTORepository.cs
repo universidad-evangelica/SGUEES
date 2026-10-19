@@ -675,9 +675,8 @@ namespace sguees.Repositories
             return objResultado;
         }
 
-        // Qué hace: mismo 100 % que habilita Enviar en admisión.
-        // Cómo lo hace: promedia los anillos del portal (datos personales, documentación,
-        //               estudio socioeconómico y, si marcó interés, el formulario de beca).
+        // Qué hace: el 100 % de la solicitud de nuevo ingreso, para enviar y para aprobar.
+        // Cómo lo hace: solo datos personales y documentación. Socioeconómico y beca no entran.
         private const string _SqlCompletitudAprobar =
             "DECLARE @persona int, @pFilled int = 0, @pTotal int = 0, @pPct int = 0, " +
             "@eq bit = 0, @cuota bit = 0, @dTotal int = 0, @dCarg int = 0, @dPct int = 0, " +
@@ -789,10 +788,12 @@ namespace sguees.Repositories
             "    SET @bPct = CASE WHEN ISNULL(@bTotal, 0) = 0 THEN 0 ELSE CAST(ROUND(ISNULL(@bFilled, 0) * 100.0 / @bTotal, 0) AS int) END; " +
             "  END " +
             "END " +
-            "IF @SOLO_NUEVO_INGRESO = 1 BEGIN " +
+            "IF @SOLO_NUEVO_INGRESO = 1 OR @PARA_APROBAR = 1 BEGIN " +
             "  SET @general = CAST(ROUND((@pPct + @dPct) * 1.0 / 2, 0) AS int); " +
             "  IF @pPct < 100 OR @dPct < 100 BEGIN " +
-            "    SET @mensaje = 'No se puede enviar. La solicitud de nuevo ingreso debe estar al 100%.'; " +
+            "    SET @mensaje = CASE WHEN @PARA_APROBAR = 1 " +
+            "      THEN 'No se puede aprobar. La solicitud de nuevo ingreso debe estar al 100%.' " +
+            "      ELSE 'No se puede enviar. La solicitud de nuevo ingreso debe estar al 100%.' END; " +
             "    IF @pPct < 100 SET @mensaje = @mensaje + ' Datos personales ' + CONVERT(varchar(10), @pPct) + '%.'; " +
             "    IF @dPct < 100 SET @mensaje = @mensaje + ' Documentación ' + CONVERT(varchar(10), @dPct) + '%.'; " +
             "  END " +
@@ -850,8 +851,8 @@ namespace sguees.Repositories
             ") THEN 1 ELSE 0 END AS VENCIDA";
 
         // Qué hace: mueve el flujo 104 con el login de la sesión.
-        // Cómo lo hace: 1 envía el borrador si el ciclo sigue abierto y datos personales y documentación están al 100 %.
-        //               3 aprueba (exige también socioeconómico y beca), 4 rechaza y 5 revierte.
+        // Cómo lo hace: 1 envía y 3 aprueba si datos personales y documentación están al 100 %.
+        //               Socioeconómico y beca no bloquean. 4 rechaza y 5 revierte.
         public async Task<CResult> AccionFlujoAsync(int corrEmpresa, int corrProspecto, string login, string observacion, string estacion, int operacion)
         {
             CResult objResultado = new();
@@ -870,7 +871,7 @@ namespace sguees.Repositories
 
                 if (operacion == 1 || operacion == 3)
                 {
-                var incompleto = await MensajeSiNoEstaCompletaAsync(corrProspecto, operacion == 1);
+                var incompleto = await MensajeSiNoEstaCompletaAsync(corrProspecto, operacion == 1, operacion == 3);
                 if (!string.IsNullOrWhiteSpace(incompleto))
                 {
                     objResultado.Result = false;
@@ -950,15 +951,15 @@ namespace sguees.Repositories
             return vencida;
         }
 
-        // Qué hace: mensaje si falta el 100 % para enviar o para aprobar.
-        // Cómo lo hace: al enviar solo promedia datos personales y documentación de nuevo ingreso.
-        //               Al aprobar también exige estudio socioeconómico y, si aplica, la beca.
-        private async Task<string> MensajeSiNoEstaCompletaAsync(int corrProspecto, bool soloNuevoIngreso)
+        // Qué hace: mensaje si falta el 100 % de nuevo ingreso para enviar o para aprobar.
+        // Cómo lo hace: en las dos acciones solo exige datos personales y documentación.
+        private async Task<string> MensajeSiNoEstaCompletaAsync(int corrProspecto, bool soloNuevoIngreso, bool paraAprobar)
         {
             var parametros = new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_PROSPECTO", Value = corrProspecto, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "SOLO_NUEVO_INGRESO", Value = soloNuevoIngreso, DbType = System.Data.DbType.Boolean },
+                new CParameter() { ParameterName = "PARA_APROBAR", Value = paraAprobar, DbType = System.Data.DbType.Boolean },
             };
             var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlCompletitudAprobar, parametros);
             string mensaje = null;

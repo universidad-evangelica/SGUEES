@@ -17,6 +17,20 @@ export class AcaProspectoDocumentoService {
         return this.repo.getAll(xWhere);
     }
 
+    // Qué hace: trae el archivo cargado para verlo en otra pestaña.
+    getArchivo(CORR_PROSPECTO: number, CORR_DOCUMENTO_ADMISION: number): Observable<Blob> {
+        const xWhere: IParam[] = [
+            { Parameter: 'CORR_PROSPECTO', Value: CORR_PROSPECTO },
+            { Parameter: 'CORR_DOCUMENTO_ADMISION', Value: CORR_DOCUMENTO_ADMISION },
+        ];
+        return this.repo.getArchivo(xWhere);
+    }
+
+    // Qué hace: quita el archivo cargado de ese documento.
+    quitarArchivo(CORR_PROSPECTO: number, CORR_DOCUMENTO_ADMISION: number): Observable<IResult> {
+        return this.repo.quitarArchivo(CORR_PROSPECTO, CORR_DOCUMENTO_ADMISION);
+    }
+
     // Qué hace: sube el archivo con las mismas reglas del portal (formato y tamaño del catálogo).
     cargarArchivo(CORR_PROSPECTO: number, CORR_DOCUMENTO_ADMISION: number, archivo: File): Observable<IResult> {
         const data = new FormData();
