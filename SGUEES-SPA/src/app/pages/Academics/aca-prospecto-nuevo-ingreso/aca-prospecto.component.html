@@ -1,7 +1,7 @@
 <div class="sguees-mtto-view" id="LoadPanel">
     <!-- Barra estándar: título, refrescar y exportar. Guardar/Cancelar en edición y
          "Modificar" (btn1) en consulta cuando el usuario tiene permiso U.
-         Enviar solicitud solo en el listado de borradores: en Nuevo todavía no hay solicitud. -->
+         Enviar solicitud en el listado y al editar un borrador, mientras la inscripción no haya vencido. -->
     <app-barra-data-mtto
         [tituloVentana]="tituloVentana"
         [isBrowse]="isBrowse()"
@@ -30,7 +30,7 @@
         [btn4Type]="'default'"
         [btn4Width]="200"
         (btn4Click)="abrirRevertir()"
-        [btn5]="isBrowse() && esBorrador ? btnEnviar : ''"
+        [btn5]="btnEnviar"
         [btn5Icon]="'send'"
         [btn5Type]="'default'"
         [btn5Width]="170"
@@ -119,10 +119,11 @@
                 <span class="aca-prospecto-plazo-titulo">Plazo de inscripción</span>
                 <p>{{ textoPlazoInscripcion() }}</p>
             </div>
-            <!-- Qué hace: avisa solo cuando la inscripción ya cerró y por eso no hay Aprobar, Rechazar ni Revertir. -->
+            <!-- Qué hace: avisa cuando la inscripción ya cerró y por eso no hay Enviar, Aprobar, Rechazar ni Revertir. -->
             <div class="aca-prospecto-vence-leyenda aca-prospecto-flujo-vencida" *ngIf="inscripcionVencida()">
                 <span class="dx-icon-info aca-prospecto-vence-leyenda-icon" aria-hidden="true"></span>
-                <p class="aca-prospecto-vence-leyenda-texto">La inscripción de este ciclo ya cerró. No se puede aprobar, rechazar ni revertir esta solicitud.</p>
+                <p class="aca-prospecto-vence-leyenda-texto" *ngIf="esBorrador">La inscripción de este ciclo ya cerró. No se puede enviar esta solicitud.</p>
+                <p class="aca-prospecto-vence-leyenda-texto" *ngIf="!esBorrador">La inscripción de este ciclo ya cerró. No se puede aprobar, rechazar ni revertir esta solicitud.</p>
             </div>
             <!-- Qué hace: el color del badge sigue el estado del flujo 104. -->
             <span class="aca-prospecto-badge" [ngClass]="claseEstadoSolicitud()">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>

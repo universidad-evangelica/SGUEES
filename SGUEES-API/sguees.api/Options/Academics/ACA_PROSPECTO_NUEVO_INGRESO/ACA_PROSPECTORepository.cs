@@ -730,18 +730,38 @@ namespace sguees.Repositories
             "    SET @bPct = CASE WHEN ISNULL(@bTotal, 0) = 0 THEN 0 ELSE CAST(ROUND(ISNULL(@bFilled, 0) * 100.0 / @bTotal, 0) AS int) END; " +
             "  END " +
             "END " +
-            "SET @general = CAST(ROUND((@pPct + @dPct + @sePct + CASE WHEN @becas = 1 THEN @bPct ELSE 0 END) * 1.0 / @n, 0) AS int); " +
-            "IF @general < 100 BEGIN " +
-            "  SET @mensaje = 'No se puede aprobar. Los formularios deben estar al 100%, igual que para enviar en admisión.'; " +
-            "  IF @pPct < 100 SET @mensaje = @mensaje + ' Datos personales ' + CONVERT(varchar(10), @pPct) + '%.'; " +
-            "  IF @dPct < 100 SET @mensaje = @mensaje + ' Documentación ' + CONVERT(varchar(10), @dPct) + '%.'; " +
-            "  IF @sePct < 100 SET @mensaje = @mensaje + ' Estudio socioeconómico ' + CONVERT(varchar(10), @sePct) + '%.'; " +
-            "  IF @becas = 1 AND @bPct < 100 SET @mensaje = @mensaje + ' Formulario de beca ' + CONVERT(varchar(10), @bPct) + '%.'; " +
+            "IF @SOLO_NUEVO_INGRESO = 1 BEGIN " +
+            "  SET @general = CAST(ROUND((@pPct + @dPct) * 1.0 / 2, 0) AS int); " +
+            "  IF @pPct < 100 OR @dPct < 100 BEGIN " +
+            "    SET @mensaje = 'No se puede enviar. La solicitud de nuevo ingreso debe estar al 100%.'; " +
+            "    IF @pPct < 100 SET @mensaje = @mensaje + ' Datos personales ' + CONVERT(varchar(10), @pPct) + '%.'; " +
+            "    IF @dPct < 100 SET @mensaje = @mensaje + ' Documentación ' + CONVERT(varchar(10), @dPct) + '%.'; " +
+            "  END " +
+            "END ELSE BEGIN " +
+            "  SET @general = CAST(ROUND((@pPct + @dPct + @sePct + CASE WHEN @becas = 1 THEN @bPct ELSE 0 END) * 1.0 / @n, 0) AS int); " +
+            "  IF @general < 100 BEGIN " +
+            "    SET @mensaje = 'No se puede aprobar. Los formularios deben estar al 100%, igual que para enviar en admisión.'; " +
+            "    IF @pPct < 100 SET @mensaje = @mensaje + ' Datos personales ' + CONVERT(varchar(10), @pPct) + '%.'; " +
+            "    IF @dPct < 100 SET @mensaje = @mensaje + ' Documentación ' + CONVERT(varchar(10), @dPct) + '%.'; " +
+            "    IF @sePct < 100 SET @mensaje = @mensaje + ' Estudio socioeconómico ' + CONVERT(varchar(10), @sePct) + '%.'; " +
+            "    IF @becas = 1 AND @bPct < 100 SET @mensaje = @mensaje + ' Formulario de beca ' + CONVERT(varchar(10), @bPct) + '%.'; " +
+            "  END " +
             "END " +
             "SELECT @general AS PORCENTAJE, @mensaje AS MENSAJE;";
 
+        // Qué hace: dice si el ciclo del prospecto ya cerró la inscripción.
+        // Cómo lo hace: el mismo corte de la grilla, FECHA_FIN_INSCRIPCION anterior a hoy. El día de cierre sigue abierto.
+        private const string _SqlInscripcionVencida =
+            "SELECT CASE WHEN EXISTS (" +
+            "SELECT 1 FROM dbo.ACA_PROSPECTO PR " +
+            "INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS PA ON PA.CORR_PERIODO_ACADEMICO = PR.CORR_PERIODO_ACADEMICO " +
+            "WHERE PR.CORR_PROSPECTO = @CORR_PROSPECTO " +
+            "AND CAST(PA.FECHA_FIN_INSCRIPCION AS date) < CAST(GETDATE() AS date)" +
+            ") THEN 1 ELSE 0 END AS VENCIDA";
+
         // Qué hace: mueve el flujo 104 con el login de la sesión.
-        // Cómo lo hace: 3 aprueba (exige el 100 %), 4 rechaza y 5 revierte la misma instancia.
+        // Cómo lo hace: 1 envía el borrador si el ciclo sigue abierto y datos personales y documentación están al 100 %.
+        //               3 aprueba (exige también socioeconómico y beca), 4 rechaza y 5 revierte.
         public async Task<CResult> AccionFlujoAsync(int corrEmpresa, int corrProspecto, string login, string observacion, string estacion, int operacion)
         {
             CResult objResultado = new();
@@ -749,9 +769,18 @@ namespace sguees.Repositories
 
             try
             {
-                if (operacion == 3)
+                if (operacion == 1 && await InscripcionVencidaAsync(corrProspecto))
                 {
-                var incompleto = await MensajeSiNoEstaCompletaAsync(corrProspecto);
+                    objResultado.Result = false;
+                    objResultado.ErrorCode = -16;
+                    objResultado.ErrorMessage = "No se puede enviar. La inscripción de este ciclo ya venció.";
+                    objResultado.CodeHelper = corrProspecto;
+                    return objResultado;
+                }
+
+                if (operacion == 1 || operacion == 3)
+                {
+                var incompleto = await MensajeSiNoEstaCompletaAsync(corrProspecto, operacion == 1);
                 if (!string.IsNullOrWhiteSpace(incompleto))
                 {
                     objResultado.Result = false;
@@ -817,13 +846,29 @@ namespace sguees.Repositories
             return objResultado;
         }
 
-        // Qué hace: mensaje para el analista si la solicitud no está al 100 % de admisión.
-        // Cómo lo hace: la consulta devuelve MENSAJE vacío cuando el promedio de los anillos llega a 100.
-        private async Task<string> MensajeSiNoEstaCompletaAsync(int corrProspecto)
+        // Qué hace: true si la inscripción del ciclo de ese prospecto ya cerró.
+        // Cómo lo hace: lee FECHA_FIN_INSCRIPCION. Sin fecha no se toma como vencida.
+        private async Task<bool> InscripcionVencidaAsync(int corrProspecto)
         {
             var parametros = new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_PROSPECTO", Value = corrProspecto, DbType = System.Data.DbType.Int32 },
+            };
+            var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlInscripcionVencida, parametros);
+            var vencida = reader.Read() && reader["VENCIDA"] != DBNull.Value && Convert.ToInt32(reader["VENCIDA"]) == 1;
+            reader.Close();
+            return vencida;
+        }
+
+        // Qué hace: mensaje si falta el 100 % para enviar o para aprobar.
+        // Cómo lo hace: al enviar solo promedia datos personales y documentación de nuevo ingreso.
+        //               Al aprobar también exige estudio socioeconómico y, si aplica, la beca.
+        private async Task<string> MensajeSiNoEstaCompletaAsync(int corrProspecto, bool soloNuevoIngreso)
+        {
+            var parametros = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_PROSPECTO", Value = corrProspecto, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "SOLO_NUEVO_INGRESO", Value = soloNuevoIngreso, DbType = System.Data.DbType.Boolean },
             };
             var reader = await objData.GetDataReader(System.Data.CommandType.Text, _SqlCompletitudAprobar, parametros);
             string mensaje = null;

@@ -563,8 +563,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     override fillData(xModel?: AcaProspecto): AcaProspecto {
         if (xModel !== undefined) {
             this.cargarDetalle(xModel.CORR_PROSPECTO);
+            const fila = { ...xModel, ESTADO_SOLICITUD: this.service.textoEstadoSolicitud(xModel) };
+            this.model = fila;
             this.evaluarPuedeAprobar(xModel.CORR_PROSPECTO);
-            return { ...xModel, ESTADO_SOLICITUD: this.service.textoEstadoSolicitud(xModel) };
+            return fila;
         }
         this.btnAprobar = '';
         this.btnRechazar = '';
@@ -639,8 +641,22 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Qué hace: la inscripción del ciclo ya cerró, así que no hay acciones de flujo.
     // Cómo lo hace: el mismo corte de Vence: días negativos frente a FECHA_FIN_INSCRIPCION.
     inscripcionVencida(): boolean {
-        const dias = this.model?.DIAS_VENCE;
+        return this.filaVencida(this.model);
+    }
+
+    // Qué hace: dice si esa fila ya pasó la fecha de fin de inscripción.
+    // Cómo lo hace: DIAS_VENCE negativo. El día 0 todavía se puede enviar.
+    filaVencida(fila: any): boolean {
+        const dias = fila?.DIAS_VENCE;
         return dias !== null && dias !== undefined && !Number.isNaN(Number(dias)) && Number(dias) < 0;
+    }
+
+    // Qué hace: texto del botón Enviar, o vacío si no aplica.
+    // Cómo lo hace: solo un borrador ya guardado, con permiso de editar y ciclo todavía abierto.
+    textoBtnEnviar(corrProspecto: number): string {
+        return this.esBorrador && this.permiteEdit && corrProspecto > 0 && !this.esAlta() && !this.inscripcionVencida()
+            ? 'Enviar solicitud'
+            : '';
     }
 
     // Qué hace: listado de prospectos de todos los ciclos.
@@ -715,6 +731,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (!this.permiteAdd || !this.esBorrador) {
             return;
         }
+        this.btnEnviar = '';
         this.limpiarDetalle();
         this.model = this.fillData();
         this.model.ESTADO = 'P';
@@ -885,7 +902,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.btnAprobar = '';
             this.btnRechazar = '';
             this.btnRevertir = '';
-            this.btnEnviar = this.permiteEdit && corr > 0 ? 'Enviar solicitud' : '';
+            this.btnEnviar = this.textoBtnEnviar(corr);
             this.corrAprobarResuelto = 0;
             return;
         }
@@ -897,7 +914,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: el comentario queda fijo y la fila pasa a Solicitudes pendientes en memoria.
     enviarSolicitud(): void {
         const corr = Number(this.model?.CORR_PROSPECTO);
-        if (!this.esBorrador || !(corr > 0) || !this.btnEnviar) {
+        if (!this.esBorrador || !(corr > 0) || !this.btnEnviar || this.inscripcionVencida()) {
+            if (this.inscripcionVencida()) {
+                this.notifyFx('No se puede enviar. La inscripción de este ciclo ya venció.', NotifyType.Warning);
+            }
             return;
         }
         this.loadingVisible = true;
@@ -927,6 +947,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                         }
                         this.aplicarLista();
                         this.btnEnviar = '';
+                        if (!this.isBrowse()) {
+                            this.AsignaStatus(UpdateType.Browse);
+                            this.mostrarPendientes();
+                            this.btnEnviar = '';
+                        }
                         this.notifyFx('La solicitud de nuevo ingreso fue enviada.', NotifyType.Success);
                     } else {
                         this.notifyFx(response?.ErrorMessage || 'No se pudo enviar la solicitud.', NotifyType.Warning, { raw: true });
@@ -973,7 +998,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.btnAprobar = '';
             this.btnRechazar = '';
             this.btnRevertir = '';
-            this.btnEnviar = this.permiteEdit ? 'Enviar solicitud' : '';
+            this.btnEnviar = this.textoBtnEnviar(corrProspecto);
             return;
         }
         this.btnEnviar = '';
