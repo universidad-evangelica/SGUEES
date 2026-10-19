@@ -2086,10 +2086,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     //               socioeconómico → respuestas → prospecto; se detiene en el primer error e indica
     //               la sección. Al terminar regresa al listado y lo refresca.
     guardar(): void {
-        if (!this.esAlta() && this.inscripcionVencida()) {
-            this.notifyFx('No se puede modificar. La inscripción de este ciclo ya venció.', NotifyType.Warning);
-            return;
-        }
         if (!this.validarFormularios()) {
             return;
         }

@@ -333,6 +333,25 @@
 	}
 }
 
+// Qué hace: Enviar solicitud se distingue en naranja del azul de Nuevo.
+// Cómo lo hace: el hint del botón es su título, igual que Reaperturar solicitud.
+:host ::ng-deep .dx-button-mode-contained.dx-button-default[title='Enviar solicitud'] {
+	background-color: #f57c00;
+	border-color: #f57c00;
+
+	.dx-icon,
+	.dx-button-text {
+		color: #fff;
+	}
+
+	&.dx-state-hover,
+	&.dx-state-focused,
+	&.dx-state-active {
+		background-color: #ef6c00;
+		border-color: #ef6c00;
+	}
+}
+
 .aca-prospecto-paso-titulo {
 	font-size: 13px;
 	font-weight: 600;

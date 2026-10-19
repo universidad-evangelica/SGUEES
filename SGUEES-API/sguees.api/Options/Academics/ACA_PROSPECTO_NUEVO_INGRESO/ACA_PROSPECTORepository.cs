@@ -115,6 +115,15 @@ namespace sguees.Repositories
                 if (!string.IsNullOrWhiteSpace(duplicado))
                     throw new System.Exception(duplicado);
 
+                var cicloCerrado = await LeerTextoAsync(_SqlMensajeCicloRegistro, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_CARRERA", Value = data.CORR_CARRERA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "ANIO", Value = data.ANIO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NUMERO_PERIODO", Value = data.NUMERO_PERIODO, DbType = System.Data.DbType.Int32 },
+                });
+                if (!string.IsNullOrWhiteSpace(cicloCerrado))
+                    throw new System.Exception(cicloCerrado);
+
                 var guid = Guid.NewGuid().ToString();
                 var periodo = data.ANIO.ToString("0000") + "-" + data.NUMERO_PERIODO.ToString("00");
                 var registro = new List<CParameter>
@@ -413,15 +422,6 @@ namespace sguees.Repositories
 
             try
             {
-                if (await InscripcionVencidaAsync(Data.CORR_PROSPECTO))
-                {
-                    objResultado.Result = false;
-                    objResultado.ErrorCode = -16;
-                    objResultado.ErrorMessage = "No se puede modificar. La inscripción de este ciclo ya venció.";
-                    objResultado.CodeHelper = Data.CORR_PROSPECTO;
-                    return objResultado;
-                }
-
                 if (Data.ANIO > 0 && Data.NUMERO_PERIODO > 0 && Data.CORR_CARRERA > 0 && Data.CORR_MODALIDAD > 0)
                 {
                     var pCambio = ParametrosCambio(Data.CORR_PROSPECTO, Data.ANIO, Data.NUMERO_PERIODO,
@@ -510,9 +510,37 @@ namespace sguees.Repositories
             "@NUMERO_PERIODO = @NUMERO_PERIODO, @CORR_CARRERA = @CORR_CARRERA, @CORR_MODALIDAD = @CORR_MODALIDAD, " +
             "@USUARIO = @USUARIO, @ESTACION = @ESTACION, @SOLO_VALIDAR = @SOLO_VALIDAR";
 
+        // Qué hace: el período que usaría el registro (carrera, si no facultad, si no área).
+        // Cómo lo hace: la misma prioridad de NI_PERSONALINFORMATION_REGISTER. Si ese período ya cerró, la carrera no se ofrece.
+        private const string _SqlPeriodoRegistro =
+            "SELECT TOP 1 PX.FECHA_FIN FROM ( " +
+            "  SELECT 1 AS PRIO, P1.FECHA_FIN_INSCRIPCION AS FECHA_FIN FROM dbo.ACA_PERIODOS_ACADEMICOS P1 " +
+            "  WHERE P1.ACTIVO = 1 AND P1.ANIO = @ANIO AND P1.NUMERO_PERIODO = @NUMERO_PERIODO AND P1.CORR_CARRERA = C.CORR_CARRERA " +
+            "  UNION ALL " +
+            "  SELECT 2, P2.FECHA_FIN_INSCRIPCION FROM dbo.ACA_PERIODOS_ACADEMICOS P2 " +
+            "  WHERE P2.ACTIVO = 1 AND P2.ANIO = @ANIO AND P2.NUMERO_PERIODO = @NUMERO_PERIODO AND P2.CORR_FACULTAD = C.CORR_FACULTAD AND P2.CORR_CARRERA IS NULL " +
+            "  UNION ALL " +
+            "  SELECT 3, P3.FECHA_FIN_INSCRIPCION FROM dbo.ACA_PERIODOS_ACADEMICOS P3 " +
+            "  WHERE P3.ACTIVO = 1 AND P3.ANIO = @ANIO AND P3.NUMERO_PERIODO = @NUMERO_PERIODO AND P3.CORR_AREA_ACADEMICA = C.CORR_AREA_ACADEMICA AND P3.CORR_FACULTAD IS NULL AND P3.CORR_CARRERA IS NULL " +
+            ") PX ORDER BY PX.PRIO";
+
+        // Qué hace: impide crear la solicitud si el ciclo que va a quedar guardado ya cerró.
+        // Cómo lo hace: el registro de admisión no mira la fecha; aquí se revisa antes de llamarlo.
+        private const string _SqlMensajeCicloRegistro =
+            "SELECT CASE " +
+            "WHEN E.FECHA_FIN IS NULL THEN 'No se puede crear la solicitud. No hay un período activo para ese ciclo.' " +
+            "WHEN CAST(E.FECHA_FIN AS date) < CAST(GETDATE() AS date) THEN 'No se puede crear la solicitud. La inscripción de este ciclo ya venció.' " +
+            "ELSE '' END AS MENSAJE " +
+            "FROM dbo.ACA_CARRERAS C " +
+            "OUTER APPLY ( " + _SqlPeriodoRegistro + " ) E " +
+            "WHERE C.CORR_CARRERA = @CORR_CARRERA";
+
         private const string _SqlCarrerasDelCiclo =
             "SELECT O.CORR_CARRERA AS CORR, O.CODIGO_CARRERA AS CODIGO, O.NOMBRE_CARRERA AS NOMBRE " +
             "FROM dbo.FN_ACA_OFERTA_CICLO(@ANIO, @NUMERO_PERIODO) O " +
+            "INNER JOIN dbo.ACA_CARRERAS C ON C.CORR_CARRERA = O.CORR_CARRERA " +
+            "CROSS APPLY ( " + _SqlPeriodoRegistro + " ) E " +
+            "WHERE CAST(E.FECHA_FIN AS date) >= CAST(GETDATE() AS date) " +
             "UNION " +
             "SELECT C.CORR_CARRERA, C.CODIGO_CARRERA, C.NOMBRE_CARRERA " +
             "FROM ACA_PROSPECTO PR " +
@@ -529,13 +557,32 @@ namespace sguees.Repositories
             "WHERE PL.CORR_CARRERA = @CORR_CARRERA AND PL.PLAN_VIGENTE = 1 " +
             "ORDER BY M.NOMBRE_MODALIDAD";
 
+        // Qué hace: ciclos del combo, igual que el select de Periodo del registro de admisión.
+        // Cómo lo hace: solo períodos de pregrado con inscripción abierta y al menos una carrera que el registro
+        //               dejaría en un período todavía abierto. Si se está editando, se suma el ciclo que ya tiene.
         private const string _SqlCiclos =
             "SELECT CONVERT(VARCHAR(4), X.ANIO) + '-' + RIGHT('0' + CONVERT(VARCHAR(2), X.NUMERO_PERIODO), 2) AS CICLO, " +
             "       X.ANIO, X.NUMERO_PERIODO " +
             "FROM ( " +
             "  SELECT P.ANIO, P.NUMERO_PERIODO FROM ACA_PERIODOS_ACADEMICOS P " +
             "  WHERE P.ACTIVO = 1 AND P.CORR_AREA_ACADEMICA = 5 AND P.FECHA_FIN_INSCRIPCION >= CAST(GETDATE() AS DATE) " +
-            "    AND EXISTS (SELECT 1 FROM dbo.FN_ACA_OFERTA_CICLO(P.ANIO, P.NUMERO_PERIODO)) " +
+            "    AND EXISTS ( " +
+            "      SELECT 1 FROM dbo.FN_ACA_OFERTA_CICLO(P.ANIO, P.NUMERO_PERIODO) O " +
+            "      INNER JOIN dbo.ACA_CARRERAS C ON C.CORR_CARRERA = O.CORR_CARRERA " +
+            "      CROSS APPLY ( " +
+            "        SELECT TOP 1 PX.FECHA_FIN FROM ( " +
+            "          SELECT 1 AS PRIO, P1.FECHA_FIN_INSCRIPCION AS FECHA_FIN FROM dbo.ACA_PERIODOS_ACADEMICOS P1 " +
+            "          WHERE P1.ACTIVO = 1 AND P1.ANIO = P.ANIO AND P1.NUMERO_PERIODO = P.NUMERO_PERIODO AND P1.CORR_CARRERA = C.CORR_CARRERA " +
+            "          UNION ALL " +
+            "          SELECT 2, P2.FECHA_FIN_INSCRIPCION FROM dbo.ACA_PERIODOS_ACADEMICOS P2 " +
+            "          WHERE P2.ACTIVO = 1 AND P2.ANIO = P.ANIO AND P2.NUMERO_PERIODO = P.NUMERO_PERIODO AND P2.CORR_FACULTAD = C.CORR_FACULTAD AND P2.CORR_CARRERA IS NULL " +
+            "          UNION ALL " +
+            "          SELECT 3, P3.FECHA_FIN_INSCRIPCION FROM dbo.ACA_PERIODOS_ACADEMICOS P3 " +
+            "          WHERE P3.ACTIVO = 1 AND P3.ANIO = P.ANIO AND P3.NUMERO_PERIODO = P.NUMERO_PERIODO AND P3.CORR_AREA_ACADEMICA = C.CORR_AREA_ACADEMICA AND P3.CORR_FACULTAD IS NULL AND P3.CORR_CARRERA IS NULL " +
+            "        ) PX ORDER BY PX.PRIO " +
+            "      ) E " +
+            "      WHERE CAST(E.FECHA_FIN AS date) >= CAST(GETDATE() AS date) " +
+            "    ) " +
             "  UNION " +
             "  SELECT PA.ANIO, PA.NUMERO_PERIODO FROM ACA_PROSPECTO PR " +
             "  INNER JOIN ACA_PERIODOS_ACADEMICOS PA ON PA.CORR_PERIODO_ACADEMICO = PR.CORR_PERIODO_ACADEMICO " +
