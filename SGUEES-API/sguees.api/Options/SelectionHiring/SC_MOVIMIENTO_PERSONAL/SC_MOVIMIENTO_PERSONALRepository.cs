@@ -1508,5 +1508,99 @@ WHERE MR.CORR_EMPRESA = @CORR_EMPRESA
 				// No bloquea el flujo si ocurre un detalle con el expediente
 			}
 		}
+
+		/// <summary>
+		/// Contexto SEG_FLUJO (CODIGO_OPCION SC_MOVIMIENTO_PERSONAL) para SignalR post-Autoriza.
+		/// </summary>
+		public async Task<SC_MOVIMIENTO_FLUJO_NOTIF_DTO> GetContextoNotificacionFlujoAsync(
+			int corrEmpresa,
+			int corrMovimiento)
+		{
+			var dto = new SC_MOVIMIENTO_FLUJO_NOTIF_DTO
+			{
+				CORR_MOVIMIENTO_PERSONAL = corrMovimiento,
+			};
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new() { ParameterName = "CORR_MOVIMIENTO_PERSONAL", Value = corrMovimiento, DbType = DbType.Int32 },
+				};
+
+				var reader = await objData.GetDataReader(CommandType.Text, @"
+SELECT TOP 1
+	M.CORR_MOVIMIENTO_PERSONAL,
+	TD.NOMBRE_TIPO,
+	E.NOMBRE_ESTADO,
+	E.DESCRIPCION AS DESCRIPCION_ESTADO,
+	M.USUARIO_CREA AS LOGIN_CREADOR
+FROM dbo.SC_MOVIMIENTO_PERSONAL AS M
+INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO AS TD
+	ON TD.CORR_EMPRESA = M.CORR_EMPRESA
+   AND TD.CODIGO_OPCION = N'SC_MOVIMIENTO_PERSONAL'
+   AND TD.ACTIVO = 1
+LEFT JOIN dbo.SEG_FLUJO_INSTANCIA AS I
+	ON I.CORR_EMPRESA = M.CORR_EMPRESA
+   AND I.CORR_TIPO_DOCUMENTO = TD.CORR_TIPO_DOCUMENTO
+   AND I.CORR_DOCUMENTO = M.CORR_MOVIMIENTO_PERSONAL
+   AND I.ACTIVO = 1
+LEFT JOIN dbo.SEG_FLUJO_ESTADO AS E
+	ON E.CORR_EMPRESA = I.CORR_EMPRESA
+   AND E.CORR_ESTADO = I.CORR_ESTADO_ACTUAL
+WHERE M.CORR_EMPRESA = @CORR_EMPRESA
+  AND M.CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL;", p);
+
+				if (reader.Read())
+				{
+					if (reader["CORR_MOVIMIENTO_PERSONAL"] != DBNull.Value)
+					{
+						dto.CORR_MOVIMIENTO_PERSONAL = Convert.ToInt32(reader["CORR_MOVIMIENTO_PERSONAL"]);
+					}
+					dto.NOMBRE_TIPO = reader["NOMBRE_TIPO"]?.ToString()?.Trim();
+					dto.NOMBRE_ESTADO = reader["NOMBRE_ESTADO"]?.ToString()?.Trim();
+					dto.DESCRIPCION_ESTADO = reader["DESCRIPCION_ESTADO"]?.ToString()?.Trim();
+					dto.LOGIN_CREADOR = reader["LOGIN_CREADOR"]?.ToString()?.Trim();
+				}
+				reader.Close();
+
+				var readerDest = await objData.GetDataReader(CommandType.Text, @"
+SELECT DISTINCT LTRIM(RTRIM(N.LOGIN_SISTEMA_DESTINO)) AS LOGIN_DESTINO
+FROM dbo.SEG_FLUJO_INSTANCIA AS I
+INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO AS TD
+	ON TD.CORR_EMPRESA = I.CORR_EMPRESA
+   AND TD.CORR_TIPO_DOCUMENTO = I.CORR_TIPO_DOCUMENTO
+   AND TD.CODIGO_OPCION = N'SC_MOVIMIENTO_PERSONAL'
+   AND TD.ACTIVO = 1
+INNER JOIN dbo.SEG_FLUJO_NOTIFICACION AS N
+	ON N.CORR_EMPRESA = I.CORR_EMPRESA
+   AND N.CORR_INSTANCIA = I.CORR_INSTANCIA
+   AND N.CORR_PASO = I.CORR_PASO_ACTUAL
+WHERE I.CORR_EMPRESA = @CORR_EMPRESA
+  AND I.CORR_DOCUMENTO = @CORR_MOVIMIENTO_PERSONAL
+  AND I.ACTIVO = 1
+  AND ISNULL(N.PROCESADO, 0) = 0
+  AND NULLIF(LTRIM(RTRIM(N.LOGIN_SISTEMA_DESTINO)), '') IS NOT NULL;", p);
+
+				while (readerDest.Read())
+				{
+					var login = readerDest["LOGIN_DESTINO"]?.ToString()?.Trim();
+					if (!string.IsNullOrWhiteSpace(login)
+						&& !dto.LOGINS_PENDIENTES.Exists(x =>
+							string.Equals(x, login, StringComparison.OrdinalIgnoreCase)))
+					{
+						dto.LOGINS_PENDIENTES.Add(login);
+					}
+				}
+				readerDest.Close();
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return dto;
+		}
 	}
 }
