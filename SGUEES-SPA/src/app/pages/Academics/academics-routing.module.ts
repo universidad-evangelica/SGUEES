@@ -11,6 +11,7 @@ import { AcaBecEntidadFinanciadoraComponent } from './aca-bec-entidad-financiado
 import { AcaBecFinanciadorComponent } from './aca-bec-financiador/aca-bec-financiador.component';
 import { AcaBecRequisitoComponent } from './aca-bec-requisito/aca-bec-requisito.component';
 import { AcaBecTipoComponent } from './aca-bec-tipo/aca-bec-tipo.component';
+import { AcaFacultadesComponent } from './aca-facultades/aca-facultades.component';
 import { AcaProspectoComponent } from './aca-prospecto/aca-prospecto.component';
 import { AcaProspectoBecaComponent } from './aca-prospecto-beca/aca-prospecto-beca.component';
 
@@ -109,6 +110,14 @@ const routes: Routes = [
     canDeactivate: [AppCanDeactivateGuard],
     data: { titulo: 'Entidades Financiadoras' },
     loadChildren: () => import('./aca-bec-entidad-financiadora/aca-bec-entidad-financiadora.module').then((m) => m.AcaBecEntidadFinanciadoraModule),
+  },
+  {
+    path: 'aca-facultades',
+    component: AcaFacultadesComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Facultades' },
+    loadChildren: () => import('./aca-facultades/aca-facultades.module').then((m) => m.AcaFacultadesModule),
   },
 ];
 
