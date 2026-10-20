@@ -73,6 +73,69 @@ export class SegFlujoEstadoService {
         return this.repo.delete(xWhere);
     }
 
+    // Qué hace: columnas de la grilla de estados.
+    // Cómo lo hace: ancho fijo para que en móvil aparezca el scroll horizontal.
+    getColumns(): any[] {
+        return [
+            { dataField: 'CORR_ESTADO', caption: 'Corr.', width: 90 },
+            { dataField: 'NOMBRE_ESTADO', caption: 'Nombre', width: 250, minWidth: 180 },
+            { dataField: 'DESCRIPCION', caption: 'Descripción', width: 360, minWidth: 200 },
+            { dataField: 'ES_INICIAL', caption: 'Inicial', width: 110 },
+            { dataField: 'ES_FINAL', caption: 'Final', width: 110 },
+            { dataField: 'ACTIVO', caption: 'Activo', width: 100 },
+        ];
+    }
+
+    // Qué hace: campos del formulario de un estado.
+    getItems(): any[] {
+        return [
+            {
+                dataField: 'CORR_ESTADO',
+                label: { text: 'Corr.' },
+                colSpan: 1,
+                editorOptions: { readOnly: true },
+            },
+            {
+                dataField: 'NOMBRE_ESTADO',
+                label: { text: 'Nombre Estado' },
+                colSpan: 2,
+                editorOptions: {
+                    placeholder: 'Nombre del estado...',
+                    showClearButton: true,
+                    maxLength: 50,
+                },
+            },
+            {
+                dataField: 'DESCRIPCION',
+                label: { text: 'Descripción' },
+                colSpan: 2,
+                editorOptions: {
+                    placeholder: 'Descripción...',
+                    showClearButton: true,
+                    maxLength: 255,
+                },
+            },
+            {
+                dataField: 'ES_INICIAL',
+                label: { text: 'Inicial' },
+                colSpan: 1,
+                editorType: 'dxCheckBox',
+            },
+            {
+                dataField: 'ES_FINAL',
+                label: { text: 'Final' },
+                colSpan: 1,
+                editorType: 'dxCheckBox',
+            },
+            {
+                dataField: 'ACTIVO',
+                label: { text: 'Activo' },
+                colSpan: 1,
+                editorType: 'dxCheckBox',
+            },
+        ];
+    }
+
     getByTipoDocumento(corrTipoDocumento: number, corrEmpresa?: number): Observable<IResult> {
         let xWhere: IParam[] = [];
         

@@ -34,29 +34,51 @@
 }
 
 .flujo-paso-grid {
+	padding: 18px 12px 12px;
+
 	.flujo-paso-toolbar {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 10px;
-		margin-bottom: 14px;
+		margin: 4px 0 16px;
 		padding: 10px 12px;
 		background: var(--sguees-surface-subtle, #eef1f6);
 		border: 1px solid var(--border-color);
 		border-radius: var(--sguees-radius-md, 10px);
 	}
 
+	::ng-deep dx-button.flujo-paso-toolbar-btn {
+		flex: 0 0 auto;
+		width: auto;
+	}
+
 	::ng-deep .flujo-paso-toolbar-btn .dx-button {
+		width: auto;
 		min-width: 150px;
-		min-height: var(--sguees-toolbar-height, 44px);
+		height: auto;
+		min-height: 40px;
 		padding-inline: 16px;
 		font-size: 14px;
 		font-weight: 600;
 	}
 
-	::ng-deep .flujo-paso-toolbar-btn--cancel .dx-button {
-		min-width: 140px;
+	::ng-deep .flujo-paso-toolbar-btn .dx-button-content {
+		overflow: visible;
+		padding: 8px 16px;
 	}
+
+	::ng-deep .flujo-paso-toolbar-btn .dx-button-text {
+		overflow: visible;
+		text-overflow: clip;
+		white-space: nowrap;
+	}
+}
+
+.seg-flujo-modal-body {
+	max-height: calc(78vh - 72px);
+	overflow: auto;
+	padding: 4px 2px 8px;
 }
 
 .seg-flujo-modal-toolbar {
@@ -66,8 +88,27 @@
 	gap: 10px;
 	margin-bottom: 12px;
 
+	::ng-deep dx-button {
+		flex: 0 0 auto;
+		width: auto;
+	}
+
 	::ng-deep .dx-button {
-		min-height: var(--sguees-toolbar-height, 44px);
+		width: auto;
+		min-width: 120px;
+		height: auto;
+		min-height: 40px;
+	}
+
+	::ng-deep .dx-button-content {
+		overflow: visible;
+		padding: 8px 16px;
+	}
+
+	::ng-deep .dx-button-text {
+		overflow: visible;
+		text-overflow: clip;
+		white-space: nowrap;
 	}
 }
 

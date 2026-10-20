@@ -18,6 +18,7 @@ import { SegFlujoEstadoMensajeService } from './seg-flujo-estado-mensaje/seg-flu
 import { SegFlujoEstadoMensaje } from './seg-flujo-estado-mensaje/models/seg-flujo-estado-mensaje';
 import { SegFlujoPasoActorDestinoService } from './seg-flujo-paso-actor-destino/seg-flujo-paso-actor-destino.service';
 import { SegFlujoPasoActorDestino } from './seg-flujo-paso-actor-destino/models/seg-flujo-paso-actor-destino';
+import { confirm } from 'devextreme/ui/dialog';
 @Component({
     selector: 'app-seg-flujo-proceso',
     templateUrl: './seg-flujo-proceso.component.html',
@@ -761,12 +762,14 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
-                            this.pasos.push(response.Data);
+                            this.pasos = this.ponerFila(this.pasos, this.completarPaso(response.Data), 'CORR_PASO');
                             this.pasoModel = null;
                             this.banderaMttoPaso = UpdateType.Browse;
                             this.pasoReadOnly = false;
                             this.notifyFx('Paso creado con éxito!', NotifyType.Success);
-                            this.cargarPasos();
+                            if (this.modalAccionesVisible) {
+                                this.cargarPasosDestinoLookup();
+                            }
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -784,15 +787,14 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
-                            const vIndex = this.pasos.findIndex(
-                                (item: any) => item.CORR_PASO === response.Data.CORR_PASO
-                            );
-                            this.pasos[vIndex] = response.Data;
+                            this.pasos = this.ponerFila(this.pasos, this.completarPaso(response.Data), 'CORR_PASO');
                             this.pasoModel = null;
                             this.banderaMttoPaso = UpdateType.Browse;
                             this.pasoReadOnly = false;
                             this.notifyFx('Paso modificado con éxito!', NotifyType.Success);
-                            this.cargarPasos();
+                            if (this.modalAccionesVisible) {
+                                this.cargarPasosDestinoLookup();
+                            }
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -881,28 +883,31 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     /**
      * Evento de eliminación de paso
      */
-    rowRemovingPaso(e: any): void {
-        if (!e.data) return;
-
-        this.servicePaso
-            .delete(e.data.CORR_PASO)
-            .pipe(take(1))
-            .subscribe({
+    // Qué hace: quita el paso del flujo después de confirmar.
+    // Cómo lo hace: el API borra la fila y se saca del arreglo local.
+    pedirEliminarPaso(fila: any): void {
+        if (!fila?.CORR_PASO) {
+            return;
+        }
+        confirm(
+            `<div class="sguees-confirm-message">Se eliminará el paso ${fila.NOMBRE_PASO || ''}. ¿Desea continuar?</div>`,
+            'Eliminar paso'
+        ).then((acepta: boolean) => {
+            if (!acepta) {
+                return;
+            }
+            this.servicePaso.delete(fila.CORR_PASO).pipe(take(1)).subscribe({
                 next: (response: any) => {
                     if (response.Result) {
+                        this.pasos = this.pasos.filter((item) => item.CORR_PASO !== fila.CORR_PASO);
                         this.notifyFx('Paso eliminado con éxito!', NotifyType.Success);
-                        this.cargarPasos();
-                        e.component.refresh();
-                    } else {
-                        e.cancel = true;
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        return;
                     }
+                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
                 },
-                error: (error: any) => {
-                    e.cancel = true;
-                    this.notifyFx(error, NotifyType.Error);
-                },
+                error: (error: any) => this.notifyFx(error, NotifyType.Error),
             });
+        });
     }
     //#endregion
 
@@ -1010,10 +1015,10 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
+                            this.accionesEstado = this.ponerFila(this.accionesEstado, this.completarAccion(response.Data), 'CORR_ACCION');
                             this.notifyFx('Acción creada con éxito!', NotifyType.Success);
                             this.accionEstadoModel = null;
                             this.banderaAccionEstado = UpdateType.Browse;
-                            this.cargarAccionesEstado();
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -1031,10 +1036,10 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
+                            this.accionesEstado = this.ponerFila(this.accionesEstado, this.completarAccion(response.Data), 'CORR_ACCION');
                             this.notifyFx('Acción modificada con éxito!', NotifyType.Success);
                             this.accionEstadoModel = null;
                             this.banderaAccionEstado = UpdateType.Browse;
-                            this.cargarAccionesEstado();
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -1055,34 +1060,37 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     }
 
     editarAccionEstado(e: any): void {
-        const accion = e?.row?.data || e;
+        const accion = e?.row?.data || e?.data || e;
         if (!accion || !accion.CORR_ACCION) return;
         this.accionEstadoModel = { ...accion };
         this.banderaAccionEstado = UpdateType.Update;
         this.accionEstadoReadOnly = false;
     }
 
-    rowRemovingAccionEstado(e: any): void {
-        if (!e.data) return;
-        this.serviceAccionEstado
-            .delete(e.data)
-            .pipe(take(1))
-            .subscribe({
+    // Qué hace: quita la acción del paso después de confirmar.
+    pedirEliminarAccionEstado(fila: any): void {
+        if (!fila?.CORR_ACCION) {
+            return;
+        }
+        confirm(
+            `<div class="sguees-confirm-message">Se eliminará la acción seleccionada. ¿Desea continuar?</div>`,
+            'Eliminar acción'
+        ).then((acepta: boolean) => {
+            if (!acepta) {
+                return;
+            }
+            this.serviceAccionEstado.delete(fila).pipe(take(1)).subscribe({
                 next: (response: any) => {
                     if (response.Result) {
+                        this.accionesEstado = this.accionesEstado.filter((item) => item.CORR_ACCION !== fila.CORR_ACCION);
                         this.notifyFx('Acción eliminada con éxito!', NotifyType.Success);
-                        this.cargarAccionesEstado();
-                        e.component.refresh();
-                    } else {
-                        e.cancel = true;
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        return;
                     }
+                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
                 },
-                error: (error: any) => {
-                    e.cancel = true;
-                    this.notifyFx(error, NotifyType.Error);
-                },
+                error: (error: any) => this.notifyFx(error, NotifyType.Error),
             });
+        });
     }
 
     focusedRowChangedAccionEstado(e: any): void {
@@ -1189,10 +1197,10 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
+                            this.estadosMensaje = this.ponerFila(this.estadosMensaje, this.completarMensaje(response.Data), 'CORR_ESTADO_MENSAJE');
                             this.notifyFx('Mensaje creado con éxito!', NotifyType.Success);
                             this.estadoMensajeModel = null;
                             this.banderaEstadoMensaje = UpdateType.Browse;
-                            this.cargarEstadosMensaje();
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -1210,10 +1218,10 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
+                            this.estadosMensaje = this.ponerFila(this.estadosMensaje, this.completarMensaje(response.Data), 'CORR_ESTADO_MENSAJE');
                             this.notifyFx('Mensaje modificado con éxito!', NotifyType.Success);
                             this.estadoMensajeModel = null;
                             this.banderaEstadoMensaje = UpdateType.Browse;
-                            this.cargarEstadosMensaje();
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -1234,34 +1242,37 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     }
 
     editarEstadoMensaje(e: any): void {
-        const mensaje = e?.row?.data || e;
+        const mensaje = e?.row?.data || e?.data || e;
         if (!mensaje || !mensaje.CORR_ESTADO_MENSAJE) return;
         this.estadoMensajeModel = { ...mensaje };
         this.banderaEstadoMensaje = UpdateType.Update;
         this.estadoMensajeReadOnly = false;
     }
 
-    rowRemovingEstadoMensaje(e: any): void {
-        if (!e.data) return;
-        this.serviceEstadoMensaje
-            .delete(e.data)
-            .pipe(take(1))
-            .subscribe({
+    // Qué hace: quita el mensaje del paso después de confirmar.
+    pedirEliminarEstadoMensaje(fila: any): void {
+        if (!fila?.CORR_ESTADO_MENSAJE) {
+            return;
+        }
+        confirm(
+            `<div class="sguees-confirm-message">Se eliminará el mensaje seleccionado. ¿Desea continuar?</div>`,
+            'Eliminar mensaje'
+        ).then((acepta: boolean) => {
+            if (!acepta) {
+                return;
+            }
+            this.serviceEstadoMensaje.delete(fila).pipe(take(1)).subscribe({
                 next: (response: any) => {
                     if (response.Result) {
+                        this.estadosMensaje = this.estadosMensaje.filter((item) => item.CORR_ESTADO_MENSAJE !== fila.CORR_ESTADO_MENSAJE);
                         this.notifyFx('Mensaje eliminado con éxito!', NotifyType.Success);
-                        this.cargarEstadosMensaje();
-                        e.component.refresh();
-                    } else {
-                        e.cancel = true;
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        return;
                     }
+                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
                 },
-                error: (error: any) => {
-                    e.cancel = true;
-                    this.notifyFx(error, NotifyType.Error);
-                },
+                error: (error: any) => this.notifyFx(error, NotifyType.Error),
             });
+        });
     }
 
     focusedRowChangedEstadoMensaje(e: any): void {
@@ -1379,11 +1390,11 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
+                            this.actoresDestino = this.ponerFila(this.actoresDestino, this.completarActorDestino(response.Data), 'CORR_PASO_ACTOR_DESTINO');
                             this.notifyFx('Actor creado con éxito!', NotifyType.Success);
                             this.actorDestinoModel = null;
                             this.banderaActorDestino = UpdateType.Browse;
                             this.mostrarUnidadActorModal = false;
-                            this.cargarActoresDestino();
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -1401,11 +1412,11 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
+                            this.actoresDestino = this.ponerFila(this.actoresDestino, this.completarActorDestino(response.Data), 'CORR_PASO_ACTOR_DESTINO');
                             this.notifyFx('Actor modificado con éxito!', NotifyType.Success);
                             this.actorDestinoModel = null;
                             this.banderaActorDestino = UpdateType.Browse;
                             this.mostrarUnidadActorModal = false;
-                            this.cargarActoresDestino();
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -1427,7 +1438,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     }
 
     editarActorDestino(e: any): void {
-        const actor = e?.row?.data || e;
+        const actor = e?.row?.data || e?.data || e;
         if (!actor || !actor.CORR_PASO_ACTOR_DESTINO) return;
         this.actorDestinoModel = { ...actor };
         this.banderaActorDestino = UpdateType.Update;
@@ -1435,27 +1446,106 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.mostrarUnidadActorModal = this.serviceActorDestino.requiereUnidad(actor.CORR_ACTOR);
     }
 
-    rowRemovingActorDestino(e: any): void {
-        if (!e.data) return;
-        this.serviceActorDestino
-            .delete(e.data)
-            .pipe(take(1))
-            .subscribe({
+    // Qué hace: quita el actor destino del paso después de confirmar.
+    pedirEliminarActorDestino(fila: any): void {
+        if (!fila?.CORR_PASO_ACTOR_DESTINO) {
+            return;
+        }
+        confirm(
+            `<div class="sguees-confirm-message">Se eliminará el actor destino seleccionado. ¿Desea continuar?</div>`,
+            'Eliminar actor'
+        ).then((acepta: boolean) => {
+            if (!acepta) {
+                return;
+            }
+            this.serviceActorDestino.delete(fila).pipe(take(1)).subscribe({
                 next: (response: any) => {
                     if (response.Result) {
+                        this.actoresDestino = this.actoresDestino.filter((item) => item.CORR_PASO_ACTOR_DESTINO !== fila.CORR_PASO_ACTOR_DESTINO);
                         this.notifyFx('Actor eliminado con éxito!', NotifyType.Success);
-                        this.cargarActoresDestino();
-                        e.component.refresh();
-                    } else {
-                        e.cancel = true;
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        return;
                     }
+                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
                 },
-                error: (error: any) => {
-                    e.cancel = true;
-                    this.notifyFx(error, NotifyType.Error);
-                },
+                error: (error: any) => this.notifyFx(error, NotifyType.Error),
             });
+        });
+    }
+
+    // Qué hace: agrega o reemplaza una fila en el arreglo local.
+    private ponerFila(lista: any[], fila: any, campo: string): any[] {
+        const filas = [...(lista || [])];
+        if (!fila) {
+            return filas;
+        }
+        const indice = filas.findIndex((item: any) => item && item[campo] === fila[campo]);
+        if (indice >= 0) {
+            filas[indice] = fila;
+        } else {
+            filas.push(fila);
+        }
+        return filas;
+    }
+
+    // Qué hace: busca el texto de un catálogo ya cargado.
+    private textoCatalogo(lista: any[], valor: any, campoValor: string, campoTexto: string): string {
+        const fila = (lista || []).find((item: any) => item && item[campoValor] == valor);
+        return fila ? (fila[campoTexto] || '') : '';
+    }
+
+    // Qué hace: completa los nombres que muestra la grilla de pasos.
+    private completarPaso(data: any): any {
+        const fila = { ...(data || {}) };
+        if (!fila.NOMBRE_ACTOR) {
+            fila.NOMBRE_ACTOR = this.textoCatalogo(this.mCORR_ACTOR_ORIGEN, fila.CORR_ACTOR_ORIGEN, 'CORR_ACTOR', 'NOMBRE_ACTOR');
+        }
+        if (!fila.NOMBRE_ACTOR_DESTINO) {
+            fila.NOMBRE_ACTOR_DESTINO = this.textoCatalogo(this.mCORR_ACTOR_DESTINO, fila.CORR_ACTOR_DESTINO, 'CORR_ACTOR', 'NOMBRE_ACTOR');
+        }
+        if (!fila.NOMBRE_ESTADO_ORIGEN) {
+            fila.NOMBRE_ESTADO_ORIGEN = this.textoCatalogo(this.mCORR_ESTADO_ORIGEN, fila.CORR_ESTADO_ORIGEN, 'CORR_ESTADO', 'NOMBRE_ESTADO');
+        }
+        return fila;
+    }
+
+    // Qué hace: completa los nombres que muestra la grilla de acciones.
+    private completarAccion(data: any): any {
+        const fila = { ...(data || {}) };
+        if (!fila.NOMBRE_ESTADO) {
+            fila.NOMBRE_ESTADO = this.textoCatalogo(this.mCORR_ESTADO_ORIGEN, fila.CORR_ESTADO_DESTINO, 'CORR_ESTADO', 'NOMBRE_ESTADO');
+        }
+        if (!fila.TIPO_MOVIMIENTO) {
+            fila.TIPO_MOVIMIENTO = this.textoCatalogo(this.mCORR_TIPO_MOVIMIENTO, fila.CORR_TIPO_MOVIMIENTO, 'CORR_TIPO_MOVIMIENTO', 'NOMBRE_TIPO');
+        }
+        if (!fila.TIPO_NOTIFICACION) {
+            fila.TIPO_NOTIFICACION = this.textoCatalogo(this.mCORR_TIPO_NOTIFICACION, fila.CORR_TIPO_NOTIFICACION, 'CORR_TIPO_NOTIFICACION', 'NOMBRE_TIPO');
+        }
+        return fila;
+    }
+
+    // Qué hace: completa los nombres que muestra la grilla de mensajes.
+    private completarMensaje(data: any): any {
+        const fila = { ...(data || {}) };
+        if (!fila.NOMBRE_ESTADO) {
+            fila.NOMBRE_ESTADO = this.textoCatalogo(this.mCORR_ESTADO_ORIGEN, fila.CORR_ESTADO, 'CORR_ESTADO', 'NOMBRE_ESTADO');
+        }
+        if (!fila.NOMBRE_ACTOR) {
+            fila.NOMBRE_ACTOR = this.textoCatalogo(this.mCORR_ACTOR_ORIGEN, fila.CORR_ACTOR, 'CORR_ACTOR', 'NOMBRE_ACTOR');
+        }
+        return fila;
+    }
+
+    // Qué hace: completa los nombres que muestra la grilla de actores destino.
+    private completarActorDestino(data: any): any {
+        const fila = { ...(data || {}) };
+        if (!fila.NOMBRE_ACTOR) {
+            fila.NOMBRE_ACTOR = this.textoCatalogo(this.mCORR_ACTOR_DESTINO, fila.CORR_ACTOR, 'CORR_ACTOR', 'NOMBRE_ACTOR');
+        }
+        if (!fila.NOMBRE_UNIDAD) {
+            fila.NOMBRE_UNIDAD = this.textoCatalogo(this.unidadesPaso, fila.CORR_UNIDAD, 'CORR_UNIDAD', 'NOMBRE_UNIDAD')
+                || this.textoCatalogo(this.unidadesPaso, fila.CORR_UNIDAD, 'CORR_UNIDAD', 'NOMBRE_UNIDAD_TREE');
+        }
+        return fila;
     }
 
     focusedRowChangedActorDestino(e: any): void {
