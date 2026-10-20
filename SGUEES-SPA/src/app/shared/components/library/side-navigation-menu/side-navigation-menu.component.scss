@@ -149,13 +149,17 @@
 
       // Activo: barra izquierda + fondo sutil
       .dx-treeview-node.dx-state-selected > .dx-treeview-item,
-      .dx-treeview-node.dx-state-selected > .dx-treeview-item .dx-treeview-item-content,
-      .dx-treeview-item.dx-state-focused,
-      .dx-treeview-item.dx-state-focused .dx-treeview-item-content {
+      .dx-treeview-item.dx-state-focused {
         background-color: var(--sguees-nav-active-bg);
         color: var(--sguees-nav-accent) !important;
         font-weight: 600;
         box-shadow: none;
+      }
+
+      .dx-treeview-node.dx-state-selected > .dx-treeview-item .dx-treeview-item-content,
+      .dx-treeview-item.dx-state-focused .dx-treeview-item-content {
+        background: transparent !important;
+        color: var(--sguees-nav-accent) !important;
       }
 
       // Activo: barra izquierda + fondo sutil (única excepción a ::before)
