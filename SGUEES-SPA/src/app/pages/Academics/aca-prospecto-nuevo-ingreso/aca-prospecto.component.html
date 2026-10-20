@@ -158,7 +158,7 @@
         <section class="sguees-section-card aca-prospecto-card">
             <!-- Qué hace: cada bloque del formulario va en su propia pestaña para no bajar por toda la ficha. -->
             <!-- Cómo lo hace: deferRendering=false deja todas renderizadas para validar al guardar. -->
-            <dx-tab-panel #tabPanel class="aca-prospecto-tab-panel" [selectedIndex]="0" [animationEnabled]="false" [swipeEnabled]="false" [deferRendering]="false">
+            <dx-tab-panel #tabPanel class="aca-prospecto-tab-panel" [selectedIndex]="0" [animationEnabled]="false" [swipeEnabled]="false" [deferRendering]="false" itemTitleTemplate="tituloApartado">
 
                 <!-- ================= Datos personales ================= -->
                 <dxi-item title="Datos personales" [icon]="'user'">
@@ -176,8 +176,10 @@
                             [colCount]="8"
                             [readOnly]="readOnly"
                             [items]="itemsPersona"
+                            (onContentReady)="pintarRequeridos()"
+                            (onFieldDataChanged)="pintarRequeridos()"
                         >
-                            <div *dxTemplate="let cellInfo of 'CORR_SEXOLookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_SEXOLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(personaModel?.CORR_SEXO)">
                                 <app-data-lookup
                                     [model]="mCORR_SEXO"
                                     [(value)]="personaModel.CORR_SEXO"
@@ -189,7 +191,7 @@
                                 >
                                 </app-data-lookup>
                             </div>
-                            <div *dxTemplate="let cellInfo of 'CORR_ESTADO_CIVILLookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_ESTADO_CIVILLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(personaModel?.CORR_ESTADO_CIVIL)">
                                 <app-data-lookup
                                     [model]="mCORR_ESTADO_CIVIL"
                                     [(value)]="personaModel.CORR_ESTADO_CIVIL"
@@ -225,7 +227,7 @@
                                 >
                                 </app-data-lookup>
                             </div>
-                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_PROCEDENCIALookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_PROCEDENCIALookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(personaModel?.CORR_PAIS_PROCEDENCIA)">
                                 <app-data-lookup
                                     [model]="mCORR_PAIS"
                                     [(value)]="personaModel.CORR_PAIS_PROCEDENCIA"
@@ -237,7 +239,7 @@
                                 >
                                 </app-data-lookup>
                             </div>
-                            <div *dxTemplate="let cellInfo of 'CORR_RELIGIONLookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_RELIGIONLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(personaModel?.CORR_RELIGION)">
                                 <app-data-lookup
                                     [model]="mCORR_RELIGION"
                                     [(value)]="personaModel.CORR_RELIGION"
@@ -249,7 +251,7 @@
                                 >
                                 </app-data-lookup>
                             </div>
-                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_RESIDENCIALookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_RESIDENCIALookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(personaModel?.CORR_PAIS_RESIDENCIA)">
                                 <app-data-lookup
                                     [model]="mCORR_PAIS"
                                     [(value)]="personaModel.CORR_PAIS_RESIDENCIA"
@@ -262,7 +264,7 @@
                                 >
                                 </app-data-lookup>
                             </div>
-                            <div *dxTemplate="let cellInfo of 'CORR_DEPTO_RESIDENCIALookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_DEPTO_RESIDENCIALookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(personaModel?.CORR_DEPTO_RESIDENCIA)">
                                 <app-data-lookup
                                     [model]="mCORR_DEPTO_RESIDENCIA"
                                     [(value)]="personaModel.CORR_DEPTO_RESIDENCIA"
@@ -275,7 +277,7 @@
                                 >
                                 </app-data-lookup>
                             </div>
-                            <div *dxTemplate="let cellInfo of 'CORR_MUNICIPIO_RESIDENCIALookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_MUNICIPIO_RESIDENCIALookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(personaModel?.CORR_MUNICIPIO_RESIDENCIA)">
                                 <app-data-lookup
                                     [model]="mCORR_MUNICIPIO_RESIDENCIA"
                                     [(value)]="personaModel.CORR_MUNICIPIO_RESIDENCIA"
@@ -320,7 +322,7 @@
                             [readOnly]="readOnly"
                             [items]="itemsDeportacion"
                         >
-                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_DEPORTACIONLookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_DEPORTACIONLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(deportacionModel?.CORR_PAIS)">
                                 <app-data-lookup
                                     [model]="mCORR_PAIS"
                                     [(value)]="deportacionModel.CORR_PAIS"
@@ -518,7 +520,7 @@
                             [readOnly]="readOnly"
                             [items]="itemsLimitacion"
                         >
-                            <div *dxTemplate="let cellInfo of 'CORR_LIMITACION_FISICALookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_LIMITACION_FISICALookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(limitacionModel?.CORR_LIMITACION_FISICA)">
                                 <app-data-lookup
                                     [model]="mCORR_LIMITACION_FISICA"
                                     [(value)]="limitacionModel.CORR_LIMITACION_FISICA"
@@ -584,9 +586,10 @@
                                 [labelLocation]="'top'"
                                 [colCount]="8"
                                 [items]="itemsFamiliar"
+                                (onContentReady)="pintarRequeridos()"
                                 (onFieldDataChanged)="onFamiliarChanged($event)"
                             >
-                                <div *dxTemplate="let cellInfo of 'CORR_PARENTESCOLookup'">
+                                <div *dxTemplate="let cellInfo of 'CORR_PARENTESCOLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(familiarModel?.CORR_PARENTESCO)">
                                     <app-data-lookup
                                         [model]="mCORR_PARENTESCO"
                                         [(value)]="familiarModel.CORR_PARENTESCO"
@@ -620,6 +623,7 @@
                                 [colCount]="8"
                                 [readOnly]="readOnly"
                                 [items]="itemsEmergencia"
+                                (onContentReady)="pintarRequeridos()"
                             >
                             </dx-form>
                         </ng-container>
@@ -663,8 +667,9 @@
                             [colCount]="8"
                             [readOnly]="readOnly"
                             [items]="itemsEstudioMedia"
+                            (onContentReady)="pintarRequeridos()"
                         >
-                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_ESTUDIOLookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_PAIS_ESTUDIOLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(estudioMedia?.CORR_PAIS)">
                                 <app-data-lookup
                                     [model]="mCORR_PAIS"
                                     [(value)]="estudioMedia.CORR_PAIS"
@@ -677,7 +682,7 @@
                                 >
                                 </app-data-lookup>
                             </div>
-                            <div *dxTemplate="let cellInfo of 'CORR_DEPTO_ESTUDIOLookup'">
+                            <div *dxTemplate="let cellInfo of 'CORR_DEPTO_ESTUDIOLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(estudioMedia?.CORR_DEPTO)">
                                 <app-data-lookup
                                     [model]="mCORR_DEPTO_ESTUDIO"
                                     [(value)]="estudioMedia.CORR_DEPTO"
@@ -841,7 +846,7 @@
                                 [colCount]="8"
                                 [items]="itemsMedio"
                             >
-                                <div *dxTemplate="let cellInfo of 'CORR_MEDIO_ORIGENLookup'">
+                                <div *dxTemplate="let cellInfo of 'CORR_MEDIO_ORIGENLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(medioModel?.CORR_MEDIO_ORIGEN)">
                                     <app-data-lookup
                                         [model]="mCORR_MEDIO_ORIGEN"
                                         [(value)]="medioModel.CORR_MEDIO_ORIGEN"
@@ -903,6 +908,17 @@
                         </app-data-grid-mtto>
                     </div>
                 </dxi-item>
+                <!-- Qué hace: el círculo dice cuántos datos faltan en ese apartado para enviar o aprobar. -->
+                <div *dxTemplate="let data of 'tituloApartado'" class="aca-prospecto-tab-lista">
+                    <i class="dx-icon" [ngClass]="'dx-icon-' + data.icon"></i>
+                    <span class="dx-tab-text">{{ data.title }}</span>
+                    <span
+                        *ngIf="mostrarFaltantesApartado() && faltanApartado(data) >= 0"
+                        class="aca-prospecto-tab-conteo"
+                        [class.aca-prospecto-tab-conteo--ok]="faltanApartado(data) === 0"
+                        [class.aca-prospecto-tab-conteo--falta]="faltanApartado(data) > 0"
+                    >{{ faltanApartado(data) === 0 ? '✓' : faltanApartado(data) }}</span>
+                </div>
             </dx-tab-panel>
         </section>
                 </div>

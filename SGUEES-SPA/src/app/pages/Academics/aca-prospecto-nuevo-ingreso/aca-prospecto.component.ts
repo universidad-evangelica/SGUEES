@@ -713,6 +713,132 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return total?.length || 0;
     }
 
+    // Qué hace: muestra los círculos de lo que falta solo mientras se puede enviar o aprobar.
+    // Cómo lo hace: el borrador se envía y la ingresada se aprueba. Aprobada y rechazada ya no lo piden.
+    mostrarFaltantesApartado(): boolean {
+        const estado = Number(this.model?.CORR_ESTADO);
+        return estado !== 39 && estado !== 46;
+    }
+
+    // Qué hace: cuántos datos de ese apartado faltan para el 100 % de enviar y aprobar.
+    // Cómo lo hace: los mismos campos que exige el API. Contacto no entra. -1 oculta el círculo.
+    faltanApartado(data: any): number {
+        switch (data?.title) {
+            case 'Datos personales':
+                return this.faltanDatosPersonales();
+            case 'Salud':
+                return this.faltanSalud();
+            case 'Datos familiares':
+                return this.faltanFamilia();
+            case 'Educación':
+                return this.faltanEducacion();
+            case 'Información adicional':
+                return this.faltanMedio();
+            case 'Documentación':
+                return (this.documentos || []).filter((d) => !d?.NOMBRE_ARCHIVO).length;
+            default:
+                return -1;
+        }
+    }
+
+    private datoVacio(valor: any): boolean {
+        return valor === null || valor === undefined || String(valor).trim() === '';
+    }
+
+    // Qué hace: el campo obligatorio vacío se pinta en rojo mientras se puede enviar o aprobar.
+    reqVacio(valor: any): boolean {
+        if (!this.mostrarFaltantesApartado()) {
+            return false;
+        }
+        if (typeof valor === 'number') {
+            return !(valor > 0);
+        }
+        return this.datoVacio(valor);
+    }
+
+    // Qué hace: enciende el borde rojo de los editores que el dx-form ya marca como requeridos.
+    pintarRequeridos(): void {
+        if (!this.mostrarFaltantesApartado() || this.readOnly) {
+            return;
+        }
+        this.formPersona?.instance?.validate();
+        this.formEstudioMedia?.instance?.validate();
+        this.formEmergencia?.instance?.validate();
+        this.formFamiliar?.instance?.validate();
+    }
+
+    private faltanDatosPersonales(): number {
+        const persona = this.personaModel;
+        if (!persona) {
+            return 11;
+        }
+        const campos = [
+            persona.LUGAR_NACIMIENTO,
+            persona.DUI,
+            persona.IGLESIA_ACTUAL,
+            persona.DIRECCION_ACTUAL,
+        ];
+        let faltan = campos.filter((campo) => this.datoVacio(campo)).length;
+        const codigos = [
+            persona.CORR_PAIS_PROCEDENCIA,
+            persona.CORR_PAIS_RESIDENCIA,
+            persona.CORR_SEXO,
+            persona.CORR_ESTADO_CIVIL,
+            persona.CORR_RELIGION,
+            persona.CORR_DEPTO_RESIDENCIA,
+            persona.CORR_MUNICIPIO_RESIDENCIA,
+        ];
+        faltan += codigos.filter((codigo) => !(Number(codigo) > 0)).length;
+        const deportado = persona.HA_SIDO_DEPORTADO === true || (this.deportaciones || []).length > 0 || !!this.deportacionModel;
+        const vigente = (this.deportaciones || []).some((d) => d?.ES_VIGENTE === true) || this.deportacionModel?.ES_VIGENTE === true;
+        if (deportado && !vigente) {
+            faltan += 1;
+        }
+        return faltan;
+    }
+
+    private faltanSalud(): number {
+        const marcada = this.personaModel?.POSEE_DISCAPACIDAD === true || (this.limitaciones || []).length > 0 || !!this.limitacionModel;
+        if (!marcada) {
+            return 0;
+        }
+        const tiene = (this.limitaciones || []).some((l) => Number(l?.CORR_LIMITACION_FISICA) > 0)
+            || Number(this.limitacionModel?.CORR_LIMITACION_FISICA) > 0;
+        return tiene ? 0 : 1;
+    }
+
+    private faltanFamilia(): number {
+        const emergencia = this.emergenciaModel || (this.familiares || []).find((f) => f?.ES_EMERGENCIA === true);
+        if (!emergencia) {
+            return 4;
+        }
+        let faltan = 0;
+        if (this.datoVacio(emergencia.NOMBRES)) faltan += 1;
+        if (!(Number(emergencia.CORR_PARENTESCO) > 0)) faltan += 1;
+        if (this.datoVacio(emergencia.TELEFONO_EMERGENCIA)) faltan += 1;
+        if (this.datoVacio(emergencia.DIRECCION_EMERGENCIA)) faltan += 1;
+        return faltan;
+    }
+
+    private faltanEducacion(): number {
+        const estudio = this.estudioMedia;
+        if (!estudio) {
+            return 6;
+        }
+        let faltan = 0;
+        if (this.datoVacio(estudio.NOMBRE_INSTITUCION)) faltan += 1;
+        if (this.datoVacio(estudio.TIPO_EDUCACION)) faltan += 1;
+        if (this.datoVacio(estudio.TITULO_OBTENIDO)) faltan += 1;
+        if (estudio.ANIO_TITULACION === null || estudio.ANIO_TITULACION === undefined || estudio.ANIO_TITULACION === '') faltan += 1;
+        if (!(Number(estudio.CORR_PAIS) > 0)) faltan += 1;
+        if (!(Number(estudio.CORR_DEPTO) > 0)) faltan += 1;
+        return faltan;
+    }
+
+    private faltanMedio(): number {
+        return (this.medios || []).length > 0 || this.medioModel ? 0 : 1;
+    }
+
     // Qué hace: el listado visible es el de la pestaña abierta.
     aplicarLista(): void {
         this.models = this.esBorrador ? this.modelsBorrador : this.modelsPendientes;

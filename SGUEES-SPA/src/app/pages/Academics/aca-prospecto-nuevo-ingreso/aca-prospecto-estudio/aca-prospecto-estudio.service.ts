@@ -86,8 +86,8 @@ export class AcaProspectoEstudioService {
                 editorOptions: { items: this.getTiposEducacion(), showClearButton: true },
                 validationRules: [{ type: 'required', message: 'Seleccione el tipo de educación' }],
             },
-            { dataField: 'CORR_PAIS', label: { text: 'País' }, colSpan: 2, template: 'CORR_PAIS_ESTUDIOLookup' },
-            { dataField: 'CORR_DEPTO', label: { text: 'Departamento' }, colSpan: 2, template: 'CORR_DEPTO_ESTUDIOLookup' },
+            { dataField: 'CORR_PAIS', label: { text: 'País' }, colSpan: 2, template: 'CORR_PAIS_ESTUDIOLookup', validationRules: [{ type: 'required', message: 'Seleccione el país' }] },
+            { dataField: 'CORR_DEPTO', label: { text: 'Departamento' }, colSpan: 2, template: 'CORR_DEPTO_ESTUDIOLookup', validationRules: [{ type: 'required', message: 'Seleccione el departamento' }] },
             {
                 dataField: 'TITULO_OBTENIDO',
                 label: { text: 'Título obtenido' },

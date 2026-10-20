@@ -104,7 +104,7 @@ export class AcaProspectoFamiliarService {
     getItems(permiteEmergencia = true, trabaja = false): any {
         return [
             { itemType: 'group', caption: 'Identificación', colSpan: 8, colCount: 8, items: [
-                { dataField: 'CORR_PARENTESCO', label: { text: 'Parentesco' }, colSpan: 2, template: 'CORR_PARENTESCOLookup' },
+                { dataField: 'CORR_PARENTESCO', label: { text: 'Parentesco' }, colSpan: 2, template: 'CORR_PARENTESCOLookup', validationRules: [{ type: 'required', message: 'Seleccione el parentesco' }] },
                 {
                     dataField: 'NOMBRES',
                     label: { text: 'Nombres' },
@@ -145,8 +145,8 @@ export class AcaProspectoFamiliarService {
     //               aparte porque salen del familiar marcado en la grilla.
     getItemsEmergencia(): any {
         return [
-            { dataField: 'TELEFONO_EMERGENCIA', label: { text: 'Teléfono de emergencia' }, colSpan: 3, editorOptions: { maxLength: 20 } },
-            { dataField: 'DIRECCION_EMERGENCIA', label: { text: 'Dirección de emergencia' }, colSpan: 5, editorOptions: { maxLength: 300 } },
+            { dataField: 'TELEFONO_EMERGENCIA', label: { text: 'Teléfono de emergencia' }, colSpan: 3, editorOptions: { maxLength: 20 }, validationRules: [{ type: 'required', message: 'Ingrese el teléfono de emergencia' }] },
+            { dataField: 'DIRECCION_EMERGENCIA', label: { text: 'Dirección de emergencia' }, colSpan: 5, editorOptions: { maxLength: 300 }, validationRules: [{ type: 'required', message: 'Ingrese la dirección de emergencia' }] },
         ];
     }
 
