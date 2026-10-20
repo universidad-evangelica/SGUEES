@@ -9,6 +9,9 @@ namespace SGUEES.Models
 		public int CORR_REQUISICION_PERSONAL { get; set; }
 		public int CORR_ESTADO_REQUISICION { get; set; }
 		public int CORR_UNIDAD { get; set; }
+		// Qué hace: Permite filtrar las requisiciones por el nombre del área o unidad solicitante.
+		// Cómo lo hace: Se mapea desde la query string como cadena de texto.
+		public string NOMBRE_UNIDAD { get; set; }
 		public DateTime? FECHA_DESDE { get; set; }
 		public DateTime? FECHA_HASTA { get; set; }
 		public string BUSQUEDA { get; set; }

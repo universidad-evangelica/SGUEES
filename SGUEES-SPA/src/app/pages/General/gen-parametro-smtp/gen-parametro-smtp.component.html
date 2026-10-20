@@ -14,7 +14,8 @@
 		[btn1]="tieneRegistroSeleccionado() ? 'Plantillas' : ''"
 		[btn1Icon]="'email'"
 		[btn1Type]="'default'"
-		[btn1Width]="130"
+		[btn1Width]="115"
+		[btn1LocateInMenu]="'never'"
 		(btn1Click)="abrirVistaPlantillas()"
 		(consultar)="consultar()"
 		(nuevo)="nuevo()"
@@ -25,10 +26,10 @@
 
 	<!-- Vista de Plantilla de Correo con Editor de Texto Enriquecido y Control de Versiones. -->
 	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="esVistaPlantillas">
-		<!-- motivo: barra de acciones de versiones y formato institucional para la plantilla -->
-		<div class="plantilla-toolbar-container" *ngIf="tienePrimeraVersionGuardada() || !tieneModuloYProcesoFijado()">
-			<!-- motivo: aviso informativo ubicado arriba de la línea divisoria mientras el módulo y proceso no estén fijados -->
-			<div class="version-alert-banner" style="background-color: #eff6ff; border-color: #3b82f6; color: #1e40af; width: 100%; margin: 0;" *ngIf="!tieneModuloYProcesoFijado()">
+		<!-- motivo: barra de acciones de versiones y formato institucional para la plantilla visible si hay versiones o si tras finalizar la carga no se ha fijado módulo/proceso -->
+		<div class="plantilla-toolbar-container" *ngIf="tienePrimeraVersionGuardada() || (!tieneModuloYProcesoFijado() && !cargandoPlantillas && !cargandoVersiones)">
+			<!-- motivo: aviso informativo visible únicamente cuando terminó la carga y el módulo y proceso no están fijados -->
+			<div class="version-alert-banner" style="background-color: #eff6ff; border-color: #3b82f6; color: #1e40af; width: 100%; margin: 0;" *ngIf="!tieneModuloYProcesoFijado() && !cargandoPlantillas && !cargandoVersiones">
 				<i class="dx-icon-info" style="color: #2563eb;"></i>
 				<span>
 					Guarde la información principal para fijar el módulo y habilitar la redacción del correo en el editor.
@@ -56,15 +57,15 @@
 
 
 
-			<!-- motivo: selector desplegable y badge de versiones si ya existe una primera versión guardada -->
+			<!-- motivo: selector desplegable y badge de versiones adaptable responsive -->
 			<div class="version-selector-wrapper" *ngIf="tienePrimeraVersionGuardada()">
 				<span class="version-selector-label">Versión:</span>
 				<dx-select-box
+					class="version-select-box"
 					[items]="versiones"
 					[value]="versionSeleccionada?.NUMERO_VERSION"
 					valueExpr="NUMERO_VERSION"
 					[displayExpr]="formatVersionDisplay"
-					[width]="250"
 					(onValueChanged)="onVersionSelectionChange($event)"
 				></dx-select-box>
 
@@ -98,12 +99,12 @@
 			</span>
 		</div>
 
-		<!-- motivo: formulario de plantilla con campos bloqueados si es versión histórica -->
+		<!-- motivo: formulario de plantilla con campos adaptables y bloqueados si es versión histórica -->
 		<div class="plantilla-form-container">
-			<div class="row" style="display: flex; flex-wrap: wrap; margin: -6px;">
+			<div class="plantilla-form-grid">
 				<!-- motivo: código único de identificación de la plantilla bloqueado al fijar información principal -->
-				<div class="col-md-3" style="flex: 0 0 30%; max-width: 30%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Código Plantilla *</label>
+				<div class="form-col form-col-codigo">
+					<label class="form-label">Código Plantilla *</label>
 					<dx-text-box
 						[(value)]="plantillaModel.CODIGO_PLANTILLA"
 						[maxLength]="50"
@@ -113,8 +114,8 @@
 				</div>
 
 				<!-- motivo: nombre descriptivo de la plantilla editable si la versión es activa -->
-				<div class="col-md-7" style="flex: 0 0 55%; max-width: 55%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Nombre de Plantilla *</label>
+				<div class="form-col form-col-nombre">
+					<label class="form-label">Nombre de Plantilla *</label>
 					<dx-text-box
 						[(value)]="plantillaModel.NOMBRE_PLANTILLA"
 						[maxLength]="150"
@@ -124,7 +125,7 @@
 				</div>
 
 				<!-- motivo: indicador de plantilla activa -->
-				<div class="col-md-2" style="flex: 0 0 15%; max-width: 15%; padding: 6px; display: flex; align-items: flex-end; padding-bottom: 12px;">
+				<div class="form-col form-col-activo">
 					<dx-check-box
 						[(value)]="plantillaModel.ACTIVO_PLANTILLA"
 						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
@@ -133,8 +134,8 @@
 				</div>
 
 				<!-- motivo: asunto del correo electrónico -->
-				<div class="col-md-12" style="flex: 0 0 100%; max-width: 100%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Asunto del Correo *</label>
+				<div class="form-col form-col-full">
+					<label class="form-label">Asunto del Correo *</label>
 					<dx-text-box
 						[(value)]="plantillaModel.ASUNTO_PLANTILLA"
 						[maxLength]="255"
@@ -144,8 +145,8 @@
 				</div>
 
 				<!-- motivo: destinatarios en copia carbón (CC) -->
-				<div class="col-md-6" style="flex: 0 0 50%; max-width: 50%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Con Copia (CC)</label>
+				<div class="form-col form-col-medio">
+					<label class="form-label">Con Copia (CC)</label>
 					<dx-text-box
 						[(value)]="plantillaModel.CORREO_CC"
 						[maxLength]="255"
@@ -155,8 +156,8 @@
 				</div>
 
 				<!-- motivo: destinatarios en copia carbón oculta (CCO) -->
-				<div class="col-md-6" style="flex: 0 0 50%; max-width: 50%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Con Copia Oculta (CCO)</label>
+				<div class="form-col form-col-medio">
+					<label class="form-label">Con Copia Oculta (CCO)</label>
 					<dx-text-box
 						[(value)]="plantillaModel.CORREO_CCO"
 						[maxLength]="255"
@@ -166,8 +167,8 @@
 				</div>
 
 				<!-- motivo: selector de Módulo bloqueado una vez fijada la información principal -->
-				<div class="col-md-6" style="flex: 0 0 50%; max-width: 50%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Módulo *</label>
+				<div class="form-col form-col-medio">
+					<label class="form-label">Módulo *</label>
 					<dx-select-box
 						[(value)]="plantillaModel.CODIGO_SISTEMA"
 						[items]="mSISTEMAS"
@@ -181,8 +182,8 @@
 				</div>
 
 				<!-- motivo: selector de Menú / Proceso dependiente bloqueado una vez fijada la información principal -->
-				<div class="col-md-6" style="flex: 0 0 50%; max-width: 50%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Menú / Proceso *</label>
+				<div class="form-col form-col-medio">
+					<label class="form-label">Menú / Proceso *</label>
 					<dx-select-box
 						[(value)]="plantillaModel.CODIGO_OPCION"
 						[items]="mOPCIONES"
@@ -196,16 +197,15 @@
 					></dx-select-box>
 				</div>
 
-
 				<!-- motivo: editor de texto enriquecido de la plantilla habilitado tras fijar la cabecera -->
-				<div class="col-md-12" style="flex: 0 0 100%; max-width: 100%; padding: 6px; margin-top: 8px;">
-					<!-- motivo: cabecera con etiqueta, botones de acción rápida alineados a la derecha y línea separatoria -->
-					<div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(148, 163, 184, 0.25);">
+				<div class="form-col form-col-full form-col-editor">
+					<!-- motivo: cabecera con etiqueta y botones de acción rápida con soporte de salto de línea en móvil -->
+					<div class="plantilla-editor-header">
 						<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin: 0;">
 							Correo *
 						</label>
 						<!-- motivo: botones de acción para formato institucional y limpieza rápida del editor -->
-						<div style="display: inline-flex; align-items: center; gap: 8px;">
+						<div class="plantilla-editor-actions">
 							<dx-button
 								text="Formato Institucional"
 								icon="email"
@@ -226,24 +226,27 @@
 							></dx-button>
 						</div>
 					</div>
-					<app-text-editor
-						[(value)]="plantillaModel.CUERPO_PLANTILLA"
-						[parametros]="parametrosDisponibles"
-						[height]="520"
-						[readOnly]="!esEditorHabilitado()"
-						[placeholder]="tieneModuloYProcesoFijado() ? 'Escriba el contenido del correo...' : 'Guarde la información principal para habilitar la redacción del correo...'"
-					></app-text-editor>
+					<div class="plantilla-editor-wrapper">
+						<app-text-editor
+							[(value)]="plantillaModel.CUERPO_PLANTILLA"
+							[parametros]="parametrosDisponibles"
+							[height]="500"
+							[readOnly]="!esEditorHabilitado()"
+							[placeholder]="(tieneModuloYProcesoFijado() || cargandoPlantillas || cargandoVersiones) ? 'Escriba el contenido del correo...' : 'Guarde la información principal para habilitar la redacción del correo...'"
+						></app-text-editor>
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- motivo: popup modal para la creación de una nueva versión de plantilla -->
+	<!-- motivo: popup modal para la creación de una nueva versión de plantilla adaptable a pantallas pequeñas -->
 	<dx-popup
 		[visible]="popupNuevaVersionVisible"
 		[showTitle]="true"
 		title="Nueva Versión de Plantilla"
 		[width]="520"
+		[maxWidth]="'calc(100vw - 24px)'"
 		[height]="'auto'"
 		[dragEnabled]="false"
 		[closeOnOutsideClick]="false"

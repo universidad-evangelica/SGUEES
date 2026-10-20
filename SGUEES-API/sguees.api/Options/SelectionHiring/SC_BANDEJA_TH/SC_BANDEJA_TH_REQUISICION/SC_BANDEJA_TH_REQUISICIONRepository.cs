@@ -92,6 +92,7 @@ SELECT
 				var corrEmpresa = GetInt(xWhere, "CORR_EMPRESA");
 				var corrEstado = GetInt(xWhere, "CORR_ESTADO_REQUISICION");
 				var corrUnidad = GetInt(xWhere, "CORR_UNIDAD");
+				var nombreUnidad = GetString(xWhere, "NOMBRE_UNIDAD");
 				var fechaDesde = GetDate(xWhere, "FECHA_DESDE");
 				var fechaHasta = GetDate(xWhere, "FECHA_HASTA");
 				var busqueda = GetString(xWhere, "BUSQUEDA");
@@ -121,6 +122,18 @@ SELECT
 						ParameterName = "CORR_UNIDAD",
 						Value = corrUnidad,
 						DbType = DbType.Int32,
+					});
+				}
+				else if (!string.IsNullOrWhiteSpace(nombreUnidad))
+				{
+					// Qué hace: Aplica filtro por nombre de unidad solicitante sobre la vista V_SC_REQUISICION_PERSONAL.
+					// Cómo lo hace: Agrega la condición R.NOMBRE_UNIDAD = @NOMBRE_UNIDAD con parámetro seguro.
+					whereSql += " AND R.NOMBRE_UNIDAD = @NOMBRE_UNIDAD";
+					parameters.Add(new CParameter
+					{
+						ParameterName = "NOMBRE_UNIDAD",
+						Value = nombreUnidad.Trim(),
+						DbType = DbType.String,
 					});
 				}
 

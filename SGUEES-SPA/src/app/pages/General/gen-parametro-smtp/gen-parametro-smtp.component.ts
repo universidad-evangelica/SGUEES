@@ -582,7 +582,7 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 	}
 
 	// Qué hace: cambia la pantalla a la vista de plantilla del correo seleccionado cargando sus datos y versiones.
-	// Cómo lo hace: activa banderas de carga inicial, consulta plantilla asociada y si existe carga sus versiones.
+	// Cómo lo hace: activa banderas de carga inicial, resetea el modelo de plantilla, consulta plantilla asociada y si existe carga sus versiones.
 	abrirVistaPlantillas(): void {
 		if (!this.tieneRegistroSeleccionado()) {
 			this.notifyFx('Seleccione un correo para gestionar sus plantillas.', NotifyType.Warning);
@@ -593,6 +593,8 @@ export class GenParametroSmtpComponent extends CBaseComponent implements OnInit 
 		this.cargandoVersiones = true;
 		this.versiones = [];
 		this.versionSeleccionada = null;
+		this.plantillaModel = this.initPlantillaModel();
+		this.plantillaModel.CORR_PARAMETRO_SMTP = this.model.CORR_PARAMETRO_SMTP;
 		this.cargarModulos();
 
 		this.plantillaService.getAll({ CORR_PARAMETRO_SMTP: this.model.CORR_PARAMETRO_SMTP }).subscribe({
