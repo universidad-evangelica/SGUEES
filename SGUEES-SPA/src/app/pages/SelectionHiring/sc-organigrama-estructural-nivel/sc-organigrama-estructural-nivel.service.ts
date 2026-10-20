@@ -78,8 +78,8 @@ export class SC_OrganigramaEstructuralNivelService {
 
     getNivelColumns(): any {
         return [
-            { dataField: 'CORR_NIVEL', caption: 'Corr.', width: 250 },
-            { dataField: 'NOMBRE_NIVEL', caption: 'Nombre', width: 400 },
+            { dataField: 'CORR_NIVEL', caption: 'Corr.', width: 100 },
+            { dataField: 'NOMBRE_NIVEL', caption: 'Nombre', width: 320, minWidth: 200 },
            
             {
                 dataField: 'ACTIVO',

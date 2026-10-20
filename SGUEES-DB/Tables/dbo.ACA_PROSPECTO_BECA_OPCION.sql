@@ -1,0 +1,43 @@
+-- Qué hace: script de documentación de la tabla ACA_PROSPECTO_BECA_OPCION (ya existente en BD).
+-- Cómo lo hace: refleja columnas, PK, CHECK, defaults, FK e índices consultados en SQL Server (sin crear/alterar la tabla).
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+/*
+Tabla: dbo.ACA_PROSPECTO_BECA_OPCION
+Fuente: estructura leída desde SGUEES (solo documentación; no ejecutar CREATE TABLE en producción).
+Sin índices adicionales. Sin columnas calculadas. Sin triggers.
+*/
+CREATE TABLE [dbo].[ACA_PROSPECTO_BECA_OPCION]
+(
+	[CORR_OPCION_BECA] [int] IDENTITY(1,1) NOT NULL,
+	[CORR_PREGUNTA_BECA] [int] NOT NULL,
+	[TEXTO_OPCION] [varchar(500)] NOT NULL,
+	[ORDEN] [int] NOT NULL,
+	[ACTIVO] [bit] NOT NULL,
+	[CORR_EMPRESA] [int] NOT NULL,
+	[USUARIO_CREA] [varchar(100)] NOT NULL,
+	[ESTACION_CREA] [varchar(50)] NOT NULL,
+	[FECHA_CREA] [datetime] NOT NULL,
+	[USUARIO_ACTU] [varchar(100)] NULL,
+	[ESTACION_ACTU] [varchar(50)] NULL,
+	[FECHA_ACTU] [datetime] NULL,
+	CONSTRAINT [PK_ACA_PROSPECTO_BECA_OPCION] PRIMARY KEY CLUSTERED ([CORR_OPCION_BECA] ASC)
+);
+GO
+
+ALTER TABLE [dbo].[ACA_PROSPECTO_BECA_OPCION] ADD CONSTRAINT [DF_ACA_PROS_BEC_OPC_ACTIVO] DEFAULT ((1)) FOR [ACTIVO]
+GO
+
+ALTER TABLE [dbo].[ACA_PROSPECTO_BECA_OPCION] ADD CONSTRAINT [DF_ACA_PROS_BEC_OPC_EMP] DEFAULT ((1)) FOR [CORR_EMPRESA]
+GO
+
+ALTER TABLE [dbo].[ACA_PROSPECTO_BECA_OPCION] ADD CONSTRAINT [DF_ACA_PROS_BEC_OPC_FC] DEFAULT (getdate()) FOR [FECHA_CREA]
+GO
+
+ALTER TABLE [dbo].[ACA_PROSPECTO_BECA_OPCION] ADD CONSTRAINT [FK_ACA_PROS_BEC_OPC_PRE] FOREIGN KEY ([CORR_PREGUNTA_BECA]) REFERENCES [dbo].[ACA_PROSPECTO_BECA_PREGUNTA] ([CORR_PREGUNTA_BECA]);
+GO
+-- Sin índices adicionales.
+-- Sin triggers.

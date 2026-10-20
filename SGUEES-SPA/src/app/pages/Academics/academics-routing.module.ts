@@ -9,19 +9,21 @@ import { AcaBecEntidadFinanciadoraComponent } from './aca-bec-entidad-financiado
 import { AcaBecFinanciadorComponent } from './aca-bec-financiador/aca-bec-financiador.component';
 import { AcaBecRequisitoComponent } from './aca-bec-requisito/aca-bec-requisito.component';
 import { AcaBecTipoComponent } from './aca-bec-tipo/aca-bec-tipo.component';
-import { AcaProspectoComponent } from './aca-prospecto/aca-prospecto.component';
-import { AcaProspectoBecaComponent } from './aca-prospecto-beca/aca-prospecto-beca.component';
+import { AcaProspectoComponent as AcaProspectoNuevoIngresoComponent } from './aca-prospecto-nuevo-ingreso/aca-prospecto.component';
+import { AcaProspectoComponent as AcaProspectoSocioeconomicoComponent } from './aca-prospecto-socioeconomico/aca-prospecto.component';
+import { AcaProspectoComponent as AcaProspectoBecaComponent } from './aca-prospecto-beca/aca-prospecto.component';
+import { AcaDocumentoAdmisionFlujoTipoDocumentoComponent } from './aca-documento-admision-flujo-tipo-documento/aca-documento-admision-flujo-tipo-documento.component';
 
 const routes: Routes = [
   // Qué hace: abre Solicitud nuevo ingreso, Solicitud beca y Solicitud socioeconómica.
-  // Cómo lo hace: nuevo ingreso y socioeconómico comparten la pantalla; vista distingue las pestañas.
+  // Cómo lo hace: cada pantalla usa su propia dirección, la misma que el menú y la política del API.
   {
-    path: 'aca-prospecto-academico',
-    component: AcaProspectoComponent,
+    path: 'aca-prospecto-nuevo-ingreso',
+    component: AcaProspectoNuevoIngresoComponent,
     canActivate: [AuthGuardService],
     canDeactivate: [AppCanDeactivateGuard],
-    data: { titulo: 'Solicitud nuevo ingreso', vista: 'academico' },
-    loadChildren: () => import('./aca-prospecto/aca-prospecto.module').then((m) => m.AcaProspectoModule),
+    data: { titulo: 'Solicitud nuevo ingreso' },
+    loadChildren: () => import('./aca-prospecto-nuevo-ingreso/aca-prospecto-nuevo-ingreso.module').then((m) => m.AcaProspectoNuevoIngresoModule),
   },
   {
     path: 'aca-prospecto-beca',
@@ -32,12 +34,23 @@ const routes: Routes = [
     loadChildren: () => import('./aca-prospecto-beca/aca-prospecto-beca.module').then((m) => m.AcaProspectoBecaModule),
   },
   {
-    path: 'aca-prospecto-economico',
-    component: AcaProspectoComponent,
+    path: 'aca-prospecto-socioeconomico',
+    component: AcaProspectoSocioeconomicoComponent,
     canActivate: [AuthGuardService],
     canDeactivate: [AppCanDeactivateGuard],
-    data: { titulo: 'Solicitud socioeconómica', vista: 'economico' },
-    loadChildren: () => import('./aca-prospecto/aca-prospecto.module').then((m) => m.AcaProspectoModule),
+    data: { titulo: 'Solicitud socioeconómica' },
+    loadChildren: () => import('./aca-prospecto-socioeconomico/aca-prospecto-socioeconomico.module').then((m) => m.AcaProspectoSocioeconomicoModule),
+  },
+  // Qué hace: abre Documentos por solicitud.
+  // Cómo lo hace: la dirección del menú es /aca-documento-admision-flujo-tipo-documento
+  //               y carga el módulo que ya existía para esa pantalla.
+  {
+    path: 'aca-documento-admision-flujo-tipo-documento',
+    component: AcaDocumentoAdmisionFlujoTipoDocumentoComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Documentos por solicitud' },
+    loadChildren: () => import('./aca-documento-admision-flujo-tipo-documento/aca-documento-admision-flujo-tipo-documento.module').then((m) => m.AcaDocumentoAdmisionFlujoTipoDocumentoModule),
   },
   {
     path: 'aca-bec-origen-beca',

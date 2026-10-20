@@ -1,24 +1,23 @@
 <div class="sguees-mtto-view"> 
+<!-- Qué hace: barra del flujo, con la pestaña Principal del descriptor. -->
 <app-barra-data-mtto
     [tituloVentana]="tituloVentana"
+    [showRibbon]="true"
     [isBrowse]="isBrowse()"
     [isForm]="isForm()"
-    [showRibbon]="isBrowse()"
     [permiteAdd]="permiteAdd"
     [showRefresh]="true"
-	[showExport]="permitePrint"
+    [showExport]="permitePrint"
     (nuevo)="nuevo()"
     (guardar)="guardar()"
     (cancelar)="cancelar()"
+    (consultar)="consultar()"
 >
 </app-barra-data-mtto>
 
 <div *ngIf="!isBrowse()" class="flujo-edit-shell">
-	<section class="sguees-section-card flujo-form-card">
-		<header class="flujo-section-head">
-			<span class="flujo-section-title">Datos del flujo</span>
-			<span class="flujo-section-subtitle">Encabezado del flujo de proceso</span>
-		</header>
+	<!-- Qué hace: formulario del flujo. Guardar y Cancelar están en la barra de arriba. -->
+	<div class="content-block dx-card responsive-paddings flujo-form-card">
 		<dx-form
 			#fData
 			id="fData"
@@ -40,7 +39,7 @@
 				</app-data-lookup>
 			</div>
 		</dx-form>
-	</section>
+	</div>
 
 	<section class="sguees-section-card flujo-detalle-card" *ngIf="model.CORR_FLUJO_PROCESO > 0">
 		<dx-tab-panel #tabPanel class="flujo-tab-panel" [selectedIndex]="0">
@@ -144,39 +143,62 @@
 						</dx-form>
 					</div>
 
-					<app-data-grid-mtto
-						[isBrowse]="isPasoBrowse()"
-						[models]="pasos"
-						[columns]="columnsPasos"
-						[summary]="summaryPasos"
-						[keyExpr]="'CORR_PASO'"
-						[unifiedToolbar]="false"
-						[showAdd]="false"
-						[showSearch]="false"
-						[showExport]="false"
-						[showRefresh]="false"
-						[permiteEditar]="getPermiteEditarPaso"
-						[permiteDele]="getPermiteDelePaso"
-						[customButtons]="customButtonsPasos"
-						(add)="nuevoPaso()"
-						(rowDblClick)="rowDblClickPaso($event)"
-						(rowRemoving)="rowRemovingPaso($event)"
-						(focusedRowChanged)="focusedRowChangedPaso($event)"
-						(editClick)="editarClickPaso($event)"
+					<!-- Qué hace: lista los pasos del flujo. -->
+					<!-- Cómo lo hace: grilla normal, con editar, eliminar, acciones, notificaciones y actores. -->
+					<dx-data-grid
+						*ngIf="isPasoBrowse()"
+						class="theme-dependent sguees-data-grid-mtto"
+						[dataSource]="pasos"
+						keyExpr="CORR_PASO"
+						[columnAutoWidth]="false"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[width]="'100%'"
+						noDataText="Sin pasos."
+						(onRowDblClick)="rowDblClickPaso($event)"
 					>
-					</app-data-grid-mtto>
+						<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+						<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
+						<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+						<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+						<dxo-load-panel [enabled]="false"></dxo-load-panel>
+						<dxi-column caption="" [width]="180" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesPasoTpl" alignment="center"></dxi-column>
+						<div *dxTemplate="let cell of 'accionesPasoTpl'">
+							<dx-button *ngIf="permiteEdit" icon="edit" stylingMode="text" hint="Editar" (onClick)="editarPaso(cell.data)"></dx-button>
+							<dx-button *ngIf="permiteDele" icon="trash" stylingMode="text" hint="Eliminar" (onClick)="pedirEliminarPaso(cell.data)"></dx-button>
+							<dx-button icon="optionsgear" stylingMode="text" hint="Configuración de acciones del paso" (onClick)="abrirModalAcciones({ row: { data: cell.data } })"></dx-button>
+							<dx-button icon="bell" stylingMode="text" hint="Agregar notificaciones" (onClick)="abrirModalNotificaciones({ row: { data: cell.data } })"></dx-button>
+							<dx-button icon="accountbox" stylingMode="text" hint="Agregar actores" (onClick)="abrirModalActores({ row: { data: cell.data } })"></dx-button>
+						</div>
+						<dxi-column dataField="CORR_PASO" caption="Corr." [width]="100"></dxi-column>
+						<dxi-column dataField="ORDEN" caption="Paso" [width]="100"></dxi-column>
+						<dxi-column dataField="NOMBRE_PASO" caption="Nombre del paso" [width]="300" [minWidth]="180"></dxi-column>
+						<dxi-column dataField="NOMBRE_ACTOR" caption="Actor origen" [width]="200" [minWidth]="160"></dxi-column>
+						<dxi-column dataField="NOMBRE_ACTOR_DESTINO" caption="Actor destino" [width]="200" [minWidth]="160"></dxi-column>
+						<dxi-column dataField="NOMBRE_ESTADO_ORIGEN" caption="Estado origen" [width]="150"></dxi-column>
+						<dxi-column dataField="USUARIO_CREA" caption="Usuario Crea" [width]="150"></dxi-column>
+						<dxi-column dataField="FECHA_CREA" caption="Fecha Crea" [width]="160" dataType="datetime" format="dd/MM/yyyy HH:mm"></dxi-column>
+					</dx-data-grid>
 				</div>
 			</dxi-item>
 		</dx-tab-panel>
 	</section>
 </div>
 
+<!-- Qué hace: listado de flujos. La barra de arriba es la del ribbon; esta grilla no arma otra. -->
 <app-data-grid-mtto
     [isBrowse]="isBrowse()"
     [models]="models"
     [columns]="columns"
     [summary]="summary"
     [keyExpr]="'CORR_FLUJO_PROCESO'"
+    [nativeToolbar]="true"
+    [unifiedToolbar]="false"
     [showSearch]="false"
     [showExport]="false"
     [showAdd]="false"
@@ -197,8 +219,10 @@
     [wrapperAttr]="{ class: 'seg-flujo-paso-popup paso-acciones-popup' }"
     [title]="'Acciones del Paso: ' + (pasoSeleccionadoAcciones?.NOMBRE_PASO || '')"
     [showCloseButton]="true"
-    [width]="'88%'"
-    [height]="'70%'"
+    [width]="'1360'"
+    [maxWidth]="'96vw'"
+    [height]="'auto'"
+    [maxHeight]="'78vh'"
     [dragEnabled]="true"
     [resizeEnabled]="true"
     (onShown)="onFlujoPopupShown($event)"
@@ -206,7 +230,7 @@
 >
     <dxo-position at="center" my="center"></dxo-position>
     <div *dxTemplate="let data of 'content'">
-        <dx-scroll-view width="100%" height="100%">
+        <div class="seg-flujo-modal-body">
 
             <div class="seg-flujo-modal-toolbar" *ngIf="(permiteAdd && isAccionEstadoBrowse()) || isAccionEstadoForm()">
                 <dx-button
@@ -292,31 +316,45 @@
             </div>
 
             <!-- Grid Acción-Estado -->
-            <div class="seg-flujo-modal-grid">
-                <app-data-grid-mtto
-                    [isBrowse]="isAccionEstadoBrowse()"
-                    [models]="accionesEstado"
-                    [columns]="columnsAccionEstado"
-                    [summary]="summaryAccionEstado"
-                    [keyExpr]="'CORR_ACCION'"
-                    [unifiedToolbar]="false"
-                    [showSearch]="false"
-                    [showExport]="false"
-                    [showAdd]="false"
-                    [showRefresh]="false"
-                    [permiteEditar]="permiteEdit"
-                    [permiteDele]="permiteDele"
-                    [gridHeight]="350"
-                    (add)="nuevoAccionEstado()"
-                    (rowRemoving)="rowRemovingAccionEstado($event)"
-                    (focusedRowChanged)="focusedRowChangedAccionEstado($event)"
-                    (editClick)="editarAccionEstado($event)"
-                    (rowDblClick)="editarAccionEstado($event)"
+            <div class="seg-flujo-modal-grid" *ngIf="isAccionEstadoBrowse()">
+                <dx-data-grid
+                    class="theme-dependent sguees-data-grid-mtto"
+                    [dataSource]="accionesEstado"
+                    keyExpr="CORR_ACCION"
+                    [height]="'auto'"
+                    [columnAutoWidth]="false"
+                    [showBorders]="true"
+                    [showColumnLines]="true"
+                    [showRowLines]="true"
+                    [rowAlternationEnabled]="true"
+                    [hoverStateEnabled]="true"
+                    [allowColumnResizing]="true"
+                    [columnResizingMode]="'widget'"
+                    [width]="'100%'"
+                    noDataText="Sin acciones."
+                    (onRowDblClick)="editarAccionEstado($event)"
                 >
-                </app-data-grid-mtto>
+                    <dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+                    <dxo-pager [visible]="true" [showInfo]="true"></dxo-pager>
+                    <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+                    <dxo-scrolling [mode]="'standard'" [showScrollbar]="'always'"></dxo-scrolling>
+                    <dxo-load-panel [enabled]="false"></dxo-load-panel>
+                    <dxi-column caption="" [width]="90" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesAccionTpl" alignment="center"></dxi-column>
+                    <div *dxTemplate="let cell of 'accionesAccionTpl'">
+                        <dx-button *ngIf="permiteEdit" icon="edit" stylingMode="text" hint="Editar" (onClick)="editarAccionEstado(cell.data)"></dx-button>
+                        <dx-button *ngIf="permiteDele" icon="trash" stylingMode="text" hint="Eliminar" (onClick)="pedirEliminarAccionEstado(cell.data)"></dx-button>
+                    </div>
+                    <dxi-column dataField="CORR_ACCION" caption="Accion" [width]="100"></dxi-column>
+                    <dxi-column dataField="NOMBRE_ESTADO" caption="Estado Destino" [width]="200" [minWidth]="160"></dxi-column>
+                    <dxi-column dataField="TIPO_MOVIMIENTO" caption="Tipo Movimiento" [width]="250" [minWidth]="160"></dxi-column>
+                    <dxi-column dataField="TIPO_NOTIFICACION" caption="Tipo Notificación" [width]="250" [minWidth]="160"></dxi-column>
+                    <dxi-column dataField="CORR_PASO_DESTINO" caption="Paso Destino" [width]="200"></dxi-column>
+                    <dxi-column dataField="PERMITIDO" caption="Permitido" [width]="120" alignment="center" cellTemplate="siNoAccionTpl"></dxi-column>
+                    <div *dxTemplate="let cell of 'siNoAccionTpl'">{{ cell.value ? 'Sí' : 'No' }}</div>
+                </dx-data-grid>
             </div>
 
-        </dx-scroll-view>
+        </div>
     </div>
 </dx-popup>
 
@@ -326,8 +364,10 @@
     [wrapperAttr]="{ class: 'seg-flujo-paso-popup paso-notificaciones-popup' }"
     [title]="tituloModalNotificaciones"
     [showCloseButton]="true"
-    [width]="'88%'"
-    [height]="'70%'"
+    [width]="'1360'"
+    [maxWidth]="'96vw'"
+    [height]="'auto'"
+    [maxHeight]="'78vh'"
     [dragEnabled]="true"
     [resizeEnabled]="true"
     (onShown)="onFlujoPopupShown($event)"
@@ -335,7 +375,7 @@
 >
     <dxo-position at="center" my="center"></dxo-position>
     <div *dxTemplate="let data of 'content'">
-        <dx-scroll-view width="100%" height="100%">
+        <div class="seg-flujo-modal-body">
 
             <div class="seg-flujo-modal-toolbar" *ngIf="(permiteAdd && isEstadoMensajeBrowse()) || isEstadoMensajeForm()">
                 <dx-button
@@ -400,31 +440,45 @@
             </div>
 
             <!-- Grid Estado-Mensaje -->
-            <div class="seg-flujo-modal-grid">
-                <app-data-grid-mtto
-                    [isBrowse]="isEstadoMensajeBrowse()"
-                    [models]="estadosMensaje"
-                    [columns]="columnsEstadoMensaje"
-                    [summary]="summaryEstadoMensaje"
-                    [keyExpr]="'CORR_ESTADO_MENSAJE'"
-                    [unifiedToolbar]="false"
-                    [showSearch]="false"
-                    [showExport]="false"
-                    [showAdd]="false"
-                    [showRefresh]="false"
-                    [permiteEditar]="permiteEdit"
-                    [permiteDele]="permiteDele"
-                    [gridHeight]="350"
-                    (add)="nuevoEstadoMensaje()"
-                    (rowRemoving)="rowRemovingEstadoMensaje($event)"
-                    (focusedRowChanged)="focusedRowChangedEstadoMensaje($event)"
-                    (editClick)="editarEstadoMensaje($event)"
-                    (rowDblClick)="editarEstadoMensaje($event)"
+            <div class="seg-flujo-modal-grid" *ngIf="isEstadoMensajeBrowse()">
+                <dx-data-grid
+                    class="theme-dependent sguees-data-grid-mtto"
+                    [dataSource]="estadosMensaje"
+                    keyExpr="CORR_ESTADO_MENSAJE"
+                    [height]="'auto'"
+                    [columnAutoWidth]="false"
+                    [showBorders]="true"
+                    [showColumnLines]="true"
+                    [showRowLines]="true"
+                    [rowAlternationEnabled]="true"
+                    [hoverStateEnabled]="true"
+                    [allowColumnResizing]="true"
+                    [columnResizingMode]="'widget'"
+                    [width]="'100%'"
+                    noDataText="Sin mensajes."
+                    (onRowDblClick)="editarEstadoMensaje($event)"
                 >
-                </app-data-grid-mtto>
+                    <dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+                    <dxo-pager [visible]="true" [showInfo]="true"></dxo-pager>
+                    <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+                    <dxo-scrolling [mode]="'standard'" [showScrollbar]="'always'"></dxo-scrolling>
+                    <dxo-load-panel [enabled]="false"></dxo-load-panel>
+                    <dxi-column caption="" [width]="90" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesMensajeTpl" alignment="center"></dxi-column>
+                    <div *dxTemplate="let cell of 'accionesMensajeTpl'">
+                        <dx-button *ngIf="permiteEdit" icon="edit" stylingMode="text" hint="Editar" (onClick)="editarEstadoMensaje(cell.data)"></dx-button>
+                        <dx-button *ngIf="permiteDele" icon="trash" stylingMode="text" hint="Eliminar" (onClick)="pedirEliminarEstadoMensaje(cell.data)"></dx-button>
+                    </div>
+                    <dxi-column dataField="CORR_ESTADO_MENSAJE" caption="Corr." [width]="100"></dxi-column>
+                    <dxi-column dataField="NOMBRE_ESTADO" caption="Estado" [width]="200" [minWidth]="140"></dxi-column>
+                    <dxi-column dataField="NOMBRE_ACTOR" caption="Actor Destino" [width]="200" [minWidth]="140"></dxi-column>
+                    <dxi-column dataField="LOGIN_SISTEMA" caption="Login Sistema" [width]="200"></dxi-column>
+                    <dxi-column dataField="MENSAJE" caption="Mensaje" [width]="280" [minWidth]="180"></dxi-column>
+                    <dxi-column dataField="ACTIVO" caption="Activo" [width]="100" alignment="center" cellTemplate="siNoMensajeTpl"></dxi-column>
+                    <div *dxTemplate="let cell of 'siNoMensajeTpl'">{{ cell.value ? 'Sí' : 'No' }}</div>
+                </dx-data-grid>
             </div>
 
-        </dx-scroll-view>
+        </div>
     </div>
 </dx-popup>
 
@@ -434,8 +488,10 @@
     [wrapperAttr]="{ class: 'seg-flujo-paso-popup paso-actores-popup' }"
     [title]="'Actores Destino - Paso: ' + (pasoSeleccionadoActores?.NOMBRE_PASO || '')"
     [showCloseButton]="true"
-    [width]="'80%'"
-    [height]="'65%'"
+    [width]="'1100'"
+    [maxWidth]="'96vw'"
+    [height]="'auto'"
+    [maxHeight]="'78vh'"
     [dragEnabled]="true"
     [resizeEnabled]="true"
     (onShown)="onFlujoPopupShown($event)"
@@ -443,7 +499,7 @@
 >
     <dxo-position at="center" my="center"></dxo-position>
     <div *dxTemplate="let data of 'content'">
-        <dx-scroll-view width="100%" height="100%">
+        <div class="seg-flujo-modal-body">
 
             <div class="seg-flujo-modal-toolbar" *ngIf="(permiteAdd && isActorDestinoBrowse()) || isActorDestinoForm()">
                 <dx-button
@@ -517,31 +573,43 @@
             </div>
 
             <!-- Grid Actor Destino -->
-            <div class="seg-flujo-modal-grid">
-                <app-data-grid-mtto
-                    [isBrowse]="isActorDestinoBrowse()"
-                    [models]="actoresDestino"
-                    [columns]="columnsActorDestino"
-                    [summary]="summaryActorDestino"
-                    [keyExpr]="'CORR_PASO_ACTOR_DESTINO'"
-                    [unifiedToolbar]="false"
-                    [showSearch]="false"
-                    [showExport]="false"
-                    [showAdd]="false"
-                    [showRefresh]="false"
-                    [permiteEditar]="permiteEdit"
-                    [permiteDele]="permiteDele"
-                    [gridHeight]="350"
-                    (add)="nuevoActorDestino()"
-                    (rowRemoving)="rowRemovingActorDestino($event)"
-                    (focusedRowChanged)="focusedRowChangedActorDestino($event)"
-                    (editClick)="editarActorDestino($event)"
-                    (rowDblClick)="editarActorDestino($event)"
+            <div class="seg-flujo-modal-grid" *ngIf="isActorDestinoBrowse()">
+                <dx-data-grid
+                    class="theme-dependent sguees-data-grid-mtto"
+                    [dataSource]="actoresDestino"
+                    keyExpr="CORR_PASO_ACTOR_DESTINO"
+                    [height]="'auto'"
+                    [columnAutoWidth]="false"
+                    [showBorders]="true"
+                    [showColumnLines]="true"
+                    [showRowLines]="true"
+                    [rowAlternationEnabled]="true"
+                    [hoverStateEnabled]="true"
+                    [allowColumnResizing]="true"
+                    [columnResizingMode]="'widget'"
+                    [width]="'100%'"
+                    noDataText="Sin actores destino."
+                    (onRowDblClick)="editarActorDestino($event)"
                 >
-                </app-data-grid-mtto>
+                    <dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+                    <dxo-pager [visible]="true" [showInfo]="true"></dxo-pager>
+                    <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+                    <dxo-scrolling [mode]="'standard'" [showScrollbar]="'always'"></dxo-scrolling>
+                    <dxo-load-panel [enabled]="false"></dxo-load-panel>
+                    <dxi-column caption="" [width]="90" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesActorTpl" alignment="center"></dxi-column>
+                    <div *dxTemplate="let cell of 'accionesActorTpl'">
+                        <dx-button *ngIf="permiteEdit" icon="edit" stylingMode="text" hint="Editar" (onClick)="editarActorDestino(cell.data)"></dx-button>
+                        <dx-button *ngIf="permiteDele" icon="trash" stylingMode="text" hint="Eliminar" (onClick)="pedirEliminarActorDestino(cell.data)"></dx-button>
+                    </div>
+                    <dxi-column dataField="CORR_PASO_ACTOR_DESTINO" caption="Corr." [width]="100"></dxi-column>
+                    <dxi-column dataField="NOMBRE_ACTOR" caption="Actor Destino" [width]="280" [minWidth]="180"></dxi-column>
+                    <dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="280" [minWidth]="180"></dxi-column>
+                    <dxi-column dataField="ACTIVO" caption="Activo" [width]="100" alignment="center" cellTemplate="siNoActorTpl"></dxi-column>
+                    <div *dxTemplate="let cell of 'siNoActorTpl'">{{ cell.value ? 'Sí' : 'No' }}</div>
+                </dx-data-grid>
             </div>
 
-        </dx-scroll-view>
+        </div>
     </div>
 </dx-popup>
 

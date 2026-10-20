@@ -7,6 +7,7 @@ using eFramework.Core;
 using sguees.Services;
 using SGUEES.Models;
 using SGUEES.Repositories;
+using System.Data;
 
 namespace SGUEES.Services
 {

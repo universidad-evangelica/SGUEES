@@ -16,11 +16,16 @@ namespace sguees.Repositories
     {
         private const string _TableName = "ACA_PERIODOS_ACADEMICOS";
         private const string _ViewCiclo = "V_ACA_PROSPECTO_CICLO";
+        private const string _ViewCicloBeca = "V_ACA_PROSPECTO_BECA_CICLO";
+        private readonly string _admisionConnection;
+        private readonly string _provider;
 
         public ACA_PERIODOS_ACADEMICOSRepository(IConfiguration config) :
                 base(config.GetConnectionString("defaultConnection"),
                      config.GetSection("DbProvider:defaultProvider").Value)
         {
+            _provider = config.GetSection("DbProvider:defaultProvider").Value;
+            _admisionConnection = config.GetConnectionString("admisionConnection") ?? config.GetConnectionString("defaultConnection");
         }
 
         // Qué hace: ciclos de pregrado para el combo de la consulta de prospectos.
@@ -58,6 +63,47 @@ namespace sguees.Repositories
             finally
             {
                 objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Qué hace: ciclos que tienen solicitudes de beca.
+        // Cómo lo hace: lee V_ACA_PROSPECTO_BECA_CICLO en SIS_ADMISION, sin tocar
+        //               el combo de prospectos que sigue en SGUEES.
+        public async Task<CResult> GetCICLO_ACA_PROSPECTO_BECAAsync(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+            CData data = new(_admisionConnection, _provider);
+
+            try
+            {
+                var reader = await data.GetDataReader(_ViewCicloBeca, xWhere, "CLAVE_CICLO DESC");
+                var response = new List<ACA_PERIODOS_ACADEMICOS_CICLOView>().FromDataReader(reader).ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response.Count;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (System.Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                data.Dispose();
             }
 
             return objResultado;

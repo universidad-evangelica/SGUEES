@@ -14,9 +14,9 @@ import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 
-import { AcaProspectoBecaComponent } from './aca-prospecto-beca.component';
+import { AcaProspectoComponent } from './aca-prospecto.component';
 
-const routes: Routes = [{ path: '', component: AcaProspectoBecaComponent }];
+const routes: Routes = [{ path: '', component: AcaProspectoComponent }];
 
 @NgModule({
     imports: [
@@ -35,6 +35,6 @@ const routes: Routes = [{ path: '', component: AcaProspectoBecaComponent }];
         BarraDataMttoModule,
     ],
     exports: [RouterModule],
-    declarations: [AcaProspectoBecaComponent],
+    declarations: [AcaProspectoComponent],
 })
 export class AcaProspectoBecaRoutingModule {}

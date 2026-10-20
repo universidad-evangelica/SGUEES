@@ -27,6 +27,18 @@ namespace sguees.Services
             return await _repo.GetCICLO_ACA_PROSPECTOAsync(p);
         }
 
+        // Qué hace: ciclos con solicitudes de beca para el combo de esa pantalla.
+        // Cómo lo hace: filtra por la empresa de la sesión sobre SIS_ADMISION.
+        public async Task<CResult> GetCICLO_ACA_PROSPECTO_BECAAsync(ACA_PERIODOS_ACADEMICOSParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+            };
+
+            return await _repo.GetCICLO_ACA_PROSPECTO_BECAAsync(p);
+        }
+
         public async Task<CResult> GetAllAsync(ACA_PERIODOS_ACADEMICOSParam xWhere)
         {
             var p = new List<CParameter>

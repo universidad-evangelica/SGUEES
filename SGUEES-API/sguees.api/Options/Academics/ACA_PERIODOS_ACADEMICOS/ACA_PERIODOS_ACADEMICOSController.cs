@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -26,22 +25,30 @@ namespace sguees.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
-        [HttpGet("GetCICLO_ACA_PROSPECTO")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
-        public async Task<CResult> GetCICLO_ACA_PROSPECTO([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
+        [HttpGet("GetCICLO_ACA_PROSPECTO_NUEVO_INGRESO")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
+        public async Task<CResult> GetCICLO_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
         }
 
-        // Qué hace: mismos ciclos de pregrado, para el filtro de Solicitudes de beca.
-        // Cómo lo hace: reutiliza V_ACA_PROSPECTO_CICLO; el permiso es el de esa pantalla.
+        [HttpGet("GetCICLO_ACA_PROSPECTO_ECONOMICO")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
+        public async Task<CResult> GetCICLO_ACA_PROSPECTO_ECONOMICO([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
+        }
+
+        // Qué hace: ciclos con solicitudes de beca, para el filtro de esa pantalla.
+        // Cómo lo hace: lee V_ACA_PROSPECTO_BECA_CICLO en SIS_ADMISION; el permiso es el de esa pantalla.
         [HttpGet("GetCICLO_ACA_PROSPECTO_BECA")]
         [Authorize(Policy = "/aca-prospecto-beca|R")]
         public async Task<CResult> GetCICLO_ACA_PROSPECTO_BECA([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
+            return await _service.GetCICLO_ACA_PROSPECTO_BECAAsync(Data);
         }
     }
 }

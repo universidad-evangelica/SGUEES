@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -71,11 +70,20 @@ namespace SGUEES.Controllers
 			return await _service.GetAllAsync(data);
 		}
 
-		[HttpGet("GetCORR_PAIS_ACA_PROSPECTO")]
-		[Authorize(Policy = PermisosProspecto.LecturaAmbos)]
+		[HttpGet("GetCORR_PAIS_ACA_PROSPECTO_NUEVO_INGRESO")]
+		[Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
 		// Qué hace: países para nacionalidad, procedencia, residencia y empleo en la edición de prospectos.
 		// Cómo: llama a GetAllAsync del servicio.
-		public async Task<CResult> GetCORR_PAIS_ACA_PROSPECTO([FromQuery] GEN_PAISParam data)
+		public async Task<CResult> GetCORR_PAIS_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] GEN_PAISParam data)
+		{
+			return await _service.GetAllAsync(data);
+		}
+
+		[HttpGet("GetCORR_PAIS_ACA_PROSPECTO_ECONOMICO")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
+		// Qué hace: países para nacionalidad, procedencia, residencia y empleo en la edición de prospectos.
+		// Cómo: llama a GetAllAsync del servicio.
+		public async Task<CResult> GetCORR_PAIS_ACA_PROSPECTO_ECONOMICO([FromQuery] GEN_PAISParam data)
 		{
 			return await _service.GetAllAsync(data);
 		}

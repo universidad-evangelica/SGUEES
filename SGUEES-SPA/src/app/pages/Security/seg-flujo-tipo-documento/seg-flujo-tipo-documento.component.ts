@@ -1,7 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
-import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -11,7 +10,7 @@ import { SegFlujoTipoDocumento } from './models/seg-flujo-tipo-documento';
 import { SegFlujoTipoDocumentoService } from './seg-flujo-tipo-documento.service';
 import { SegFlujoEstadoService } from './seg-flujo-estado/seg-flujo-estado.service';
 import { SegFlujoEstado } from './seg-flujo-estado/models/seg-flujo-estado';
-import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
+import { confirm } from 'devextreme/ui/dialog';
 
 @Component({
     selector: 'app-seg-flujo-tipo-documento',
@@ -27,17 +26,13 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
         public override appInfoService: AppInfoService,
         public override router: ActivatedRoute,
         private service: SegFlujoTipoDocumentoService,
-        private estadoService: SegFlujoEstadoService,
-        private pageContext: MttoPageContextService
+        private estadoService: SegFlujoEstadoService
     ) {
         super(appInfoService, router);
         this.columns = this.service.getColumns();
         this.summary = this.service.getSummary();
         this.items = this.service.getItems();
-
-        // Inicializar columnas y items de estados
-        this.estadoColumns = this.service.getEstadoColumns();
-        this.estadoItems = this.service.getEstadoItems();
+        this.estadoItems = this.estadoService.getItems();
     }
 
     //#region <Declarando Variables>
@@ -46,7 +41,6 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
     // Variables para estados
     estadoModels: SegFlujoEstado[] = [];
     estadoModel: SegFlujoEstado = this.fillEstadoData();
-    estadoColumns: any[];
     estadoItems: any[];
     estadoReadOnly = false;
     banderaMttoEstado: UpdateType = UpdateType.Browse;
@@ -236,12 +230,11 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
-                            this.estadoModels.push(response.Data);
-                            this.estadoModel = this.fillEstadoData(response.Data);
+                            this.estadoModels = [...this.estadoModels, response.Data];
+                            this.estadoModel = this.fillEstadoData();
                             this.banderaMttoEstado = UpdateType.Browse;
                             this.estadoReadOnly = false;
                             this.notifyFx('Estado creado con exito!', NotifyType.Success);
-                            this.consultarEstados(this.model.CORR_TIPO_DOCUMENTO);
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -262,12 +255,15 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
                             const vIndex = this.estadoModels.findIndex(
                                 (item: any) => item.CORR_ESTADO === response.Data.CORR_ESTADO
                             );
-                            this.estadoModels[vIndex] = response.Data;
-                            this.estadoModel = this.fillEstadoData(response.Data);
+                            if (vIndex >= 0) {
+                                const filas = [...this.estadoModels];
+                                filas[vIndex] = response.Data;
+                                this.estadoModels = filas;
+                            }
+                            this.estadoModel = this.fillEstadoData();
                             this.banderaMttoEstado = UpdateType.Browse;
                             this.estadoReadOnly = false;
                             this.notifyFx('Estado modificado con exito!', NotifyType.Success);
-                            this.consultarEstados(this.model.CORR_TIPO_DOCUMENTO);
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -311,25 +307,10 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
                 this.AsignaStatus(UpdateType.Browse);
                 this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
                 finalizarCancelacion();
-                // La barra hija llama pageContext.reset() en ngOnDestroy DESPUES de que la barra
-                // principal re-publica en ngOnChanges. reset() borra permiteAdd Y unifiedToolbar.
-                // Este setTimeout(0) restaura ambos tras el ciclo de destrucción.
-                setTimeout(() => {
-                    this.pageContext.updateFromBarra(
-                        { permiteAdd: this.permiteAdd, unifiedToolbar: true },
-                        { add: () => this.nuevo() }
-                    );
-                });
             });
         } else {
             this.AsignaStatus(UpdateType.Browse);
             finalizarCancelacion();
-            setTimeout(() => {
-                this.pageContext.updateFromBarra(
-                    { permiteAdd: this.permiteAdd, unifiedToolbar: true },
-                    { add: () => this.nuevo() }
-                );
-            });
         }
     }
 
@@ -415,29 +396,31 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
                 },
             });
     }
-       // Eliminar estado
-    rowRemovingEstado(e: any): void {
-        if (!e.data) return;
-
-        this.estadoService
-            .delete(e.data)
-            .pipe(take(1))
-            .subscribe({
+    // Qué hace: quita el estado del tipo de documento después de confirmar.
+    // Cómo lo hace: el API borra la fila y se saca del arreglo local, sin volver a consultar todo.
+    pedirEliminarEstado(fila: any): void {
+        if (!fila?.CORR_ESTADO) {
+            return;
+        }
+        confirm(
+            `<div class="sguees-confirm-message">Se eliminará el estado ${fila.NOMBRE_ESTADO || ''}. ¿Desea continuar?</div>`,
+            'Eliminar estado'
+        ).then((acepta: boolean) => {
+            if (!acepta) {
+                return;
+            }
+            this.estadoService.delete(fila).pipe(take(1)).subscribe({
                 next: (response: any) => {
                     if (response.Result) {
+                        this.estadoModels = this.estadoModels.filter((item) => item.CORR_ESTADO !== fila.CORR_ESTADO);
                         this.notifyFx('Estado eliminado con exito!', NotifyType.Success);
-                        this.consultarEstados(this.model.CORR_TIPO_DOCUMENTO);
-                        e.component.refresh();
-                    } else {
-                        e.cancel = true;
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        return;
                     }
+                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
                 },
-                error: (error: any) => {
-                    e.cancel = true;
-                    this.notifyFx(error, NotifyType.Error);
-                },
+                error: (error: any) => this.notifyFx(error, NotifyType.Error),
             });
+        });
     }
     //#endregion
 
