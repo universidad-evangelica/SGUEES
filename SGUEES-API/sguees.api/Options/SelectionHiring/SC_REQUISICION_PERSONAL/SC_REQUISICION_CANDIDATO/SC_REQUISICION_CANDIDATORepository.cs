@@ -493,5 +493,104 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 				RowsAffected = 0,
 			};
 		}
+
+		/// <summary>
+		/// Datos del dictamen + logins con menú SC_BANDEJA_TH (destinatarios TH).
+		/// </summary>
+		public async Task<SC_REQUISICION_CANDIDATO_ACCION_NOTIF_DTO> GetContextoNotificacionDictamenAsync(
+			int corrEmpresa,
+			int corrRequisicionPersonal,
+			int corrExpedienteCandidato)
+		{
+			var dto = new SC_REQUISICION_CANDIDATO_ACCION_NOTIF_DTO
+			{
+				CORR_REQUISICION_PERSONAL = corrRequisicionPersonal,
+				CORR_EXPEDIENTE_CANDIDATO = corrExpedienteCandidato,
+			};
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = corrRequisicionPersonal, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "CORR_EXPEDIENTE_CANDIDATO", Value = corrExpedienteCandidato, DbType = System.Data.DbType.Int32 },
+				};
+
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
+SELECT TOP 1
+	RC.CORR_REQUISICION_PERSONAL,
+	RC.CORR_EXPEDIENTE_CANDIDATO,
+	RC.ESTADO_DECISION,
+	RC.OBSERVACION_DECISION,
+	CAST(ISNULL(EC.NOMBRE_PERSONA, S.NOMBRE) AS NVARCHAR(250)) AS NOMBRE_PERSONA,
+	R.NOMBRE_PUESTO,
+	R.NOMBRE_UNIDAD,
+	ISNULL(MR.CORR_MOVIMIENTO_PERSONAL, 0) AS CORR_MOVIMIENTO_PERSONAL
+FROM dbo.SC_REQUISICION_CANDIDATO AS RC
+INNER JOIN dbo.V_SC_REQUISICION_PERSONAL AS R
+	ON R.CORR_EMPRESA = RC.CORR_EMPRESA
+   AND R.CORR_REQUISICION_PERSONAL = RC.CORR_REQUISICION_PERSONAL
+LEFT JOIN dbo.SC_SOLICITUD_EMPLEO AS S
+	ON S.CORR_EMPRESA = RC.CORR_EMPRESA
+   AND S.CORR_SOLICITUD_EMPLEO = RC.CORR_SOLICITUD_EMPLEO
+LEFT JOIN dbo.V_SC_EXPEDIENTE_CANDIDATO AS EC
+	ON EC.CORR_EMPRESA = RC.CORR_EMPRESA
+   AND EC.CORR_EXPEDIENTE_CANDIDATO = RC.CORR_EXPEDIENTE_CANDIDATO
+LEFT JOIN dbo.SC_MOVIMIENTO_REQUISICION AS MR
+	ON MR.CORR_EMPRESA = RC.CORR_EMPRESA
+   AND MR.CORR_REQUISICION_PERSONAL = RC.CORR_REQUISICION_PERSONAL
+   AND MR.CORR_REQUISICION_CANDIDATO = RC.CORR_REQUISICION_CANDIDATO
+WHERE RC.CORR_EMPRESA = @CORR_EMPRESA
+  AND RC.CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL
+  AND RC.CORR_EXPEDIENTE_CANDIDATO = @CORR_EXPEDIENTE_CANDIDATO;", p);
+
+				if (reader.Read())
+				{
+					if (reader["CORR_REQUISICION_PERSONAL"] != DBNull.Value)
+					{
+						dto.CORR_REQUISICION_PERSONAL = Convert.ToInt32(reader["CORR_REQUISICION_PERSONAL"]);
+					}
+					if (reader["CORR_EXPEDIENTE_CANDIDATO"] != DBNull.Value)
+					{
+						dto.CORR_EXPEDIENTE_CANDIDATO = Convert.ToInt32(reader["CORR_EXPEDIENTE_CANDIDATO"]);
+					}
+					if (reader["CORR_MOVIMIENTO_PERSONAL"] != DBNull.Value)
+					{
+						dto.CORR_MOVIMIENTO_PERSONAL = Convert.ToInt32(reader["CORR_MOVIMIENTO_PERSONAL"]);
+					}
+					dto.ESTADO_DECISION = reader["ESTADO_DECISION"]?.ToString()?.Trim();
+					dto.OBSERVACION_DECISION = reader["OBSERVACION_DECISION"]?.ToString()?.Trim();
+					dto.NOMBRE_PERSONA = reader["NOMBRE_PERSONA"]?.ToString()?.Trim();
+					dto.NOMBRE_PUESTO = reader["NOMBRE_PUESTO"]?.ToString()?.Trim();
+					dto.NOMBRE_UNIDAD = reader["NOMBRE_UNIDAD"]?.ToString()?.Trim();
+				}
+				reader.Close();
+
+				var readerTh = await objData.GetDataReader(System.Data.CommandType.Text, @"
+SELECT DISTINCT LTRIM(RTRIM(UO.LOGIN_SISTEMA)) AS LOGIN_DESTINO
+FROM dbo.SEG_USUARIO_OPCION AS UO
+WHERE UO.CODIGO_OPCION = N'SC_BANDEJA_TH'
+  AND NULLIF(LTRIM(RTRIM(UO.LOGIN_SISTEMA)), N'') IS NOT NULL;", new List<CParameter>());
+
+				while (readerTh.Read())
+				{
+					var login = readerTh["LOGIN_DESTINO"]?.ToString()?.Trim();
+					if (!string.IsNullOrWhiteSpace(login)
+						&& !dto.LOGINS_DESTINO.Exists(x =>
+							string.Equals(x, login, StringComparison.OrdinalIgnoreCase)))
+					{
+						dto.LOGINS_DESTINO.Add(login);
+					}
+				}
+				readerTh.Close();
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return dto;
+		}
 	}
 }

@@ -8,5 +8,7 @@ namespace sguees.Models
 
         [Range(1, int.MaxValue, ErrorMessage = "La solicitud de empleo es requerida.")]
         public int CORR_SOLICITUD_EMPLEO { get; set; }
+
+        public int? CORR_PARAMETRO_PLANTILLA { get; set; }
     }
 }

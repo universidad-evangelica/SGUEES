@@ -17,7 +17,7 @@ namespace sguees.Repositories
         private const string _ViewName = "V_ACA_PROSPECTO_BECA_CONSULTA";
 
         public ACA_PROSPECTO_BECARepository(IConfiguration config) :
-                base(config.GetConnectionString("defaultConnection"),
+                base(config.GetConnectionString("admisionConnection") ?? config.GetConnectionString("defaultConnection"),
                      config.GetSection("DbProvider:defaultProvider").Value)
         {
         }

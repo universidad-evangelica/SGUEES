@@ -7,6 +7,7 @@ import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import {
 	ScExpedienteCandidato,
 	ESTADOS_EXPEDIENTE,
+	ESTADO_EXPEDIENTE_ID,
 	ScEstadoExpediente,
 } from './models/sc-expediente-candidato';
 import { ScExpedienteCandidatoRepository } from './sc-expediente-candidato.repository';
@@ -44,31 +45,30 @@ export class ScExpedienteCandidatoService {
 		return true;
 	}
 
-	/** Texto del chip según CORR_ESTADO_EXPEDIENTE (default Borrador si viene vacío). */
+	// Qué hace: Retorna el texto descriptivo del chip según CORR_ESTADO_EXPEDIENTE.
+	// Cómo lo hace: Homologa estados intermedios (2, 3 y 4) como 'Proceso de selección', 5 como 'Contratado' y 1 como 'Borrador'.
 	getEstadoExpedienteLabel(corrEstado: number | null | undefined): string {
-		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
-		const item = ESTADOS_EXPEDIENTE.find((x) => x.CORR_ESTADO_EXPEDIENTE === corr);
-		return item?.ESTADO_EXPEDIENTE ?? 'Borrador';
+		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : ESTADO_EXPEDIENTE_ID.BORRADOR;
+		if (corr === ESTADO_EXPEDIENTE_ID.CONTRATADO) {
+			return 'Contratado';
+		}
+		if (corr >= ESTADO_EXPEDIENTE_ID.PROCESO_SELECCION && corr <= ESTADO_EXPEDIENTE_ID.LISTO_CREAR_USUARIO) {
+			return 'Proceso de selección';
+		}
+		return 'Borrador';
 	}
 
 	// Qué hace: Retorna la clase CSS de estilo según el estado del expediente.
-	// Cómo lo hace: Devuelve clase gris (1), celeste (2), azul (3), violeta (4) y verde (5).
+	// Cómo lo hace: Devuelve clase gris (1: Borrador), celeste (2, 3 y 4: Proceso de selección) y verde (5: Contratado).
 	getEstadoExpedienteBadgeClass(corrEstado: number | null | undefined): string {
-		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
-		switch (corr) {
-			case 1:
-				return 'estado-exp--borrador';
-			case 2:
-				return 'estado-exp--proceso';
-			case 3:
-				return 'estado-exp--seleccionado';
-			case 4:
-				return 'estado-exp--listo-usuario';
-			case 5:
-				return 'estado-exp--contratado';
-			default:
-				return 'estado-exp--borrador';
+		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : ESTADO_EXPEDIENTE_ID.BORRADOR;
+		if (corr === ESTADO_EXPEDIENTE_ID.CONTRATADO) {
+			return 'estado-exp--contratado';
 		}
+		if (corr >= ESTADO_EXPEDIENTE_ID.PROCESO_SELECCION && corr <= ESTADO_EXPEDIENTE_ID.LISTO_CREAR_USUARIO) {
+			return 'estado-exp--proceso';
+		}
+		return 'estado-exp--borrador';
 	}
 
 	/** Pinta chip de estado en celdas del grid principal (mismas clases .estado-exp-* que form/resumen). */

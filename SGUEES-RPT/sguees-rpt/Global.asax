@@ -1,1 +1,1 @@
-﻿<%@ Application Codebehind="Global.asax.cs" Inherits="sgueesRpt.WebApiApplication" Language="C#" %>
+﻿<%@ Application Inherits="sgueesRpt.WebApiApplication" Language="C#" %>

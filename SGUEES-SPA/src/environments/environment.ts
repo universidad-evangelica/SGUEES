@@ -12,6 +12,7 @@ export const environment = {
   UrlTALENTOHUMANONAPI: 'http://localhost:5000/',
   UrlFEAPI: 'http://localhost:5000/',
   UrlApiToken: 'localhost:5000',
+  UrlRpt: 'http://localhost:58592/',
 };
 
 /*

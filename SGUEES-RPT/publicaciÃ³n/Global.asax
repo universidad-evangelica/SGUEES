@@ -1,1 +1,0 @@
-﻿<%@ Application Inherits="sgueesRpt.WebApiApplication" Language="C#" %>

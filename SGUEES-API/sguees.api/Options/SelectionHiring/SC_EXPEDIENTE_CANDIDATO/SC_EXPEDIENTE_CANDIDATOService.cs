@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
+using sguees.Services;
 using SGUEES.Models;
 using SGUEES.Repositories;
 
@@ -9,11 +12,18 @@ namespace SGUEES.Services
 {
 	public class SC_EXPEDIENTE_CANDIDATOService : ISC_EXPEDIENTE_CANDIDATOService
 	{
-		private readonly ISC_EXPEDIENTE_CANDIDATORepository _repo;
+		private const string CodigoOpcionRequisicion = "SC_REQUISICION_PERSONAL";
+		private const string CodigoOpcionBandejaActores = "SC_BANDEJA_ACTORES";
 
-		public SC_EXPEDIENTE_CANDIDATOService(ISC_EXPEDIENTE_CANDIDATORepository repo)
+		private readonly ISC_EXPEDIENTE_CANDIDATORepository _repo;
+		private readonly IGEN_NOTIFICACIONService _notificacion;
+
+		public SC_EXPEDIENTE_CANDIDATOService(
+			ISC_EXPEDIENTE_CANDIDATORepository repo,
+			IGEN_NOTIFICACIONService notificacion)
 		{
 			_repo = repo;
+			_notificacion = notificacion ?? throw new ArgumentNullException(nameof(notificacion));
 		}
 
 		public async Task<CResult> GetAllAsync(SC_EXPEDIENTE_CANDIDATOParam xWhere)
@@ -153,7 +163,96 @@ namespace SGUEES.Services
 				return ValidationError("El expediente ya está en proceso de selección.");
 			}
 
-			return await _repo.ActivarProcesoSeleccionAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			var resultado = await _repo.ActivarProcesoSeleccionAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			if (!resultado.Result)
+			{
+				return resultado;
+			}
+
+			try
+			{
+				await NotificarDesdeActivarAsync(Data, (vLOGIN_SISTEMA ?? string.Empty).Trim());
+			}
+			catch
+			{
+				// Activación ya confirmada.
+			}
+
+			return resultado;
+		}
+
+		/// <summary>
+		/// Acción sin flujo: avisa al creador de la REQ y jefes activos de la unidad
+		/// (misma audiencia que bandeja actores · Candidatos).
+		/// </summary>
+		private async Task NotificarDesdeActivarAsync(SC_EXPEDIENTE_CANDIDATOTable data, string loginActor)
+		{
+			var dto = await _repo.GetContextoNotificacionActivarAsync(
+				data.CORR_EMPRESA,
+				data.CORR_EXPEDIENTE_CANDIDATO);
+
+			if (dto == null)
+			{
+				return;
+			}
+
+			var corrExp = dto.CORR_EXPEDIENTE_CANDIDATO > 0
+				? dto.CORR_EXPEDIENTE_CANDIDATO
+				: data.CORR_EXPEDIENTE_CANDIDATO;
+			var corrReq = dto.CORR_REQUISICION_PERSONAL;
+			var nombre = string.IsNullOrWhiteSpace(dto.NOMBRE_PERSONA) ? "Candidato" : dto.NOMBRE_PERSONA.Trim();
+			var puesto = string.IsNullOrWhiteSpace(dto.NOMBRE_PUESTO) ? "—" : dto.NOMBRE_PUESTO.Trim();
+			var unidad = string.IsNullOrWhiteSpace(dto.NOMBRE_UNIDAD) ? "—" : dto.NOMBRE_UNIDAD.Trim();
+
+			var titulo = $"En selección · expediente #{corrExp}";
+			var mensaje = corrReq > 0
+				? $"{nombre} pasó a proceso de selección. REQ #{corrReq} · {puesto} ({unidad})."
+				: $"{nombre} pasó a proceso de selección.";
+
+			string urlDestino = null;
+			if (corrReq > 0)
+			{
+				urlDestino = await _notificacion.ResolverUrlDestinoAsync(CodigoOpcionRequisicion, corrReq);
+				if (string.IsNullOrWhiteSpace(urlDestino))
+				{
+					urlDestino = $"/sc-requisicion-personal?corr={corrReq}";
+				}
+			}
+			else
+			{
+				urlDestino = await _notificacion.ResolverUrlDestinoAsync(CodigoOpcionBandejaActores, corrExp);
+				if (string.IsNullOrWhiteSpace(urlDestino))
+				{
+					urlDestino = "/sc-bandeja-actores";
+				}
+			}
+
+			var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			foreach (var login in dto.LOGINS_DESTINO ?? Enumerable.Empty<string>())
+			{
+				if (!string.IsNullOrWhiteSpace(login))
+				{
+					destinatarios.Add(login.Trim());
+				}
+			}
+
+			destinatarios.Remove(loginActor);
+			if (destinatarios.Count == 0)
+			{
+				return;
+			}
+
+			foreach (var loginDestino in destinatarios)
+			{
+				await _notificacion.NotificarUsuarioAsync(
+					corrEmpresa: data.CORR_EMPRESA,
+					loginDestino: loginDestino,
+					titulo: titulo,
+					mensaje: mensaje,
+					urlDestino: urlDestino,
+					usuarioCrea: loginActor,
+					estacionCrea: "API");
+			}
 		}
 
 		private static List<CParameter> BuildParameters(SC_EXPEDIENTE_CANDIDATOParam xWhere)

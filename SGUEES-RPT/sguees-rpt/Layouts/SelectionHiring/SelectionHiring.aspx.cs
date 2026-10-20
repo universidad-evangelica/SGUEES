@@ -2,6 +2,7 @@ using System;
 using System.Collections.Specialized;
 using System.Web.UI;
 using DevExpress.XtraReports.UI;
+using DevExpress.XtraReports.Web;
 using sgueesRpt.Layouts;
 using sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL;
 using sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL;
@@ -30,8 +31,16 @@ namespace sgueesRpt.Layouts.SelectionHiring
 	/// </summary>
 	public partial class SelectionHiring : Page
 	{
+		private static bool _viewerInitialized;
+
 		protected void Page_Load(object sender, EventArgs e)
 		{
+			if (!_viewerInitialized)
+			{
+				ASPxWebDocumentViewer.StaticInitialize();
+				_viewerInitialized = true;
+			}
+
 			string jwtError;
 			if (!RptJwtValidator.TryValidate(Request, out jwtError))
 			{
