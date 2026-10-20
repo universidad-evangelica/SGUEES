@@ -58,7 +58,12 @@ builder.Services.AddSingleton<eFrameworkAPI.Core.QA.IOptionsQAEvaluator, eFramew
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Qué hace: permite abrir Swagger aunque haya modelos con el mismo nombre de clase.
+// Cómo lo hace: el id del esquema usa el nombre completo, no solo ACA_PROSPECTOTable.
+builder.Services.AddSwaggerGen(options =>
+{
+    options.CustomSchemaIds(SwaggerSchemaId);
+});
 
 builder.Services.RegisterAssemblyPublicNonGenericClasses()
             .Where(c => c.Name.EndsWith("Repository") || c.Name.EndsWith("Service") )
@@ -152,3 +157,16 @@ app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications"); //asigno SignalR hub para notificaciones en tiempo real
 
 app.Run();
+
+static string SwaggerSchemaId(Type type)
+{
+    if (!type.IsGenericType)
+    {
+        return (type.FullName ?? type.Name).Replace("+", ".");
+    }
+
+    var name = type.Name.Split('`')[0];
+    var args = string.Join("And", type.GetGenericArguments().Select(SwaggerSchemaId));
+    var ns = string.IsNullOrEmpty(type.Namespace) ? "" : type.Namespace + ".";
+    return $"{ns}{name}Of{args}";
+}
