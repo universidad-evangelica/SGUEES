@@ -129,6 +129,12 @@ export class AcaProspectoEmpleoService {
         return null;
     }
 
+    // Qué hace: cuerpo que se enviaría al guardar, para detectar cambios en la bitácora.
+    // Cómo lo hace: reutiliza el mismo armado del insert y del update.
+    getPayload(model: any): any {
+        return this.armarPayload(model);
+    }
+
     // Qué hace: columnas de ACA_PROSPECTO_EMPLEO que viajan al API (sin campos calculados de la vista).
     // Cómo lo hace: si el empleo es en el extranjero, país, departamento y municipio viajan en nulo
     //               (regla del portal: de un empleo fuera no se registra la ubicación). Los campos que

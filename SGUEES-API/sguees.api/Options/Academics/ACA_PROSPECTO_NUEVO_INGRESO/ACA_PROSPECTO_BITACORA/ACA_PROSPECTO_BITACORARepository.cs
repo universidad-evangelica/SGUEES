@@ -1,85 +1,118 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using eFramework.Data;
 using eFramework.Core;
 using sguees.Models;
 
 namespace sguees.Repositories
 {
-    // Qué hace: historial del flujo de nuevo ingreso de un prospecto.
-    // Cómo lo hace: lee la bitácora del tipo 104 y, si el ejecutor es PORTAL_ADMISION, muestra el CIF.
+    // Qué hace: lee y guarda la bitácora de cambios de nuevo ingreso.
+    // Cómo lo hace: consulta la vista y, al insertar, toma el siguiente correlativo porque la llave no es identity.
     public class ACA_PROSPECTO_BITACORARepository : IACA_PROSPECTO_BITACORARepository
     {
-        private readonly CData objData;
-
-        private const string _Sql =
-            "SELECT B.CORR_BITACORA, B.CORR_INSTANCIA, B.NOMBRE_PASO, B.ESTADO_DESTINO, B.COMENTARIO, B.FECHA_ACCION, " +
-            "CASE WHEN B.LOGIN_SISTEMA = 'PORTAL_ADMISION' THEN P.CODIGO_PROSPECTO ELSE B.LOGIN_SISTEMA END AS USUARIO " +
-            "FROM dbo.V_SEG_FLUJO_BITACORA_FIRMAS AS B " +
-            "INNER JOIN dbo.ACA_PROSPECTO AS P " +
-            "  ON P.CORR_PROSPECTO = B.CORR_DOCUMENTO " +
-            "WHERE B.CORR_EMPRESA = @CORR_EMPRESA " +
-            "  AND B.CORR_TIPO_DOCUMENTO = 104 " +
-            "  AND B.CORR_DOCUMENTO = @CORR_PROSPECTO " +
-            "ORDER BY B.FECHA_ACCION DESC, B.CORR_BITACORA DESC";
+        private readonly string _connectionString;
 
         public ACA_PROSPECTO_BITACORARepository(IConfiguration config)
         {
-            objData = new CData(
-                config.GetConnectionString("defaultConnection"),
-                config.GetSection("DbProvider:defaultProvider").Value);
+            _connectionString = config.GetConnectionString("defaultConnection");
         }
 
-        public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
+        public async Task<CResult> GetAllAsync(int corrProspecto)
         {
-            CResult objResultado = new();
-
             try
             {
-                var reader = await objData.GetDataReader(System.Data.CommandType.Text, _Sql, xWhere);
-                var response = new List<ACA_PROSPECTO_BITACORAView>();
-                while (reader.Read())
+                var filas = new System.Collections.Generic.List<ACA_PROSPECTO_BITACORAView>();
+                await using var cn = new SqlConnection(_connectionString);
+                await cn.OpenAsync();
+                await using var cmd = cn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT CORR_PROSPECTO_BITACORA, CORR_PROSPECTO, LOGIN_SISTEMA, COMENTARIO, TIPO_PROSPECTO, FECHA_ACCION
+                    FROM dbo.V_ACA_PROSPECTO_BITACORA
+                    WHERE CORR_PROSPECTO = @Prospecto
+                      AND TIPO_PROSPECTO = 'ACA_PROSPECTO'
+                    ORDER BY FECHA_ACCION DESC, CORR_PROSPECTO_BITACORA DESC;";
+                cmd.Parameters.Add(new SqlParameter("@Prospecto", corrProspecto));
+                await using var rd = await cmd.ExecuteReaderAsync();
+                while (await rd.ReadAsync())
                 {
-                    response.Add(new ACA_PROSPECTO_BITACORAView
-                    {
-                        CORR_BITACORA = Convert.ToInt32(reader["CORR_BITACORA"]),
-                        CORR_INSTANCIA = Convert.ToInt32(reader["CORR_INSTANCIA"]),
-                        NOMBRE_PASO = reader["NOMBRE_PASO"]?.ToString(),
-                        ESTADO_DESTINO = reader["ESTADO_DESTINO"]?.ToString(),
-                        USUARIO = reader["USUARIO"]?.ToString(),
-                        COMENTARIO = reader["COMENTARIO"]?.ToString(),
-                        FECHA_ACCION = Convert.ToDateTime(reader["FECHA_ACCION"])
-                    });
+                    filas.Add(Leer(rd));
                 }
 
-                reader.Close();
-                reader = null;
-
-                objResultado.Data = response;
-                objResultado.Result = true;
-                objResultado.RowsAffected = response.Count;
-                objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = 0;
-                objResultado.ErrorMessage = "";
-                objResultado.ErrorSource = "";
+                return new CResult { Result = true, Data = filas, RowsAffected = filas.Count };
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                objResultado.Data = null;
-                objResultado.Result = false;
-                objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
-                objResultado.ErrorSource += $"[{e.Source}]";
+                return Error(ex.Message);
             }
-            finally
-            {
-                objData.objConnection.Close();
-            }
+        }
 
-            return objResultado;
+        public async Task<CResult> InsertAsync(int corrProspecto, string comentario, string login, string estacion)
+        {
+            await using var cn = new SqlConnection(_connectionString);
+            await cn.OpenAsync();
+            await using var tx = (SqlTransaction)await cn.BeginTransactionAsync();
+            try
+            {
+                await using var cmd = cn.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
+                    DECLARE @Nuevo int;
+                    SELECT @Nuevo = ISNULL(MAX(CORR_PROSPECTO_BITACORA), 0) + 1
+                    FROM dbo.ACA_PROSPECTO_BITACORA WITH (UPDLOCK, HOLDLOCK);
+
+                    INSERT INTO dbo.ACA_PROSPECTO_BITACORA (
+                        CORR_PROSPECTO_BITACORA, LOGIN_SISTEMA, CORR_PROSPECTO, COMENTARIO,
+                        TIPO_PROSPECTO, FECHA_ACCION, USUARIO_CREA, ESTACION_CREA, FECHA_CREA
+                    )
+                    VALUES (
+                        @Nuevo, @Login, @Prospecto, @Comentario,
+                        'ACA_PROSPECTO', GETDATE(), @Login, @Estacion, GETDATE()
+                    );
+
+                    SELECT CORR_PROSPECTO_BITACORA, CORR_PROSPECTO, LOGIN_SISTEMA, COMENTARIO, TIPO_PROSPECTO, FECHA_ACCION
+                    FROM dbo.V_ACA_PROSPECTO_BITACORA
+                    WHERE CORR_PROSPECTO_BITACORA = @Nuevo;";
+                cmd.Parameters.Add(new SqlParameter("@Login", login.Length > 30 ? login.Substring(0, 30) : login));
+                cmd.Parameters.Add(new SqlParameter("@Prospecto", corrProspecto));
+                cmd.Parameters.Add(new SqlParameter("@Comentario", comentario));
+                cmd.Parameters.Add(new SqlParameter("@Estacion", string.IsNullOrWhiteSpace(estacion) ? Environment.MachineName : estacion));
+                await using var rd = await cmd.ExecuteReaderAsync();
+                if (!await rd.ReadAsync())
+                {
+                    await tx.RollbackAsync();
+                    return Error("No se pudo registrar la bitácora");
+                }
+
+                var fila = Leer(rd);
+                await rd.CloseAsync();
+                await tx.CommitAsync();
+                return new CResult { Result = true, Data = fila, RowsAffected = 1, ErrorMessage = "Bitácora registrada" };
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                return Error(ex.Message);
+            }
+        }
+
+        private static ACA_PROSPECTO_BITACORAView Leer(SqlDataReader rd)
+        {
+            return new ACA_PROSPECTO_BITACORAView
+            {
+                CORR_PROSPECTO_BITACORA = rd.GetInt32(0),
+                CORR_PROSPECTO = rd.IsDBNull(1) ? 0 : rd.GetInt32(1),
+                LOGIN_SISTEMA = rd.IsDBNull(2) ? "" : rd.GetString(2),
+                USUARIO = rd.IsDBNull(2) ? "" : rd.GetString(2),
+                COMENTARIO = rd.IsDBNull(3) ? "" : rd.GetString(3),
+                TIPO_PROSPECTO = rd.IsDBNull(4) ? "" : rd.GetString(4),
+                FECHA_ACCION = rd.IsDBNull(5) ? null : rd.GetDateTime(5),
+            };
+        }
+
+        private static CResult Error(string mensaje)
+        {
+            return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = mensaje };
         }
     }
 }

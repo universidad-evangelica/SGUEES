@@ -22,6 +22,7 @@ import { AcaProspectoLimitacionFisicaService } from './aca-prospecto-limitacion-
 import { AcaProspectoDeportacionService } from './aca-prospecto-deportacion/aca-prospecto-deportacion.service';
 import { AcaProspectoMedioOrigenService, MEDIO_OTRO, MEDIO_REFERIDO } from './aca-prospecto-medio-origen/aca-prospecto-medio-origen.service';
 import { AcaProspectoDocumentoService } from './aca-prospecto-documento/aca-prospecto-documento.service';
+import { AcaProspectoBitacoraFlujoService } from './aca-prospecto-bitacora-flujo/aca-prospecto-bitacora-flujo.service';
 import { AcaProspectoBitacoraService } from './aca-prospecto-bitacora/aca-prospecto-bitacora.service';
 import {
     AcaProspectoEstudioService,
@@ -202,10 +203,16 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     // Documentos que aplican a esta solicitud (tipo 104 y regla del prospecto).
     documentos: any[] = [];
-    bitacoras: any[] = [];
+    bitacorasFlujo: any[] = [];
+    bitacorasEdicion: any[] = [];
     subiendoDocumento = false;
     columnsDocumento: any[] = [];
-    columnsBitacora: any[] = [];
+    columnsBitacoraFlujo: any[] = [];
+    columnsBitacoraEdicion: any[] = [];
+    // Qué hace: copia de la ficha al abrirla, para saber qué cambió al guardar una edición.
+    personaOriginal: any = null;
+    empleoOriginalPayload = '';
+    private comentarioBitacoraPendiente = '';
     summaryDocumento: any = {};
     // #endregion
 
@@ -232,6 +239,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         private serviceEstudio: AcaProspectoEstudioService,
         private serviceEmpleo: AcaProspectoEmpleoService,
         private serviceDocumento: AcaProspectoDocumentoService,
+        private serviceBitacoraFlujo: AcaProspectoBitacoraFlujoService,
         private serviceBitacora: AcaProspectoBitacoraService,
         // Qué hace: devuelve a Angular el hilo tras los diálogos de DevExtreme (su promesa resuelve fuera
         //           de la zona y la pantalla no se refrescaría sola).
@@ -242,7 +250,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.summary = this.service.getSummary();
         this.items = this.service.getItems();
         this.prepararColumnasDocumento();
-        this.columnsBitacora = this.serviceBitacora.getColumns();
+        this.columnsBitacoraFlujo = this.serviceBitacoraFlujo.getColumns();
+        this.columnsBitacoraEdicion = this.serviceBitacora.getColumns();
         this.summaryDocumento = this.serviceDocumento.getSummary();
         this.itemsCarrera = this.service.getItemsCarrera();
         this.itemsPersona = this.servicePersona.getItems();
@@ -2529,6 +2538,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (!conservarFila) {
             this.filaGuardada = this.filaListadoActual();
             this.mensajeGuardado = '';
+            this.comentarioBitacoraPendiente = this.armarComentarioBitacora();
+        } else {
+            this.comentarioBitacoraPendiente = '';
         }
         this.loadingVisible = true;
         this.ejecutarPasos(pasos, 0);
@@ -2739,6 +2751,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.notifyFx(this.mensajeGuardado || 'Prospecto modificado con exito!', NotifyType.Success, { raw: true });
             this.mensajeGuardado = '';
             this.aplicarFilaEnListado(this.filaGuardada);
+            const comentario = this.comentarioBitacoraPendiente;
+            this.comentarioBitacoraPendiente = '';
+            if (comentario) {
+                this.registrarBitacoraEdicion(comentario);
+            }
             this.filaGuardada = null;
             this.corrAprobarResuelto = 0;
             this.AsignaStatus(UpdateType.Browse);
@@ -2850,7 +2867,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.cargarDeportaciones(CORR_PROSPECTO);
         this.cargarMedios(CORR_PROSPECTO);
         this.cargarDocumentos(CORR_PROSPECTO);
-        this.cargarBitacora(CORR_PROSPECTO);
+        this.cargarBitacoraFlujo(CORR_PROSPECTO);
+        this.cargarBitacoraEdicion(CORR_PROSPECTO);
         // Solo lo de la vista abierta: lo que no se carga no tiene modelo, así que tampoco entra al guardado.
         if (this.esAcademico) {
             this.cargarEstudios(CORR_PROSPECTO);
@@ -2906,7 +2924,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.empleoEliminar = false;
         this.empleoCargado = false;
         this.documentos = [];
-        this.bitacoras = [];
+        this.bitacorasFlujo = [];
+        this.bitacorasEdicion = [];
+        this.personaOriginal = null;
+        this.empleoOriginalPayload = '';
+        this.comentarioBitacoraPendiente = '';
         this.mCORR_DEPTO_RESIDENCIA = [];
         this.mCORR_MUNICIPIO_RESIDENCIA = [];
         this.mCORR_DEPTO_EMPLEO = [];
@@ -2956,6 +2978,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.getCORR_MUNICIPIO_RESIDENCIA(this.personaModel?.CORR_PAIS_RESIDENCIA, this.personaModel?.CORR_DEPTO_RESIDENCIA);
             this.sincronizarEmpleoConTrabaja();
             this.sincronizarEstudioMedia();
+            this.personaOriginal = this.personaModel ? { ...this.personaModel } : null;
         });
     }
 
@@ -3019,9 +3042,16 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     // Qué hace: historial del flujo de esta solicitud.
     // Cómo lo hace: la grilla muestra el CIF cuando el paso lo ejecutó el portal.
-    cargarBitacora(CORR_PROSPECTO: number): void {
+    cargarBitacoraFlujo(CORR_PROSPECTO: number): void {
+        this.cargarLista(this.serviceBitacoraFlujo.getPorProspecto(CORR_PROSPECTO), (data: any[]) => {
+            this.bitacorasFlujo = data ?? [];
+        });
+    }
+
+    // Qué hace: historial de ediciones de esta solicitud de nuevo ingreso.
+    cargarBitacoraEdicion(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceBitacora.getPorProspecto(CORR_PROSPECTO), (data: any[]) => {
-            this.bitacoras = data ?? [];
+            this.bitacorasEdicion = data ?? [];
         });
     }
 
@@ -3266,6 +3296,235 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return this.huellaEstudio(this.leerFormData(form, modelo)) !== (this.estudioOriginal[seccion] ?? '');
     }
 
+    // Qué hace: anota en la bitácora lo que cambió al editar. El alta no entra aquí.
+    // Cómo lo hace: el texto se armó antes de guardar; si el API falla, la solicitud ya quedó guardada.
+    private registrarBitacoraEdicion(comentario: string): void {
+        const corr = this.model?.CORR_PROSPECTO;
+        if (!(corr > 0)) {
+            return;
+        }
+        this.serviceBitacora.registrar(corr, comentario).pipe(take(1)).subscribe({
+            next: (response: any) => {
+                if (!response?.Result || !response.Data) {
+                    this.notifyFx('La solicitud se guardó, pero no se pudo anotar la bitácora.', NotifyType.Warning);
+                    return;
+                }
+                if (this.model?.CORR_PROSPECTO === corr) {
+                    this.bitacorasEdicion = [response.Data, ...this.bitacorasEdicion];
+                    this.refrescarCopiasBitacora();
+                }
+            },
+            error: () => this.notifyFx('La solicitud se guardó, pero no se pudo anotar la bitácora.', NotifyType.Warning),
+        });
+    }
+
+    // Qué hace: texto con el apartado y los campos distintos a los que se cargaron.
+    private armarComentarioBitacora(): string {
+        const partes: string[] = [];
+        this.agregarParte(partes, 'Datos del prospecto', this.cambiosCampos(this.modelUpdate, this.leerFormData(this.dataForm, this.model), {
+            CICLO: 'Ciclo',
+            CORR_CARRERA: 'Carrera',
+            CORR_MODALIDAD: 'Modalidad',
+            FORMA_INGRESO: 'Forma de ingreso',
+        }));
+        this.agregarParte(partes, 'Datos personales', this.cambiosCampos(this.personaOriginal, this.leerFormData(this.formPersona, this.personaModel), {
+            NOMBRES: 'Nombres', APELLIDO1: 'Primer apellido', APELLIDO2: 'Segundo apellido', DUI: 'DUI',
+            CARNET_RESIDENCIA: 'Carnet de residencia', NIT: 'NIT', FECHA_NACIMIENTO: 'Fecha de nacimiento',
+            LUGAR_NACIMIENTO: 'Lugar de nacimiento', CORR_SEXO: 'Sexo', CORR_ESTADO_CIVIL: 'Estado civil',
+            CORR_TIPO_SANGRE: 'Tipo de sangre', CORR_PAIS_NACIONALIDAD: 'Nacionalidad', CORR_PAIS_PROCEDENCIA: 'Procedencia',
+            CORR_RELIGION: 'Religión', IGLESIA_ACTUAL: 'Iglesia actual', CORR_PAIS_RESIDENCIA: 'País de residencia',
+            CORR_DEPTO_RESIDENCIA: 'Departamento', CORR_MUNICIPIO_RESIDENCIA: 'Municipio', DIRECCION_ACTUAL: 'Dirección',
+        }));
+        this.agregarParte(partes, 'Contactos', this.cambiosFilas(this.contactoOriginal, this.contactos, this.contactosEliminar, 'CORR_PROSPECTO_CONTACTO', (fila) => this.serviceContacto.getPayload(fila), (fila) => fila?.CONTACTO, {
+            CONTACTO: 'Contacto', ES_TELEFONO: 'Es teléfono', ES_CORREO: 'Es correo', ES_PRINCIPAL: 'Principal', ES_TRABAJO: 'De trabajo',
+        }));
+        this.agregarParte(partes, 'Familiares', this.cambiosFilas(this.familiarOriginal, this.familiares, this.familiaresEliminar, 'CORR_PROSPECTO_FAMILIAR', (fila) => this.serviceFamiliar.getPayload(fila), (fila) => [fila?.NOMBRES, fila?.APELLIDO1].filter(Boolean).join(' '), {
+            CORR_PARENTESCO: 'Parentesco', NOMBRES: 'Nombres', APELLIDO1: 'Primer apellido', APELLIDO2: 'Segundo apellido',
+            TRABAJA: 'Trabaja', PROFESION: 'Profesión', OCUPACION: 'Ocupación', NOMBRE_EMPRESA: 'Empresa',
+            TELEFONO: 'Teléfono', TELEFONO2: 'Teléfono 2', VIVE_CON_EL: 'Vive con el estudiante', FINANCIA_ESTUDIOS: 'Financia estudios',
+            ES_EMERGENCIA: 'Contacto de emergencia', TELEFONO_EMERGENCIA: 'Teléfono de emergencia',
+        }));
+        this.agregarParte(partes, 'Información adicional', this.cambiosFilas(this.medioOriginal, this.medios, this.mediosEliminar, 'CORR_PROSPECTO_MEDIO', (fila) => this.serviceMedio.getPayload(fila), (fila) => this.etiquetaMedio(fila), {
+            CORR_MEDIO_ORIGEN: 'Medio', DESCRIPCION: 'Descripción', ESTUDIANTE_REFIERE: 'Estudiante que refiere', CORR_CARRERA_REFIERE: 'Carrera que refiere',
+        }, (fila) => this.detalleMedio(fila)));
+        this.agregarParte(partes, 'Salud', this.cambiosFilas(this.limitacionOriginal, this.limitaciones, this.limitacionesEliminar, 'CORR_PROSPECTO_LIMITACION_FISICA', (fila) => this.serviceLimitacion.getPayload(fila), (fila) => fila?.NOMBRE_LIMITACION ? `Limitación ${fila.NOMBRE_LIMITACION}` : 'Limitación', {
+            CORR_LIMITACION_FISICA: 'Limitación', ESPECIFIQUE: 'Especifique',
+        }, (fila) => fila?.ESPECIFIQUE ? `especifique ${fila.ESPECIFIQUE}` : ''));
+        this.agregarParte(partes, 'Deportación', this.cambiosFilas(this.deportacionOriginal, this.deportaciones, this.deportacionesEliminar, 'CORR_PROSPECTO_DEPORTACION', (fila) => this.serviceDeportacion.getPayload(fila), (fila) => fila?.NOMBRE_PAIS ? `País ${fila.NOMBRE_PAIS}` : 'País', {
+            CORR_PAIS: 'País', ES_VIGENTE: 'Vigente', OBSERVACION: 'Observación',
+        }, (fila) => fila?.OBSERVACION ? `observación ${fila.OBSERVACION}` : ''));
+        this.agregarParte(partes, 'Educación media', this.cambioEstudio(SECCION_MEDIA, this.estudioMedia, this.formEstudioMedia));
+        this.agregarParte(partes, 'Estudios universitarios', this.cambioEstudio(SECCION_UNIVERSIDAD, this.estudioUniversidadEliminar ? null : this.estudioUniversidad, this.formEstudioUniversidad));
+        this.agregarParte(partes, 'Graduado UEES', this.cambioEstudio(SECCION_GRADUADO_UEES, this.estudioUeesEliminar ? null : this.estudioUees, this.formEstudioUees));
+        this.agregarParte(partes, 'Información laboral', this.cambioEmpleo());
+        return partes.join('\n');
+    }
+
+    private agregarParte(partes: string[], titulo: string, detalle: string): void {
+        if (detalle) {
+            partes.push(`${titulo}: ${detalle}`);
+        }
+    }
+
+    private cambiosCampos(antes: any, ahora: any, etiquetas: Record<string, string>): string {
+        const nombres = Object.keys(etiquetas).filter((campo) => !this.mismoValor(antes?.[campo], ahora?.[campo]));
+        return nombres.map((campo) => etiquetas[campo]).join(', ');
+    }
+
+    private cambiosFilas(original: Record<string, string>, actuales: any[], eliminados: any[], llave: string, payload: (fila: any) => any, nombre: (fila: any) => string, etiquetas: Record<string, string>, detalle?: (fila: any) => string): string {
+        const lineas: string[] = [];
+        const vistos: Record<string, boolean> = {};
+        (actuales ?? []).forEach((fila) => {
+            const cuerpo = this.leerFormData(undefined, fila);
+            const datos = payload(cuerpo);
+            const id = datos?.[llave] ?? fila?.[llave];
+            const etiqueta = nombre(fila) || 'Registro';
+            if (!(id > 0) || !original?.[id]) {
+                const extra = (detalle?.(fila) || '').trim();
+                lineas.push(extra ? `${etiqueta} (se agregó: ${extra})` : `${etiqueta} (se agregó)`);
+                return;
+            }
+            vistos[id] = true;
+            let previo: any = {};
+            try { previo = JSON.parse(original[id]); } catch { previo = {}; }
+            const campos = this.cambiosCampos(previo, datos, etiquetas);
+            if (campos) {
+                const extra = (detalle?.(fila) || '').trim();
+                lineas.push(extra ? `${etiqueta}: ${campos} (${extra})` : `${etiqueta}: ${campos}`);
+            }
+        });
+        Object.keys(original ?? {}).forEach((id) => {
+            if (vistos[id]) {
+                return;
+            }
+            const fila = (eliminados ?? []).find((item) => String(item?.[llave]) === String(id));
+            lineas.push(`${(fila && nombre(fila)) || 'Registro'} (se eliminó)`);
+        });
+        if (!lineas.some((linea) => linea.includes('se eliminó')) && (eliminados ?? []).length > 0) {
+            (eliminados ?? []).forEach((fila) => lineas.push(`${nombre(fila) || 'Registro'} (se eliminó)`));
+        }
+        return lineas.join('; ');
+    }
+
+    // Qué hace: nombre visible del medio en la bitácora de Información adicional.
+    // Cómo lo hace: usa el texto que quedó en la fila o lo busca en el catálogo cargado.
+    private etiquetaMedio(fila: any): string {
+        const nombre = String(fila?.NOMBRE_MEDIO || this.nombreCatalogo(this.mCORR_MEDIO_ORIGEN, fila?.CORR_MEDIO_ORIGEN, 'CORR_MEDIO_ORIGEN', 'NOMBRE') || '').trim();
+        return nombre ? `Medio ${nombre}` : 'Medio';
+    }
+
+    // Qué hace: detalle del medio cuando pide texto o un estudiante que refiere.
+    private detalleMedio(fila: any): string {
+        const partes: string[] = [];
+        if (fila?.DESCRIPCION) {
+            partes.push(`detalle ${fila.DESCRIPCION}`);
+        }
+        if (fila?.ESTUDIANTE_REFIERE) {
+            partes.push(`estudiante ${fila.ESTUDIANTE_REFIERE}`);
+        }
+        if (fila?.CARRERA_REFIERE) {
+            partes.push(`carrera ${fila.CARRERA_REFIERE}`);
+        }
+        return partes.join(', ');
+    }
+
+    private nombreCatalogo(catalogo: any[], id: any, campoId: string, campoNombre: string): string {
+        return catalogo?.find((item) => item?.[campoId] === id)?.[campoNombre] ?? '';
+    }
+
+    private cambioEstudio(seccion: string, modelo: any, form: DxFormComponent | undefined): string {
+        const ahora = modelo ? this.huellaEstudio(this.leerFormData(form, modelo)) : '';
+        const antes = this.estudioOriginal?.[seccion] ?? '';
+        if (!antes && ahora) {
+            return 'se agregó';
+        }
+        if (antes && !ahora) {
+            return 'se quitó';
+        }
+        if (!antes || antes === ahora) {
+            return '';
+        }
+        let previo: any = {};
+        let actual: any = {};
+        try { previo = JSON.parse(antes); actual = JSON.parse(ahora); } catch { return 'se modificó'; }
+        return this.cambiosCampos(previo, actual, {
+            NIVEL_ESTUDIO: 'Nivel', GRADUADO_UEES: 'Graduado UEES', GRADUADO: 'Graduado', NOMBRE_INSTITUCION: 'Institución',
+            TIPO_EDUCACION: 'Tipo de educación', TITULO_OBTENIDO: 'Título', CARRERA_TEXTO: 'Carrera', NIVEL_CURSADO: 'Nivel cursado',
+            CORR_CARRERA: 'Carrera', ANIO_TITULACION: 'Año de titulación', FECHA_GRADUACION: 'Fecha de graduación',
+            CUOTA: 'Cuota', QUIEN_PAGO_CUOTA: 'Quién pagó la cuota', CORR_PAIS: 'País', CORR_DEPTO: 'Departamento',
+        }) || 'se modificó';
+    }
+
+    private cambioEmpleo(): string {
+        const ahora = this.empleoModel && !this.empleoEliminar ? JSON.stringify(this.serviceEmpleo.getPayload(this.leerFormData(this.formEmpleo, this.empleoModel))) : '';
+        if (!this.empleoOriginalPayload && ahora) {
+            return 'se agregó el empleo';
+        }
+        if (this.empleoOriginalPayload && !ahora) {
+            return 'se quitó el empleo';
+        }
+        if (!this.empleoOriginalPayload || this.empleoOriginalPayload === ahora) {
+            return '';
+        }
+        let previo: any = {};
+        let actual: any = {};
+        try { previo = JSON.parse(this.empleoOriginalPayload); actual = JSON.parse(ahora); } catch { return 'se modificó el empleo'; }
+        return this.cambiosCampos(previo, actual, {
+            EMPRESA: 'Empresa', CORR_SECTOR_LABORAL: 'Sector laboral', TIENE_EMPLEO_FUERA: 'Empleo fuera del país',
+            CORR_PAIS: 'País', CORR_DEPTO: 'Departamento', CORR_MUNICIPIO: 'Municipio',
+        }) || 'se modificó el empleo';
+    }
+
+    private mismoValor(a: any, b: any): boolean {
+        const vacio = (valor: any) => valor === null || valor === undefined || valor === '';
+        if (vacio(a) && vacio(b)) {
+            return true;
+        }
+        const si = (valor: any) => valor === true || valor === 1 || valor === '1' || valor === 'true';
+        const no = (valor: any) => valor === false || valor === 0 || valor === '0' || valor === 'false';
+        if ((si(a) || no(a)) && (si(b) || no(b))) {
+            return si(a) === si(b);
+        }
+        const fecha = (valor: any): number => {
+            if (valor instanceof Date) {
+                return valor.getTime();
+            }
+            const texto = String(valor ?? '');
+            if (!/^\d{4}-\d{2}-\d{2}/.test(texto) && !(valor instanceof Date)) {
+                return Number.NaN;
+            }
+            return Date.parse(texto);
+        };
+        const fa = fecha(a);
+        const fb = fecha(b);
+        if (!Number.isNaN(fa) && !Number.isNaN(fb)) {
+            return new Date(fa).toDateString() === new Date(fb).toDateString();
+        }
+        return String(a ?? '').trim() === String(b ?? '').trim();
+    }
+
+    // Qué hace: la siguiente edición se compara contra lo que acaba de quedar guardado.
+    private refrescarCopiasBitacora(): void {
+        this.modelUpdate = { ...this.model };
+        this.personaOriginal = this.personaModel ? { ...this.leerFormData(this.formPersona, this.personaModel) } : null;
+        this.empleoOriginalPayload = this.empleoModel && !this.empleoEliminar ? JSON.stringify(this.serviceEmpleo.getPayload(this.empleoModel)) : '';
+        this.contactoOriginal = {};
+        this.contactos.forEach((fila) => { if (fila?.CORR_PROSPECTO_CONTACTO > 0) this.contactoOriginal[fila.CORR_PROSPECTO_CONTACTO] = JSON.stringify(this.serviceContacto.getPayload(fila)); });
+        this.familiarOriginal = {};
+        this.familiares.forEach((fila) => { if (fila?.CORR_PROSPECTO_FAMILIAR > 0) this.familiarOriginal[fila.CORR_PROSPECTO_FAMILIAR] = JSON.stringify(this.serviceFamiliar.getPayload(fila)); });
+        this.medioOriginal = {};
+        this.medios.forEach((fila) => { if (fila?.CORR_PROSPECTO_MEDIO > 0) this.medioOriginal[fila.CORR_PROSPECTO_MEDIO] = JSON.stringify(this.serviceMedio.getPayload(fila)); });
+        this.limitacionOriginal = {};
+        this.limitaciones.forEach((fila) => { if (fila?.CORR_PROSPECTO_LIMITACION_FISICA > 0) this.limitacionOriginal[fila.CORR_PROSPECTO_LIMITACION_FISICA] = JSON.stringify(this.serviceLimitacion.getPayload(fila)); });
+        this.deportacionOriginal = {};
+        this.deportaciones.forEach((fila) => { if (fila?.CORR_PROSPECTO_DEPORTACION > 0) this.deportacionOriginal[fila.CORR_PROSPECTO_DEPORTACION] = JSON.stringify(this.serviceDeportacion.getPayload(fila)); });
+        this.estudioOriginal = {
+            [SECCION_MEDIA]: this.huellaEstudio(this.estudioMedia),
+            [SECCION_UNIVERSIDAD]: this.estudioUniversidadEliminar ? '' : this.huellaEstudio(this.estudioUniversidad),
+            [SECCION_GRADUADO_UEES]: this.estudioUeesEliminar ? '' : this.huellaEstudio(this.estudioUees),
+        };
+    }
+
     // Qué hace: la educación media siempre debe existir; si el prospecto no la tiene, abre el
     //           formulario vacío para crearla al guardar (solo en edición).
     private sincronizarEstudioMedia(): void {
@@ -3290,6 +3549,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.getCORR_DEPTO_EMPLEO(this.empleoModel?.CORR_PAIS);
             this.getCORR_MUNICIPIO_EMPLEO(this.empleoModel?.CORR_PAIS, this.empleoModel?.CORR_DEPTO);
             this.sincronizarEmpleoConTrabaja();
+            this.empleoOriginalPayload = this.empleoModel ? JSON.stringify(this.serviceEmpleo.getPayload(this.empleoModel)) : '';
         });
     }
 

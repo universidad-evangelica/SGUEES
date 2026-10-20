@@ -924,17 +924,17 @@
                 </div>
             </dxi-item>
 
-            <!-- Qué hace: historial propio de la solicitud. El paso del portal muestra el CIF, no PORTAL_ADMISION. -->
-            <dxi-item title="Bitácora" icon="event">
+            <!-- Qué hace: historial del flujo 104. El paso del portal muestra el CIF, no PORTAL_ADMISION. -->
+            <dxi-item title="Bitácora flujo" icon="event">
                 <div class="aca-prospecto-bitacora">
                     <h3 class="aca-prospecto-bitacora-title">
                         <span class="dx-icon-clock aca-prospecto-bitacora-title-icon" aria-hidden="true"></span>
-                        Bitácora de la solicitud
+                        Bitácora del flujo
                     </h3>
                     <app-data-grid-mtto
                         [isBrowse]="true"
-                        [models]="bitacoras"
-                        [columns]="columnsBitacora"
+                        [models]="bitacorasFlujo"
+                        [columns]="columnsBitacoraFlujo"
                         [keyExpr]="'CORR_BITACORA'"
                         [unifiedToolbar]="false"
                         [showAdd]="false"
@@ -949,6 +949,35 @@
                         [showEmptyState]="true"
                         [emptyTitle]="'Sin movimientos'"
                         [emptyMessage]="'Esta solicitud todavía no tiene movimientos en el flujo.'"
+                    >
+                    </app-data-grid-mtto>
+                </div>
+            </dxi-item>
+            <!-- Qué hace: campos que se cambiaron al editar la solicitud de nuevo ingreso. -->
+            <dxi-item title="Bitácora" icon="edit">
+                <div class="aca-prospecto-bitacora">
+                    <h3 class="aca-prospecto-bitacora-title">
+                        <span class="dx-icon-edit aca-prospecto-bitacora-title-icon" aria-hidden="true"></span>
+                        Bitácora de cambios
+                    </h3>
+                    <app-data-grid-mtto
+                        [isBrowse]="true"
+                        [models]="bitacorasEdicion"
+                        [columns]="columnsBitacoraEdicion"
+                        [keyExpr]="'CORR_PROSPECTO_BITACORA'"
+                        [unifiedToolbar]="false"
+                        [showAdd]="false"
+                        [showSearch]="false"
+                        [showExport]="false"
+                        [showRefresh]="false"
+                        [permiteEditar]="false"
+                        [permiteDele]="false"
+                        [wordWrapEnabled]="true"
+                        [gridHeight]="'auto'"
+                        [pageSize]="10"
+                        [showEmptyState]="true"
+                        [emptyTitle]="'Sin cambios'"
+                        [emptyMessage]="'Todavía no hay ediciones anotadas en esta solicitud.'"
                     >
                     </app-data-grid-mtto>
                 </div>

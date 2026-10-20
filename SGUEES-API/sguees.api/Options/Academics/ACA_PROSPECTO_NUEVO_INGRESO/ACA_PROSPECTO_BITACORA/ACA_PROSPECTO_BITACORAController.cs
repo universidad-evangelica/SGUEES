@@ -1,16 +1,18 @@
 using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using eFramework.Core;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using sguees.api.Shared;
 using sguees.Models;
 using sguees.Services;
 
 namespace sguees.Controllers
 {
-    // Qué hace: bitácora de la solicitud de nuevo ingreso.
-    // Cómo lo hace: lee el historial del flujo 104. El paso del portal muestra el CIF del prospecto.
+    // Qué hace: bitácora de los cambios hechos al editar una solicitud de nuevo ingreso.
+    // Cómo lo hace: lista y guarda solo TIPO_PROSPECTO = ACA_PROSPECTO. El login sale de la sesión.
     [Authorize]
     [Route("[controller]")]
     [ApiController]
@@ -27,8 +29,16 @@ namespace sguees.Controllers
         [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_BITACORAParam Data)
         {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAllAsync(Data);
+        }
+
+        [HttpPost]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|U")]
+        public async Task<IActionResult> Post(ACA_PROSPECTO_BITACORAParam Data)
+        {
+            var login = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value;
+            var resultado = await _service.InsertAsync(Data, login, ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
     }
 }

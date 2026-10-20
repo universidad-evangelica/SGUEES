@@ -11,19 +11,29 @@ import { AcaProspectoBitacoraRepository } from './aca-prospecto-bitacora.reposit
 export class AcaProspectoBitacoraService {
     constructor(private repo: AcaProspectoBitacoraRepository) {}
 
-    // Qué hace: bitácora del prospecto abierto.
-    // Cómo lo hace: el API sustituye PORTAL_ADMISION por el CIF antes de pintar la grilla.
+    // Qué hace: bitácora de ediciones del prospecto abierto.
+    // Cómo lo hace: el API solo devuelve filas de tipo ACA_PROSPECTO.
     getPorProspecto(CORR_PROSPECTO: number): Observable<IResult> {
         const xWhere: IParam[] = [{ Parameter: 'CORR_PROSPECTO', Value: CORR_PROSPECTO }];
         return this.repo.getAll(xWhere);
     }
 
+    // Qué hace: registra el texto de los apartados y campos que cambiaron.
+    registrar(CORR_PROSPECTO: number, COMENTARIO: string): Observable<IResult> {
+        return this.repo.create({ CORR_PROSPECTO, COMENTARIO });
+    }
+
     getColumns(): any[] {
         return [
+            {
+                name: 'btnAcciones',
+                type: 'buttons',
+                visible: false,
+                allowFiltering: false,
+                allowSorting: false,
+                buttons: [],
+            },
             { dataField: 'USUARIO', caption: 'Usuario', width: 160 },
-            { dataField: 'NOMBRE_PASO', caption: 'Paso', width: 240 },
-            { dataField: 'ESTADO_DESTINO', caption: 'Estado', width: 180 },
-            { dataField: 'COMENTARIO', caption: 'Observaciones', minWidth: 280 },
             {
                 dataField: 'FECHA_ACCION',
                 caption: 'Fecha',
@@ -33,6 +43,7 @@ export class AcaProspectoBitacoraService {
                 sortOrder: 'desc',
                 sortIndex: 0,
             },
+            { dataField: 'COMENTARIO', caption: 'Cambios', width: 520, minWidth: 320 },
         ];
     }
 }

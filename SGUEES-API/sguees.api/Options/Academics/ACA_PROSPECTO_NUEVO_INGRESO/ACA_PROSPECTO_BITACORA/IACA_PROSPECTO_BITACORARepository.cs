@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
-using eFramework.Data;
 
 namespace sguees.Repositories
 {
     public interface IACA_PROSPECTO_BITACORARepository
     {
-        Task<CResult> GetAllAsync(List<CParameter> xWhere);
+        Task<CResult> GetAllAsync(int corrProspecto);
+        Task<CResult> InsertAsync(int corrProspecto, string comentario, string login, string estacion);
     }
 }
