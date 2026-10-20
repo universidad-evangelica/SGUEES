@@ -1,5 +1,6 @@
 // Qué hace: endpoints REST del catálogo parentesco.
 // Cómo lo hace: CRUD + ActivarInactivar con auditoría por claims (sin empresa).
+using sguees.api.Policies;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -33,7 +34,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpGet("GetCORR_PARENTESCO_ACA_PROSPECTO")]
-		[Authorize(Policy = "/aca-prospecto|R")]
+		[Authorize(Policy = PermisosProspecto.LecturaAmbos)]
 		// Qué hace: parentescos para los familiares del prospecto (pestaña Información personal).
 		// Cómo: estándar de datos cross-tabla, el catálogo expone el método con el permiso de la
 		//       pantalla que lo consume; devuelve solo los activos.
@@ -83,6 +84,15 @@ namespace sguees.Controllers
 			this.ApplyQueryKeys(Data, nameof(GEN_PARENTESCOTable.CORR_PARENTESCO));
 			var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		[HttpGet("GetCORR_PARENTESCO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		// Qué hace: entrega el catálogo de parentescos para el tab Familiares de empleado.
+		// Cómo: llama a GetAllAsync del servicio.
+		public async Task<CResult> GetCORR_PARENTESCO_GEN_EMPLEADO([FromQuery] GEN_PARENTESCOParam Data)
+		{
+			return await _service.GetAllAsync(Data);
 		}
 
 		private string GetUsuario()

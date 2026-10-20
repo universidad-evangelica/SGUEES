@@ -16,6 +16,11 @@ export interface GenUnidadesPuesto {
 	CORR_PUESTO: number | null;
 	CODIGO_PUESTO?: string | null;
 	NOMBRE_PUESTO?: string | null;
+	CORR_TIPO_PUESTO?: number | null;
+	NOMBRE_TIPO_PUESTO?: string | null;
+	ACTIVO_PUESTO?: boolean | null;
+	MISION_PUESTO?: string | null;
+	ESTADO_PUESTO?: string;
 	USUARIO_CREA?: string;
 	ESTACION_CREA?: string;
 	FECHA_CREA?: Date | string;
@@ -29,7 +34,7 @@ export interface GenPuestoLookupItem {
 	CORR_PUESTO: number;
 	CODIGO_PUESTO?: string;
 	NOMBRE_PUESTO: string;
-	ESTADO_PUESTO?: boolean;
+	ACTIVO_PUESTO?: boolean;
 }
 
 // Qué hace: ítem del modal de asignación (catálogo + checkbox).

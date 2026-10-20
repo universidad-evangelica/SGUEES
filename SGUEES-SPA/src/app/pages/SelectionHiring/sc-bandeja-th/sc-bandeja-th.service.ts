@@ -2,7 +2,7 @@ import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
-import { ScBandejaHistorialItem, ScBandejaItem } from './models/sc-bandeja-th-item';
+import { ScBandejaEstadoCandidato, ScBandejaHistorialItem, ScBandejaItem } from './models/sc-bandeja-th-item';
 import { ScBandejaThRepository } from './sc-bandeja-th.repository';
 
 /** Misma catálogo de estados que sc-requisicion-personal.service.ts */
@@ -165,6 +165,7 @@ export class ScBandejaThService {
 		FECHA_DESDE?: string | Date | null;
 		FECHA_HASTA?: string | Date | null;
 		BUSQUEDA?: string;
+		ESTADO_CICLO_CANDIDATO?: string;
 	}): Observable<IResult> {
 		const xWhere: IParam[] = [
 			{ Parameter: 'PAGE', Value: param.PAGE ?? 1 },
@@ -184,6 +185,9 @@ export class ScBandejaThService {
 		}
 		if (param.BUSQUEDA?.trim()) {
 			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA.trim() });
+		}
+		if (param.ESTADO_CICLO_CANDIDATO && param.ESTADO_CICLO_CANDIDATO !== 'TODOS') {
+			xWhere.push({ Parameter: 'ESTADO_CICLO_CANDIDATO', Value: param.ESTADO_CICLO_CANDIDATO });
 		}
 
 		return this.repo.getContrataciones(xWhere);
@@ -249,6 +253,7 @@ export class ScBandejaThService {
 			CORR_REQUISICION_PERSONAL: corrReq,
 			CORR_ESTADO_REQUISICION: Number(row?.CORR_ESTADO_REQUISICION) || undefined,
 			CORR_EXPEDIENTE_CANDIDATO: corrExp > 0 ? corrExp : undefined,
+			CORR_ESTADO_EXPEDIENTE: Number(row?.CORR_ESTADO_EXPEDIENTE) || undefined,
 			CORR_SOLICITUD_EMPLEO: corrSol,
 			CORR_PERSONA_DATOS: Number(row?.CORR_PERSONA_DATOS) || null,
 			NOMBRE_UNIDAD: row?.NOMBRE_UNIDAD,
@@ -274,7 +279,8 @@ export class ScBandejaThService {
 		};
 	}
 
-	/** Stage Contrataciones: dictamen APLICA → listo para movimiento personal. */
+	// Qué hace: Mapea registros de contrataciones determinando si está Seleccionado, Listo para crear empleado o Contratado.
+	// Cómo lo hace: Evalúa si el movimiento de personal está aprobado ('AP') y confirmado (1), y si ya tiene CORR_EMPLEADO generado en GEN_EMPLEADO.
 	mapContratacionToBandejaItem(row: any): ScBandejaItem {
 		const base = this.mapCandidatoToBandejaItem({
 			...row,
@@ -286,21 +292,49 @@ export class ScBandejaThService {
 		const corrReq = Number(row?.CORR_REQUISICION_PERSONAL) || 0;
 		const codigo = corrExp > 0 ? `CAN-${corrExp}` : `SOL-${corrSol}`;
 
+		const esAprobado = row?.ESTADO_MOVIMIENTO === 'AP';
+		const esConfirmado = Number(row?.CONFIRMADO) === 1 || row?.CONFIRMADO === true;
+		const corrEmpleado = Number(row?.CORR_EMPLEADO) || 0;
+
+		let estado = 'Seleccionado';
+		let estadoTone = 'seleccionado';
+		let estadoCiclo: ScBandejaEstadoCandidato = 'APLICA';
+
+		if (esAprobado && esConfirmado) {
+			if (corrEmpleado > 0) {
+				estado = 'Contratado';
+				estadoTone = 'cerrada';
+				estadoCiclo = 'CONTRATADO';
+			} else {
+				estado = 'Listo para crear empleado';
+				estadoTone = 'listo-usuario';
+				estadoCiclo = 'LISTO_CREAR_USUARIO';
+			}
+		}
+
 		return {
 			...base,
 			ID: `CON-${codigo}-REQ-${corrReq}`,
 			TIPO: 'CONTRATACION',
 			CODIGO: `CON-${codigo}`,
 			FECHA: row?.FECHA_DECISION || row?.FECHA_GENERACION,
-			ESTADO: 'Listo para contratar',
-			ESTADO_TONE: 'aprobada',
-			ESTADO_CICLO_CANDIDATO: 'APLICA',
+			ESTADO: estado,
+			ESTADO_TONE: estadoTone,
+			ESTADO_CICLO_CANDIDATO: estadoCiclo,
 			ESTADO_DECISION: 'APLICA',
-			REQUIERE_ATENCION: true,
-			LISTO_CONTRATACION: true,
+			CORR_REQUISICION_CANDIDATO: Number(row?.CORR_REQUISICION_CANDIDATO) || undefined,
+			CORR_MOVIMIENTO_PERSONAL: Number(row?.CORR_MOVIMIENTO_PERSONAL) || undefined,
+			ESTADO_MOVIMIENTO: row?.ESTADO_MOVIMIENTO,
+			CONFIRMADO: row?.CONFIRMADO,
+			CORR_EMPLEADO: corrEmpleado > 0 ? corrEmpleado : undefined,
+			FECHA_EFECTIVA: row?.FECHA_EFECTIVA,
+			REQUIERE_ATENCION: estado !== 'Contratado',
+			LISTO_CONTRATACION: estado === 'Seleccionado',
 		};
 	}
 
+	// Qué hace: Retorna la etiqueta visible del estado del ciclo del candidato.
+	// Cómo lo hace: Evalúa el código de ciclo y devuelve la descripción amigable (NO_APLICA se muestra como Rechazado).
 	getEstadoCicloLabel(ciclo: string): string {
 		switch (`${ciclo || ''}`.toUpperCase()) {
 			case 'POSTULANTE':
@@ -310,9 +344,13 @@ export class ScBandejaThService {
 			case 'EN_SELECCION':
 				return 'En proceso de selección';
 			case 'APLICA':
-				return 'Aplica';
+				return 'Seleccionado';
 			case 'NO_APLICA':
-				return 'No aplica';
+				return 'Rechazado';
+			case 'LISTO_CREAR_USUARIO':
+				return 'Listo para crear empleado';
+			case 'CONTRATADO':
+				return 'Contratado';
 			default:
 				return ciclo || '—';
 		}
@@ -327,9 +365,13 @@ export class ScBandejaThService {
 			case 'EN_SELECCION':
 				return 'proceso';
 			case 'APLICA':
-				return 'aprobada';
+				return 'seleccionado';
 			case 'NO_APLICA':
 				return 'rechazada';
+			case 'LISTO_CREAR_USUARIO':
+				return 'listo-usuario';
+			case 'CONTRATADO':
+				return 'cerrada';
 			default:
 				return 'borrador';
 		}
@@ -357,5 +399,32 @@ export class ScBandejaThService {
 		}
 		const raw = String(value);
 		return raw.length >= 10 ? raw.substring(0, 10) : raw;
+	}
+
+	// Qué hace: Envía la decisión del dictamen del candidato (APLICA / NO_APLICA) al backend.
+	// Cómo lo hace: Invoca el método decideCandidato del repositorio de Bandeja TH.
+	decideCandidato(payload: {
+		CORR_REQUISICION_PERSONAL: number;
+		CORR_SOLICITUD_EMPLEO: number;
+		CORR_EXPEDIENTE_CANDIDATO: number;
+		ESTADO_DECISION: 'APLICA' | 'NO_APLICA';
+		OBSERVACION_DECISION?: string;
+	}): Observable<IResult> {
+		return this.repo.decideCandidato(payload);
+	}
+
+	// Qué hace: Invoca el repositorio para confirmar el movimiento de personal.
+	// Cómo lo hace: Llama a confirmarMovimientoPersonal del repositorio con el payload de confirmación.
+	confirmarMovimientoPersonal(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_EFECTIVA?: Date | string | null;
+	}): Observable<IResult> {
+		return this.repo.confirmarMovimientoPersonal(model);
+	}
+
+	// Qué hace: Invoca la contratación y creación de usuario/empleado del candidato.
+	// Cómo lo hace: Delega la petición al repositorio con el correlativo del movimiento.
+	contratarEmpleado(model: { CORR_MOVIMIENTO_PERSONAL: number }): Observable<IResult> {
+		return this.repo.contratarEmpleado(model);
 	}
 }

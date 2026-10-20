@@ -13,6 +13,7 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { AuthService, ThemeService } from 'src/app/shared/services';
 import { ChangePasswordModalModule } from '../change-password-modal/change-password-modal.component';
+import { NotificationSignalRService } from 'src/app/services/notification-signalr.service';
 
 @Component({
   selector: 'app-login-form',
@@ -48,7 +49,8 @@ export class LoginFormComponent {
     private authService: AuthService,
     private router: Router,
     private themeService: ThemeService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private notificationSignalRService: NotificationSignalRService
   ) {
     this.themeService.isDark.subscribe((value: boolean) => {
       this.btnStylingMode = value ? 'outlined' : 'contained';
@@ -87,7 +89,8 @@ export class LoginFormComponent {
               : 'password-expired';
             this.showChangePasswordModal = true;
           } else {
-            // Login exitoso, redirigir al home
+            // Login exitoso: conectar SignalR con el JWT recién guardado y redirigir.
+            void this.notificationSignalRService.startConnection();
             this.router.navigate(['/home']);
           }
         } else if (response?.ErrorMessage) {
@@ -233,9 +236,10 @@ export class LoginFormComponent {
       life: 2000
     });
 
-    // Redirigir al home
+    // Redirigir al home (si ya hay JWT de sesión, abrir SignalR).
     setTimeout(() => {
       this.formData = {};
+      void this.notificationSignalRService.startConnection();
       this.router.navigate(['/home']);
     }, 2000);
   }

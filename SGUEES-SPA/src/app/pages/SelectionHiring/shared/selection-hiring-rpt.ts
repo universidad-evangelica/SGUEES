@@ -25,6 +25,7 @@ import { environment } from 'src/environments/environment';
 /** Claves `report=` (deben coincidir con el case en SelectionHiring.aspx.cs). */
 export const SELECTION_HIRING_RPT = {
 	REQUISICION_PERSONAL: 'rptRequisicionPersonal',
+	MOVIMIENTO_PERSONAL: 'rptMovimientoPersonal',
 	// DESCRIPTOR_PUESTO: 'rptDescriptorPuesto', // + formato corto|extenso cuando exista
 } as const;
 

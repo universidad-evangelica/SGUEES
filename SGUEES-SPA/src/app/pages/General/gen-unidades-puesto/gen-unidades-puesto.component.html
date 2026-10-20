@@ -54,12 +54,14 @@
 		[showGrouping]="true"
 		[exportFileName]="'UnidadesPuesto'"
 		(focusedRowChanged)="focusedRowChanged($event)"
+		(rowDblClick)="onUnidadDblClick($event)"
 	>
 	</app-data-grid-mtto>
 </div>
 
 <!-- Modal: elegir puestos a asignar a la unidad (checkbox + Todos / Ninguno / Guardar). -->
 <dx-popup
+	#popupAsignarPuestos
 	[(visible)]="popupAsignarVisible"
 	[showTitle]="true"
 	[title]="popupAsignarTitulo"
@@ -115,9 +117,11 @@
 		[allowColumnResizing]="true"
 		[columnResizingMode]="'widget'"
 		[width]="'100%'"
+		[height]="alturaPuestosModal"
 		[repaintChangesOnly]="false"
+		(onOptionChanged)="onPuestosModalOptionChanged($event)"
 	>
-		<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+		<dxo-paging [enabled]="true" [pageSize]="puestoModalPageSize"></dxo-paging>
 		<dxo-pager
 			[visible]="true"
 			[showPageSizeSelector]="true"
@@ -126,7 +130,7 @@
 		></dxo-pager>
 		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
 		<dxo-header-filter [visible]="true"></dxo-header-filter>
-		<dxo-scrolling [mode]="'standard'"></dxo-scrolling>
+		<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
 		<dxo-load-panel [enabled]="false"></dxo-load-panel>
 		<dxo-editing
 			[mode]="'cell'"
@@ -161,6 +165,56 @@
 			[minWidth]="220"
 			[allowEditing]="false"
 		></dxi-column>
+	</dx-data-grid>
+</dx-popup>
+
+<!-- motivo: detalle de solo lectura de los puestos que ya tiene la unidad -->
+<dx-popup
+	[(visible)]="popupDetalleVisible"
+	[showTitle]="true"
+	[title]="popupDetalleTitulo"
+	[width]="920"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[wrapperAttr]="{ class: 'unidades-puesto-detalle-popup' }"
+	(onHiding)="cerrarDetalle()"
+>
+	<p class="unidades-puesto-detalle-empty" *ngIf="!detallePuestos.length">
+		Esta unidad no tiene puestos asignados.
+	</p>
+	<dx-data-grid
+		*ngIf="detallePuestos.length"
+		class="theme-dependent sguees-data-grid-mtto unidades-puesto-detalle-grid"
+		[dataSource]="detallePuestos"
+		keyExpr="CORR_PUESTO"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[width]="'100%'"
+	>
+		<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+		<dxo-pager
+			[visible]="true"
+			[showPageSizeSelector]="true"
+			[allowedPageSizes]="[5, 10, 25, 50]"
+			[showInfo]="true"
+		></dxo-pager>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+		<dxo-scrolling [mode]="'standard'"></dxo-scrolling>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxi-column dataField="CODIGO_PUESTO" caption="Codigo" [width]="110" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="240" [minWidth]="180" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_TIPO_PUESTO" caption="Tipo" [width]="180" [minWidth]="140" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="ESTADO_PUESTO" caption="Estado" [width]="110" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="MISION_PUESTO" caption="Mision" [width]="320" [minWidth]="200" [allowEditing]="false"></dxi-column>
 	</dx-data-grid>
 </dx-popup>
 

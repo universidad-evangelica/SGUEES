@@ -19,7 +19,9 @@ export const BANDEJA_ACTORES_ESTADOS_REQUISICION: {
 	{ CORR_ESTADO_REQUISICION: 5, ESTADO_REQUISICION: 'Aprobada' },
 ];
 
+/** Catálogo OPERACION del SP PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA. */
 export const OPERACION_BANDEJA_ACTORES = {
+	ENVIAR: 2,
 	APROBAR: 3,
 	DEVOLVER: 4,
 	RECHAZAR: 5,
@@ -31,8 +33,13 @@ export const OPERACION_BANDEJA_ACTORES = {
 export class ScBandejaActoresService {
 	constructor(private repo: ScBandejaActoresRepository) {}
 
-	getEstadoRequisicionLabel(corrEstado: number | null | undefined): string {
+	// Qué hace: Retorna la etiqueta descriptiva del estado de requisición para la bandeja de actores.
+	// Cómo lo hace: Si viene NOMBRE_ESTADO_FLUJO de la bitácora (ej. Aprobado JI, Aprobado JU, Aprobado GG), lo prioriza; de lo contrario toma el catálogo o 'Borrador'.
+	getEstadoRequisicionLabel(corrEstado: number | null | undefined, nombreEstadoFlujo?: string | null): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		if (corr >= 2 && corr <= 5 && nombreEstadoFlujo?.trim()) {
+			return nombreEstadoFlujo.trim();
+		}
 		const item = BANDEJA_ACTORES_ESTADOS_REQUISICION.find(
 			(x) => x.CORR_ESTADO_REQUISICION === corr
 		);
@@ -51,15 +58,14 @@ export class ScBandejaActoresService {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
 		switch (corr) {
 			case 2:
-				return 'aprobacion';
+			case 5:
+				return 'aprobacion'; // Mantiene tono azul (.bandeja-estado--aprobacion)
 			case 3:
 				return 'devuelta';
 			case 4:
 				return 'rechazada';
-			case 5:
-				return 'aprobada';
 			default:
-				return 'borrador';
+				return 'aprobacion';
 		}
 	}
 
@@ -103,9 +109,51 @@ export class ScBandejaActoresService {
 		return this.repo.getRequisiciones(xWhere);
 	}
 
-	getBitacoraRequisicion(corrRequisicion: number): Observable<IResult> {
+	getMovimientos(param: {
+		PAGE?: number;
+		PAGE_SIZE?: number;
+		SORT_FIELD?: string;
+		SORT_DESC?: boolean;
+		CORR_UNIDAD?: number;
+		FECHA_DESDE?: string | Date | null;
+		FECHA_HASTA?: string | Date | null;
+		BUSQUEDA?: string;
+	}): Observable<IResult> {
+		const xWhere: IParam[] = [
+			{ Parameter: 'PAGE', Value: param.PAGE ?? 1 },
+			{ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE ?? 15 },
+			{ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD || 'FECHA_NOTIFICACION' },
+			{ Parameter: 'SORT_DESC', Value: param.SORT_DESC !== false },
+		];
+
+		if (param.CORR_UNIDAD && param.CORR_UNIDAD > 0) {
+			xWhere.push({ Parameter: 'CORR_UNIDAD', Value: param.CORR_UNIDAD });
+		}
+		if (param.FECHA_DESDE) {
+			xWhere.push({ Parameter: 'FECHA_DESDE', Value: this.toIsoDate(param.FECHA_DESDE) });
+		}
+		if (param.FECHA_HASTA) {
+			xWhere.push({ Parameter: 'FECHA_HASTA', Value: this.toIsoDate(param.FECHA_HASTA) });
+		}
+		if (param.BUSQUEDA?.trim()) {
+			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA.trim() });
+		}
+
+		return this.repo.getMovimientos(xWhere);
+	}
+
+	autorizaMovimiento(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		OPERACION: number;
+		OBSERVACION: string;
+	}): Observable<IResult> {
+		return this.repo.autorizaMovimiento(model);
+	}
+
+	getBitacoraRequisicion(corrRequisicion: number, tipoDocumento = 101): Observable<IResult> {
 		return this.repo.getBitacoraRequisicion([
 			{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: corrRequisicion },
+			{ Parameter: 'CORR_TIPO_DOCUMENTO', Value: tipoDocumento },
 		]);
 	}
 
@@ -177,6 +225,7 @@ export class ScBandejaActoresService {
 	mapRequisicionToBandejaItem(row: any): ScBandejaActoresItem {
 		const corr = Number(row?.CORR_REQUISICION_PERSONAL) || 0;
 		const corrEstado = Number(row?.CORR_ESTADO_REQUISICION) || 1;
+		const nombreFlujo = row?.NOMBRE_ESTADO_FLUJO;
 
 		return {
 			ID: `REQ-${corr}`,
@@ -187,10 +236,11 @@ export class ScBandejaActoresService {
 			SOLICITANTE: row?.NOMBRE_SOLICITANTE || row?.USUARIO_CREA || '—',
 			CARGO_SOLICITANTE: row?.USUARIO_CREA || undefined,
 			FECHA: row?.FECHA_NOTIFICACION || row?.FECHA_REQUISICION,
-			ESTADO: this.getEstadoRequisicionLabel(corrEstado),
-			ESTADO_TONE: this.getEstadoTone(corrEstado),
+			ESTADO: this.getEstadoRequisicionLabel(corrEstado, nombreFlujo),
+			ESTADO_TONE: 'aprobacion',
 			CORR_REQUISICION_PERSONAL: corr,
 			CORR_ESTADO_REQUISICION: corrEstado,
+			NOMBRE_ESTADO_FLUJO: nombreFlujo,
 			CORR_UNIDAD: Number(row?.CORR_UNIDAD) || undefined,
 			NOMBRE_UNIDAD: row?.NOMBRE_UNIDAD,
 			NOMBRE_PUESTO: row?.NOMBRE_PUESTO,
@@ -247,6 +297,31 @@ export class ScBandejaActoresService {
 			CANTIDAD_ENTREVISTAS: Number(row?.CANTIDAD_ENTREVISTAS) || 0,
 			ULTIMA_ENTREVISTA: row?.ULTIMA_ENTREVISTA || undefined,
 			REQUIERE_ATENCION: true,
+			HISTORIAL: [],
+		};
+	}
+
+	mapMovimientoToBandejaItem(row: any): ScBandejaActoresItem {
+		const corr = Number(row?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		const tipo = `${row?.TIPO_MOVIMIENTO || ''}`.toUpperCase();
+		const tipoNombre = row?.NOMBRE_TIPO_MOVIMIENTO || (tipo === 'ASCENSO' ? 'Ascenso' : 'Traslado');
+		return {
+			ID: `MOV-${corr}`,
+			TIPO: 'MOVIMIENTO',
+			CODIGO: `MOV-${corr}`,
+			DESCRIPCION: row?.NOMBRE_COMPLETO || `Movimiento ${corr}`,
+			SUBTITULO: [tipoNombre, row?.NOMBRE_UNIDAD_PROPUESTA].filter(Boolean).join(' · '),
+			ESTADO: row?.NOMBRE_ESTADO_MOVIMIENTO || 'En aprobación',
+			ESTADO_TONE: 'en-aprobacion',
+			FECHA: row?.FECHA_NOTIFICACION || row?.FECHA_ELABORACION,
+			SOLICITANTE: row?.NOMBRE_SOLICITANTE || row?.USUARIO_CREA || '—',
+			MENSAJE_NOTIFICACION: row?.MENSAJE_NOTIFICACION || undefined,
+			CORR_MOVIMIENTO_PERSONAL: corr,
+			CORR_INSTANCIA: Number(row?.CORR_INSTANCIA) || undefined,
+			NOMBRE_PUESTO: row?.NOMBRE_PUESTO_PROPUESTO || undefined,
+			NOMBRE_UNIDAD: row?.NOMBRE_UNIDAD_PROPUESTA || undefined,
+			CORR_UNIDAD: Number(row?.CORR_UNIDAD_PROPUESTA) || undefined,
+			JUSTIFICACION: row?.JUSTIFICACION || undefined,
 			HISTORIAL: [],
 		};
 	}

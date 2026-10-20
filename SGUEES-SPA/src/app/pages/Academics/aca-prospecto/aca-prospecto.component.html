@@ -27,7 +27,7 @@
         <section class="sguees-section-card aca-prospecto-card">
             <header class="aca-prospecto-section-head">
                 <span class="aca-prospecto-section-title">Datos del prospecto</span>
-                <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Edición: solo forma de ingreso y financia estudios' : 'Consulta de solo lectura' }}</span>
+                <span class="aca-prospecto-section-subtitle">{{ isForm() && esAcademico ? 'Edición: ciclo, carrera, modalidad, forma de ingreso y financia estudios' : (isForm() ? 'Solo lectura: se edita desde Prospectos Académica' : 'Consulta de solo lectura') }}</span>
             </header>
             <dx-form
                 #fData
@@ -36,12 +36,26 @@
                 [formData]="model"
                 [labelLocation]="'top'"
                 [colCount]="8"
-                [readOnly]="readOnly"
+                [readOnly]="readOnly || !esAcademico"
                 [items]="items"
                 (onFieldDataChanged)="onCabeceraChanged($event)"
             >
                 <!-- Cambio de carrera: misma oferta que el portal (carreras del ciclo con plan vigente).
                      El plan académico y el período los resuelve el API al guardar; el CIF no cambia. -->
+                <!-- Cambio de ciclo: ciclos con inscripción abierta y oferta, más el actual del prospecto.
+                     Si la carrera sigue ofertada en el ciclo nuevo se conserva; si no, se limpia. -->
+                <div *dxTemplate="let cellInfo of 'CICLO_PROSPECTOLookup'">
+                    <app-data-lookup
+                        [model]="mCICLO_CAMBIO"
+                        [(value)]="model.CICLO"
+                        (valueChange)="onCicloChange($event)"
+                        [valueExpr]="'CICLO'"
+                        [displayExpr]="'CICLO'"
+                        [selectedRowKeys]="selectedLookUpCICLO_CAMBIO"
+                        [readOnly]="readOnly || !esAcademico"
+                    >
+                    </app-data-lookup>
+                </div>
                 <div *dxTemplate="let cellInfo of 'CORR_CARRERA_PROSPECTOLookup'">
                     <app-data-lookup
                         [model]="mCORR_CARRERA_CICLO"
@@ -50,7 +64,7 @@
                         [valueExpr]="'CORR'"
                         [displayExpr]="'NOMBRE'"
                         [selectedRowKeys]="selectedLookUpCORR"
-                        [readOnly]="readOnly"
+                        [readOnly]="readOnly || !esAcademico"
                         [dropDownWidth]="480"
                     >
                     </app-data-lookup>
@@ -62,7 +76,7 @@
                         [valueExpr]="'CORR'"
                         [displayExpr]="'NOMBRE'"
                         [selectedRowKeys]="selectedLookUpCORR"
-                        [readOnly]="readOnly"
+                        [readOnly]="readOnly || !esAcademico"
                     >
                     </app-data-lookup>
                 </div>
@@ -570,7 +584,7 @@
                 </dxi-item>
 
                 <!-- ================= Información académica ================= -->
-                <dxi-item title="Información académica" [icon]="'bookmark'">
+                <dxi-item title="Información académica" [icon]="'bookmark'" [visible]="esAcademico">
                     <div class="aca-prospecto-tab">
                         <header class="aca-prospecto-section-head">
                             <span class="aca-prospecto-section-title">Carrera a la que aplica</span>
@@ -728,7 +742,7 @@
                 </dxi-item>
 
                 <!-- ================= Información económica ================= -->
-                <dxi-item title="Información económica" [icon]="'money'">
+                <dxi-item title="Información económica" [icon]="'money'" [visible]="esEconomico">
                     <div class="aca-prospecto-tab">
                         <!-- El interruptor vive en el encabezado, como en el portal: con empleoEliminar se
                              oculta el formulario y se avisa; con empleoNuevo se crea al guardar. -->

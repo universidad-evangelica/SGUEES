@@ -1,5 +1,5 @@
 // Qué hace: modelo TypeScript de tipo documento identidad.
-// Cómo lo hace: define campos de formulario/grilla y auditoría.
+// Cómo lo hace: define campos de formulario/grilla, listas y auditoría.
 export interface GenTipoDocumentoIdentidad {
 	CORR_TIPO_DOCUMENTO_IDENTIDAD: number;
 	NOMBRE_TIPO_DOCUMENTO_IDENTIDAD: string;
@@ -7,6 +7,10 @@ export interface GenTipoDocumentoIdentidad {
 	ACTIVO_TIPO_DOCUMENTO_IDENTIDAD: boolean;
 	NUMERO_CARACTERES: number;
 	ACTIVO_CARACTERES: boolean;
+	FORMATO_CARACTERES: string;
+	NOMBRE_FORMATO_CARACTERES?: string;
+	APLICA_PARA: string;
+	NOMBRE_APLICA_PARA?: string;
 	USUARIO_CREA: string;
 	ESTACION_CREA: string;
 	FECHA_CREA: Date;

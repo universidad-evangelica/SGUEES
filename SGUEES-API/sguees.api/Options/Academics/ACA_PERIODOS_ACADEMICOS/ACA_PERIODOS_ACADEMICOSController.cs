@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetCICLO_ACA_PROSPECTO")]
-        [Authorize(Policy = "/aca-prospecto|R")]
+        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
         public async Task<CResult> GetCICLO_ACA_PROSPECTO([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

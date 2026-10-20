@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -25,9 +26,9 @@ namespace sguees.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
-        // Qué hace: tipos de sangre para los combos de la edición de prospectos (/aca-prospecto).
+        // Qué hace: tipos de sangre para los combos de la edición de prospectos (vistas de prospectos).
         [HttpGet("GetCORR_TIPO_SANGRE_ACA_PROSPECTO")]
-        [Authorize(Policy = "/aca-prospecto|R")]
+        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
         public async Task<CResult> GetCORR_TIPO_SANGRE_ACA_PROSPECTO([FromQuery] GEN_TIPO_SANGREParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

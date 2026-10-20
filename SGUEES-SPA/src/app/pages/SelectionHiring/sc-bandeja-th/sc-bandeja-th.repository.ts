@@ -48,4 +48,41 @@ export class ScBandejaThRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	// Qué hace: Envía la petición HTTP para registrar la decisión del candidato (Aplica / No aplica).
+	// Cómo lo hace: Realiza un POST con el modelo hacia el endpoint DecideCandidato del controlador SC_BANDEJA_TH.
+	decideCandidato(model: any): Observable<IResult> {
+		return this.objData.Post(
+			model,
+			this.xController,
+			'DecideCandidato',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	// Qué hace: Envía la petición HTTP para confirmar el movimiento de personal de una contratación.
+	// Cómo lo hace: Realiza un PUT hacia ConfirmarMovimientoPersonal en SC_BANDEJA_TH con el correlativo y la fecha efectiva.
+	confirmarMovimientoPersonal(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_EFECTIVA?: Date | string | null;
+	}): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'ConfirmarMovimientoPersonal',
+			[{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: model.CORR_MOVIMIENTO_PERSONAL }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	// Qué hace: Envía la petición HTTP para crear el empleado institucional y usuario.
+	// Cómo lo hace: Realiza un POST hacia ContratarEmpleado en SC_BANDEJA_TH enviando el correlativo del movimiento de personal.
+	contratarEmpleado(model: { CORR_MOVIMIENTO_PERSONAL: number }): Observable<IResult> {
+		return this.objData.Post(
+			model,
+			this.xController,
+			'ContratarEmpleado',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

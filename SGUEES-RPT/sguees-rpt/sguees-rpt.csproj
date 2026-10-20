@@ -28,6 +28,8 @@
     <DevExpressDir Condition="'$(DevExpressDir)' == ''">C:\Program Files\DevExpress 24.2\Components\Bin\Framework</DevExpressDir>
     <!-- TEMPORAL: false = no compila Crystal (sin runtime instalado). true = reactiva Crystal. -->
     <EnableCrystalReports>True</EnableCrystalReports>
+    <!-- true: Crystal + XtraReports. En 250 ya hay DevExpress instalado; Web.config sin httpModules DX. -->
+    <EnableDevExpress>True</EnableDevExpress>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -97,61 +99,62 @@
     <Reference Include="System.Web.Services" />
     <Reference Include="System.EnterpriseServices" />
     <Reference Include="WindowsBase" />
-    <Reference Include="DevExpress.Data.v24.2">
+    <Reference Include="DevExpress.Data.v24.2" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.Data.v24.2.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.Data.Desktop.v24.2">
+    <Reference Include="DevExpress.Data.Desktop.v24.2" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.Data.Desktop.v24.2.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.Drawing.v24.2">
+    <Reference Include="DevExpress.Drawing.v24.2" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.Drawing.v24.2.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.Office.v24.2.Core">
+    <Reference Include="DevExpress.Office.v24.2.Core" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.Office.v24.2.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.Pdf.v24.2.Core">
+    <Reference Include="DevExpress.Pdf.v24.2.Core" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.Pdf.v24.2.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.Printing.v24.2.Core">
+    <Reference Include="DevExpress.Printing.v24.2.Core" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.Printing.v24.2.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.RichEdit.v24.2.Core">
+    <Reference Include="DevExpress.RichEdit.v24.2.Core" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.RichEdit.v24.2.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.Utils.v24.2">
+    <Reference Include="DevExpress.Utils.v24.2" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.Utils.v24.2.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.XtraReports.v24.2">
+    <Reference Include="DevExpress.XtraReports.v24.2" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.XtraReports.v24.2.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.XtraReports.v24.2.Web">
+    <Reference Include="DevExpress.XtraReports.v24.2.Web" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.XtraReports.v24.2.Web.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.XtraReports.v24.2.Web.WebForms">
+    <Reference Include="DevExpress.XtraReports.v24.2.Web.WebForms" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.XtraReports.v24.2.Web.WebForms.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.Web.v24.2">
+    <Reference Include="DevExpress.Web.v24.2" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.Web.v24.2.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="DevExpress.Web.Resources.v24.2">
+    <Reference Include="DevExpress.Web.Resources.v24.2" Condition="'$(EnableDevExpress)' == 'true'">
       <HintPath>$(DevExpressDir)\DevExpress.Web.Resources.v24.2.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\PublishProfiles\" />
+    <Folder Include="Reports\SelectionHiring\SC_MOVIMIENTO_PERSONAL\" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="WebActivatorEx">
@@ -169,7 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
-    <Content Include="Layouts\SelectionHiring\SelectionHiring.aspx" />
+    <Content Include="Layouts\SelectionHiring\SelectionHiring.aspx" Condition="'$(EnableDevExpress)' == 'true'" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
@@ -180,11 +183,11 @@
     <Compile Include="Layouts\Login\TokenGenerator.cs" />
     <Compile Include="Layouts\Login\TokenValidationHandler.cs" />
     <Compile Include="Layouts\RptJwtValidator.cs" />
-    <Compile Include="Layouts\SelectionHiring\SelectionHiring.aspx.cs">
+    <Compile Include="Layouts\SelectionHiring\SelectionHiring.aspx.cs" Condition="'$(EnableDevExpress)' == 'true'">
       <DependentUpon>SelectionHiring.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Layouts\SelectionHiring\SelectionHiring.aspx.designer.cs">
+    <Compile Include="Layouts\SelectionHiring\SelectionHiring.aspx.designer.cs" Condition="'$(EnableDevExpress)' == 'true'">
       <DependentUpon>SelectionHiring.aspx</DependentUpon>
     </Compile>
     <Compile Include="Global.asax.cs">
@@ -194,7 +197,8 @@
     <Compile Include="Layouts\eDocResult.cs" />
     <Compile Include="Layouts\Login\LoginRequest.cs" />
     <Compile Include="Layouts\Utils.cs" />
-    <Compile Include="Layouts\DevExpressReportExportHelper.cs" />
+    <Compile Include="Layouts\DevExpressReportExportHelper.cs" Condition="'$(EnableDevExpress)' == 'true'" />
+    <Compile Include="Reports\Accounting\AccountingPartidaDxController.cs" Condition="'$(EnableDevExpress)' == 'true'" />
     <Compile Include="Layouts\ReportExportHelper.cs" Condition="'$(EnableCrystalReports)' == 'true'" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
@@ -202,11 +206,17 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Reports\SelectionHiring\SC_REQUISICION_PERSONAL\rptRequisicionPersonal.cs">
+    <Compile Include="Reports\SelectionHiring\SC_REQUISICION_PERSONAL\rptRequisicionPersonal.cs" Condition="'$(EnableDevExpress)' == 'true'">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Reports\SelectionHiring\SC_REQUISICION_PERSONAL\rptRequisicionPersonal.Designer.cs">
+    <Compile Include="Reports\SelectionHiring\SC_REQUISICION_PERSONAL\rptRequisicionPersonal.Designer.cs" Condition="'$(EnableDevExpress)' == 'true'">
       <DependentUpon>rptRequisicionPersonal.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Reports\SelectionHiring\SC_MOVIMIENTO_PERSONAL\rptMovimientoPersonal.cs" Condition="'$(EnableDevExpress)' == 'true'">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\SelectionHiring\SC_MOVIMIENTO_PERSONAL\rptMovimientoPersonal.Designer.cs" Condition="'$(EnableDevExpress)' == 'true'">
+      <DependentUpon>rptMovimientoPersonal.cs</DependentUpon>
     </Compile>
     <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReport.cs" Condition="'$(EnableCrystalReports)' == 'true'">
       <AutoGen>True</AutoGen>
@@ -251,6 +261,8 @@
     <Compile Include="Reports\Shop\ShopController.cs" Condition="'$(EnableCrystalReports)' == 'true'" />
     <Compile Include="Reports\Shop\COM_REPO_SUJETO_EXCLUIDOView.cs" />
     <Compile Include="Reports\SelectionHiring\SelectionHiringController.cs" Condition="'$(EnableCrystalReports)' == 'true'" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView.cs" />
     <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRView.cs" />
     <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPRView.cs" />
     <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPRView.cs" />
@@ -313,10 +325,10 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Reports\Accounting\CON_PARTIDA\CON_PARTIDA_IMPRView.cs" />
-    <Compile Include="Reports\Accounting\CON_PARTIDA\DevExpress\PARTIDA_CONTABLE_DXReport.cs">
+    <Compile Include="Reports\Accounting\CON_PARTIDA\DevExpress\PARTIDA_CONTABLE_DXReport.cs" Condition="'$(EnableDevExpress)' == 'true'">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Reports\Accounting\CON_PARTIDA\DevExpress\PARTIDA_CONTABLE_DXReport.Designer.cs">
+    <Compile Include="Reports\Accounting\CON_PARTIDA\DevExpress\PARTIDA_CONTABLE_DXReport.Designer.cs" Condition="'$(EnableDevExpress)' == 'true'">
       <DependentUpon>PARTIDA_CONTABLE_DXReport.cs</DependentUpon>
     </Compile>
     <Compile Include="Reports\Accounting\CON_PARTIDA\PARTIDA_CONTABLEReport.cs" Condition="'$(EnableCrystalReports)' == 'true'">
@@ -427,16 +439,20 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Properties\licenses.licx" />
+    <!-- licenses.licx omitido: el compilador de licencias DevExpress (lc.exe) suele colgar Publish en VS. -->
+    <!-- <EmbeddedResource Include="Properties\licenses.licx" /> -->
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="Reports\Accounting\CON_PARTIDA\DevExpress\PARTIDA_CONTABLE_DXReport.resx">
+    <EmbeddedResource Include="Reports\Accounting\CON_PARTIDA\DevExpress\PARTIDA_CONTABLE_DXReport.resx" Condition="'$(EnableDevExpress)' == 'true' AND Exists('Reports\Accounting\CON_PARTIDA\DevExpress\PARTIDA_CONTABLE_DXReport.resx')">
       <DependentUpon>PARTIDA_CONTABLE_DXReport.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Reports\SelectionHiring\SC_REQUISICION_PERSONAL\rptRequisicionPersonal.resx">
+    <EmbeddedResource Include="Reports\SelectionHiring\SC_REQUISICION_PERSONAL\rptRequisicionPersonal.resx" Condition="'$(EnableDevExpress)' == 'true'">
       <DependentUpon>rptRequisicionPersonal.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\SelectionHiring\SC_MOVIMIENTO_PERSONAL\rptMovimientoPersonal.resx" Condition="'$(EnableDevExpress)' == 'true'">
+      <DependentUpon>rptMovimientoPersonal.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReport.rpt" Condition="'$(EnableCrystalReports)' == 'true'">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
@@ -532,11 +548,46 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.0\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.0\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
   </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
+  <!--
+    Publicar desde Visual Studio → paquete listo para IIS:
+    - Global.asax sin Codebehind (IIS no tiene Global.asax.cs suelto)
+    - JWT de producción si Configuration=Release
   -->
+  <Target Name="CleanStaleDevExpressBin" BeforeTargets="BeforeBuild" Condition="'$(EnableDevExpress)' != 'true'">
+    <ItemGroup>
+      <_StaleDx Include="$(OutputPath)DevExpress*.dll" />
+      <_StaleDx Include="$(OutputPath)DevExpress*.xml" />
+      <_StaleDx Include="$(OutputPath)DevExpress*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(_StaleDx)" TreatErrorsAsWarnings="true" />
+  </Target>
+  <Target Name="EnsureRptIisPublish"
+          AfterTargets="CopyAllFilesToSingleFolderForMsdeploy;PipelineCopyAllFilesToOneFolderForMsdeploy">
+    <PropertyGroup>
+      <_RptPublishDir Condition="'$(WPPAllFilesInSingleFolder)' != ''">$(WPPAllFilesInSingleFolder)</_RptPublishDir>
+      <_RptPublishDir Condition="'$(_RptPublishDir)' == '' and '$(PublishUrl)' != ''">$(PublishUrl)</_RptPublishDir>
+      <_RptPublishDir Condition="'$(_RptPublishDir)' == '' and '$(publishUrl)' != ''">$(publishUrl)</_RptPublishDir>
+      <_RptJwtProd>http://192.168.0.250/sguees-rpt/api/</_RptJwtProd>
+    </PropertyGroup>
+    <Message Importance="High" Text="SGUEES-RPT publish IIS harden: $(_RptPublishDir) (Configuration=$(Configuration) EnableDevExpress=$(EnableDevExpress))" Condition="'$(_RptPublishDir)' != ''" />
+    <WriteLinesToFile Condition="'$(_RptPublishDir)' != '' and Exists('$(_RptPublishDir)\Global.asax')"
+                      File="$(_RptPublishDir)\Global.asax"
+                      Lines="&lt;%@ Application Inherits=&quot;sgueesRpt.WebApiApplication&quot; Language=&quot;C#&quot; %&gt;"
+                      Overwrite="true"
+                      Encoding="UTF-8" />
+    <XmlPoke Condition="'$(_RptPublishDir)' != '' and Exists('$(_RptPublishDir)\Web.config') and '$(Configuration)' == 'Release'"
+             XmlInputPath="$(_RptPublishDir)\Web.config"
+             Query="/configuration/appSettings/add[@key='JWT_AUDIENCE_TOKEN']/@value"
+             Value="$(_RptJwtProd)" />
+    <XmlPoke Condition="'$(_RptPublishDir)' != '' and Exists('$(_RptPublishDir)\Web.config') and '$(Configuration)' == 'Release'"
+             XmlInputPath="$(_RptPublishDir)\Web.config"
+             Query="/configuration/appSettings/add[@key='JWT_ISSUER_TOKEN']/@value"
+             Value="$(_RptJwtProd)" />
+    <ItemGroup Condition="'$(_RptPublishDir)' != '' and '$(EnableDevExpress)' != 'true'">
+      <_PubDx Include="$(_RptPublishDir)\bin\DevExpress*.dll" />
+      <_PubDx Include="$(_RptPublishDir)\bin\DevExpress*.xml" />
+      <_PubDx Include="$(_RptPublishDir)\bin\DevExpress*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(_PubDx)" TreatErrorsAsWarnings="true" Condition="'@(_PubDx)' != ''" />
+  </Target>
 </Project>

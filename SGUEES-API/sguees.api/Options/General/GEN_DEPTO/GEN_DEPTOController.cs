@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -60,6 +61,21 @@ namespace SGUEES.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		[HttpGet("GetCORR_DEPTO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		// Qué hace: entrega el catálogo de departamentos para nacimiento en el tab Personales de empleado.
+		// Cómo: asigna CORR_EMPRESA de sesión y llama a GetAllAsync.
+		public async Task<CResult> GetCORR_DEPTO_GEN_EMPLEADO([FromQuery] GEN_DEPTOParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			if (Data.CORR_EMPRESA <= 0)
+			{
+				Data.CORR_EMPRESA = 1;
+			}
+
+			return await _service.GetAllAsync(Data);
+		}
+
 		[HttpGet("GetCORR_DEPTO_GEN_ESTRUCTURA_TERRITORIAL")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		// Qué hace: entrega el catálogo de departamentos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
@@ -71,7 +87,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetCORR_DEPTO_ACA_PROSPECTO")]
-		[Authorize(Policy = "/aca-prospecto|R")]
+		[Authorize(Policy = PermisosProspecto.LecturaAmbos)]
 		// Qué hace: departamentos del país indicado (CORR_PAIS) para residencia y empleo en la edición de prospectos.
 		// Cómo: llama a GetAllAsync del servicio, que filtra por CORR_PAIS cuando viene.
 		public async Task<CResult> GetCORR_DEPTO_ACA_PROSPECTO([FromQuery] GEN_DEPTOParam Data)

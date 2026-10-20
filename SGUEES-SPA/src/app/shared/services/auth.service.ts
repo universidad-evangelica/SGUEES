@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
@@ -9,6 +9,22 @@ import notify from 'devextreme/ui/notify';
 
 const defaultPath = '/';
 const SESSION_CONTEXT_KEY = 'sguees_session_context';
+const SESSION_ID_KEY = 'sguees_session_id';
+const LAST_ACTIVITY_KEY = 'sguees_last_activity';
+const INACTIVIDAD_MS = 24 * 60 * 60 * 1000;
+const AVISO_INACTIVIDAD_MS = 20 * 1000;
+
+// Qué hace: devuelve el token solo si esta pestaña aceptó la sesión vigente.
+// Cómo lo hace: compara el id de localStorage con el id propio de la pestaña.
+export function readOwnedSessionToken(): string {
+	const token = localStorage.getItem('token') || '';
+	const localId = localStorage.getItem(SESSION_ID_KEY) || '';
+	const tabId = sessionStorage.getItem(SESSION_ID_KEY) || '';
+	if (!token || !localId || localId !== tabId) {
+		return '';
+	}
+	return token;
+}
 
 interface SessionContext {
 	NOMBRE_EMPRESA?: string;
@@ -41,6 +57,9 @@ export class AuthService {
 	decodedToken: any;
 	mainMenu: any;
 	public urlIntentaAcceder = '';
+	idleWarningVisible = false;
+	idleSecondsLeft = 20;
+	private lastActivityWrite = 0;
 
 	private _lastAuthenticatedPath: string = defaultPath;
 	private sessionContext: SessionContext = {};
@@ -49,9 +68,11 @@ export class AuthService {
 		this._lastAuthenticatedPath = value;
 	}
 
-	constructor(private router: Router, private http: HttpClient) {
+	constructor(private router: Router, private http: HttpClient, private zone: NgZone) {
 		this.loadSessionContext();
-		this.ensureDecodedToken();
+		this.adoptExistingSession();
+		this.listenForOtherTabs();
+		this.vigilarInactividad();
 	}
 
   private extractErrorMessage(error: any, fallback: string): string {
@@ -203,16 +224,12 @@ export class AuthService {
   }
 
   get loggedIn(): boolean {
-		const token = localStorage.getItem('token') || '';
-
-		if (!this.jwtHelper.isTokenExpired(token)) {
-			return true;
-		}
-		return false;
+		const token = readOwnedSessionToken();
+		return !!token && !this.jwtHelper.isTokenExpired(token);
 	}
 
 	getCorrEmpresaSesion(): number {
-		const token = localStorage.getItem('token') || '';
+		const token = readOwnedSessionToken();
 		if (!token || this.jwtHelper.isTokenExpired(token)) {
 			return 0;
 		}
@@ -256,7 +273,11 @@ export class AuthService {
 			return;
 		}
 
+		const sessionId = this.createSessionId();
+		sessionStorage.setItem(SESSION_ID_KEY, sessionId);
 		localStorage.setItem('token', loginData.TOKEN);
+		localStorage.setItem(SESSION_ID_KEY, sessionId);
+		this.marcarActividad(true);
 		this.decodedToken = this.jwtHelper.decodeToken(loginData.TOKEN);
 		this.mainMenu = loginData.OPCIONES;
 		this.persistSessionContext({
@@ -296,7 +317,7 @@ export class AuthService {
 			return;
 		}
 
-		const token = localStorage.getItem('token') || '';
+		const token = readOwnedSessionToken();
 		if (!token || this.jwtHelper.isTokenExpired(token)) {
 			return;
 		}
@@ -313,19 +334,26 @@ export class AuthService {
 	}
 
 	private handlingSessionExpiry = false;
+	private sessionClosing = false;
 
 	get isHandlingSessionExpiry(): boolean {
 		return this.handlingSessionExpiry;
 	}
 
+	// Qué hace: indica que esta pestaña va hacia el login porque la sesión terminó.
+	// Cómo lo hace: el shell lo usa para no desmontar la vista antes de llegar al login.
+	get cerrandoSesion(): boolean {
+		return this.sessionClosing;
+	}
+
 	handleSessionExpired(): void {
-		if (this.handlingSessionExpiry) {
+		if (this.handlingSessionExpiry || this.sessionClosing) {
 			return;
 		}
 
 		this.handlingSessionExpiry = true;
-		localStorage.removeItem('token');
-		this.clearSessionContext();
+		this.sessionClosing = true;
+		this.clearOwnedSession();
 		this.decodedToken = {} as any;
 		this.mainMenu = [];
 
@@ -343,15 +371,223 @@ export class AuthService {
 
 		void this.router.navigate(['/login-form']).finally(() => {
 			this.handlingSessionExpiry = false;
+			this.sessionClosing = false;
 		});
 	}
 
 	async logOut(): Promise<void> {
-		localStorage.removeItem('token');
-		this.clearSessionContext();
+		this.sessionClosing = true;
+		this.clearOwnedSession();
 		this.decodedToken = {} as any;
 		this.mainMenu = [];
-		this.router.navigate(['/login-form']);
+		void this.router.navigate(['/login-form']).finally(() => {
+			this.sessionClosing = false;
+		});
+	}
+
+	// Qué hace: toma la sesión ya guardada al recargar esta pestaña.
+	// Cómo lo hace: copia el id vigente a sessionStorage. Si otra pestaña ya tiene otro id, no lo adopta.
+	private adoptExistingSession(): void {
+		const token = localStorage.getItem('token') || '';
+		if (!token || this.jwtHelper.isTokenExpired(token)) {
+			return;
+		}
+
+		let localId = localStorage.getItem(SESSION_ID_KEY) || '';
+		const tabId = sessionStorage.getItem(SESSION_ID_KEY) || '';
+		if (localId && tabId && localId !== tabId) {
+			return;
+		}
+
+		if (!localId) {
+			localId = this.createSessionId();
+			localStorage.setItem(SESSION_ID_KEY, localId);
+		}
+
+		sessionStorage.setItem(SESSION_ID_KEY, localId);
+		if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
+			this.marcarActividad(true);
+		}
+		this.ensureDecodedToken();
+	}
+
+	// Qué hace: escucha el login o el cierre de sesión hecho en otra pestaña.
+	// Cómo lo hace: el evento storage solo llega a las demás pestañas, no a la que escribió.
+	private listenForOtherTabs(): void {
+		window.addEventListener('storage', (event: StorageEvent) => {
+			if (event.key === LAST_ACTIVITY_KEY) {
+				this.revisarInactividad();
+				return;
+			}
+			if (event.key !== SESSION_ID_KEY && event.key !== 'token') {
+				return;
+			}
+			this.zone.run(() => this.onForeignSessionChanged());
+		});
+	}
+
+	// Qué hace: saca de la aplicación a esta pestaña si ya no es dueña de la sesión.
+	// Cómo lo hace: limpia el estado en memoria y abre el login. No borra el token nuevo de la otra pestaña.
+	private onForeignSessionChanged(): void {
+		const tabId = sessionStorage.getItem(SESSION_ID_KEY) || '';
+		if (!tabId) {
+			return;
+		}
+
+		const localId = localStorage.getItem(SESSION_ID_KEY) || '';
+		const token = localStorage.getItem('token') || '';
+		const replacedByOtherLogin = !!localId && localId !== tabId;
+		const closedElsewhere = !token;
+		if (!replacedByOtherLogin && !closedElsewhere) {
+			return;
+		}
+
+		sessionStorage.removeItem(SESSION_ID_KEY);
+		this.decodedToken = {} as any;
+		this.mainMenu = [];
+		this.sessionClosing = true;
+		notify(
+			{
+				message: replacedByOtherLogin
+					? 'Se inició sesión en otra pestaña. Ingrese nuevamente en esta ventana.'
+					: 'La sesión se cerró. Ingrese nuevamente.',
+				width: 'auto',
+				shading: false,
+				closeOnClick: true,
+				closeOnOutsideClick: true,
+			},
+			'warning',
+			8000
+		);
+
+		const path = (this.router.url || '').split('?')[0];
+		if (path !== '/login-form') {
+			void this.router.navigate(['/login-form']).finally(() => {
+				this.sessionClosing = false;
+			});
+			return;
+		}
+		this.sessionClosing = false;
+	}
+
+	// Qué hace: borra token e id de la sesión de esta pestaña.
+	// Cómo lo hace: limpia localStorage y el id propio de sessionStorage.
+	private clearOwnedSession(): void {
+		localStorage.removeItem('token');
+		localStorage.removeItem(SESSION_ID_KEY);
+		localStorage.removeItem(LAST_ACTIVITY_KEY);
+		sessionStorage.removeItem(SESSION_ID_KEY);
+		this.idleWarningVisible = false;
+		this.clearSessionContext();
+	}
+
+	// Qué hace: renueva el plazo de 1 día sin actividad.
+	// Cómo lo hace: guarda la hora actual. Si el aviso está abierto, lo cierra.
+	registrarActividad(): void {
+		this.marcarActividad(true);
+	}
+
+	// Qué hace: cuenta 1 día sin uso y avisa los últimos 20 segundos.
+	// Cómo lo hace: escucha mouse, teclado y toque fuera de Angular, y revisa el plazo cada segundo.
+	private vigilarInactividad(): void {
+		const eventos = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'wheel'];
+		this.zone.runOutsideAngular(() => {
+			eventos.forEach((nombre) => {
+				window.addEventListener(nombre, () => this.marcarActividad(false), { passive: true });
+			});
+			window.setInterval(() => this.revisarInactividad(), 1000);
+		});
+	}
+
+	private marcarActividad(forzar: boolean): void {
+		if (this.sessionClosing || !readOwnedSessionToken()) {
+			return;
+		}
+
+		const ahora = Date.now();
+		if (!forzar && !this.idleWarningVisible && ahora - this.lastActivityWrite < 1000) {
+			return;
+		}
+
+		this.lastActivityWrite = ahora;
+		localStorage.setItem(LAST_ACTIVITY_KEY, String(ahora));
+		if (this.idleWarningVisible) {
+			this.idleWarningVisible = false;
+			this.idleSecondsLeft = 20;
+			this.zone.run(() => {
+				this.idleWarningVisible = false;
+				this.idleSecondsLeft = 20;
+			});
+		}
+	}
+
+	private revisarInactividad(): void {
+		if (this.sessionClosing || this.handlingSessionExpiry || !readOwnedSessionToken()) {
+			if (this.idleWarningVisible) {
+				this.zone.run(() => {
+					this.idleWarningVisible = false;
+				});
+			}
+			return;
+		}
+
+		const ultima = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || '0');
+		if (!ultima) {
+			this.marcarActividad(true);
+			return;
+		}
+
+		const restante = INACTIVIDAD_MS - (Date.now() - ultima);
+		if (restante <= 0) {
+			this.zone.run(() => this.cerrarPorInactividad());
+			return;
+		}
+
+		if (restante <= AVISO_INACTIVIDAD_MS) {
+			const segundos = Math.max(1, Math.ceil(restante / 1000));
+			this.zone.run(() => {
+				this.idleSecondsLeft = segundos;
+				this.idleWarningVisible = true;
+			});
+			return;
+		}
+
+		if (this.idleWarningVisible) {
+			this.zone.run(() => {
+				this.idleWarningVisible = false;
+				this.idleSecondsLeft = 20;
+			});
+		}
+	}
+
+	// Qué hace: cierra la sesión al cumplirse 1 día sin actividad.
+	// Cómo lo hace: usa el mismo cierre que Salir, sin preguntar por los cambios del formulario.
+	private cerrarPorInactividad(): void {
+		if (this.sessionClosing || !readOwnedSessionToken()) {
+			return;
+		}
+
+		this.idleWarningVisible = false;
+		notify(
+			{
+				message: 'La sesión se cerró por inactividad.',
+				width: 'auto',
+				shading: false,
+				closeOnClick: true,
+				closeOnOutsideClick: true,
+			},
+			'warning',
+			8000
+		);
+		void this.logOut();
+	}
+
+	private createSessionId(): string {
+		const cryptoRef = window.crypto;
+		if (cryptoRef?.randomUUID) {
+			return cryptoRef.randomUUID();
+		}
+		return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 	}
 
 	getMenu(): Observable<any> {
@@ -485,7 +721,7 @@ export class AuthGuardService implements CanActivate {
 			}
 		}
 
-		if ((isAuthorized === false || isLoggedIn === false) && isAuthForm === false) {
+		if ((isAuthorized === false || isLoggedIn === false) && isAuthForm === false && !this.authService.cerrandoSesion) {
 			if (routerUrl !== '/' && routerUrl !== '/home') {
 				notify(
 					{

@@ -140,23 +140,11 @@ namespace SGUEES.Services
         {
             Data.NOMBRE_PUESTO = Data.NOMBRE_PUESTO?.Trim();
             Data.CODIGO_PUESTO = string.IsNullOrWhiteSpace(Data.CODIGO_PUESTO) ? null : Data.CODIGO_PUESTO.Trim();
-            Data.CODIGO_FORMATO = string.IsNullOrWhiteSpace(Data.CODIGO_FORMATO) ? null : Data.CODIGO_FORMATO.Trim();
-            Data.VERSION_FORMATO = string.IsNullOrWhiteSpace(Data.VERSION_FORMATO) ? null : Data.VERSION_FORMATO.Trim();
             Data.MISION_PUESTO = string.IsNullOrWhiteSpace(Data.MISION_PUESTO) ? null : Data.MISION_PUESTO.Trim();
             Data.OTROS_ASPECTOS = string.IsNullOrWhiteSpace(Data.OTROS_ASPECTOS) ? null : Data.OTROS_ASPECTOS.Trim();
-            Data.USUARIO_VALIDA = string.IsNullOrWhiteSpace(Data.USUARIO_VALIDA) ? null : Data.USUARIO_VALIDA.Trim();
-            Data.USUARIO_AUTORIZA = string.IsNullOrWhiteSpace(Data.USUARIO_AUTORIZA) ? null : Data.USUARIO_AUTORIZA.Trim();
-            Data.ESTADO_PUESTO ??= true;
+            Data.ACTIVO_PUESTO ??= true;
             Data.APROBACION_PUESTO ??= false;
 
-            if (Data.CORR_GERENCIA.HasValue && Data.CORR_GERENCIA.Value <= 0)
-            {
-                Data.CORR_GERENCIA = null;
-            }
-            if (Data.CORR_NIVEL_ACADEMICO.HasValue && Data.CORR_NIVEL_ACADEMICO.Value <= 0)
-            {
-                Data.CORR_NIVEL_ACADEMICO = null;
-            }
             if (Data.CORR_TIPO_PUESTO.HasValue && Data.CORR_TIPO_PUESTO.Value <= 0)
             {
                 Data.CORR_TIPO_PUESTO = null;
@@ -180,9 +168,9 @@ namespace SGUEES.Services
                 return ValidationError("El nombre del puesto no puede superar 100 caracteres.");
             }
 
-            if (!string.IsNullOrWhiteSpace(Data.CODIGO_PUESTO) && Data.CODIGO_PUESTO.Trim().Length > 30)
+            if (!string.IsNullOrWhiteSpace(Data.CODIGO_PUESTO) && Data.CODIGO_PUESTO.Trim().Length > 15)
             {
-                return ValidationError("El codigo del puesto no puede superar 30 caracteres.");
+                return ValidationError("El codigo del puesto no puede superar 15 caracteres.");
             }
 
             if (!string.IsNullOrWhiteSpace(Data.MISION_PUESTO) && Data.MISION_PUESTO.Trim().Length > 255)
@@ -193,12 +181,6 @@ namespace SGUEES.Services
             if (!string.IsNullOrWhiteSpace(Data.OTROS_ASPECTOS) && Data.OTROS_ASPECTOS.Trim().Length > 255)
             {
                 return ValidationError("Otros aspectos no puede superar 255 caracteres.");
-            }
-
-            if (Data.SALARIO_INICIAL.HasValue && Data.SALARIO_FINAL.HasValue &&
-                Data.SALARIO_INICIAL.Value > Data.SALARIO_FINAL.Value)
-            {
-                return ValidationError("El salario inicial no puede ser mayor que el salario final.");
             }
 
             return null;

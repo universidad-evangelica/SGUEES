@@ -1,17 +1,15 @@
-using System;
-using System.Web;
 using System.Web.Http;
-using DevExpress.XtraReports.Web;
 
 namespace sgueesRpt
 {
-    public class WebApiApplication : System.Web.HttpApplication
-    {
-        protected void Application_Start()
-        {
-            GlobalConfiguration.Configure(WebApiConfig.Register);
-            // Inicializa el Document Viewer (recursos / handlers).
-            ASPxWebDocumentViewer.StaticInitialize();
-        }
-    }
+	public class WebApiApplication : System.Web.HttpApplication
+	{
+		protected void Application_Start()
+		{
+			GlobalConfiguration.Configure(WebApiConfig.Register);
+			// No llamar ASPxWebDocumentViewer.StaticInitialize aquí:
+			// en IIS tumba el AppPool si el viewer no está completo.
+			// SelectionHiring.aspx lo inicializa solo al abrir el visor.
+		}
+	}
 }

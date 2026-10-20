@@ -1,3 +1,6 @@
+// Qué hace: permite anotar string? sin encender avisos de nulos en el resto del archivo.
+// Cómo lo hace: habilita solo las anotaciones. El proyecto sigue con nulabilidad desactivada.
+#nullable enable annotations
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;

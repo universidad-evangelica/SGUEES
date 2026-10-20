@@ -1,0 +1,39 @@
+-- Qué hace: script de documentación de GEN_PERSONA_FORMACION_ACADEMICA (ya existente en BD).
+-- Cómo lo hace: refleja la estructura consultada en SQL Server (solo documentación).
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+/*
+Tabla: dbo.GEN_PERSONA_FORMACION_ACADEMICA
+Fuente: estructura real BD SGUEES (solo documentación; no ejecutar CREATE TABLE).
+PK: (CORR_EMPRESA, CORR_PERSONA, CORR_FORMACION_ACADEMICA)
+*/
+CREATE TABLE [dbo].[GEN_PERSONA_FORMACION_ACADEMICA]
+(
+	[CORR_EMPRESA] [int] NOT NULL,
+	[CORR_PERSONA] [bigint] NOT NULL,
+	[CORR_FORMACION_ACADEMICA] [int] NOT NULL,
+	[TITULO] [varchar](100) NULL,
+	[CENTRO_EDUCATIVO] [varchar](150) NULL,
+	[NIVEL] [varchar](100) NULL,
+	[DESDE] [date] NULL,
+	[HASTA] [date] NULL,
+	[PERIODO_INICIAL] [int] NULL,
+	[PERIODO_FINAL] [int] NULL,
+	[PERIODO] [varchar](11) NULL,
+	[USUARIO_CREA] [varchar](50) NULL,
+	[ESTACION_CREA] [varchar](50) NULL,
+	[FECHA_CREA] [datetime] NULL,
+	[USUARIO_ACTU] [varchar](50) NULL,
+	[ESTACION_ACTU] [varchar](50) NULL,
+	[FECHA_ACTU] [datetime] NULL,
+	CONSTRAINT [PK_GEN_PERSONA_FORMACION_ACADEMICA] PRIMARY KEY CLUSTERED
+	(
+		[CORR_EMPRESA] ASC,
+		[CORR_PERSONA] ASC,
+		[CORR_FORMACION_ACADEMICA] ASC
+	)
+);
+GO

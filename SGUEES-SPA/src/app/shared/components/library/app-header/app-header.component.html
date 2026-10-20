@@ -72,18 +72,11 @@
       </ng-container>
     </dxi-item>
 
-    <!-- <dxi-item location="after">
-      <div *dxTemplate>
-        <div class="messages">
-          <dx-button
-            icon="belloutline"
-            stylingMode="text"
-          >
-          </dx-button>
-          <div class="dx-badge"> 4 </div>
-        </div>
-      </div>
-    </dxi-item> -->
+    <dxi-item location="after" locateInMenu="never" cssClass="header-notification-bell">
+      <ng-container *dxTemplate>
+        <app-notification-bell></app-notification-bell>
+      </ng-container>
+    </dxi-item>
 
     <dxi-item
       location="after"

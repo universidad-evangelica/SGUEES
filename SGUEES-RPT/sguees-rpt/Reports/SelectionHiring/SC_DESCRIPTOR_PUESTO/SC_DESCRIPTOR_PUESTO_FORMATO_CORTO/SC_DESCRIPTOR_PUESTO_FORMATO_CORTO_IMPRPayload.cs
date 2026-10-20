@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO;
 
 namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_PUESTO_FORMATO_CORTO
 {
@@ -15,5 +16,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 		public List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_CORTO_IMPRView> PerfilPuestoExperiencia { get; set; }
 		public List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_CORTO_IMPRView> PerfilPuestoCompetenciasTecnicas { get; set; }
 		public List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_CORTO_IMPRView> PerfilPuestoCompetenciasConductuales { get; set; }
+		public List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView> Empleado { get; set; }
+		public List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView> Firmas { get; set; }
 	}
 }

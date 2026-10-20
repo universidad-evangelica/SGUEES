@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -325,9 +326,12 @@ namespace SGUEES.Repositories
 
             try
             {
+                // Qué hace: Obtiene la bitácora de firmas ordenada del movimiento más reciente al más antiguo.
+                // Cómo lo hace: Lee V_SEG_FLUJO_BITACORA_FIRMAS con orden FECHA_ACCION DESC y CORR_BITACORA DESC.
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
 				SELECT
 					FB.CORR_EMPRESA,
+					FB.CORR_BITACORA,
 					FB.CORR_DOCUMENTO AS CORR_REQUISICION_PERSONAL,
 					FB.LOGIN_SISTEMA,
 					FB.ESTADO_DESTINO,
@@ -336,7 +340,7 @@ namespace SGUEES.Repositories
 				FROM V_SEG_FLUJO_BITACORA_FIRMAS FB
 				WHERE FB.CORR_TIPO_DOCUMENTO = @CORR_TIPO_DOCUMENTO
 				  AND FB.CORR_DOCUMENTO = @CORR_DOCUMENTO
-				ORDER BY FB.CORR_BITACORA", xWhere);
+				ORDER BY FB.FECHA_ACCION DESC, FB.CORR_BITACORA DESC", xWhere);
 
                 var response = new List<SC_REQUISICION_PERSONAL_BITACORAView>().FromDataReader(reader).ToList();
 
@@ -504,6 +508,145 @@ namespace SGUEES.Repositories
             }
 
             return objResultado;
+        }
+
+        /// <summary>
+        /// Puesto del creador de la requisición (USUARIO_CREA). Si no hay creador, usa el login de sesión.
+        /// </summary>
+        public async Task<int> ResolverUnidadCreadorAsync(int corrEmpresa, int corrRequisicion, string loginFallback)
+        {
+            var unidad = 0;
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+                    new() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = corrRequisicion, DbType = DbType.Int32 },
+                    new() { ParameterName = "LOGIN_FALLBACK", Value = loginFallback ?? string.Empty, DbType = DbType.String },
+                };
+                var reader = await objData.GetDataReader(CommandType.Text, @"
+SELECT TOP 1 EP.CORR_UNIDAD
+FROM dbo.GEN_EMPLEADO_PUESTO AS EP
+INNER JOIN dbo.GEN_EMPLEADO AS E
+	ON E.CORR_EMPRESA = EP.CORR_EMPRESA AND E.CORR_EMPLEADO = EP.CORR_EMPLEADO
+INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+	ON PU.CORR_PERSONA = E.CORR_PERSONA
+INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS UN
+	ON UN.CORR_EMPRESA = EP.CORR_EMPRESA AND UN.CORR_UNIDAD = EP.CORR_UNIDAD
+WHERE EP.CORR_EMPRESA = @CORR_EMPRESA
+  AND LTRIM(RTRIM(PU.LOGIN_SISTEMA)) = LTRIM(RTRIM(ISNULL((
+		SELECT R.USUARIO_CREA
+		FROM dbo.SC_REQUISICION_PERSONAL AS R
+		WHERE R.CORR_EMPRESA = @CORR_EMPRESA
+		  AND R.CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL
+	), @LOGIN_FALLBACK)))
+ORDER BY CASE WHEN UN.ACTIVO = 1 THEN 0 ELSE 1 END, UN.CORR_NIVEL DESC, EP.CORR_UNIDAD DESC", p);
+                if (reader.Read() && reader["CORR_UNIDAD"] != DBNull.Value)
+                {
+                    unidad = Convert.ToInt32(reader["CORR_UNIDAD"]);
+                }
+                reader.Close();
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return unidad;
+        }
+
+        /// <summary>
+        /// Mapeo flujo → SignalR: lee tipo documento, estado actual y destinatarios pendientes de la instancia.
+        /// </summary>
+        public async Task<SC_REQUISICION_FLUJO_NOTIF_DTO> GetContextoNotificacionFlujoAsync(
+            int corrEmpresa,
+            int corrRequisicion)
+        {
+            var dto = new SC_REQUISICION_FLUJO_NOTIF_DTO
+            {
+                CORR_REQUISICION_PERSONAL = corrRequisicion,
+            };
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+                    new() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = corrRequisicion, DbType = DbType.Int32 },
+                };
+
+                var reader = await objData.GetDataReader(CommandType.Text, @"
+SELECT TOP 1
+	R.CORR_REQUISICION_PERSONAL,
+	TD.NOMBRE_TIPO,
+	E.NOMBRE_ESTADO,
+	E.DESCRIPCION AS DESCRIPCION_ESTADO,
+	R.USUARIO_CREA AS LOGIN_CREADOR
+FROM dbo.SC_REQUISICION_PERSONAL AS R
+INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO AS TD
+	ON TD.CORR_EMPRESA = R.CORR_EMPRESA
+   AND TD.CODIGO_OPCION = N'SC_REQUISICION'
+   AND TD.ACTIVO = 1
+LEFT JOIN dbo.SEG_FLUJO_INSTANCIA AS I
+	ON I.CORR_EMPRESA = R.CORR_EMPRESA
+   AND I.CORR_TIPO_DOCUMENTO = TD.CORR_TIPO_DOCUMENTO
+   AND I.CORR_DOCUMENTO = R.CORR_REQUISICION_PERSONAL
+   AND I.ACTIVO = 1
+LEFT JOIN dbo.SEG_FLUJO_ESTADO AS E
+	ON E.CORR_EMPRESA = I.CORR_EMPRESA
+   AND E.CORR_ESTADO = I.CORR_ESTADO_ACTUAL
+WHERE R.CORR_EMPRESA = @CORR_EMPRESA
+  AND R.CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL;", p);
+
+                if (reader.Read())
+                {
+                    if (reader["CORR_REQUISICION_PERSONAL"] != DBNull.Value)
+                    {
+                        dto.CORR_REQUISICION_PERSONAL = Convert.ToInt32(reader["CORR_REQUISICION_PERSONAL"]);
+                    }
+                    dto.NOMBRE_TIPO = reader["NOMBRE_TIPO"]?.ToString()?.Trim();
+                    dto.NOMBRE_ESTADO = reader["NOMBRE_ESTADO"]?.ToString()?.Trim();
+                    dto.DESCRIPCION_ESTADO = reader["DESCRIPCION_ESTADO"]?.ToString()?.Trim();
+                    dto.LOGIN_CREADOR = reader["LOGIN_CREADOR"]?.ToString()?.Trim();
+                }
+                reader.Close();
+
+                // Solo pendientes del paso actual (evita filas viejas PROCESADO=0 de pasos anteriores).
+                var readerDest = await objData.GetDataReader(CommandType.Text, @"
+SELECT DISTINCT LTRIM(RTRIM(N.LOGIN_SISTEMA_DESTINO)) AS LOGIN_DESTINO
+FROM dbo.SEG_FLUJO_INSTANCIA AS I
+INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO AS TD
+	ON TD.CORR_EMPRESA = I.CORR_EMPRESA
+   AND TD.CORR_TIPO_DOCUMENTO = I.CORR_TIPO_DOCUMENTO
+   AND TD.CODIGO_OPCION = N'SC_REQUISICION'
+   AND TD.ACTIVO = 1
+INNER JOIN dbo.SEG_FLUJO_NOTIFICACION AS N
+	ON N.CORR_EMPRESA = I.CORR_EMPRESA
+   AND N.CORR_INSTANCIA = I.CORR_INSTANCIA
+   AND N.CORR_PASO = I.CORR_PASO_ACTUAL
+WHERE I.CORR_EMPRESA = @CORR_EMPRESA
+  AND I.CORR_DOCUMENTO = @CORR_REQUISICION_PERSONAL
+  AND I.ACTIVO = 1
+  AND ISNULL(N.PROCESADO, 0) = 0
+  AND NULLIF(LTRIM(RTRIM(N.LOGIN_SISTEMA_DESTINO)), '') IS NOT NULL;", p);
+
+                while (readerDest.Read())
+                {
+                    var login = readerDest["LOGIN_DESTINO"]?.ToString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(login)
+                        && !dto.LOGINS_PENDIENTES.Exists(x =>
+                            string.Equals(x, login, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        dto.LOGINS_PENDIENTES.Add(login);
+                    }
+                }
+                readerDest.Close();
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return dto;
         }
     }
 }

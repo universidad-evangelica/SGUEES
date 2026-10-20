@@ -11,5 +11,7 @@ namespace sguees.Repositories
         // Qué hacen: la oferta que puede elegir el prospecto al cambiar de carrera.
         Task<CResult> GetCarrerasDelCicloAsync(List<CParameter> xWhere);
         Task<CResult> GetModalidadesDeCarreraAsync(List<CParameter> xWhere);
+        Task<CResult> GetCiclosAsync(List<CParameter> xWhere);
+        Task<CResult> ValidarCambioAsync(List<CParameter> xWhere);
     }
 }

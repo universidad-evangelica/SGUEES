@@ -125,19 +125,21 @@
 
 			<div class="bandeja-standby" *ngIf="activeTab === 'CANDIDATOS'">
 				<strong>Ciclo candidatos:</strong>
-				Postulante → Con expediente → En selección. Si jefatura dictamina
-				<em>No aplica</em>, permanece aquí (cierre del ciclo).
-				<em>Aplica</em> se traslada a Contrataciones.
+				Postulante → Con expediente → En selección. Si se dictamina
+				<em>Rechazado</em>, permanece aquí (cierre del ciclo).
+				<em>Aplica</em> se traslada a Contrataciones (Seleccionado).
 			</div>
 
 			<div class="bandeja-standby" *ngIf="activeTab === 'CONTRATACIONES'">
-				<strong>Contrataciones:</strong> candidatos con dictamen <em>Aplica</em>, listos para
+				<strong>Contrataciones:</strong> candidatos con dictamen <em>Aplica</em>, seleccionados para contratación y
 				movimiento personal.
 				<span class="bandeja-standby__hint"> Acción de contrato aún no conectada (ver PENDIENTE-ACCIONES).</span>
 			</div>
 
 			<div class="bandeja-grid-wrap">
+				<!-- Grilla principal de la bandeja TH con scroll horizontal y anchos seguros -->
 				<dx-data-grid
+					#gridBandeja
 					class="sguees-data-grid-mtto sguees-data-grid-mtto--enterprise bandeja-grid"
 					[dataSource]="models"
 					keyExpr="ID"
@@ -145,6 +147,7 @@
 					[columnAutoWidth]="false"
 					[allowColumnReordering]="true"
 					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
 					[rowAlternationEnabled]="true"
 					[hoverStateEnabled]="true"
 					[focusedRowEnabled]="true"
@@ -155,6 +158,7 @@
 					(onRowClick)="onRowClick($event)"
 				>
 					<dxo-load-panel [enabled]="true"></dxo-load-panel>
+					<dxo-scrolling [mode]="'standard'" [showScrollbar]="'auto'"></dxo-scrolling>
 					<dxo-paging [pageSize]="pageSize"></dxo-paging>
 					<dxo-pager
 						[visible]="true"
@@ -169,39 +173,45 @@
 						dataField="TIPO"
 						caption="Tipo"
 						[width]="130"
+						[minWidth]="110"
 						cellTemplate="tipoCell"
 						[allowFiltering]="true"
 					></dxi-column>
-					<dxi-column dataField="CODIGO" caption="Código" [width]="120"></dxi-column>
+					<dxi-column dataField="CODIGO" caption="Código" [width]="120" [minWidth]="100"></dxi-column>
 					<dxi-column
 						dataField="SOLICITANTE"
 						caption="Solicitante"
-						[width]="250"
+						[width]="240"
+						[minWidth]="180"
 						cellTemplate="solCell"
 					></dxi-column>
 					<dxi-column
 						dataField="DESCRIPCION"
 						caption="Descripción / Puesto"
-						[minWidth]="200"
+						[width]="300"
+						[minWidth]="240"
 						cellTemplate="descCell"
 					></dxi-column>
 					<dxi-column
 						dataField="FECHA"
 						caption="Fecha"
 						[width]="140"
+						[minWidth]="130"
 						cellTemplate="fechaCell"
 						sortOrder="desc"
 					></dxi-column>
 					<dxi-column
 						dataField="ESTADO"
 						caption="Estado"
-						[width]="170"
+						[width]="210"
+						[minWidth]="200"
 						cellTemplate="estadoCell"
 						[alignment]="'center'"
 					></dxi-column>
 					<dxi-column
 						caption="Acciones"
-						[width]="90"
+						[width]="110"
+						[minWidth]="100"
 						[allowFiltering]="false"
 						[allowSorting]="false"
 						cellTemplate="accionesCell"
@@ -268,132 +278,140 @@
 			</div>
 
 			<dx-scroll-view class="bandeja-panel__scroll" [showScrollbar]="'onHover'">
+				<!-- Detalle resumido del elemento seleccionado con navegación segura -->
 				<div class="bandeja-panel__body" *ngIf="panelTab === 'RESUMEN'">
 					<div class="bandeja-panel__identity">
-						<div class="bandeja-panel__identity-icon" [attr.title]="tipoLabel(selectedItem.TIPO, selectedItem)">
-							<i class="dx-icon dx-icon-{{ tipoIcon(selectedItem.TIPO, selectedItem) }}"></i>
+						<div class="bandeja-panel__identity-icon" [attr.title]="tipoLabel(selectedItem?.TIPO, selectedItem)">
+							<i class="dx-icon dx-icon-{{ tipoIcon(selectedItem?.TIPO, selectedItem) }}"></i>
 						</div>
 						<div class="bandeja-panel__identity-text">
-							<div class="bandeja-panel__code">{{ selectedItem.CODIGO }}</div>
-							<div class="bandeja-panel__title">{{ selectedItem.DESCRIPCION }}</div>
+							<div class="bandeja-panel__code">{{ selectedItem?.CODIGO }}</div>
+							<div class="bandeja-panel__title">{{ selectedItem?.DESCRIPCION }}</div>
 						</div>
-						<span [class]="estadoChipClass(selectedItem)">{{ selectedItem.ESTADO }}</span>
+						<span [class]="estadoChipClass(selectedItem)">{{ selectedItem?.ESTADO }}</span>
 					</div>
 
 					<div class="bandeja-meta-grid">
 						<div class="bandeja-meta">
 							<span class="bandeja-meta__label">Área solicitante</span>
-							<span class="bandeja-meta__value">{{ selectedItem.NOMBRE_UNIDAD || '—' }}</span>
+							<span class="bandeja-meta__value">{{ selectedItem?.NOMBRE_UNIDAD || '—' }}</span>
 						</div>
 						<div class="bandeja-meta">
 							<span class="bandeja-meta__label">Solicitante</span>
-							<span class="bandeja-meta__value">{{ selectedItem.SOLICITANTE }}</span>
+							<span class="bandeja-meta__value">{{ selectedItem?.SOLICITANTE }}</span>
 						</div>
 						<div class="bandeja-meta">
 							<span class="bandeja-meta__label">Fecha</span>
-							<span class="bandeja-meta__value">{{ formatFecha(selectedItem.FECHA) }}</span>
+							<span class="bandeja-meta__value">{{ formatFecha(selectedItem?.FECHA) }}</span>
 						</div>
-						<div class="bandeja-meta" *ngIf="selectedItem.NOMBRE_CANDIDATO">
+						<div class="bandeja-meta" *ngIf="selectedItem?.NOMBRE_CANDIDATO">
 							<span class="bandeja-meta__label">Candidato</span>
 							<span class="bandeja-meta__value">
-								{{ selectedItem.NOMBRE_CANDIDATO }}
-								<small *ngIf="selectedItem.DUI_CANDIDATO"> · DUI {{ selectedItem.DUI_CANDIDATO }}</small>
+								{{ selectedItem?.NOMBRE_CANDIDATO }}
+								<small *ngIf="selectedItem?.DUI_CANDIDATO"> · DUI {{ selectedItem?.DUI_CANDIDATO }}</small>
 							</span>
 						</div>
 					</div>
 
-					<div class="bandeja-section" *ngIf="selectedItem.JUSTIFICACION">
+					<div class="bandeja-section" *ngIf="selectedItem?.JUSTIFICACION">
 						<div class="bandeja-section__title">Descripción</div>
-						<p class="bandeja-section__text">{{ selectedItem.JUSTIFICACION }}</p>
+						<p class="bandeja-section__text">{{ selectedItem?.JUSTIFICACION }}</p>
 					</div>
 
-					<div class="bandeja-section" *ngIf="selectedItem.OBSERVACION_DECISION">
+					<div class="bandeja-section" *ngIf="selectedItem?.OBSERVACION_DECISION">
 						<div class="bandeja-section__title">Observación del dictamen</div>
-						<p class="bandeja-section__text">{{ selectedItem.OBSERVACION_DECISION }}</p>
+						<p class="bandeja-section__text">{{ selectedItem?.OBSERVACION_DECISION }}</p>
 					</div>
 
 					<div class="bandeja-fields">
-						<div class="bandeja-field" *ngIf="selectedItem.NOMBRE_PUESTO">
+						<div class="bandeja-field" *ngIf="selectedItem?.NOMBRE_PUESTO">
 							<span class="bandeja-field__label">Puesto</span>
-							<span class="bandeja-field__value">{{ selectedItem.NOMBRE_PUESTO }}</span>
+							<span class="bandeja-field__value">{{ selectedItem?.NOMBRE_PUESTO }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.NOMBRE_TIPO_CONTRATACION">
+						<div class="bandeja-field" *ngIf="selectedItem?.NOMBRE_TIPO_CONTRATACION">
 							<span class="bandeja-field__label">Tipo de contratación</span>
-							<span class="bandeja-field__value">{{ selectedItem.NOMBRE_TIPO_CONTRATACION }}</span>
+							<span class="bandeja-field__value">{{ selectedItem?.NOMBRE_TIPO_CONTRATACION }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.NOMBRE_TIPO_MODALIDAD">
+						<div class="bandeja-field" *ngIf="selectedItem?.NOMBRE_TIPO_MODALIDAD">
 							<span class="bandeja-field__label">Tipo de modalidad</span>
-							<span class="bandeja-field__value">{{ selectedItem.NOMBRE_TIPO_MODALIDAD }}</span>
+							<span class="bandeja-field__value">{{ selectedItem?.NOMBRE_TIPO_MODALIDAD }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.NOMBRE_TIPO_VACANTE">
+						<div class="bandeja-field" *ngIf="selectedItem?.NOMBRE_TIPO_VACANTE">
 							<span class="bandeja-field__label">Tipo de vacante</span>
-							<span class="bandeja-field__value">{{ selectedItem.NOMBRE_TIPO_VACANTE }}</span>
+							<span class="bandeja-field__value">{{ selectedItem?.NOMBRE_TIPO_VACANTE }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.CANTIDAD_PLAZAS != null">
+						<div class="bandeja-field" *ngIf="selectedItem?.CANTIDAD_PLAZAS !== null && selectedItem?.CANTIDAD_PLAZAS !== undefined">
 							<span class="bandeja-field__label">Cantidad de plazas</span>
 							<span class="bandeja-field__value">
-								{{ selectedItem.CANTIDAD_PLAZAS }}
-								<span *ngIf="selectedItem.PLAZAS_CUBIERTAS != null">
-									/ {{ selectedItem.PLAZAS_CUBIERTAS }} cubiertas
+								{{ selectedItem?.CANTIDAD_PLAZAS }}
+								<span *ngIf="selectedItem?.PLAZAS_CUBIERTAS !== null && selectedItem?.PLAZAS_CUBIERTAS !== undefined">
+									/ {{ selectedItem?.PLAZAS_CUBIERTAS }} cubiertas
 								</span>
 							</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.SALARIO != null">
+						<div class="bandeja-field" *ngIf="selectedItem?.SALARIO !== null && selectedItem?.SALARIO !== undefined">
 							<span class="bandeja-field__label">Salario</span>
-							<span class="bandeja-field__value">{{ formatSalario(selectedItem.SALARIO) }}</span>
+							<span class="bandeja-field__value">{{ formatSalario(selectedItem?.SALARIO) }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.HORARIO">
+						<div class="bandeja-field" *ngIf="selectedItem?.HORARIO">
 							<span class="bandeja-field__label">Horario</span>
-							<span class="bandeja-field__value">{{ selectedItem.HORARIO }}</span>
+							<span class="bandeja-field__value">{{ selectedItem?.HORARIO }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.TIEMPO_CONTRATO">
+						<div class="bandeja-field" *ngIf="selectedItem?.TIEMPO_CONTRATO">
 							<span class="bandeja-field__label">Tiempo de contrato</span>
-							<span class="bandeja-field__value">{{ selectedItem.TIEMPO_CONTRATO }} meses</span>
+							<span class="bandeja-field__value">{{ selectedItem?.TIEMPO_CONTRATO }} meses</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.CANTIDAD_CANDIDATOS != null">
+						<div class="bandeja-field" *ngIf="selectedItem?.CANTIDAD_CANDIDATOS !== null && selectedItem?.CANTIDAD_CANDIDATOS !== undefined">
 							<span class="bandeja-field__label">Candidatos</span>
 							<span class="bandeja-field__value">
-								{{ selectedItem.CANTIDAD_CANDIDATOS }}
-								<span *ngIf="selectedItem.CANTIDAD_PENDIENTES">
-									· {{ selectedItem.CANTIDAD_PENDIENTES }} pendientes
+								{{ selectedItem?.CANTIDAD_CANDIDATOS }}
+								<span *ngIf="selectedItem?.CANTIDAD_PENDIENTES">
+									· {{ selectedItem?.CANTIDAD_PENDIENTES }} pendientes
 								</span>
 							</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.CANTIDAD_ENTREVISTAS != null">
+						<div class="bandeja-field" *ngIf="selectedItem?.CANTIDAD_ENTREVISTAS !== null && selectedItem?.CANTIDAD_ENTREVISTAS !== undefined">
 							<span class="bandeja-field__label">Entrevistas</span>
 							<span class="bandeja-field__value">
-								{{ selectedItem.CANTIDAD_ENTREVISTAS }}
-								<span *ngIf="selectedItem.ULTIMA_ENTREVISTA">
-									· {{ selectedItem.ULTIMA_ENTREVISTA }}
+								{{ selectedItem?.CANTIDAD_ENTREVISTAS }}
+								<span *ngIf="selectedItem?.ULTIMA_ENTREVISTA">
+									· {{ selectedItem?.ULTIMA_ENTREVISTA }}
 								</span>
 							</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.ESTADO_CICLO_CANDIDATO">
+						<!-- Muestra la etiqueta descriptiva amigable del estado o ciclo -->
+						<div class="bandeja-field" *ngIf="selectedItem?.ESTADO_CICLO_CANDIDATO">
 							<span class="bandeja-field__label">Etapa del ciclo</span>
-							<span class="bandeja-field__value">{{ selectedItem.ESTADO_CICLO_CANDIDATO }}</span>
+							<span class="bandeja-field__value">{{ selectedItem?.ESTADO || selectedItem?.ESTADO_CICLO_CANDIDATO }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.CORR_PERSONA_DATOS">
+						<div class="bandeja-field" *ngIf="selectedItem?.CORR_PERSONA_DATOS">
 							<span class="bandeja-field__label">Persona datos</span>
-							<span class="bandeja-field__value">{{ selectedItem.CORR_PERSONA_DATOS }}</span>
+							<span class="bandeja-field__value">{{ selectedItem?.CORR_PERSONA_DATOS }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.CORR_EXPEDIENTE_CANDIDATO">
+						<div class="bandeja-field" *ngIf="selectedItem?.CORR_EXPEDIENTE_CANDIDATO">
 							<span class="bandeja-field__label">Expediente</span>
-							<span class="bandeja-field__value">{{ selectedItem.CORR_EXPEDIENTE_CANDIDATO }}</span>
+							<span class="bandeja-field__value">{{ selectedItem?.CORR_EXPEDIENTE_CANDIDATO }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.ESTADO_DECISION">
-							<span class="bandeja-field__label">Dictamen jefatura</span>
-							<span class="bandeja-field__value">{{ selectedItem.ESTADO_DECISION }}</span>
+						<div class="bandeja-field" *ngIf="selectedItem?.ESTADO_DECISION">
+							<span class="bandeja-field__label">Dictamen</span>
+							<span class="bandeja-field__value">{{ selectedItem?.ESTADO_DECISION }}</span>
+						</div>
+						<!-- Fecha efectiva en contrataciones (visualización en ficha) -->
+						<div class="bandeja-field" *ngIf="selectedItem?.TIPO === 'CONTRATACION' && selectedItem?.FECHA_EFECTIVA">
+							<span class="bandeja-field__label">Fecha efectiva</span>
+							<span class="bandeja-field__value">{{ formatFecha(selectedItem?.FECHA_EFECTIVA) }}</span>
 						</div>
 					</div>
 				</div>
 
+				<!-- Historial del elemento seleccionado -->
 				<div class="bandeja-panel__body" *ngIf="panelTab === 'HISTORIAL'">
 					<div class="bandeja-section__text" *ngIf="bitacoraLoading">Cargando bitácora…</div>
 					<div
 						class="bandeja-historial"
-						*ngIf="!bitacoraLoading && selectedItem.HISTORIAL?.length; else sinHistorial"
+						*ngIf="!bitacoraLoading && selectedItem?.HISTORIAL?.length; else sinHistorial"
 					>
-						<div class="bandeja-historial__item" *ngFor="let h of selectedItem.HISTORIAL">
+						<div class="bandeja-historial__item" *ngFor="let h of selectedItem?.HISTORIAL">
 							<div class="bandeja-historial__dot"></div>
 							<div class="bandeja-historial__content">
 								<div class="bandeja-historial__accion">{{ h.ACCION }}</div>
@@ -433,8 +451,9 @@
 					(onClick)="accionVerFlujo()"
 				></dx-button>
 
+				<!-- Botones de acciones según estado del elemento -->
 				<dx-button
-					*ngIf="selectedItem.ESTADO_CICLO_CANDIDATO === 'POSTULANTE'"
+					*ngIf="selectedItem?.ESTADO_CICLO_CANDIDATO === 'POSTULANTE'"
 					text="Asociar expediente"
 					type="default"
 					icon="plus"
@@ -444,7 +463,7 @@
 				></dx-button>
 
 				<dx-button
-					*ngIf="selectedItem.ESTADO_CICLO_CANDIDATO === 'CON_EXPEDIENTE'"
+					*ngIf="selectedItem?.ESTADO_CICLO_CANDIDATO === 'CON_EXPEDIENTE'"
 					text="Activar proceso de selección"
 					type="default"
 					icon="runner"
@@ -453,37 +472,143 @@
 					(onClick)="accionActivarSeleccion()"
 				></dx-button>
 
+				<!-- Botones de dictamen para candidatos en selección: Ejecutar movimiento personal y Rechazado -->
 				<ng-container *ngIf="puedeDictaminar">
-					<div class="bandeja-panel__actions-split">
-						<dx-button
-							text="Aplica"
-							type="success"
-							icon="check"
-							[width]="'48%'"
-							[height]="36"
-							(onClick)="accionDictamen(true)"
-						></dx-button>
-						<dx-button
-							text="No aplica"
-							type="danger"
-							icon="close"
-							[width]="'48%'"
-							[height]="36"
-							(onClick)="accionDictamen(false)"
-						></dx-button>
-					</div>
+					<dx-button
+						text="Ejecutar movimiento personal"
+						type="default"
+						icon="user"
+						[width]="'100%'"
+						[height]="36"
+						[disabled]="accionEnCurso"
+						(onClick)="accionDictamen(true)"
+					></dx-button>
+					<dx-button
+						text="Rechazado"
+						type="danger"
+						icon="close"
+						[width]="'100%'"
+						[height]="36"
+						[disabled]="accionEnCurso"
+						(onClick)="accionDictamen(false)"
+					></dx-button>
 				</ng-container>
 
+				<!-- Botón para confirmar movimiento personal en contrataciones -->
 				<dx-button
-					*ngIf="selectedItem.TIPO === 'CONTRATACION' || selectedItem.LISTO_CONTRATACION"
-					text="Ejecutar movimiento personal"
-					type="default"
-					icon="card"
+					*ngIf="puedeConfirmarMovimiento"
+					text="Confirmar movimiento personal"
+					type="success"
+					icon="check"
 					[width]="'100%'"
 					[height]="36"
-					(onClick)="accionMovimientoStandby()"
+					[disabled]="accionEnCurso"
+					(onClick)="abrirPopupConfirmarMov()"
+				></dx-button>
+
+				<!-- Botón para crear empleado institucional en contrataciones (cuando está listo para crear empleado) -->
+				<dx-button
+					*ngIf="puedeCrearUsuario"
+					text="Crear empleado"
+					type="success"
+					icon="user"
+					[width]="'100%'"
+					[height]="36"
+					[disabled]="accionEnCurso"
+					(onClick)="crearUsuario()"
 				></dx-button>
 			</div>
 		</aside>
 	</div>
 </div>
+
+<!-- Modal para capturar observación al rechazar candidato -->
+<dx-popup
+	[(visible)]="popupObservacionVisible"
+	[title]="popupObservacionTitulo"
+	[width]="520"
+	[maxWidth]="'calc(100vw - 32px)'"
+	[height]="'auto'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'bandeja-obs-popup' }"
+	(onHiding)="cancelarPopupObservacion()"
+>
+	<div *dxTemplate="let data of 'content'" class="bandeja-obs-popup__body">
+		<p class="bandeja-obs-popup__hint">{{ popupObservacionHint }}</p>
+		<label class="bandeja-obs-popup__label">Observación</label>
+		<dx-text-area
+			[(value)]="popupObservacionTexto"
+			[height]="120"
+			[maxLength]="2000"
+			placeholder="Escriba aquí el motivo…"
+			[width]="'100%'"
+		></dx-text-area>
+		<div class="bandeja-obs-popup__actions">
+			<dx-button
+				text="Cancelar"
+				stylingMode="outlined"
+				[height]="36"
+				(onClick)="cancelarPopupObservacion()"
+			></dx-button>
+			<dx-button
+				text="Confirmar"
+				type="default"
+				stylingMode="contained"
+				[height]="36"
+				(onClick)="confirmarPopupObservacion()"
+			></dx-button>
+		</div>
+	</div>
+</dx-popup>
+
+<!-- Modal para confirmar movimiento personal con fecha efectiva -->
+<dx-popup
+	[(visible)]="popupConfirmarMovVisible"
+	[title]="'Confirmar movimiento personal'"
+	[width]="480"
+	[maxWidth]="'calc(100vw - 32px)'"
+	[height]="'auto'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'bandeja-obs-popup' }"
+	(onHiding)="cancelarPopupConfirmarMov()"
+>
+	<div *dxTemplate="let data of 'content'" class="bandeja-obs-popup__body">
+		<p class="bandeja-obs-popup__hint">
+			Indique la fecha efectiva para oficializar el movimiento de personal de
+			<strong>{{ selectedItem?.NOMBRE_CANDIDATO || selectedItem?.DESCRIPCION }}</strong>.
+		</p>
+		<label class="bandeja-obs-popup__label">Fecha efectiva <span style="color: #ef4444">*</span></label>
+		<dx-date-box
+			[(value)]="popupFechaEfectiva"
+			displayFormat="dd/MM/yyyy"
+			[width]="'100%'"
+			[openOnFieldClick]="true"
+			[showClearButton]="true"
+			placeholder="Seleccione fecha efectiva…"
+		></dx-date-box>
+		<div class="bandeja-obs-popup__actions">
+			<dx-button
+				text="Cancelar"
+				type="danger"
+				stylingMode="contained"
+				icon="close"
+				[height]="36"
+				(onClick)="cancelarPopupConfirmarMov()"
+			></dx-button>
+			<dx-button
+				text="Confirmar"
+				type="success"
+				stylingMode="contained"
+				icon="check"
+				[height]="36"
+				[disabled]="accionEnCurso"
+				(onClick)="confirmarPopupConfirmarMov()"
+			></dx-button>
+		</div>
+	</div>
+</dx-popup>
+

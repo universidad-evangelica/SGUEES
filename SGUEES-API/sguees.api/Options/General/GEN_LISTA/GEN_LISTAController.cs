@@ -213,6 +213,85 @@ namespace sguees.Controllers
             return _service.GetCLASE_BANCO();
         }
 
-       
+		// Qué hace: lookup formato caracteres para catálogo tipo documento identidad.
+		[HttpGet("GetFORMATO_CARACTERES_GEN_TIPO_DOCUMENTO_IDENTIDAD")]
+		[Authorize(Policy = "/gen-tipo-documento-identidad|R")]
+		public CResult GetFORMATO_CARACTERES_GEN_TIPO_DOCUMENTO_IDENTIDAD()
+		{
+			return _service.GetFORMATO_CARACTERES();
+		}
+
+		// Qué hace: lookup aplica para (nacional/extranjero/ambos) del mismo catálogo.
+		[HttpGet("GetAPLICA_PARA_GEN_TIPO_DOCUMENTO_IDENTIDAD")]
+		[Authorize(Policy = "/gen-tipo-documento-identidad|R")]
+		public CResult GetAPLICA_PARA_GEN_TIPO_DOCUMENTO_IDENTIDAD()
+		{
+			return _service.GetAPLICA_PARA();
+		}
+
+		// Qué hace: lookup formato caracteres para catálogo tipo contacto.
+		[HttpGet("GetFORMATO_CARACTERES_GEN_TIPO_CONTACTO")]
+		[Authorize(Policy = "/gen-tipo-contacto|R")]
+		public CResult GetFORMATO_CARACTERES_GEN_TIPO_CONTACTO()
+		{
+			return _service.GetFORMATO_CARACTERES();
+		}
+
+		// Qué hace: lookup aplica para del catálogo tipo contacto.
+		[HttpGet("GetAPLICA_PARA_GEN_TIPO_CONTACTO")]
+		[Authorize(Policy = "/gen-tipo-contacto|R")]
+		public CResult GetAPLICA_PARA_GEN_TIPO_CONTACTO()
+		{
+			return _service.GetAPLICA_PARA();
+		}
+
+		// Qué hace: lookup nivel de dominio para idiomas/competencias de gen-empleado.
+		// Cómo lo hace: llama al servicio GetNIVEL_DOMINIO (CHECK BASICO/INTERMEDIO/AVANZADO).
+		[HttpGet("GetNIVEL_DOMINIO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetNIVEL_DOMINIO_GEN_EMPLEADO()
+		{
+			return _service.GetNIVEL_DOMINIO();
+		}
+
+		// Qué hace: lookup sexo para personales/hijos de gen-empleado.
+		[HttpGet("GetSEXO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetSEXO_GEN_EMPLEADO()
+		{
+			return _service.GetSEXO();
+		}
+
+		// Qué hace: lookup estado civil para personales de gen-empleado.
+		[HttpGet("GetESTADO_CIVIL_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetESTADO_CIVIL_GEN_EMPLEADO()
+		{
+			return _service.GetESTADO_CIVIL();
+		}
+
+		// Qué hace: lookup SI/NO (domiciliado, carta pastoral, etc.).
+		[HttpGet("GetSI_NO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetSI_NO_GEN_EMPLEADO()
+		{
+			return _service.GetSI_NO();
+		}
+
+		// Qué hace: lookup nivel académico para formación de gen-empleado.
+		[HttpGet("GetNIVEL_ACADEMICO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetNIVEL_ACADEMICO_GEN_EMPLEADO()
+		{
+			return _service.GetNIVEL_ACADEMICO();
+		}
+
+		// Qué hace: lookup ESTADO_NIP (CHECK GEN_EMPLEADO) para personales.
+		[HttpGet("GetESTADO_NIP_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetESTADO_NIP_GEN_EMPLEADO()
+		{
+			return _service.GetESTADO_NIP();
+		}
 	}
 }

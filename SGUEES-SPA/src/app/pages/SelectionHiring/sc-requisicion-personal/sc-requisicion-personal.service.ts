@@ -15,6 +15,23 @@ import { ScRequisicionCandidatoService } from './sc-requisicion-candidato/sc-req
 	providedIn: 'root',
 })
 export class ScRequisicionPersonalService {
+	// Qué hace: Catálogo local de estados de la requisición de personal.
+	// Cómo lo hace: Arreglo constante con los identificadores y descripciones de cada fase de la requisición.
+	readonly estadosRequisicion: { CORR_ESTADO_REQUISICION: number; ESTADO_REQUISICION: string }[] = [
+		{ CORR_ESTADO_REQUISICION: 1, ESTADO_REQUISICION: 'Borrador' },
+		{ CORR_ESTADO_REQUISICION: 2, ESTADO_REQUISICION: 'En Aprobación' },
+		{ CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Devuelta' },
+		{ CORR_ESTADO_REQUISICION: 4, ESTADO_REQUISICION: 'Rechazada' },
+		{ CORR_ESTADO_REQUISICION: 5, ESTADO_REQUISICION: 'Aprobada' },
+		{ CORR_ESTADO_REQUISICION: 6, ESTADO_REQUISICION: 'Publicada' },
+		{ CORR_ESTADO_REQUISICION: 7, ESTADO_REQUISICION: 'En Reclutamiento' },
+		{ CORR_ESTADO_REQUISICION: 8, ESTADO_REQUISICION: 'En Selección' },
+		{ CORR_ESTADO_REQUISICION: 9, ESTADO_REQUISICION: 'En Contratación' },
+		{ CORR_ESTADO_REQUISICION: 10, ESTADO_REQUISICION: 'Parcial Cubierta' },
+		{ CORR_ESTADO_REQUISICION: 11, ESTADO_REQUISICION: 'Cerrada' },
+		{ CORR_ESTADO_REQUISICION: 12, ESTADO_REQUISICION: 'Cancelada' },
+	];
+
     constructor(
 		private repo: ScRequisicionPersonalRepository,
 		private entrevistaRepo: ScExpedienteEntrevistaRepository,
@@ -119,25 +136,14 @@ export class ScRequisicionPersonalService {
         return `${year}-${month}-${day}`;
     }
 
-    /** Catálogo de estados de la requisición (flujo; el cambio lo hace otro proceso). */
-	readonly estadosRequisicion: { CORR_ESTADO_REQUISICION: number; ESTADO_REQUISICION: string }[] = [
-		{ CORR_ESTADO_REQUISICION: 1, ESTADO_REQUISICION: 'Borrador' },
-		{ CORR_ESTADO_REQUISICION: 2, ESTADO_REQUISICION: 'En Aprobación' },
-		{ CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Devuelta' },
-		{ CORR_ESTADO_REQUISICION: 4, ESTADO_REQUISICION: 'Rechazada' },
-		{ CORR_ESTADO_REQUISICION: 5, ESTADO_REQUISICION: 'Aprobada' },
-		{ CORR_ESTADO_REQUISICION: 6, ESTADO_REQUISICION: 'Publicada' },
-		{ CORR_ESTADO_REQUISICION: 7, ESTADO_REQUISICION: 'En Reclutamiento' },
-		{ CORR_ESTADO_REQUISICION: 8, ESTADO_REQUISICION: 'En Selección' },
-		{ CORR_ESTADO_REQUISICION: 9, ESTADO_REQUISICION: 'En Contratación' },
-		{ CORR_ESTADO_REQUISICION: 10, ESTADO_REQUISICION: 'Parcial Cubierta' },
-		{ CORR_ESTADO_REQUISICION: 11, ESTADO_REQUISICION: 'Cerrada' },
-		{ CORR_ESTADO_REQUISICION: 12, ESTADO_REQUISICION: 'Cancelada' },
-	];
 
-	/** Texto del chip según CORR_ESTADO_REQUISICION (default Borrador si viene vacío). */
-	getEstadoRequisicionLabel(corrEstado: number | null | undefined): string {
+	// Qué hace: Retorna el texto visible del chip de estado en la grilla y el formulario.
+	// Cómo lo hace: Si la requisición está en circuito de flujo (estados 2..5) y posee NOMBRE_ESTADO_FLUJO de la bitácora, prioriza ese texto; de lo contrario toma el catálogo de negocio o 'Borrador'.
+	getEstadoRequisicionLabel(corrEstado: number | null | undefined, nombreEstadoFlujo?: string | null): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		if (corr >= 2 && corr <= 5 && nombreEstadoFlujo?.trim()) {
+			return nombreEstadoFlujo.trim();
+		}
 		const item = this.estadosRequisicion.find((x) => x.CORR_ESTADO_REQUISICION === corr);
 		return item?.ESTADO_REQUISICION ?? 'Borrador';
 	}
@@ -156,9 +162,32 @@ export class ScRequisicionPersonalService {
 		return this.esEstadoRequisicionEditable(corrEstado);
 	}
 
-	/** Clase CSS del chip según el estado (solo lectura / indicador de flujo). */
-	getEstadoRequisicionBadgeClass(corrEstado: number | null | undefined): string {
+	// Qué hace: devuelve la clase CSS del badge/chip según el estado general o el actor específico del flujo.
+	// Cómo lo hace: evalúa el texto del flujo (JI -> azul, JU -> violeta, GG/Final -> verde, devuelta -> ámbar, rechazada -> rojo).
+	getEstadoRequisicionBadgeClass(corrEstado: number | null | undefined, nombreEstadoFlujo?: string | null): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		if (corr >= 2 && corr <= 5 && nombreEstadoFlujo?.trim()) {
+			const nombre = nombreEstadoFlujo.trim().toLowerCase();
+			if (nombre.includes('aprobado') || nombre.includes('aprobada')) {
+				if (nombre.includes('ju')) {
+					return 'estado-req--aprobado-ju';
+				}
+				if (nombre.includes('ji')) {
+					return 'estado-req--aprobacion';
+				}
+				if (nombre.includes('gg')) {
+					return 'estado-req--aprobada';
+				}
+				return 'estado-req--aprobada';
+			}
+			if (nombre.includes('devuelt')) {
+				return 'estado-req--devuelta';
+			}
+			if (nombre.includes('rechaz') || nombre.includes('deneg')) {
+				return 'estado-req--rechazada';
+			}
+			return 'estado-req--aprobacion';
+		}
 		switch (corr) {
 			case 1:
 				return 'estado-req--borrador';
@@ -187,16 +216,18 @@ export class ScRequisicionPersonalService {
 		}
 	}
 
-	/** Pinta chip de estado en celdas del grid principal (mismas clases .estado-req-* que el form). */
+	// Qué hace: Renderiza el elemento DOM span con el chip de estado en la celda del grid.
+	// Cómo lo hace: Agrega las clases CSS y el texto descriptivo pasando tanto CORR_ESTADO_REQUISICION como NOMBRE_ESTADO_FLUJO.
 	private renderEstadoRequisicionChip(
 		cellElement: HTMLElement,
-		corrEstado: number | null | undefined
+		corrEstado: number | null | undefined,
+		nombreEstadoFlujo?: string | null
 	): void {
 		cellElement.classList.add('requisicion-grid-estado-cell');
 
 		const chip = document.createElement('span');
-		chip.classList.add('estado-req-chip', this.getEstadoRequisicionBadgeClass(corrEstado));
-		chip.textContent = this.getEstadoRequisicionLabel(corrEstado);
+		chip.classList.add('estado-req-chip', this.getEstadoRequisicionBadgeClass(corrEstado, nombreEstadoFlujo));
+		chip.textContent = this.getEstadoRequisicionLabel(corrEstado, nombreEstadoFlujo);
 		chip.title = chip.textContent;
 
 		cellElement.innerHTML = '';
@@ -301,6 +332,22 @@ export class ScRequisicionPersonalService {
 
 	getEstadoDecisionLabel(estado: string | null | undefined): string {
 		return this.requisicionCandidatoService.getEstadoDecisionLabel(estado);
+	}
+
+	// Qué hace: Retorna el texto descriptivo del estado del expediente del candidato.
+	// Cómo lo hace: Homologa los estados de selección (2, 3, 4) como 'Proceso de selección', 5 como 'Contratado' y 1 como 'Borrador'.
+	getEstadoExpedienteLabel(corrEstado?: number): string {
+		const corr = Number(corrEstado) || 0;
+		if (corr === 5) {
+			return 'Contratado';
+		}
+		if (corr >= 2 && corr <= 4) {
+			return 'Proceso de selección';
+		}
+		if (corr === 1) {
+			return 'Borrador';
+		}
+		return '';
 	}
 
 	/** Entrevistas del candidato/solicitud/requisición (permiso requisición). */
@@ -639,7 +686,15 @@ export class ScRequisicionPersonalService {
 
     getColumns(): any {
         return [
-            { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr.', width: 85 },
+            // Qué hace: define la columna correlativo ordenada de la más reciente a la más antigua por defecto.
+            // Cómo lo hace: añade sortOrder: 'desc' y sortIndex: 0 en la configuración de la columna DevExtreme.
+            {
+                dataField: 'CORR_REQUISICION_PERSONAL',
+                caption: 'Corr.',
+                width: 85,
+                sortOrder: 'desc',
+                sortIndex: 0,
+            },
             {
                 dataField: 'CORR_ESTADO_REQUISICION',
                 caption: 'Estado',
@@ -649,11 +704,12 @@ export class ScRequisicionPersonalService {
                 allowFiltering: true,
                 allowHeaderFiltering: true,
                 calculateCellValue: (row: any) =>
-                    this.getEstadoRequisicionLabel(row?.CORR_ESTADO_REQUISICION),
+                    this.getEstadoRequisicionLabel(row?.CORR_ESTADO_REQUISICION, row?.NOMBRE_ESTADO_FLUJO),
                 cellTemplate: (cellElement: HTMLElement, cellInfo: { data?: any }) => {
                     this.renderEstadoRequisicionChip(
                         cellElement,
-                        cellInfo.data?.CORR_ESTADO_REQUISICION
+                        cellInfo.data?.CORR_ESTADO_REQUISICION,
+                        cellInfo.data?.NOMBRE_ESTADO_FLUJO
                     );
                 },
                 lookup: {
@@ -667,8 +723,16 @@ export class ScRequisicionPersonalService {
             { dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 220 },
             { dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 120 },
             { dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contrato', width: 140 },
-            { dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 200 },
-            { dataField: 'CANTIDAD_PLAZAS', caption: 'No. Plazas', width: 120 },
+            // Qué hace: Muestra el conteo de plazas cubiertas sobre el total solicitado de la requisición.
+            // Cómo lo hace: Formatea 'cubiertas / total' a partir de PLAZAS_CUBIERTAS y CANTIDAD_PLAZAS.
+            {
+                dataField: 'CANTIDAD_PLAZAS',
+                caption: 'Plazas (Cubiertas / Total)',
+                width: 175,
+                alignment: 'center',
+                calculateCellValue: (row: any) =>
+                    `${row?.PLAZAS_CUBIERTAS ?? 0} / ${row?.CANTIDAD_PLAZAS ?? 0}`,
+            },
             { dataField: 'SALARIO', caption: 'Salario', width: 120, format: '#,##0.00' },
             { dataField: 'TIEMPO_CONTRATO', caption: 'Contrato (Meses)', width: 170 },
             { dataField: 'HORARIO', caption: 'Horario', width: 200 },
@@ -842,12 +906,17 @@ export class ScRequisicionPersonalService {
             { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr. Requisición', width: 130 },
             { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 140 },
             { dataField: 'ESTADO_DESTINO', caption: 'Estado destino', width: 160 },
+            // Qué hace: define la columna Fecha / Hora ordenada de la acción más reciente a la más antigua.
+            // Cómo lo hace: añade sortOrder: 'desc' y calculateSortValue: 'CORR_BITACORA' para desempatar acciones del mismo minuto.
             {
                 dataField: 'FECHA_ACCION',
                 caption: 'Fecha / Hora',
                 width: 170,
                 dataType: 'datetime',
                 format: 'dd/MM/yyyy HH:mm',
+                calculateSortValue: 'CORR_BITACORA',
+                sortOrder: 'desc',
+                sortIndex: 0,
             },
             { dataField: 'COMENTARIO', caption: 'Comentario', minWidth: 280 },
         ];
@@ -940,6 +1009,8 @@ export class ScRequisicionPersonalService {
 	}
 
     /** Columnas visibles del tab Candidatos. */
+    // Qué hace: Retorna la definición de columnas para el grid de candidatos de la requisición.
+    // Cómo lo hace: Mapea las propiedades del modelo y formatea fechas, estado de expediente y decisión de jefatura.
     getCandidatosColumns(): any[] {
         return [
             { dataField: 'NOMBRE_PERSONA', caption: 'Candidato', minWidth: 240 },
@@ -955,7 +1026,7 @@ export class ScRequisicionPersonalService {
                 dataField: 'CORR_ESTADO_EXPEDIENTE',
                 caption: 'Estado expediente',
                 width: 180,
-                calculateCellValue: () => 'Proceso de selección',
+                calculateCellValue: (row: any) => this.getEstadoExpedienteLabel(row?.CORR_ESTADO_EXPEDIENTE),
             },
             {
                 dataField: 'ESTADO_DECISION',

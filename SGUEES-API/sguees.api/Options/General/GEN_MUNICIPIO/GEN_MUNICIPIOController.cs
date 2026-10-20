@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -60,6 +61,21 @@ namespace SGUEES.Controllers
 			return await _service.GetAllAsync(data);
 		}
 
+		[HttpGet("GetCORR_MUNICIPIO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		// Qué hace: entrega el catálogo de municipios para nacimiento en el tab Personales de empleado.
+		// Cómo: asigna CORR_EMPRESA de sesión y llama a GetAllAsync.
+		public async Task<CResult> GetCORR_MUNICIPIO_GEN_EMPLEADO([FromQuery] GEN_MUNICIPIOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			if (data.CORR_EMPRESA <= 0)
+			{
+				data.CORR_EMPRESA = 1;
+			}
+
+			return await _service.GetAllAsync(data);
+		}
+
 		[HttpGet("GetCORR_MUNICIPIO_GEN_ESTRUCTURA_TERRITORIAL")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		// Qué hace: entrega el catálogo de municipios requerido por el mantenimiento relacionado y aplica el contexto de empresa.
@@ -71,7 +87,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetCORR_MUNICIPIO_ACA_PROSPECTO")]
-		[Authorize(Policy = "/aca-prospecto|R")]
+		[Authorize(Policy = PermisosProspecto.LecturaAmbos)]
 		// Qué hace: municipios del país y departamento indicados para residencia y empleo en la edición de prospectos.
 		// Cómo: llama a GetAllAsync del servicio, que filtra por CORR_PAIS y CORR_DEPTO cuando vienen.
 		public async Task<CResult> GetCORR_MUNICIPIO_ACA_PROSPECTO([FromQuery] GEN_MUNICIPIOParam data)

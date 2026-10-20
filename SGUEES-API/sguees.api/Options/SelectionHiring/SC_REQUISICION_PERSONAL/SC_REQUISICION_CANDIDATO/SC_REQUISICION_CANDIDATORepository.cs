@@ -119,7 +119,9 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		public async Task<CResult> DecideAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		// Qué hace: Registra el dictamen de Aplica o No aplica para un candidato en selección.
+		// Cómo lo hace: Valida los datos requeridos, valida jefatura si validarJefatura es true, inserta en SC_REQUISICION_CANDIDATO y si es APLICA genera el movimiento de personal.
+		public async Task<CResult> DecideAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION, bool validarJefatura = true)
 		{
 			if (Data == null)
 			{
@@ -159,7 +161,7 @@ namespace SGUEES.Repositories
 			}
 
 			var login = (vLOGIN_SISTEMA ?? string.Empty).Trim();
-			if (!await EsJefeActivoDeUnidadAsync(Data.CORR_EMPRESA, requisicion.CORR_UNIDAD, login))
+			if (validarJefatura && !await EsJefeActivoDeUnidadAsync(Data.CORR_EMPRESA, requisicion.CORR_UNIDAD, login))
 			{
 				return ValidationResult(
 					1010,
@@ -246,6 +248,31 @@ namespace SGUEES.Repositories
 						new CParameter() { ParameterName = "CORR_REQUISICION_CANDIDATO", Value = corr, DbType = System.Data.DbType.Int32 },
 					});
 					response = reload.Data as SC_REQUISICION_CANDIDATOView;
+				}
+
+				if (string.Equals(Data.ESTADO_DECISION, "APLICA", StringComparison.OrdinalIgnoreCase))
+				{
+					var corrCandidato = response?.CORR_REQUISICION_CANDIDATO ?? 0;
+					var mensajeMovimiento = await CrearMovimientoDesdeRequisicionAsync(
+						Data.CORR_EMPRESA,
+						Data.CORR_REQUISICION_PERSONAL,
+						corrCandidato,
+						login,
+						vESTACION);
+
+					if (!string.IsNullOrWhiteSpace(mensajeMovimiento))
+					{
+						await EliminarDecisionAsync(Data.CORR_EMPRESA, corrCandidato);
+						return ValidationResult(1014, mensajeMovimiento);
+					}
+
+					// Qué hace: Pasa el estado del expediente a 3 (Seleccionado).
+					// Cómo lo hace: Actualiza la columna CORR_ESTADO_EXPEDIENTE del candidato dictaminado.
+					var corrExpediente = response?.CORR_EXPEDIENTE_CANDIDATO ?? Data.CORR_EXPEDIENTE_CANDIDATO;
+					if (corrExpediente > 0)
+					{
+						await ActualizarEstadoExpedienteAsync(Data.CORR_EMPRESA, corrExpediente, 3, login, vESTACION);
+					}
 				}
 
 				objResultado.Data = response;
@@ -356,6 +383,95 @@ WHERE J.CORR_EMPRESA = @CORR_EMPRESA
 			return rows.Count > 0;
 		}
 
+		/// <summary>
+		/// Alta del movimiento (origen requisición) y de la puente. Vacío = correcto.
+		/// </summary>
+		private async Task<string> CrearMovimientoDesdeRequisicionAsync(
+			int corrEmpresa,
+			int corrRequisicion,
+			int corrCandidato,
+			string login,
+			string estacion)
+		{
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@CORR_REQUISICION_PERSONAL", Value = corrRequisicion, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@CORR_REQUISICION_CANDIDATO", Value = corrCandidato, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@LOGIN_SISTEMA", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
+				new() { ParameterName = "@ESTACION", Value = estacion ?? string.Empty, DbType = System.Data.DbType.String },
+				new() { ParameterName = "@CORR_MOVIMIENTO_PERSONAL", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+				new() { ParameterName = "@MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 500 },
+			};
+
+			await objData.ExecCmd(
+				System.Data.CommandType.StoredProcedure,
+				"PRAL_MTTO_SC_MOVIMIENTO_DESDE_REQUISICION",
+				true,
+				p);
+
+			return objData.objCommand.Parameters["@MENSAJE_ERROR"].Value?.ToString();
+		}
+
+		private async Task EliminarDecisionAsync(int corrEmpresa, int corrCandidato)
+		{
+			if (corrCandidato <= 0)
+			{
+				return;
+			}
+
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@CORR_REQUISICION_CANDIDATO", Value = corrCandidato, DbType = System.Data.DbType.Int32 },
+			};
+
+			await objData.ExecCmd(System.Data.CommandType.Text, @"
+DELETE FROM dbo.SC_REQUISICION_CANDIDATO
+WHERE CORR_EMPRESA = @CORR_EMPRESA
+  AND CORR_REQUISICION_CANDIDATO = @CORR_REQUISICION_CANDIDATO", true, p);
+		}
+
+		// Qué hace: Actualiza el estado del expediente del candidato (3: Seleccionado, 2: Proceso de selección).
+		// Cómo lo hace: Ejecuta un UPDATE puntual sobre dbo.SC_EXPEDIENTE_CANDIDATO con los parámetros recibidos.
+		private async Task ActualizarEstadoExpedienteAsync(
+			int corrEmpresa,
+			int corrExpediente,
+			int corrEstado,
+			string login,
+			string estacion)
+		{
+			if (corrExpediente <= 0)
+			{
+				return;
+			}
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_EXPEDIENTE_CANDIDATO", Value = corrExpediente, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_ESTADO_EXPEDIENTE", Value = corrEstado, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@USUARIO_ACTU", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@ESTACION_ACTU", Value = estacion ?? string.Empty, DbType = System.Data.DbType.String },
+				};
+
+				await objData.ExecCmd(System.Data.CommandType.Text, @"
+UPDATE dbo.SC_EXPEDIENTE_CANDIDATO
+SET CORR_ESTADO_EXPEDIENTE = @CORR_ESTADO_EXPEDIENTE,
+    USUARIO_ACTU = @USUARIO_ACTU,
+    ESTACION_ACTU = @ESTACION_ACTU,
+    FECHA_ACTU = GETDATE()
+WHERE CORR_EMPRESA = @CORR_EMPRESA
+  AND CORR_EXPEDIENTE_CANDIDATO = @CORR_EXPEDIENTE_CANDIDATO;", true, p);
+			}
+			catch
+			{
+				// No interrumpe la transacción principal si ocurre un error secundario en el expediente
+			}
+		}
+
 		private static void SetError(CResult result, Exception ex)
 		{
 			result.Data = null;
@@ -376,6 +492,105 @@ WHERE J.CORR_EMPRESA = @CORR_EMPRESA
 				ErrorSource = "[SC_REQUISICION_CANDIDATORepository]",
 				RowsAffected = 0,
 			};
+		}
+
+		/// <summary>
+		/// Datos del dictamen + logins con menú SC_BANDEJA_TH (destinatarios TH).
+		/// </summary>
+		public async Task<SC_REQUISICION_CANDIDATO_ACCION_NOTIF_DTO> GetContextoNotificacionDictamenAsync(
+			int corrEmpresa,
+			int corrRequisicionPersonal,
+			int corrExpedienteCandidato)
+		{
+			var dto = new SC_REQUISICION_CANDIDATO_ACCION_NOTIF_DTO
+			{
+				CORR_REQUISICION_PERSONAL = corrRequisicionPersonal,
+				CORR_EXPEDIENTE_CANDIDATO = corrExpedienteCandidato,
+			};
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = corrRequisicionPersonal, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "CORR_EXPEDIENTE_CANDIDATO", Value = corrExpedienteCandidato, DbType = System.Data.DbType.Int32 },
+				};
+
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
+SELECT TOP 1
+	RC.CORR_REQUISICION_PERSONAL,
+	RC.CORR_EXPEDIENTE_CANDIDATO,
+	RC.ESTADO_DECISION,
+	RC.OBSERVACION_DECISION,
+	CAST(ISNULL(EC.NOMBRE_PERSONA, S.NOMBRE) AS NVARCHAR(250)) AS NOMBRE_PERSONA,
+	R.NOMBRE_PUESTO,
+	R.NOMBRE_UNIDAD,
+	ISNULL(MR.CORR_MOVIMIENTO_PERSONAL, 0) AS CORR_MOVIMIENTO_PERSONAL
+FROM dbo.SC_REQUISICION_CANDIDATO AS RC
+INNER JOIN dbo.V_SC_REQUISICION_PERSONAL AS R
+	ON R.CORR_EMPRESA = RC.CORR_EMPRESA
+   AND R.CORR_REQUISICION_PERSONAL = RC.CORR_REQUISICION_PERSONAL
+LEFT JOIN dbo.SC_SOLICITUD_EMPLEO AS S
+	ON S.CORR_EMPRESA = RC.CORR_EMPRESA
+   AND S.CORR_SOLICITUD_EMPLEO = RC.CORR_SOLICITUD_EMPLEO
+LEFT JOIN dbo.V_SC_EXPEDIENTE_CANDIDATO AS EC
+	ON EC.CORR_EMPRESA = RC.CORR_EMPRESA
+   AND EC.CORR_EXPEDIENTE_CANDIDATO = RC.CORR_EXPEDIENTE_CANDIDATO
+LEFT JOIN dbo.SC_MOVIMIENTO_REQUISICION AS MR
+	ON MR.CORR_EMPRESA = RC.CORR_EMPRESA
+   AND MR.CORR_REQUISICION_PERSONAL = RC.CORR_REQUISICION_PERSONAL
+   AND MR.CORR_REQUISICION_CANDIDATO = RC.CORR_REQUISICION_CANDIDATO
+WHERE RC.CORR_EMPRESA = @CORR_EMPRESA
+  AND RC.CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL
+  AND RC.CORR_EXPEDIENTE_CANDIDATO = @CORR_EXPEDIENTE_CANDIDATO;", p);
+
+				if (reader.Read())
+				{
+					if (reader["CORR_REQUISICION_PERSONAL"] != DBNull.Value)
+					{
+						dto.CORR_REQUISICION_PERSONAL = Convert.ToInt32(reader["CORR_REQUISICION_PERSONAL"]);
+					}
+					if (reader["CORR_EXPEDIENTE_CANDIDATO"] != DBNull.Value)
+					{
+						dto.CORR_EXPEDIENTE_CANDIDATO = Convert.ToInt32(reader["CORR_EXPEDIENTE_CANDIDATO"]);
+					}
+					if (reader["CORR_MOVIMIENTO_PERSONAL"] != DBNull.Value)
+					{
+						dto.CORR_MOVIMIENTO_PERSONAL = Convert.ToInt32(reader["CORR_MOVIMIENTO_PERSONAL"]);
+					}
+					dto.ESTADO_DECISION = reader["ESTADO_DECISION"]?.ToString()?.Trim();
+					dto.OBSERVACION_DECISION = reader["OBSERVACION_DECISION"]?.ToString()?.Trim();
+					dto.NOMBRE_PERSONA = reader["NOMBRE_PERSONA"]?.ToString()?.Trim();
+					dto.NOMBRE_PUESTO = reader["NOMBRE_PUESTO"]?.ToString()?.Trim();
+					dto.NOMBRE_UNIDAD = reader["NOMBRE_UNIDAD"]?.ToString()?.Trim();
+				}
+				reader.Close();
+
+				var readerTh = await objData.GetDataReader(System.Data.CommandType.Text, @"
+SELECT DISTINCT LTRIM(RTRIM(UO.LOGIN_SISTEMA)) AS LOGIN_DESTINO
+FROM dbo.SEG_USUARIO_OPCION AS UO
+WHERE UO.CODIGO_OPCION = N'SC_BANDEJA_TH'
+  AND NULLIF(LTRIM(RTRIM(UO.LOGIN_SISTEMA)), N'') IS NOT NULL;", new List<CParameter>());
+
+				while (readerTh.Read())
+				{
+					var login = readerTh["LOGIN_DESTINO"]?.ToString()?.Trim();
+					if (!string.IsNullOrWhiteSpace(login)
+						&& !dto.LOGINS_DESTINO.Exists(x =>
+							string.Equals(x, login, StringComparison.OrdinalIgnoreCase)))
+					{
+						dto.LOGINS_DESTINO.Add(login);
+					}
+				}
+				readerTh.Close();
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return dto;
 		}
 	}
 }

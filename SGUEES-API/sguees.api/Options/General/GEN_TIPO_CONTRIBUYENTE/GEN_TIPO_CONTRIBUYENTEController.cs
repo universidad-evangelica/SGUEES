@@ -75,6 +75,15 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		[HttpGet("GetCORR_TIPO_CONTRIBUYENTE_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		// Qué hace: entrega el catálogo de tipo contribuyente para el tab Personales de empleado.
+		// Cómo: llama a GetAllAsync del servicio.
+		public async Task<CResult> GetCORR_TIPO_CONTRIBUYENTE_GEN_EMPLEADO([FromQuery] GEN_TIPO_CONTRIBUYENTEParam Data)
+		{
+			return await _service.GetAllAsync(Data);
+		}
+
 		private string GetUsuario()
 		{
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;

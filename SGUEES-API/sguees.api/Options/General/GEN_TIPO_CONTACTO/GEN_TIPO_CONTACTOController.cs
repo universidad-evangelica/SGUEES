@@ -1,6 +1,7 @@
 ﻿// Qué hace: endpoints REST del catálogo tipo contacto.
 // Cómo lo hace: CRUD + ActivarInactivar con auditoría por claims (sin empresa).
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -30,6 +31,22 @@ namespace sguees.Controllers
 		public async Task<CResult> GetAll([FromQuery] GEN_TIPO_CONTACTOParam Data)
 		{
 			return await _service.GetAllAsync(Data);
+		}
+
+		// Qué hace: lookup de tipos de contacto activos para el tab Contactos de gen-empleado.
+		// Cómo: reutiliza GetAll y deja solo ACTIVO_TIPO_CONTACTO.
+		[HttpGet("GetCORR_TIPO_CONTACTO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public async Task<CResult> GetCORR_TIPO_CONTACTO_GEN_EMPLEADO()
+		{
+			var resultado = await _service.GetAllAsync(new GEN_TIPO_CONTACTOParam());
+			if (resultado?.Data is IEnumerable<GEN_TIPO_CONTACTOView> rows)
+			{
+				var activos = rows.Where(x => x.ACTIVO_TIPO_CONTACTO != false).ToList();
+				resultado.Data = activos;
+				resultado.RowsAffected = activos.Count;
+			}
+			return resultado;
 		}
 
 		[HttpGet("Get")]

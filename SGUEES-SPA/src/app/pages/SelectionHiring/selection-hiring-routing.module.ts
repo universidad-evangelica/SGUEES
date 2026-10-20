@@ -26,9 +26,18 @@ import { ScSolicitudEmpleoComponent } from './sc-solicitud-empleo/sc-solicitud-e
 import { ScExpedienteCandidatoComponent } from './sc-expediente-candidato/sc-expediente-candidato.component';
 import { ScBandejaThComponent } from './sc-bandeja-th/sc-bandeja-th.component';
 import { ScBandejaActoresComponent } from './sc-bandeja-actores/sc-bandeja-actores.component';
+import { ScMovimientoPersonalComponent } from './sc-movimiento-personal/sc-movimiento-personal.component';
 
 
 const routes: Routes = [
+  {
+    path: 'sc-movimiento-personal',
+    component: ScMovimientoPersonalComponent,
+    data: { titulo: 'Movimiento de personal' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-movimiento-personal/sc-movimiento-personal.module').then(m => m.ScMovimientoPersonalModule)
+  },
   {
     path: 'sc-bandeja-th',
     component: ScBandejaThComponent,

@@ -4,6 +4,7 @@ namespace SGUEES.Models
 	{
 		public int TOTAL_REQUISICIONES { get; set; }
 		public int TOTAL_CANDIDATOS { get; set; }
+		public int TOTAL_MOVIMIENTOS { get; set; }
 		public int TOTAL_UNIDADES { get; set; }
 		public int TOTAL_PENDIENTES { get; set; }
 	}

@@ -4,7 +4,12 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
-import { ScExpedienteCandidato } from './models/sc-expediente-candidato';
+import {
+	ScExpedienteCandidato,
+	ESTADOS_EXPEDIENTE,
+	ESTADO_EXPEDIENTE_ID,
+	ScEstadoExpediente,
+} from './models/sc-expediente-candidato';
 import { ScExpedienteCandidatoRepository } from './sc-expediente-candidato.repository';
 import { ScExpedienteEntrevistaRepository } from './sc-expediente-entrevista/sc-expediente-entrevista.repository';
 import { ScExpedienteEntrevistaDocumentoRepository } from './sc-expediente-entrevista/sc-expediente-entrevista-documento/sc-expediente-entrevista-documento.repository';
@@ -14,6 +19,15 @@ import { ScRequisicionCandidatoService } from '../sc-requisicion-personal/sc-req
 
 @Injectable({ providedIn: 'root' })
 export class ScExpedienteCandidatoService {
+	/**
+	 * Catálogo local de estados del expediente (sin tabla BD).
+	 * Para agregar un estado: nueva entrada aquí + caso en getEstadoExpedienteBadgeClass()
+	 * + clase en sc-expediente-candidato.component.scss (.estado-exp--*).
+	 */
+	// Qué hace: Expone el catálogo de estados importado desde models/sc-expediente-candidato.
+	// Cómo lo hace: Referencia la constante ESTADOS_EXPEDIENTE manteniendo compatibilidad de acceso.
+	readonly estadosExpediente: ScEstadoExpediente[] = ESTADOS_EXPEDIENTE;
+
 	constructor(
 		private repo: ScExpedienteCandidatoRepository,
 		private detalleRepo: ScExpedienteSolicitudRepository,
@@ -31,37 +45,30 @@ export class ScExpedienteCandidatoService {
 		return true;
 	}
 
-	/**
-	 * Catálogo local de estados del expediente (sin tabla BD).
-	 * Para agregar un estado: nueva entrada aquí + caso en getEstadoExpedienteBadgeClass()
-	 * + clase en sc-expediente-candidato.component.scss (.estado-exp--*).
-	 */
-	readonly estadosExpediente: { CORR_ESTADO_EXPEDIENTE: number; ESTADO_EXPEDIENTE: string }[] = [
-		{ CORR_ESTADO_EXPEDIENTE: 1, ESTADO_EXPEDIENTE: 'Borrador' },
-		{ CORR_ESTADO_EXPEDIENTE: 2, ESTADO_EXPEDIENTE: 'Proceso de selección' },
-	];
-
-	/** Texto del chip según CORR_ESTADO_EXPEDIENTE (default Borrador si viene vacío). */
+	// Qué hace: Retorna el texto descriptivo del chip según CORR_ESTADO_EXPEDIENTE.
+	// Cómo lo hace: Homologa estados intermedios (2, 3 y 4) como 'Proceso de selección', 5 como 'Contratado' y 1 como 'Borrador'.
 	getEstadoExpedienteLabel(corrEstado: number | null | undefined): string {
-		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
-		const item = this.estadosExpediente.find((x) => x.CORR_ESTADO_EXPEDIENTE === corr);
-		return item?.ESTADO_EXPEDIENTE ?? 'Borrador';
+		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : ESTADO_EXPEDIENTE_ID.BORRADOR;
+		if (corr === ESTADO_EXPEDIENTE_ID.CONTRATADO) {
+			return 'Contratado';
+		}
+		if (corr >= ESTADO_EXPEDIENTE_ID.PROCESO_SELECCION && corr <= ESTADO_EXPEDIENTE_ID.LISTO_CREAR_USUARIO) {
+			return 'Proceso de selección';
+		}
+		return 'Borrador';
 	}
 
-	/**
-	 * Clase CSS del chip según el estado (solo lectura / indicador de flujo).
-	 * Colores definidos en sc-expediente-candidato.component.scss (.estado-exp--*).
-	 */
+	// Qué hace: Retorna la clase CSS de estilo según el estado del expediente.
+	// Cómo lo hace: Devuelve clase gris (1: Borrador), celeste (2, 3 y 4: Proceso de selección) y verde (5: Contratado).
 	getEstadoExpedienteBadgeClass(corrEstado: number | null | undefined): string {
-		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
-		switch (corr) {
-			case 1:
-				return 'estado-exp--borrador';
-			case 2:
-				return 'estado-exp--proceso';
-			default:
-				return 'estado-exp--borrador';
+		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : ESTADO_EXPEDIENTE_ID.BORRADOR;
+		if (corr === ESTADO_EXPEDIENTE_ID.CONTRATADO) {
+			return 'estado-exp--contratado';
 		}
+		if (corr >= ESTADO_EXPEDIENTE_ID.PROCESO_SELECCION && corr <= ESTADO_EXPEDIENTE_ID.LISTO_CREAR_USUARIO) {
+			return 'estado-exp--proceso';
+		}
+		return 'estado-exp--borrador';
 	}
 
 	/** Pinta chip de estado en celdas del grid principal (mismas clases .estado-exp-* que form/resumen). */

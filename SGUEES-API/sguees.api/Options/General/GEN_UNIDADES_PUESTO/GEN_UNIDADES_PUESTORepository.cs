@@ -190,13 +190,26 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: elimina una asignación unidad-puesto.
-        // Cómo: Delete sobre GEN_UNIDADES_PUESTO filtrando por las tres llaves de la PK.
+        // Cómo: no borra si ese puesto y esa unidad ya tienen salario o empleados.
         public async Task<CResult> DeleteAsync(GEN_UNIDADES_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
 
             try
             {
+                var bloqueo = await MensajeBloqueoQuitarAsync(Data.CORR_EMPRESA, Data.CORR_UNIDAD, Data.CORR_PUESTO);
+                if (bloqueo != null)
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.CodeHelper = 0;
+                    objResultado.ErrorCode = 4000;
+                    objResultado.ErrorMessage = bloqueo;
+                    objResultado.ErrorSource = "[GEN_UNIDADES_PUESTORepository]";
+                    objResultado.RowsAffected = 0;
+                    return objResultado;
+                }
+
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
@@ -251,7 +264,7 @@ namespace SGUEES.Repositories
                     @USUARIO, @ESTACION, GETDATE()
                 FROM PLA_PUESTO P
                 WHERE P.CORR_EMPRESA = @CORR_EMPRESA
-                AND ISNULL(P.ESTADO_PUESTO, 1) = 1
+                AND ISNULL(P.ACTIVO_PUESTO, 1) = 1
                 AND NOT EXISTS (
                     SELECT 1
                     FROM GEN_UNIDADES_PUESTO X
@@ -292,20 +305,67 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: elimina de una vez todos los puestos asignados a la unidad.
-        // Cómo: DELETE parametrizado por empresa y unidad; RowsAffected = eliminados.
+        // Cómo: no borra si algún puesto de esa unidad tiene salario o empleados.
         public async Task<CResult> QuitarTodosPuestosAsync(GEN_UNIDADES_PUESTOTable Data, string vUSER_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
 
             try
             {
+                const string sqlBloqueo = @"
+                SELECT
+                    CASE WHEN EXISTS (
+                        SELECT 1
+                        FROM dbo.PLA_PUESTO_SALARIO S
+                        INNER JOIN dbo.GEN_UNIDADES_PUESTO G
+                            ON G.CORR_EMPRESA = S.CORR_EMPRESA
+                            AND G.CORR_PUESTO = S.CORR_PUESTO
+                            AND G.CORR_UNIDAD = S.CORR_UNIDAD
+                        WHERE G.CORR_EMPRESA = @CORR_EMPRESA
+                            AND G.CORR_UNIDAD = @CORR_UNIDAD
+                    ) THEN 1 ELSE 0 END AS TIENE_SALARIO,
+                    CASE WHEN EXISTS (
+                        SELECT 1
+                        FROM dbo.GEN_EMPLEADO_PUESTO E
+                        INNER JOIN dbo.GEN_UNIDADES_PUESTO G
+                            ON G.CORR_EMPRESA = E.CORR_EMPRESA
+                            AND G.CORR_PUESTO = E.CORR_PUESTO
+                            AND G.CORR_UNIDAD = E.CORR_UNIDAD
+                        WHERE G.CORR_EMPRESA = @CORR_EMPRESA
+                            AND G.CORR_UNIDAD = @CORR_UNIDAD
+                    ) THEN 1 ELSE 0 END AS TIENE_EMPLEADO;";
+
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+                await using (var cmdBloqueo = new SqlCommand(sqlBloqueo, conn))
+                {
+                    cmdBloqueo.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = Data.CORR_EMPRESA });
+                    cmdBloqueo.Parameters.Add(new SqlParameter("@CORR_UNIDAD", SqlDbType.Int) { Value = Data.CORR_UNIDAD });
+                    await using var reader = await cmdBloqueo.ExecuteReaderAsync();
+                    if (await reader.ReadAsync())
+                    {
+                        var tieneSalario = reader.GetInt32(0) == 1;
+                        var tieneEmpleado = reader.GetInt32(1) == 1;
+                        var mensaje = MensajeBloqueo(tieneSalario, tieneEmpleado);
+                        if (mensaje != null)
+                        {
+                            objResultado.Data = null;
+                            objResultado.Result = false;
+                            objResultado.CodeHelper = 0;
+                            objResultado.ErrorCode = 4000;
+                            objResultado.ErrorMessage = mensaje;
+                            objResultado.ErrorSource = "[GEN_UNIDADES_PUESTORepository]";
+                            objResultado.RowsAffected = 0;
+                            return objResultado;
+                        }
+                    }
+                }
+
                 const string sql = @"
                 DELETE FROM GEN_UNIDADES_PUESTO
                 WHERE CORR_EMPRESA = @CORR_EMPRESA
                 AND CORR_UNIDAD = @CORR_UNIDAD;";
 
-                await using var conn = new SqlConnection(_connectionString);
-                await conn.OpenAsync();
                 await using var cmd = new SqlCommand(sql, conn);
                 cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = Data.CORR_EMPRESA });
                 cmd.Parameters.Add(new SqlParameter("@CORR_UNIDAD", SqlDbType.Int) { Value = Data.CORR_UNIDAD });
@@ -331,6 +391,49 @@ namespace SGUEES.Repositories
             }
 
             return objResultado;
+        }
+
+        // Qué hace: indica si el puesto y la unidad tienen salario o empleados.
+        // Cómo: lee PLA_PUESTO_SALARIO y GEN_EMPLEADO_PUESTO por las tres llaves.
+        private async Task<string> MensajeBloqueoQuitarAsync(int corrEmpresa, int corrUnidad, int corrPuesto)
+        {
+            var tieneSalario = await TieneRegistroAsync("PLA_PUESTO_SALARIO", corrEmpresa, corrUnidad, corrPuesto);
+            var tieneEmpleado = await TieneRegistroAsync("GEN_EMPLEADO_PUESTO", corrEmpresa, corrUnidad, corrPuesto);
+            return MensajeBloqueo(tieneSalario, tieneEmpleado);
+        }
+
+        private async Task<bool> TieneRegistroAsync(string tabla, int corrEmpresa, int corrUnidad, int corrPuesto)
+        {
+            var where = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
+            };
+            var reader = await objData.GetDataReader(tabla, where);
+            var tiene = reader.Read();
+            reader.Close();
+            return tiene;
+        }
+
+        private static string MensajeBloqueo(bool tieneSalario, bool tieneEmpleado)
+        {
+            if (tieneSalario && tieneEmpleado)
+            {
+                return "No se puede quitar la unidad porque tiene registros relacionados: salarios y empleados asignados en este puesto.";
+            }
+
+            if (tieneSalario)
+            {
+                return "No se puede quitar la unidad porque tiene registros relacionados: salarios asignados en este puesto.";
+            }
+
+            if (tieneEmpleado)
+            {
+                return "No se puede quitar la unidad porque tiene registros relacionados: empleados asignados en este puesto.";
+            }
+
+            return null;
         }
 
         // Qué hace: arma los parámetros de escritura de la tabla.
