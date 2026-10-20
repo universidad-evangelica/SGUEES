@@ -353,6 +353,7 @@ export class AuthService {
 
 		this.handlingSessionExpiry = true;
 		this.sessionClosing = true;
+		document.body.classList.add('sguees-sesion-cerrada');
 		this.clearOwnedSession();
 		this.decodedToken = {} as any;
 		this.mainMenu = [];
@@ -369,19 +370,22 @@ export class AuthService {
 			8000
 		);
 
-		void this.router.navigate(['/login-form']).finally(() => {
+		void this.router.navigate(['/login-form'], { replaceUrl: true }).finally(() => {
 			this.handlingSessionExpiry = false;
 			this.sessionClosing = false;
+			document.body.classList.remove('sguees-sesion-cerrada');
 		});
 	}
 
 	async logOut(): Promise<void> {
 		this.sessionClosing = true;
+		document.body.classList.add('sguees-sesion-cerrada');
 		this.clearOwnedSession();
 		this.decodedToken = {} as any;
 		this.mainMenu = [];
-		void this.router.navigate(['/login-form']).finally(() => {
+		void this.router.navigate(['/login-form'], { replaceUrl: true }).finally(() => {
 			this.sessionClosing = false;
+			document.body.classList.remove('sguees-sesion-cerrada');
 		});
 	}
 
@@ -446,6 +450,7 @@ export class AuthService {
 		this.decodedToken = {} as any;
 		this.mainMenu = [];
 		this.sessionClosing = true;
+		document.body.classList.add('sguees-sesion-cerrada');
 		notify(
 			{
 				message: replacedByOtherLogin
@@ -462,12 +467,14 @@ export class AuthService {
 
 		const path = (this.router.url || '').split('?')[0];
 		if (path !== '/login-form') {
-			void this.router.navigate(['/login-form']).finally(() => {
+			void this.router.navigate(['/login-form'], { replaceUrl: true }).finally(() => {
+				document.body.classList.remove('sguees-sesion-cerrada');
 				this.sessionClosing = false;
 			});
 			return;
 		}
 		this.sessionClosing = false;
+		document.body.classList.remove('sguees-sesion-cerrada');
 	}
 
 	// Qué hace: borra token e id de la sesión de esta pestaña.

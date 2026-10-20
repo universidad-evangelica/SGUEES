@@ -154,6 +154,17 @@ header {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.75rem;
+  color: #e0e7ff;
+}
+
+:host-context(.sguees-theme-light) .sguees-guia-trigger {
+  color: #312e81;
+  background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 100%);
+  border-color: #a5b4fc;
+}
+
+:host-context(.sguees-theme-light) .sguees-guia-trigger__label {
+  color: #312e81;
 }
 
 @media (max-width: 768px) {
