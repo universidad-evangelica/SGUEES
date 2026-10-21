@@ -9,11 +9,11 @@ import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { environment } from 'src/environments/environment';
 import { GenParametroPlantilla } from './models/gen-parametro-plantilla';
 import { GenParametroPlantillaService } from './gen-parametro-plantilla.service';
 import { GenParametroPlantillaVersion } from './gen-parametro-plantilla-version/models/gen-parametro-plantilla-version';
 import { GenParametroPlantillaVersionService } from './gen-parametro-plantilla-version/gen-parametro-plantilla-version.service';
-import { GenParametroSmtpService } from '../gen-parametro-smtp/gen-parametro-smtp.service';
 
 @Component({
 	selector: 'app-gen-parametro-plantilla',
@@ -63,8 +63,7 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: GenParametroPlantillaService,
-		private versionService: GenParametroPlantillaVersionService,
-		private smtpService: GenParametroSmtpService
+		private versionService: GenParametroPlantillaVersionService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -164,23 +163,28 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: carga el catálogo de cuentas SMTP disponibles para asignación de remitente.
-	// Cómo lo hace: consulta el servicio SMTP, mapea a pares Key/Value y ordena descendentemente por correlativo para priorizar los servidores más recientes.
+	// Cómo lo hace: consulta el LookUp GetCORR_PARAMETRO_SMTP_GEN_PARAMETRO_PLANTILLA a través de appInfoService bajo la política de plantillas.
 	private cargarCuentasSmtp(): void {
-		this.smtpService.getAll({}).subscribe({
-			next: (res) => {
-				if (res?.Result && Array.isArray(res.Data)) {
-					this.mSMTPS = res.Data
-						.map((x: any) => ({
-							Key: Number(x.CORR_PARAMETRO_SMTP),
-							Value: `${x.CORREO_REMITENTE} (${x.SERVIDOR_CORREO})`
-						}))
-						.sort((a, b) => b.Key - a.Key);
-				}
-			},
-			error: () => {
-				this.mSMTPS = [];
-			}
-		});
+		this.appInfoService
+			.getLookUp(
+				'GEN_PARAMETRO_PLANTILLA',
+				'GEN_PARAMETRO_SMTP',
+				'GetCORR_PARAMETRO_SMTP',
+				undefined,
+				environment.UrlGENERALAPI
+			)
+			.subscribe({
+				next: (res: any) => {
+					if (res?.Result && Array.isArray(res.Data)) {
+						this.mSMTPS = res.Data.sort((a: any, b: any) => Number(b.Key) - Number(a.Key));
+					} else {
+						this.mSMTPS = [];
+					}
+				},
+				error: () => {
+					this.mSMTPS = [];
+				},
+			});
 	}
 
 	// Qué hace: ajusta dinámicamente el ancho del menú desplegable al abrirse.
@@ -196,15 +200,18 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		}
 	}
 
-	// Qué hace: carga la lista de módulos / sistemas registrados.
+	// Qué hace: carga la lista de módulos / sistemas registrados excluyendo las opciones de configuración de correo.
+	// Cómo lo hace: consulta el servicio y mapea a Key/Value filtrando opciones de configuración de plantillas.
 	private cargarModulos(): void {
 		this.service.getModulos().subscribe({
 			next: (res) => {
 				if (res?.Result && Array.isArray(res.Data)) {
-					this.mSISTEMAS = res.Data.map((x: any) => ({
-						Key: x.Key ?? x.CODIGO_SISTEMA,
-						Value: x.Value ?? x.NOMBRE_SISTEMA ?? x.CODIGO_SISTEMA,
-					}));
+					this.mSISTEMAS = res.Data
+						.filter((x: any) => (x.Key ?? x.CODIGO_SISTEMA) !== 'GEN_PARAMETRO_PLANTILLA')
+						.map((x: any) => ({
+							Key: x.Key ?? x.CODIGO_SISTEMA,
+							Value: x.Value ?? x.NOMBRE_SISTEMA ?? x.CODIGO_SISTEMA,
+						}));
 				}
 			},
 			error: () => {
@@ -213,6 +220,8 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		});
 	}
 
+	// Qué hace: reacciona al cambio de módulo cargando sus opciones de menú permitidas.
+	// Cómo lo hace: invoca getOpcionesPorModulo filtrando opciones de configuración de plantillas y limpia parámetros previos.
 	onModuloChange(e: any): void {
 		const codigoSistema = e?.value;
 		this.mOPCIONES = [];
@@ -225,10 +234,12 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		this.service.getOpcionesPorModulo(codigoSistema).subscribe({
 			next: (res) => {
 				if (res?.Result && Array.isArray(res.Data)) {
-					this.mOPCIONES = res.Data.map((x: any) => ({
-						Key: x.Key ?? x.CODIGO_OPCION,
-						Value: x.Value ?? x.NOMBRE_OPCION ?? x.CODIGO_OPCION,
-					}));
+					this.mOPCIONES = res.Data
+						.filter((x: any) => !['GEN_PARAMETRO_PLANTILLA', 'GEN_PARAMETRO_SMTP'].includes(x.Key ?? x.CODIGO_OPCION))
+						.map((x: any) => ({
+							Key: x.Key ?? x.CODIGO_OPCION,
+							Value: x.Value ?? x.NOMBRE_OPCION ?? x.CODIGO_OPCION,
+						}));
 				}
 			},
 			error: () => {
