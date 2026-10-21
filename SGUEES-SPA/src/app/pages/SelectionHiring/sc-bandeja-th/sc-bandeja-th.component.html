@@ -24,6 +24,7 @@
 		<div class="bandeja-filtros">
 			<div class="bandeja-filtro">
 				<div class="bandeja-filtro__label">Tipo de solicitud</div>
+				<!-- Selector de tipo de solicitud que sincroniza la lista de estados -->
 				<dx-select-box
 					[items]="tiposFiltro"
 					displayExpr="TEXT"
@@ -31,16 +32,19 @@
 					[(value)]="filtroTipo"
 					[width]="'100%'"
 					[height]="32"
-					(onValueChanged)="buscar()"
+					(onValueChanged)="onTipoSolicitudChanged()"
 				></dx-select-box>
 			</div>
 			<div class="bandeja-filtro">
 				<div class="bandeja-filtro__label">Estado</div>
+				<!-- Selector de estado condicional, deshabilitado si tipo es TODOS -->
 				<dx-select-box
 					[items]="estadosFiltro"
 					displayExpr="TEXT"
 					valueExpr="VALUE"
 					[(value)]="filtroEstado"
+					[disabled]="filtroTipo === 'TODOS'"
+					[placeholder]="filtroTipo === 'TODOS' ? 'Selecciona un tipo para filtrar por estado' : 'Todos'"
 					[width]="'100%'"
 					[height]="32"
 					(onValueChanged)="buscar()"

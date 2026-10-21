@@ -12,6 +12,10 @@ namespace SGUEES.Models
         public string NOMBRE_UNIDAD { get; set; }
         public string LOGIN_SISTEMA { get; set; }
         public string NOMBRE_USUARIO { get; set; }
+        // Qué hace: puesto asignado al usuario en la unidad según GEN_EMPLEADO_PUESTO.
+        // Cómo: expone el campo devuelto por PRAL_DATA_SC_UNIDADES_USUARIO.
+        public int? CORR_PUESTO { get; set; }
+        public string NOMBRE_PUESTO { get; set; }
         public bool ES_POR_PUESTO { get; set; }
         public bool ES_JEFE_UNIDAD { get; set; }
         public bool ES_CONFIGURADA { get; set; }

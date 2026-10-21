@@ -2,20 +2,15 @@
 <div class="sguees-mtto-view">
 	<!-- Barra de herramientas superior dinámica. -->
 	<app-barra-data-mtto
-		[tituloVentana]="esVistaPlantillas ? 'Plantillas de Correo' : tituloVentana"
+		[tituloVentana]="tituloVentana"
 		[showRibbon]="true"
-		[showExport]="!esVistaPlantillas && permitePrint"
-		[isBrowse]="!esVistaPlantillas && isBrowse()"
-		[isForm]="esVistaPlantillas ? true : (!esVistaPlantillas && isForm())"
-		[permiteAdd]="!esVistaPlantillas && permiteAdd"
-		[showRefresh]="!esVistaPlantillas"
+		[showExport]="permitePrint"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="permiteAdd"
+		[showRefresh]="true"
 		[showEstadoToolbar]="false"
 		[focusedRow]="isBrowse() ? model : null"
-		[btn1]="tieneRegistroSeleccionado() ? 'Plantillas' : ''"
-		[btn1Icon]="'email'"
-		[btn1Type]="'default'"
-		[btn1Width]="130"
-		(btn1Click)="abrirVistaPlantillas()"
 		(consultar)="consultar()"
 		(nuevo)="nuevo()"
 		(guardar)="guardar()"
@@ -23,269 +18,8 @@
 	>
 	</app-barra-data-mtto>
 
-	<!-- Vista de Plantilla de Correo con Editor de Texto Enriquecido y Control de Versiones. -->
-	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="esVistaPlantillas">
-		<!-- motivo: barra de acciones de versiones y formato institucional para la plantilla -->
-		<div class="plantilla-toolbar-container" *ngIf="tienePrimeraVersionGuardada() || !tieneModuloYProcesoFijado()">
-			<!-- motivo: aviso informativo ubicado arriba de la línea divisoria mientras el módulo y proceso no estén fijados -->
-			<div class="version-alert-banner" style="background-color: #eff6ff; border-color: #3b82f6; color: #1e40af; width: 100%; margin: 0;" *ngIf="!tieneModuloYProcesoFijado()">
-				<i class="dx-icon-info" style="color: #2563eb;"></i>
-				<span>
-					Guarde la información principal para fijar el módulo y habilitar la redacción del correo en el editor.
-				</span>
-			</div>
-
-			<!-- motivo: el botón nueva versión solo aparece cuando ya se haya guardado una primera versión -->
-			<dx-button
-				*ngIf="tienePrimeraVersionGuardada()"
-				text="Nueva Versión"
-				icon="add"
-				type="default"
-				(onClick)="abrirModalNuevaVersion()"
-			></dx-button>
-
-			<!-- motivo: botón para activar versión histórica seleccionada en el combo -->
-			<dx-button
-				*ngIf="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
-				text="Establecer como Activa"
-				icon="check"
-				type="warning"
-				[disabled]="activandoVersion"
-				(onClick)="activarVersionSeleccionada()"
-			></dx-button>
-
-
-
-			<!-- motivo: selector desplegable y badge de versiones si ya existe una primera versión guardada -->
-			<div class="version-selector-wrapper" *ngIf="tienePrimeraVersionGuardada()">
-				<span class="version-selector-label">Versión:</span>
-				<dx-select-box
-					[items]="versiones"
-					[value]="versionSeleccionada?.NUMERO_VERSION"
-					valueExpr="NUMERO_VERSION"
-					[displayExpr]="formatVersionDisplay"
-					[width]="250"
-					(onValueChanged)="onVersionSelectionChange($event)"
-				></dx-select-box>
-
-				<span
-					class="version-status-badge"
-					[ngClass]="esVersionActivaSeleccionada() ? 'version-badge-activa' : 'version-badge-historica'"
-				>
-					<i [class]="esVersionActivaSeleccionada() ? 'dx-icon-check' : 'dx-icon-clock'"></i>
-					{{ esVersionActivaSeleccionada() ? 'Versión Activa' : 'Versión Histórica' }}
-				</span>
-			</div>
-		</div>
-
-		<!-- motivo: banner informativo al visualizar una versión histórica de la plantilla -->
-		<div class="version-alert-banner" *ngIf="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()">
-			<i class="dx-icon-info"></i>
-			<span>
-				Estás visualizando la <strong>Versión {{ versionSeleccionada?.NUMERO_VERSION }}</strong> (Histórica del {{ versionSeleccionada?.FECHA_CREA | date:'dd/MM/yyyy HH:mm' }}).
-				<ng-container *ngIf="versionSeleccionada?.MOTIVO_VERSION">
-					Motivo: <em>{{ versionSeleccionada?.MOTIVO_VERSION }}</em>.
-				</ng-container>
-				Para usarla como la versión vigente de envío, pulsa <strong>"Establecer como Activa"</strong>, o pulsa <strong>"Nueva Versión"</strong> para generar cambios basados en ella.
-			</span>
-		</div>
-
-		<!-- motivo: aviso informativo cuando una plantilla existente aún no tiene versión registrada -->
-		<div class="version-alert-banner" style="background-color: #fef3c7; border-color: #f59e0b; color: #92400e;" *ngIf="plantillaModel?.CORR_PARAMETRO_PLANTILLA && !tienePrimeraVersionGuardada() && !cargandoPlantillas && !cargandoVersiones">
-			<i class="dx-icon-warning"></i>
-			<span>
-				Esta plantilla aún no tiene una versión inicial en su historial. Pulse <strong>"Guardar Plantilla"</strong> para generar automáticamente la <strong>Versión 1</strong> activa.
-			</span>
-		</div>
-
-		<!-- motivo: formulario de plantilla con campos bloqueados si es versión histórica -->
-		<div class="plantilla-form-container">
-			<div class="row" style="display: flex; flex-wrap: wrap; margin: -6px;">
-				<!-- motivo: código único de identificación de la plantilla bloqueado al fijar información principal -->
-				<div class="col-md-3" style="flex: 0 0 30%; max-width: 30%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Código Plantilla *</label>
-					<dx-text-box
-						[(value)]="plantillaModel.CODIGO_PLANTILLA"
-						[maxLength]="50"
-						[readOnly]="tieneModuloYProcesoFijado()"
-						placeholder="Ej. BIENVENIDA_DOCENTE"
-					></dx-text-box>
-				</div>
-
-				<!-- motivo: nombre descriptivo de la plantilla editable si la versión es activa -->
-				<div class="col-md-7" style="flex: 0 0 55%; max-width: 55%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Nombre de Plantilla *</label>
-					<dx-text-box
-						[(value)]="plantillaModel.NOMBRE_PLANTILLA"
-						[maxLength]="150"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
-						placeholder="Ej. Plantilla de Bienvenida a Nuevos Docentes"
-					></dx-text-box>
-				</div>
-
-				<!-- motivo: indicador de plantilla activa -->
-				<div class="col-md-2" style="flex: 0 0 15%; max-width: 15%; padding: 6px; display: flex; align-items: flex-end; padding-bottom: 12px;">
-					<dx-check-box
-						[(value)]="plantillaModel.ACTIVO_PLANTILLA"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
-						text="Plantilla Activa"
-					></dx-check-box>
-				</div>
-
-				<!-- motivo: asunto del correo electrónico -->
-				<div class="col-md-12" style="flex: 0 0 100%; max-width: 100%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Asunto del Correo *</label>
-					<dx-text-box
-						[(value)]="plantillaModel.ASUNTO_PLANTILLA"
-						[maxLength]="255"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
-						placeholder="Ej. Bienvenido a la Universidad Evangélica de El Salvador"
-					></dx-text-box>
-				</div>
-
-				<!-- motivo: destinatarios en copia carbón (CC) -->
-				<div class="col-md-6" style="flex: 0 0 50%; max-width: 50%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Con Copia (CC)</label>
-					<dx-text-box
-						[(value)]="plantillaModel.CORREO_CC"
-						[maxLength]="255"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
-						placeholder="correo1@uees.edu.sv, correo2@uees.edu.sv"
-					></dx-text-box>
-				</div>
-
-				<!-- motivo: destinatarios en copia carbón oculta (CCO) -->
-				<div class="col-md-6" style="flex: 0 0 50%; max-width: 50%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Con Copia Oculta (CCO)</label>
-					<dx-text-box
-						[(value)]="plantillaModel.CORREO_CCO"
-						[maxLength]="255"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
-						placeholder="auditoria@uees.edu.sv"
-					></dx-text-box>
-				</div>
-
-				<!-- motivo: selector de Módulo bloqueado una vez fijada la información principal -->
-				<div class="col-md-6" style="flex: 0 0 50%; max-width: 50%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Módulo *</label>
-					<dx-select-box
-						[(value)]="plantillaModel.CODIGO_SISTEMA"
-						[items]="mSISTEMAS"
-						valueExpr="Key"
-						displayExpr="Value"
-						[searchEnabled]="true"
-						[readOnly]="tieneModuloYProcesoFijado()"
-						placeholder="Seleccione el módulo..."
-						(onValueChanged)="onModuloPlantillaChange($event)"
-					></dx-select-box>
-				</div>
-
-				<!-- motivo: selector de Menú / Proceso dependiente bloqueado una vez fijada la información principal -->
-				<div class="col-md-6" style="flex: 0 0 50%; max-width: 50%; padding: 6px;">
-					<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">Menú / Proceso *</label>
-					<dx-select-box
-						[(value)]="plantillaModel.CODIGO_OPCION"
-						[items]="mOPCIONES"
-						valueExpr="Key"
-						displayExpr="Value"
-						[searchEnabled]="true"
-						[readOnly]="tieneModuloYProcesoFijado()"
-						[disabled]="!plantillaModel.CODIGO_SISTEMA"
-						placeholder="Seleccione el menú o proceso..."
-						(onValueChanged)="onOpcionPlantillaChange($event)"
-					></dx-select-box>
-				</div>
-
-
-				<!-- motivo: editor de texto enriquecido de la plantilla habilitado tras fijar la cabecera -->
-				<div class="col-md-12" style="flex: 0 0 100%; max-width: 100%; padding: 6px; margin-top: 8px;">
-					<!-- motivo: cabecera con etiqueta, botones de acción rápida alineados a la derecha y línea separatoria -->
-					<div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(148, 163, 184, 0.25);">
-						<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin: 0;">
-							Correo *
-						</label>
-						<!-- motivo: botones de acción para formato institucional y limpieza rápida del editor -->
-						<div style="display: inline-flex; align-items: center; gap: 8px;">
-							<dx-button
-								text="Formato Institucional"
-								icon="email"
-								type="normal"
-								stylingMode="outlined"
-								[height]="30"
-								[disabled]="!esEditorHabilitado()"
-								(onClick)="cargarFormatoBaseUEES()"
-							></dx-button>
-							<dx-button
-								text="Limpiar Editor"
-								icon="trash"
-								type="normal"
-								stylingMode="outlined"
-								[height]="30"
-								[disabled]="!esEditorHabilitado()"
-								(onClick)="limpiarEditorPlantilla()"
-							></dx-button>
-						</div>
-					</div>
-					<app-text-editor
-						[(value)]="plantillaModel.CUERPO_PLANTILLA"
-						[parametros]="parametrosDisponibles"
-						[height]="520"
-						[readOnly]="!esEditorHabilitado()"
-						[placeholder]="tieneModuloYProcesoFijado() ? 'Escriba el contenido del correo...' : 'Guarde la información principal para habilitar la redacción del correo...'"
-					></app-text-editor>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- motivo: popup modal para la creación de una nueva versión de plantilla -->
-	<dx-popup
-		[visible]="popupNuevaVersionVisible"
-		[showTitle]="true"
-		title="Nueva Versión de Plantilla"
-		[width]="520"
-		[height]="'auto'"
-		[dragEnabled]="false"
-		[closeOnOutsideClick]="false"
-		(onHiding)="cerrarModalNuevaVersion()"
-	>
-		<div *dxTemplate="let data of 'content'" style="padding: 10px 0;">
-			<p style="font-size: 13px; color: #64748b; margin-bottom: 14px; line-height: 1.5;">
-				Se creará una nueva versión con el contenido, asunto y correos actuales. Ingrese el motivo del cambio:
-			</p>
-
-			<div style="margin-bottom: 16px;">
-				<label class="form-label" style="font-weight: 600; font-size: 13px; color: #334155; margin-bottom: 6px; display: block;">
-					Motivo del cambio *
-				</label>
-				<dx-text-area
-					[(value)]="motivoNuevaVersion"
-					[maxLength]="255"
-					[height]="90"
-					placeholder="Ej. Actualización del pie de firma institucional y enlaces a portales..."
-				></dx-text-area>
-			</div>
-
-			<div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-				<dx-button
-					text="Cancelar"
-					icon="close"
-					type="normal"
-					(onClick)="cerrarModalNuevaVersion()"
-				></dx-button>
-				<dx-button
-					text="Crear Versión"
-					icon="check"
-					type="success"
-					[disabled]="guardandoNuevaVersion"
-					(onClick)="confirmarNuevaVersion()"
-				></dx-button>
-			</div>
-		</div>
-	</dx-popup>
-
 	<!-- Formulario de creación y edición de configuración SMTP. -->
-	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!esVistaPlantillas && !isBrowse()">
+	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 		<dx-form
 			#fData
 			id="fData"
@@ -301,7 +35,6 @@
 
 	<!-- Grilla con el listado de configuraciones SMTP registradas. -->
 	<app-data-grid-mtto
-		*ngIf="!esVistaPlantillas"
 		[isBrowse]="isBrowse()"
 		[models]="models"
 		[columns]="columns"

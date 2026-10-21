@@ -1,6 +1,7 @@
 // Qué hace: modelo TypeScript de plantillas de correo asociadas a parámetros SMTP.
 // Cómo lo hace: define las propiedades de plantilla HTML, metadatos y auditoría para consumo en el SPA.
 export interface GenParametroPlantilla {
+	[key: string]: any;
 	CORR_EMPRESA: number;
 	CORR_PARAMETRO_PLANTILLA: number;
 	CODIGO_PLANTILLA: string;

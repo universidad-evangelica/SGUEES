@@ -45,8 +45,10 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	filtroEstado = 'TODOS';
 	filtroUnidad = 'TODOS';
 	filtroBusqueda = '';
-	fechaDesde: Date | null = null;
-	fechaHasta: Date | null = null;
+	// Qué hace: Variables de enlace para los filtros de rango de fechas de la bandeja.
+	// Cómo lo hace: Se definen como any para permitir null sin violar el tipo Date | number | string de dx-date-box en el template.
+	fechaDesde: any = null;
+	fechaHasta: any = null;
 
 	kpis: ScBandejaActoresKpi[] = [];
 	totalRequisicionesApi = 0;
@@ -269,7 +271,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		}
 		if (!this.puedeAutorizarRequisicion) {
 			this.notifyFx(
-				'Solo se puede aprobar una requisición en estado En Aprobación. Si está Devuelta, use Enviar.',
+				'Solo se puede aprobar una requisición en estado En Aprobación. Si está Observada, use Enviar.',
 				NotifyType.Warning,
 				{ raw: true }
 			);
@@ -280,13 +282,13 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 
 	async accionDevolver(): Promise<void> {
 		if (this.selectedItem?.TIPO === 'MOVIMIENTO') {
-			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver movimiento');
+			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Movimiento con observaciones');
 			return;
 		}
 		if (!this.puedeAutorizarRequisicion) {
 			return;
 		}
-		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver requisición');
+		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Requisición con observaciones');
 	}
 
 	async accionRechazar(): Promise<void> {
@@ -440,7 +442,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 				: operacion === OPERACION_BANDEJA_ACTORES.APROBAR
 					? `Se aprobó la requisición ${codigo}.`
 					: operacion === OPERACION_BANDEJA_ACTORES.DEVOLVER
-						? `Se devolvió la requisición ${codigo}.`
+						? `Se envió con observaciones la requisición ${codigo}.`
 						: `Se rechazó la requisición ${codigo}.`;
 
 		const observacionCapturada = await this.pedirObservacion(

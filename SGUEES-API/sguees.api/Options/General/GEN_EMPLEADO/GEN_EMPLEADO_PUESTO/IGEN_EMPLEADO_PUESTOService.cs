@@ -10,5 +10,8 @@ namespace sguees.Services
 	{
 		Task<CResult> GetAllAsync(GEN_EMPLEADO_PUESTOParam xWhere, int corrEmpresa);
 		Task<CResult> SaveAllAsync(int corrEmpleado, List<GEN_EMPLEADO_PUESTOTable> Data, int corrEmpresa, string vLOGIN_SISTEMA, string vESTACION);
+		// Qué hace: obtiene empleados activos asignados a una unidad y puesto específico.
+		// Cómo lo hace: delega la consulta al repositorio de puestos del empleado.
+		Task<CResult> GetEmpleadosSustitutosAsync(int corrUnidad, int corrPuesto, int corrEmpresa);
 	}
 }

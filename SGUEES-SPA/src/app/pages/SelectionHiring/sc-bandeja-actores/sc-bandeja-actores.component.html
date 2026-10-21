@@ -327,16 +327,17 @@
 							<span class="bandeja-field__label">Tipo de vacante</span>
 							<span class="bandeja-field__value">{{ selectedItem.NOMBRE_TIPO_VACANTE }}</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.CANTIDAD_PLAZAS != null">
+						<!-- motivo: Comparación estricta !== para validación de plazas, salario y entrevistas según regla eqeqeq -->
+						<div class="bandeja-field" *ngIf="selectedItem.CANTIDAD_PLAZAS !== null">
 							<span class="bandeja-field__label">Cantidad de plazas</span>
 							<span class="bandeja-field__value">
 								{{ selectedItem.CANTIDAD_PLAZAS }}
-								<span *ngIf="selectedItem.PLAZAS_CUBIERTAS != null">
+								<span *ngIf="selectedItem.PLAZAS_CUBIERTAS !== null">
 									/ {{ selectedItem.PLAZAS_CUBIERTAS }} cubiertas
 								</span>
 							</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.SALARIO != null">
+						<div class="bandeja-field" *ngIf="selectedItem.SALARIO !== null">
 							<span class="bandeja-field__label">Salario</span>
 							<span class="bandeja-field__value">{{ formatSalario(selectedItem.SALARIO) }}</span>
 						</div>
@@ -348,7 +349,7 @@
 							<span class="bandeja-field__label">Tiempo de contrato</span>
 							<span class="bandeja-field__value">{{ selectedItem.TIEMPO_CONTRATO }} meses</span>
 						</div>
-						<div class="bandeja-field" *ngIf="selectedItem.CANTIDAD_ENTREVISTAS != null">
+						<div class="bandeja-field" *ngIf="selectedItem.CANTIDAD_ENTREVISTAS !== null">
 							<span class="bandeja-field__label">Entrevistas</span>
 							<span class="bandeja-field__value">
 								{{ selectedItem.CANTIDAD_ENTREVISTAS }}
@@ -447,8 +448,9 @@
 						[disabled]="accionEnCurso"
 						(onClick)="accionAprobar()"
 					></dx-button>
+					<!-- motivo: Botón para observar/devolver la requisición con comentarios obligatorios -->
 					<dx-button
-						text="Devolver"
+						text="Con observaciones"
 						type="default"
 						icon="revert"
 						[width]="'100%'"

@@ -72,6 +72,51 @@ export class ScBandejaThService {
 		return cls.replace('estado-req--', '');
 	}
 
+	// Qué hace: Solicita la lista unificada de movimientos para la pestaña Todas.
+	// Cómo lo hace: Construye el arreglo xWhere con los parámetros de paginación y filtros y consulta el repositorio.
+	getTodas(param: {
+		PAGE?: number;
+		PAGE_SIZE?: number;
+		SORT_FIELD?: string;
+		SORT_DESC?: boolean;
+		TIPO?: string;
+		ESTADO?: string;
+		NOMBRE_UNIDAD?: string;
+		FECHA_DESDE?: string | Date | null;
+		FECHA_HASTA?: string | Date | null;
+		BUSQUEDA?: string;
+	}): Observable<IResult> {
+		const xWhere: IParam[] = [
+			{ Parameter: 'PAGE', Value: param.PAGE ?? 1 },
+			{ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE ?? 50 },
+			{ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD ?? 'FECHA' },
+			{ Parameter: 'SORT_DESC', Value: param.SORT_DESC ?? true },
+		];
+
+		if (param.TIPO?.trim() && param.TIPO !== 'TODOS') {
+			xWhere.push({ Parameter: 'TIPO', Value: param.TIPO.trim().toUpperCase() });
+		}
+		// Qué hace: Agrega el filtro de estado si está presente y no es TODOS.
+		// Cómo lo hace: Comprueba que tenga texto y sea distinto a TODOS y lo añade a xWhere.
+		if (param.ESTADO?.trim() && param.ESTADO !== 'TODOS') {
+			xWhere.push({ Parameter: 'ESTADO', Value: param.ESTADO.trim() });
+		}
+		if (param.NOMBRE_UNIDAD?.trim() && param.NOMBRE_UNIDAD !== 'TODOS') {
+			xWhere.push({ Parameter: 'NOMBRE_UNIDAD', Value: param.NOMBRE_UNIDAD.trim() });
+		}
+		if (param.FECHA_DESDE) {
+			xWhere.push({ Parameter: 'FECHA_DESDE', Value: this.toIsoDate(param.FECHA_DESDE) });
+		}
+		if (param.FECHA_HASTA) {
+			xWhere.push({ Parameter: 'FECHA_HASTA', Value: this.toIsoDate(param.FECHA_HASTA) });
+		}
+		if (param.BUSQUEDA?.trim()) {
+			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA.trim() });
+		}
+
+		return this.repo.getTodas(xWhere);
+	}
+
 	getRequisiciones(param: {
 		PAGE?: number;
 		PAGE_SIZE?: number;
@@ -79,6 +124,7 @@ export class ScBandejaThService {
 		SORT_DESC?: boolean;
 		CORR_ESTADO_REQUISICION?: number;
 		CORR_UNIDAD?: number;
+		NOMBRE_UNIDAD?: string;
 		FECHA_DESDE?: string | Date | null;
 		FECHA_HASTA?: string | Date | null;
 		BUSQUEDA?: string;
@@ -98,6 +144,11 @@ export class ScBandejaThService {
 		}
 		if (param.CORR_UNIDAD != null && param.CORR_UNIDAD > 0) {
 			xWhere.push({ Parameter: 'CORR_UNIDAD', Value: param.CORR_UNIDAD });
+		}
+		// Qué hace: Agrega el nombre de la unidad solicitante a los filtros de requisición si fue seleccionado.
+		// Cómo lo hace: Comprueba que no sea vacío ni 'TODOS' y lo inserta en xWhere.
+		if (param.NOMBRE_UNIDAD?.trim() && param.NOMBRE_UNIDAD !== 'TODOS') {
+			xWhere.push({ Parameter: 'NOMBRE_UNIDAD', Value: param.NOMBRE_UNIDAD.trim() });
 		}
 		if (param.FECHA_DESDE) {
 			xWhere.push({ Parameter: 'FECHA_DESDE', Value: this.toIsoDate(param.FECHA_DESDE) });
@@ -280,7 +331,7 @@ export class ScBandejaThService {
 	}
 
 	// Qué hace: Mapea registros de contrataciones determinando si está Seleccionado, Listo para crear empleado o Contratado.
-	// Cómo lo hace: Evalúa si el movimiento de personal está aprobado ('AP') y confirmado (1), y si ya tiene CORR_EMPLEADO generado en GEN_EMPLEADO.
+	// Cómo lo hace: Evalúa si el movimiento de personal está aprobado ('AP') y confirmado (1), asignando 'CAN-{corr}' en etapas previas o 'CON-{corr}' al estar contratado.
 	mapContratacionToBandejaItem(row: any): ScBandejaItem {
 		const base = this.mapCandidatoToBandejaItem({
 			...row,
@@ -290,7 +341,8 @@ export class ScBandejaThService {
 		const corrExp = Number(row?.CORR_EXPEDIENTE_CANDIDATO) || 0;
 		const corrSol = Number(row?.CORR_SOLICITUD_EMPLEO) || 0;
 		const corrReq = Number(row?.CORR_REQUISICION_PERSONAL) || 0;
-		const codigo = corrExp > 0 ? `CAN-${corrExp}` : `SOL-${corrSol}`;
+		const corrBase = corrExp > 0 ? corrExp : corrSol;
+		const codigoCandidato = corrExp > 0 ? `CAN-${corrExp}` : `SOL-${corrSol}`;
 
 		const esAprobado = row?.ESTADO_MOVIMIENTO === 'AP';
 		const esConfirmado = Number(row?.CONFIRMADO) === 1 || row?.CONFIRMADO === true;
@@ -312,11 +364,15 @@ export class ScBandejaThService {
 			}
 		}
 
+		// Qué hace: Asigna el código visible según la etapa de contratación.
+		// Cómo lo hace: Muestra 'CON-{corr}' sin prefijo 'CAN' únicamente cuando ya está contratado, conservando el código de candidato en etapas previas.
+		const codigoDisplay = estadoCiclo === 'CONTRATADO' ? `CON-${corrBase}` : codigoCandidato;
+
 		return {
 			...base,
-			ID: `CON-${codigo}-REQ-${corrReq}`,
+			ID: `CON-${codigoDisplay}-REQ-${corrReq}`,
 			TIPO: 'CONTRATACION',
-			CODIGO: `CON-${codigo}`,
+			CODIGO: codigoDisplay,
 			FECHA: row?.FECHA_DECISION || row?.FECHA_GENERACION,
 			ESTADO: estado,
 			ESTADO_TONE: estadoTone,
@@ -331,6 +387,19 @@ export class ScBandejaThService {
 			REQUIERE_ATENCION: estado !== 'Contratado',
 			LISTO_CONTRATACION: estado === 'Seleccionado',
 		};
+	}
+
+	// Qué hace: Mapea una fila unificada devuelta por GetTodas hacia el modelo ScBandejaItem.
+	// Cómo lo hace: Evalúa el campo TIPO y delega a mapRequisicionToBandejaItem, mapContratacionToBandejaItem o mapCandidatoToBandejaItem.
+	mapTodasToBandejaItem(row: any): ScBandejaItem {
+		const tipo = `${row?.TIPO || ''}`.toUpperCase();
+		if (tipo === 'REQUISICION') {
+			return this.mapRequisicionToBandejaItem(row);
+		} else if (tipo === 'CONTRATACION') {
+			return this.mapContratacionToBandejaItem(row);
+		} else {
+			return this.mapCandidatoToBandejaItem(row);
+		}
 	}
 
 	// Qué hace: Retorna la etiqueta visible del estado del ciclo del candidato.

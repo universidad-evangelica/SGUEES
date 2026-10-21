@@ -55,6 +55,15 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		// Qué hace: entrega empleados activos de una unidad y puesto específico para el selector de sustituto en requisiciones.
+		// Cómo lo hace: ejecuta GetEmpleadosSustitutosAsync con CORR_UNIDAD, CORR_PUESTO y CORR_EMPRESA.
+		[HttpGet("GetCORR_EMPLEADO_SUSTITUTO_SC_REQUISICION_PERSONAL")]
+		[Authorize(Policy = "/sc-requisicion-personal|R")]
+		public async Task<CResult> GetCORR_EMPLEADO_SUSTITUTO_SC_REQUISICION_PERSONAL([FromQuery] GEN_EMPLEADO_PUESTOParam Data)
+		{
+			return await _service.GetEmpleadosSustitutosAsync(Data.CORR_UNIDAD, Data.CORR_PUESTO, GetCorrEmpresa());
+		}
+
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
