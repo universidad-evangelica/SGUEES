@@ -245,10 +245,10 @@
    ::ng-deep permite reutilizar las mismas clases en celdas del grid (DOM dinámico).
    ============================================================================= */
 
-// Qué hace: acerca el campo Fecha hacia el Estado únicamente en el formulario.
-// Cómo lo hace: aplica desplazamiento de 35px a la izquierda al contenedor de Fecha sin tocar la grilla ni los estados.
+// Qué hace: mantiene una separación visual adecuada entre el Estado y el campo Fecha únicamente en el formulario.
+// Cómo lo hace: ajusta el desplazamiento a -15px en el contenedor de Fecha para evitar que badges anchos (ej. 'En Aprobación') queden pegados al texto.
 :host ::ng-deep .requisicion-form-fecha {
-	margin-left: -35px;
+	margin-left: -15px;
 }
 
 :host ::ng-deep .requisicion-grid-estado-col {
