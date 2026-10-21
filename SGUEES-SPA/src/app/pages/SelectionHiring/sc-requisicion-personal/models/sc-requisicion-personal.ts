@@ -11,7 +11,9 @@ export interface ScRequisicionPersonal {
     PLAZAS_CUBIERTAS: number;
     FECHA_REQUISICION: Date;
     JUSTIFICACION: string;
-    CORR_EMPLEADO_SUSTITUTO: string;
+    // Qué hace: Correlativo del empleado a quien se sustituye (si la vacante lo requiere).
+    // Cómo lo hace: Admite número en memoria (para app-data-lookup) o string/null en persistencia.
+    CORR_EMPLEADO_SUSTITUTO: number | string | null;
     SALARIO: number;
     CORR_ESTADO_REQUISICION: number;
     // Qué hace: Nombre descriptivo del estado según la última firma/acción registrada en bitácora (ej. Aprobado JI, Aprobado JU, Aprobado GG, Devuelta JI).

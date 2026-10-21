@@ -73,6 +73,71 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Qué hace: Obtiene la lista de empleados activos que laboran en una unidad y puesto específico.
+		// Cómo lo hace: Consulta GEN_EMPLEADO_PUESTO cruzando con V_GEN_EMPLEADO filtrado por empresa, unidad y puesto.
+		public async Task<CResult> GetEmpleadosSustitutosAsync(int corrUnidad, int corrPuesto, int corrEmpresa)
+		{
+			CResult result = new();
+			try
+			{
+				if (corrEmpresa <= 0 || corrUnidad <= 0 || corrPuesto <= 0)
+				{
+					result.Data = new List<GEN_EMPLEADO_SUSTITUTOView>();
+					result.Result = true;
+					result.ErrorCode = 0;
+					result.RowsAffected = 0;
+					return result;
+				}
+
+				string sql = @"
+					SELECT 
+						EP.CORR_EMPLEADO,
+						ISNULL(E.CODIGO_EMPLEADO, '') AS CODIGO_EMPLEADO,
+						ISNULL(E.NOMBRE_EMPLEADO, '') AS NOMBRE_EMPLEADO,
+						EP.CORR_UNIDAD,
+						EP.CORR_PUESTO,
+						CASE WHEN ISNULL(E.ACTIVO_EMPLEADO, 0) = 1 THEN 'Activo' ELSE 'Inactivo' END AS ESTADO_EMPLEADO
+					FROM dbo.GEN_EMPLEADO_PUESTO EP
+					INNER JOIN dbo.V_GEN_EMPLEADO E
+						ON E.CORR_EMPRESA = EP.CORR_EMPRESA
+					   AND E.CORR_EMPLEADO = EP.CORR_EMPLEADO
+					WHERE EP.CORR_EMPRESA = @CORR_EMPRESA
+					  AND EP.CORR_UNIDAD = @CORR_UNIDAD
+					  AND EP.CORR_PUESTO = @CORR_PUESTO
+					ORDER BY E.NOMBRE_EMPLEADO;";
+
+				var pWhere = new List<CParameter>
+				{
+					new CParameter { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new CParameter { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = System.Data.DbType.Int32 },
+					new CParameter { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
+				};
+
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, pWhere);
+				var response = new List<GEN_EMPLEADO_SUSTITUTOView>().FromDataReader(reader).ToList();
+				reader?.Close();
+
+				result.Data = response;
+				result.Result = true;
+				result.RowsAffected = response.Count;
+				result.ErrorCode = 0;
+				result.ErrorMessage = string.Empty;
+			}
+			catch (Exception e)
+			{
+				result.Data = null;
+				result.Result = false;
+				result.ErrorCode = -1;
+				result.ErrorMessage = e.Message;
+				result.ErrorSource += $"[{e.Source}]";
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+			return result;
+		}
+
 		public async Task<CResult> SaveAllAsync(
 			int corrEmpleado,
 			List<GEN_EMPLEADO_PUESTOTable> Data,

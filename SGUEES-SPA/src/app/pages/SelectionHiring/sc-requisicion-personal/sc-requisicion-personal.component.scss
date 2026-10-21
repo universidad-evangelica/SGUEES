@@ -245,6 +245,12 @@
    ::ng-deep permite reutilizar las mismas clases en celdas del grid (DOM dinámico).
    ============================================================================= */
 
+// Qué hace: acerca el campo Fecha hacia el Estado únicamente en el formulario.
+// Cómo lo hace: aplica desplazamiento de 35px a la izquierda al contenedor de Fecha sin tocar la grilla ni los estados.
+:host ::ng-deep .requisicion-form-fecha {
+	margin-left: -35px;
+}
+
 :host ::ng-deep .requisicion-grid-estado-col {
 	text-align: center;
 	vertical-align: middle;
@@ -256,16 +262,18 @@
 	justify-content: center;
 }
 
+// Qué hace: estilo visual compacto tipo pill/badge para el estado de la requisición en la grilla y formulario.
+// Cómo lo hace: define inline-flex con padding 4px 14px y min-width 90px para ajustarse cómodamente a su contenido original.
 :host ::ng-deep .estado-req-chip {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	min-height: 28px;
-	min-width: 110px;
-	padding: 6px 20px;
+	min-width: 90px;
+	padding: 4px 14px;
 	border-radius: 999px;
-	font-size: 12px;
-	font-weight: 700;
+	font-size: 11.5px;
+	font-weight: 600;
 	letter-spacing: 0.02em;
 	line-height: 1.2;
 	white-space: nowrap;
