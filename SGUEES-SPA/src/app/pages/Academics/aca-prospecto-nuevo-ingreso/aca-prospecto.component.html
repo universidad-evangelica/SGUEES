@@ -992,6 +992,7 @@
         [selectedIndex]="esBorrador ? 1 : 0"
         [animationEnabled]="false"
         [swipeEnabled]="false"
+        #tabLista
         [deferRendering]="true"
         itemTitleTemplate="tituloTabLista"
         (onSelectionChanged)="onTabListaChanged($event)"
@@ -1030,6 +1031,9 @@
         [keyExpr]="mttoGridKeyExpr"
         [focusedRowKey]="gridFocusedRowKey"
         [loading]="loadingVisible"
+        [nativeToolbar]="true"
+        [unifiedToolbar]="false"
+        [repaintChangesOnly]="false"
         [showSearch]="false"
         [showExport]="false"
         [showAdd]="false"

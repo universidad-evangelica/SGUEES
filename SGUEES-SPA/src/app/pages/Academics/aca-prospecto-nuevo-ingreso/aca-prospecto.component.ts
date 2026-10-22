@@ -63,6 +63,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     @ViewChild('chkDeportado', { static: false }) chkDeportado?: DxCheckBoxComponent;
     @ViewChild('chkUniversidad', { static: false }) chkUniversidad?: DxCheckBoxComponent;
     @ViewChild('chkUees', { static: false }) chkUees?: DxCheckBoxComponent;
+    @ViewChild('tabLista') tabLista?: { instance?: { element?: () => HTMLElement; repaint: () => void; option: (nombre: string, valor?: unknown) => unknown } };
 
     protected override mttoGridKeyExpr = 'CORR_PROSPECTO';
     readOnly = true;
@@ -75,6 +76,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     esBorrador = false;
     modelsPendientes: any[] = [];
     modelsBorrador: any[] = [];
+    conteoPendientes = 0;
+    conteoBorrador = 0;
+    private conteoTabsIntentos = 0;
+    private refrescandoTabs = false;
     popupAprobarVisible = false;
     observacionAprobar = '';
     accionFlujo: 'aprobar' | 'rechazar' | 'revertir' = 'aprobar';
@@ -717,9 +722,43 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: el número del círculo de cada pestaña de la lista.
+    // Cómo lo hace: usa el total ya guardado. El título del tab se pinta una vez y no se entera solo.
     conteoTabLista(data: any): number {
-        const total = data?.icon === 'edit' ? this.modelsBorrador : this.modelsPendientes;
-        return total?.length || 0;
+        return data?.icon === 'edit' ? this.conteoBorrador : this.conteoPendientes;
+    }
+
+    // Qué hace: pone el total real en las pestañas cuando la consulta llega después del primer dibujo.
+    // Cómo lo hace: el tab deja el 0 de la primera pintada. Escribe el largo de cada lista en el círculo
+    //               y lo reintenta si el título todavía no está en pantalla.
+    refrescarConteoTabs(): void {
+        const pendientes = this.modelsPendientes?.length || 0;
+        const borrador = this.modelsBorrador?.length || 0;
+        this.conteoPendientes = pendientes;
+        this.conteoBorrador = borrador;
+        const element = this.tabLista?.instance?.element?.();
+        const badges = element?.querySelectorAll?.('.aca-prospecto-tab-conteo');
+        const listos = !!badges && badges.length >= 2
+            && badges[0].textContent === String(pendientes)
+            && badges[1].textContent === String(borrador);
+        if (listos || this.conteoTabsIntentos >= 6) {
+            return;
+        }
+        this.conteoTabsIntentos += 1;
+        if (badges && badges.length >= 2) {
+            badges[0].textContent = String(pendientes);
+            badges[1].textContent = String(borrador);
+        } else if (this.tabLista?.instance && !this.refrescandoTabs) {
+            this.refrescandoTabs = true;
+            const indice = this.esBorrador ? 1 : 0;
+            this.tabLista.instance.repaint();
+            if (this.tabLista.instance.option('selectedIndex') !== indice) {
+                this.tabLista.instance.option('selectedIndex', indice);
+            }
+            setTimeout(() => {
+                this.refrescandoTabs = false;
+            }, 50);
+        }
+        setTimeout(() => this.refrescarConteoTabs(), 120);
     }
 
     // Qué hace: muestra los círculos de lo que falta solo mientras se puede enviar o aprobar.
@@ -849,8 +888,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: el listado visible es el de la pestaña abierta.
+    // Cómo lo hace: copia el arreglo para que la grilla vea filas nuevas y actualiza el número de las pestañas.
     aplicarLista(): void {
-        this.models = this.esBorrador ? this.modelsBorrador : this.modelsPendientes;
+        const lista = this.esBorrador ? this.modelsBorrador : this.modelsPendientes;
+        this.models = [...(lista || [])];
+        this.conteoTabsIntentos = 0;
+        setTimeout(() => this.refrescarConteoTabs());
     }
 
     mostrarPendientes(): void {
@@ -884,6 +927,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     // Qué hace: cambia la lista al pulsar la pestaña, igual que Datos personales y Contacto.
     onTabListaChanged(e: any): void {
+        if (this.refrescandoTabs) {
+            return;
+        }
         const indice = Number(e?.component?.option('selectedIndex'));
         if (indice === 1) {
             this.mostrarBorrador();

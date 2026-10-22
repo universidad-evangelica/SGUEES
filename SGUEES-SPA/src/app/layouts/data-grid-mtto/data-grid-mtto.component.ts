@@ -178,6 +178,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   private contextSub?: Subscription;
   private permiteAddEffective = false;
   private pageSizeRepaintTimer?: ReturnType<typeof setTimeout>;
+  private localPagerSyncTimer?: ReturnType<typeof setTimeout>;
+  private localPagerIntentos = 0;
   private permissionTooltipHideTimer?: ReturnType<typeof setTimeout>;
   private permissionTooltipGridElement?: HTMLElement;
   private readonly permissionTooltipMessages: Record<string, string> = {
@@ -456,6 +458,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     }
     if (changes['models']) {
       this.updateFocusedRowState();
+      this.localPagerIntentos = 0;
+      this.scheduleLocalPagerSync();
     }
     if (changes['isBrowse'] && !changes['isBrowse'].firstChange) {
       this.handleBrowseModeChange();
@@ -503,6 +507,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.pageContext.registerGridHandlers();
     if (this.pageSizeRepaintTimer) {
       clearTimeout(this.pageSizeRepaintTimer);
+    }
+    if (this.localPagerSyncTimer) {
+      clearTimeout(this.localPagerSyncTimer);
     }
     if (this.permissionTooltipHideTimer) {
       clearTimeout(this.permissionTooltipHideTimer);
@@ -1006,6 +1013,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   OnContentReady(e: any): void {
+    this.scheduleLocalPagerSync();
     const gridElement = e?.element as HTMLElement | undefined;
     if (!gridElement) {
       return;
@@ -1022,6 +1030,57 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     if (this.isUnifiedActive) {
       requestAnimationFrame(() => e?.component?.updateDimensions?.());
     }
+  }
+
+  // Qué hace: corrige el pager que se queda en 0 cuando las filas llegan después del primer dibujo.
+  // Cómo lo hace: la grilla pinta las filas y el resumen, pero el total del pager sigue en el 0 inicial.
+  //               Si no hay filtro, escribe el total de las filas en el pager. Lo reintenta unas veces
+  //               porque DevExtreme a veces vuelve a dejar el 0 después de esa actualización.
+  private scheduleLocalPagerSync(): void {
+    if (this.isRemotePagingActive || this.hybridPaging) {
+      return;
+    }
+    if (this.localPagerSyncTimer) {
+      clearTimeout(this.localPagerSyncTimer);
+    }
+    this.localPagerSyncTimer = setTimeout(() => this.syncLocalPagerTotal(), 0);
+  }
+
+  private syncLocalPagerTotal(): void {
+    if (this.isRemotePagingActive || this.hybridPaging || this.localPagerIntentos >= 4) {
+      return;
+    }
+    const grid = this.gData?.instance as any;
+    if (!grid || !Array.isArray(this.models) || this.models.length === 0) {
+      return;
+    }
+    const filtro = grid.getCombinedFilter?.();
+    const hayFiltro = Array.isArray(filtro) ? filtro.length > 0 : !!filtro;
+    if (hayFiltro) {
+      return;
+    }
+    const total = this.models.length;
+    const pager = grid.getView?.('pagerView')?.getPager?.();
+    const mostrado = pager ? Number(pager.option('totalCount')) : Number.NaN;
+    const info = grid.element?.()?.querySelector?.('.dx-pager .dx-info') as HTMLElement | null;
+    const textoEnCero = !!info && /\(\s*0\s+/.test(info.textContent || '');
+    if (mostrado === total && !textoEnCero) {
+      return;
+    }
+    const pageSize = Number(grid.pageSize()) || this.pageSize || total;
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
+    const pageIndex = Number(grid.pageIndex()) + 1;
+    this.localPagerIntentos += 1;
+    pager?.option?.({
+      totalCount: total,
+      pageCount,
+      pageIndex,
+      hasKnownLastPage: true,
+    });
+    if (info) {
+      info.textContent = `Página ${pageIndex} de ${pageCount} (${total} ítems)`;
+    }
+    this.localPagerSyncTimer = setTimeout(() => this.syncLocalPagerTotal(), 120);
   }
 
   private bindPermissionTooltipHandlers(gridElement: HTMLElement): void {
