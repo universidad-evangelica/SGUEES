@@ -12,7 +12,7 @@ namespace sguees.Repositories
     // Qué hace: lectura de solicitudes de beca y de las respuestas de su cuestionario.
     // Cómo lo hace: V_ACA_PROSPECTO_BECA_CONSULTA para el listado y
     //               V_ACA_PROSPECTO_BECA_RESPUESTA para el detalle. No escribe.
-    public class ACA_PROSPECTO_BECARepository : BaseRepository<ACA_PROSPECTO_BECATable>, IACA_PROSPECTO_BECARepository
+    public partial class ACA_PROSPECTO_BECARepository : BaseRepository<ACA_PROSPECTO_BECATable>, IACA_PROSPECTO_BECARepository
     {
         private const string _TableName = "ACA_PROSPECTO_BECA";
         private const string _ViewName = "V_ACA_PROSPECTO_BECA_CONSULTA";

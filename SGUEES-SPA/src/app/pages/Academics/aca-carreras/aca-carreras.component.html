@@ -8,21 +8,24 @@
     <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
         <dx-tab-panel [(selectedIndex)]="tabSeleccionada" [deferRendering]="false">
         <dxi-item title="Datos generales">
+        <div class="carrera-datos-compactos">
         <dx-form #fData [formData]="model" [labelLocation]="'top'" [items]="items"
-            [colCount]="mttoFormColCount" [colCountByScreen]="mttoFormColCountByScreen">
+            [colCount]="1">
             <div *dxTemplate="let cellInfo of 'areaLookup'">
                 <app-data-lookup [model]="areasDisponibles" [(value)]="model.CORR_AREA_ACADEMICA"
                     [readOnly]="readOnly"></app-data-lookup>
             </div>
             <div *dxTemplate="let cellInfo of 'facultadLookup'">
                 <app-data-lookup [model]="facultadesDisponibles" [(value)]="model.CORR_FACULTAD"
-                    [readOnly]="readOnly"></app-data-lookup>
+                    [readOnly]="readOnly" (valueChange)="actualizarDecano()"></app-data-lookup>
             </div>
             <div *dxTemplate="let cellInfo of 'gradoLookup'">
                 <app-data-lookup [model]="gradosDisponibles" [(value)]="model.CORR_GRADO_ACADEMICO"
                     [readOnly]="readOnly" [showClearButton]="true"></app-data-lookup>
             </div>
         </dx-form>
+        <p class="carrera-reglas-ayuda"> {{model.MAX_REPETICIONES ?? 0}} repeticiones adicionales permiten cursar una materia hasta {{(model.MAX_REPETICIONES ?? 0) + 1}} veces, contando la primera.</p>
+        </div>
         </dxi-item>
         <dxi-item title="Sedes">
             <p *ngIf="!model.CORR_CARRERA">Guarde primero la carrera para asociarle sedes.</p>
@@ -65,6 +68,7 @@
                 [bloqueado]="cambiosGeneralesPendientes" [permiteCrear]="permiteAdd" [permiteEditar]="permiteEdit">
             </app-aca-planes-academicos>
         </dxi-item>
+        <dxi-item title="Matrícula y costos"><app-aca-carreras-costos [carreraId]="model.CORR_CARRERA" [bloqueado]="cambiosGeneralesPendientes" [permiteCrear]="permiteAdd" [permiteEditar]="permiteEdit"></app-aca-carreras-costos></dxi-item>
         </dx-tab-panel>
     </div>
 

@@ -1,3 +1,4 @@
+import { AcaAsignaturasComponent } from './aca-asignaturas/aca-asignaturas.component';
 import { NgModule } from '@angular/core';
 import { AcaCarrerasComponent } from './aca-carreras/aca-carreras.component';
 import { AcaCiclosComponent } from './aca-periodos-academicos/ciclos/aca-ciclos.component';
@@ -16,6 +17,13 @@ import { AcaProspectoComponent } from './aca-prospecto/aca-prospecto.component';
 import { AcaProspectoBecaComponent } from './aca-prospecto-beca/aca-prospecto-beca.component';
 
 const routes: Routes = [
+  { path: 'aca-tipos-practica', redirectTo: '/aca-asignaturas?catalogo=practicas', pathMatch: 'full' },
+  {
+    path: 'aca-asignaturas', component: AcaAsignaturasComponent,
+    canActivate: [AuthGuardService], canDeactivate: [AppCanDeactivateGuard], data: { titulo: 'Asignaturas' },
+    loadChildren: () => import('./aca-asignaturas/aca-asignaturas.module').then(m => m.AcaAsignaturasModule),
+  },
+  { path: 'aca-periodos-curso', redirectTo: '/aca-asignaturas?catalogo=periodos', pathMatch: 'full' },
   {
     path: 'aca-periodos-academicos', component: AcaCiclosComponent,
     canActivate: [AuthGuardService], canDeactivate: [AppCanDeactivateGuard], data: { titulo: 'Ciclos académicos por área' },

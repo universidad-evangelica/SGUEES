@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ using sguees.Services;
 namespace sguees.Controllers
 {
     // Qué hace: consulta administrativa de solicitudes de beca (Académico → Consultas).
-    // Cómo lo hace: solo lectura. El listado es por ciclo; el detalle son las respuestas ya guardadas.
+    // El listado es por ciclo; la edición y los documentos requieren permiso U.
     [Authorize]
     [Route("[controller]")]
     [ApiController]
@@ -88,15 +89,12 @@ namespace sguees.Controllers
 
         private int Empresa()
         {
-            return int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return int.TryParse(User.FindFirstValue("CORR_EMPRESA"), out var empresa) ? empresa : 0;
         }
 
         private string Usuario()
         {
-            var nombre = User?.Identity?.Name;
-            if (string.IsNullOrWhiteSpace(nombre))
-                nombre = "SGUEES";
-            return nombre.Length > 30 ? nombre.Substring(0, 30) : nombre;
+            return User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.Identity?.Name ?? string.Empty;
         }
     }
 }

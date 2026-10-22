@@ -14,15 +14,14 @@ namespace sguees.Services
     public partial class ACA_PROSPECTO_BECAService : IACA_PROSPECTO_BECAService
     {
         // Carpeta del servidor de admisiones. Z:\Documentacion Becas apunta a esta ruta.
-        private const string RaizDocumentos = @"\\192.168.1.8\admision\Documentacion Becas";
+        private readonly string RaizDocumentos = @"\\192.168.1.8\admision\Documentacion Becas";
 
         private readonly IACA_PROSPECTO_BECARepository _repo;
-        private readonly string _connectionString;
 
         public ACA_PROSPECTO_BECAService(IACA_PROSPECTO_BECARepository repo, IConfiguration config)
         {
             _repo = repo;
-            _connectionString = config.GetConnectionString("defaultConnection");
+            RaizDocumentos = config["Becas:RaizDocumentos"] ?? RaizDocumentos;
         }
 
         // Qué hace: solicitudes de beca de un ciclo, en borrador o enviadas.
@@ -100,7 +99,7 @@ namespace sguees.Services
             };
         }
 
-        private static string ResolverRuta(ACA_PROSPECTO_BECA_ARCHIVOView row)
+        private string ResolverRuta(ACA_PROSPECTO_BECA_ARCHIVOView row)
         {
             if (row == null || row.NUMERO_PERIODO == null)
                 return null;

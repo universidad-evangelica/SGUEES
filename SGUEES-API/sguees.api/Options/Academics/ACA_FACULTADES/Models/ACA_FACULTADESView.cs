@@ -7,6 +7,8 @@ namespace sguees.Models
     //               exacto con la vista porque eFramework asigna sin convertir.
     public class ACA_FACULTADESView
     {
+        public int? CORR_DECANO { get; set; }
+        public string NOMBRE_DECANO { get; set; }
         public int CORR_FACULTAD { get; set; }
         public int CORR_EMPRESA { get; set; }
         public string CODIGO_FACULTAD { get; set; }

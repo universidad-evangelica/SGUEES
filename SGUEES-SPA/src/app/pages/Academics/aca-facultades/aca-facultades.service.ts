@@ -88,6 +88,7 @@ export class AcaFacultadesService {
 			},
 			{ dataField: 'CODIGO_FACULTAD', caption: 'Código', width: 110, minWidth: 90 },
 			{ dataField: 'NOMBRE_FACULTAD', caption: 'Nombre', width: 360, minWidth: 220 },
+            {dataField:'NOMBRE_DECANO',caption:'Decano',width:260,minWidth:180},
 			{
 				dataField: 'CARRERAS_ACTIVAS',
 				caption: 'Carreras activas',
@@ -132,6 +133,7 @@ export class AcaFacultadesService {
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{ dataField: 'ACTIVO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 1 },
+            {dataField:'CORR_DECANO',label:{text:'Decano de la facultad'},template:'decanoLookup',colSpan:4},
 		];
 	}
 

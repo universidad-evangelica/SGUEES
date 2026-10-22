@@ -18,9 +18,14 @@ namespace sguees.Services
 
         private readonly IACA_FACULTADESRepository _repo;
 
-        public ACA_FACULTADESService(IACA_FACULTADESRepository repo)
+        private readonly IACA_CARRERASLookupRepository _lookup;
+
+        public Task<CResult> GetCatalogoCarrerasAsync(int empresa) => _lookup.GetAsync(CatalogoCarrera.Facultades, empresa);
+
+        public ACA_FACULTADESService(IACA_FACULTADESRepository repo, IACA_CARRERASLookupRepository lookup)
         {
             _repo = repo;
+            _lookup = lookup;
         }
 
         public async Task<CResult> GetAllAsync(ACA_FACULTADESParam xWhere)

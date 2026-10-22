@@ -7,12 +7,13 @@ import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.compon
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { AcaCarrerasComponent } from './aca-carreras.component';
 import { AcaPlanesAcademicosComponent } from './planes/aca-planes-academicos.component';
+import { AcaCarrerasCostosComponent } from './costos/aca-carreras-costos.component';
 
 const routes: Routes = [{ path: '', component: AcaCarrerasComponent }];
 @NgModule({
     imports: [RouterModule.forChild(routes), CommonModule, DxFormModule, DxLoadPanelModule, DxTabPanelModule, DxDataGridModule, DxButtonModule,
         DataGridMttoModule, DataLookupModule, BarraDataMttoModule, DxPopupModule],
-    declarations: [AcaCarrerasComponent, AcaPlanesAcademicosComponent],
+    declarations: [AcaCarrerasComponent, AcaPlanesAcademicosComponent,AcaCarrerasCostosComponent],
     exports: [RouterModule],
 })
 export class AcaCarrerasRoutingModule {}

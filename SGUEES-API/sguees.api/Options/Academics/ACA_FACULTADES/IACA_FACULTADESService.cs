@@ -6,6 +6,7 @@ namespace sguees.Services
 {
     public interface IACA_FACULTADESService
     {
+        Task<CResult> GetCatalogoCarrerasAsync(int empresa);
         Task<CResult> GetAllAsync(ACA_FACULTADESParam xWhere);
         Task<CResult> GetAsync(ACA_FACULTADESParam xWhere);
         Task<CResult> CreateAsync(ACA_FACULTADESTable Data, string vLOGIN_SISTEMA, string vESTACION);

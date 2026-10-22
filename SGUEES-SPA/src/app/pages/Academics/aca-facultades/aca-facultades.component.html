@@ -22,7 +22,9 @@
 </app-barra-data-mtto>
 
 	<!-- Formulario de creación/edición (oculto en browse). -->
-<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+<dx-tab-panel *ngIf="!isBrowse()" [deferRendering]="false">
+<dxi-item title="Datos generales">
+<div class="content-block dx-card responsive-paddings sguees-mtto-form-card">
 	<dx-form
 		#fData
 		id="fData"
@@ -33,8 +35,12 @@
 		[showRequiredMark]="false"
 		[items]="items"
 	>
+		<div *dxTemplate="let info of 'decanoLookup'"><dx-select-box [dataSource]="decanosDisponibles" valueExpr="Key" displayExpr="Value" [(value)]="model.CORR_DECANO" [readOnly]="!isForm()" [showClearButton]="true" [searchEnabled]="true" placeholder="Seleccione al decano"></dx-select-box></div>
 	</dx-form>
 </div>
+</dxi-item>
+<dxi-item title="Sedes autorizadas">
+<p class="content-block">Autorizar una sede permite configurar sus carreras. La apertura se confirma en el ciclo del área, seleccionando las carreras que participarán.</p>
 
 <!-- Sección hija: sedes donde se ofertan las carreras de la facultad (solo con la facultad ya guardada). -->
 <section class="content-block dx-card responsive-paddings sguees-mtto-form-card aca-facultades-sedes" *ngIf="mostrarSedes()">
@@ -117,6 +123,32 @@
 	>
 	</app-data-grid-mtto>
 </section>
+</dxi-item>
+<dxi-item title="Carreras">
+    <section class="content-block dx-card responsive-paddings">
+        <p>Las áreas se obtienen de las carreras de esta facultad. Una facultad puede tener carreras en varias áreas.</p>
+        <p *ngIf="!model.CORR_FACULTAD">Guarde primero la facultad.</p>
+        <ng-container *ngIf="model.CORR_FACULTAD">
+            <a *ngIf="puedeCrearCarrera" routerLink="/aca-carreras" [queryParams]="{nueva:1,facultad:model.CORR_FACULTAD}" target="_blank" rel="noopener">Crear carrera en esta facultad ↗</a>
+            <dx-button text="Actualizar relaciones" icon="refresh" [disabled]="relacionesCargando" (onClick)="cargarRelaciones()"></dx-button>
+            <dx-data-grid id="facultad-carreras-grid" [dataSource]="carrerasFacultad" [columns]="carreraColumns" [showBorders]="true" [wordWrapEnabled]="true" [allowColumnResizing]="true">
+                <div *dxTemplate="let cell of 'verCarrera'"><a *ngIf="puedeVerCarreras" routerLink="/aca-carreras" [queryParams]="{carrera:cell.data.CORR_CARRERA}" target="_blank" rel="noopener">Ver carrera ↗</a></div>
+                <dxo-filter-row [visible]="true"></dxo-filter-row><dxo-paging [pageSize]="10"></dxo-paging>
+            </dx-data-grid>
+        </ng-container>
+    </section>
+</dxi-item>
+<dxi-item title="Participación en ciclos">
+    <section class="content-block dx-card responsive-paddings">
+        <p>Consulta el área, sede, estado del ciclo y carreras incluidas. Participar en un borrador no significa que la oferta esté habilitada.</p>
+        <dx-button text="Actualizar ciclos" icon="refresh" [disabled]="relacionesCargando || !model.CORR_FACULTAD" (onClick)="cargarRelaciones()"></dx-button>
+        <dx-data-grid id="facultad-ciclos-grid" [dataSource]="ciclosFacultad" [columns]="cicloColumns" [showBorders]="true" [wordWrapEnabled]="true" [allowColumnResizing]="true">
+            <div *dxTemplate="let cell of 'verCiclo'"><a *ngIf="puedeVerCiclos" routerLink="/aca-periodos-academicos" [queryParams]="{ciclo:cell.data.CORR_CICLO_ACADEMICO}" target="_blank" rel="noopener">Abrir ciclo ↗</a></div>
+            <dxo-filter-row [visible]="true"></dxo-filter-row><dxo-paging [pageSize]="10"></dxo-paging>
+        </dx-data-grid>
+    </section>
+</dxi-item>
+</dx-tab-panel>
 
 <!-- Grilla del catálogo con acciones de mantenimiento. -->
 <app-data-grid-mtto

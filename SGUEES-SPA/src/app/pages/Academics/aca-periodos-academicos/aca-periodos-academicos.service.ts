@@ -1,6 +1,6 @@
+import type { AcaPeriodoInput } from './aca-periodo-input';
 import { Injectable } from '@angular/core';
-import { CData } from 'src/app/FxAPI/CData';
-import { environment } from 'src/environments/environment';
+import { AcaPeriodosAcademicosRepository } from './aca-periodos-academicos.repository';
 import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
@@ -10,21 +10,14 @@ export interface PeriodoCatalogo {
 }
 @Injectable({ providedIn: 'root' })
 export class AcaPeriodosAcademicosService {
-    private readonly controller = 'ACA_PERIODOS_MANTENIMIENTO';
-    constructor(private data: CData) {}
-    getAll() { return this.data.Get(this.controller, 'GetAll', [], environment.UrlGENERALAPI); }
-    getCatalogos() { return this.data.Get(this.controller, 'GetCatalogos', [], environment.UrlGENERALAPI); }
-    insert(model: any) { return this.data.Post(model, this.controller, '', environment.UrlGENERALAPI); }
-    update(model: any) { return this.data.Put(model, this.controller, '', [], environment.UrlGENERALAPI); }
-    estado(model: any) {
-        return this.data.Put({ CORR_PERIODO_ACADEMICO: model.CORR_PERIODO_ACADEMICO }, this.controller, 'ActivarInactivar', [], environment.UrlGENERALAPI);
-    }
-    historial(id: number) {
-        return this.data.Get(this.controller, 'GetHistorial', [{ Parameter: 'CORR_PERIODO_ACADEMICO', Value: id }], environment.UrlGENERALAPI);
-    }
-    oferta(filtro: any) {
-        return this.data.Get(this.controller, 'GetOferta', Object.keys(filtro).map(key => ({ Parameter: key, Value: filtro[key] })), environment.UrlGENERALAPI);
-    }
+    constructor(private repo: AcaPeriodosAcademicosRepository) {}
+    getAll() { return this.repo.getAll(); }
+    getCatalogos() { return this.repo.getCatalogos(); }
+    insert(model: AcaPeriodoInput) { return this.repo.insert(model); }
+    update(model: AcaPeriodoInput) { return this.repo.update(model); }
+    estado(model: AcaPeriodoInput) { return this.repo.estado(model); }
+    historial(id: number) { return this.repo.historial(id); }
+    oferta(filtro: any) { return this.repo.oferta(filtro); }
     getColumns(): any[] {
         return [
             { dataField: 'CORR_PERIODO_ACADEMICO', caption: 'Corr.', width: 85 },

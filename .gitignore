@@ -1,0 +1,3 @@
+# Compilaciones auxiliares; los artefactos de trabajo se guardan fuera del repositorio.
+/_build_out_test/
+/SGUEES-API/.build-check/

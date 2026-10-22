@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using sguees.api.Shared;
 using sguees.Models;
 using sguees.Services;
-using sguees.Repositories;
 
 namespace sguees.Controllers
 {
@@ -21,18 +20,16 @@ namespace sguees.Controllers
     public class ACA_FACULTADESController : ControllerBase
     {
         private readonly IACA_FACULTADESService _service;
-        private readonly IACA_CARRERASLookupRepository _carrerasLookup;
 
-        public ACA_FACULTADESController(IACA_FACULTADESService service, IACA_CARRERASLookupRepository carrerasLookup)
+        public ACA_FACULTADESController(IACA_FACULTADESService service)
         {
             _service = service ?? throw new ArgumentNullException(nameof(_service));
-            _carrerasLookup = carrerasLookup ?? throw new ArgumentNullException(nameof(carrerasLookup));
         }
 
         [HttpGet("GetCORR_FACULTAD_ACA_CARRERAS")]
         [Authorize(Policy = "/aca-carreras|R")]
         public Task<CResult> GetCORR_FACULTAD_ACA_CARRERAS()
-            => _carrerasLookup.GetAsync(CatalogoCarrera.Facultades, GetCorrEmpresa());
+            => _service.GetCatalogoCarrerasAsync(GetCorrEmpresa());
 
         [HttpGet("GetAll")]
         [Authorize(Policy = "/aca-facultades|R")]

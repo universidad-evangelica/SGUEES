@@ -13,7 +13,7 @@ import { AcaCarrerasSedesService } from './sedes/aca-carreras-sedes.service';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { IResult } from 'src/app/FxAPI/IResult';
 
-@Component({ selector: 'app-aca-carreras', templateUrl: './aca-carreras.component.html' })
+@Component({ selector: 'app-aca-carreras', templateUrl: './aca-carreras.component.html', styleUrls: ['./aca-carreras.component.scss'] })
 export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
     //#region <Declarando Variables>
     protected override etiquetaRegistro = 'la carrera';
@@ -28,6 +28,7 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
     private grados: CatalogoCarrera[] = [];
     private readonly catalogosVisibles = new Map<CatalogoCarrera[], { current: number | null; rows: CatalogoCarrera[] }>();
     tabSeleccionada = 0;
+    actualizarDecano():void {this.model.NOMBRE_DECANO=this.facultades.find(f=>f.Key===this.model?.CORR_FACULTAD)?.NOMBRE_DECANO || 'Sin decano asignado';}
     sedes: AcaCarreraSede[] = [];
     sedesDisponibles: SedeCarreraLookup[] = [];
     sedeParaAsociar: number | null = null;
@@ -44,7 +45,7 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
     ];
     get cambiosGeneralesPendientes(): boolean {
         if (!this.isForm() || !this.model?.CORR_CARRERA) return false;
-        return ['CODIGO_CARRERA', 'NOMBRE_CARRERA', 'CORR_AREA_ACADEMICA', 'CORR_FACULTAD', 'CORR_GRADO_ACADEMICO']
+        return ['CODIGO_CARRERA', 'NOMBRE_CARRERA', 'CORR_AREA_ACADEMICA', 'CORR_FACULTAD', 'CORR_GRADO_ACADEMICO','MAX_REPETICIONES','CREDITOS_REQUERIDOS','NOTA_MINIMA']
             .some(key => this.model[key] !== this.modelUpdate?.[key]);
     }
     get puedeModificarSedes(): boolean {
@@ -87,6 +88,7 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
                 }
                 this.areas = areas.Data as CatalogoCarrera[];
                 this.facultades = facultades.Data as CatalogoCarrera[];
+                this.actualizarDecano();
                 this.grados = grados.Data as CatalogoCarrera[];
             },
             error: error => this.notifyApiError(error),
@@ -109,11 +111,17 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
         return row ? { ...row } : {
             CORR_CARRERA: 0, CORR_EMPRESA: 0, CODIGO_CARRERA: '', NOMBRE_CARRERA: '',
             CORR_AREA_ACADEMICA: null, CORR_FACULTAD: null, CORR_GRADO_ACADEMICO: null, ACTIVO: true,
+            MAX_REPETICIONES:3,CREDITOS_REQUERIDOS:null,NOTA_MINIMA:6,NOMBRE_DECANO:'Sin decano asignado',
         };
     }
     consultar(): void {
         const carrera = Number(this.router.snapshot.queryParamMap.get('carrera'));
         this.consultarMtto({ load: () => this.service.getAll(), onData: (data: AcaCarrera[]) => {
+            if(!this.enlaceAtendido && this.router.snapshot.queryParamMap.get('nueva')==='1') {
+                this.enlaceAtendido=true;
+                if(this.permiteAdd){this.nuevo();this.model.CORR_FACULTAD=Number(this.router.snapshot.queryParamMap.get('facultad'))||null;this.actualizarDecano();}
+                return;
+            }
             if (!this.enlaceAtendido && Number.isInteger(carrera) && carrera > 0) {
                 this.enlaceAtendido = true;
                 const row = data.find(c => c.CORR_CARRERA === carrera);
@@ -274,6 +282,7 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
         setTimeout(() => this.setEditorsReadOnly(false));
     }
     private setEditorsReadOnly(readOnly: boolean): void {
+        for(const field of ['MAX_REPETICIONES','CREDITOS_REQUERIDOS','NOTA_MINIMA'])this.dataForm?.instance?.getEditor(field)?.option('readOnly',readOnly);
         this.dataForm?.instance?.getEditor('CODIGO_CARRERA')?.option('readOnly', readOnly);
         this.dataForm?.instance?.getEditor('NOMBRE_CARRERA')?.option('readOnly', readOnly);
         this.dataForm?.instance?.getEditor('CORR_CARRERA')?.option('readOnly', true);

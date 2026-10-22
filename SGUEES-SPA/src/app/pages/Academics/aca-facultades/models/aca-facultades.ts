@@ -6,6 +6,8 @@ export interface AcaFacultades {
 	CODIGO_FACULTAD: string;
 	NOMBRE_FACULTAD: string;
 	ACTIVO: boolean;
+    CORR_DECANO?:number|null;
+    NOMBRE_DECANO?:string;
 	USUARIO_CREA: string;
 	ESTACION_CREA: string;
 	FECHA_CREA: Date;

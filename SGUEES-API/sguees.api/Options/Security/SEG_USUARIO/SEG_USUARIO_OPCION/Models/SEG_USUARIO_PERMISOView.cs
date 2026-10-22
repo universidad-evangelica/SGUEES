@@ -17,6 +17,7 @@ namespace sguees.Models
         public bool ELIMINAR { get; set; }
         public bool IMPRIMIR { get; set; }
         public string PERMISO { get; set; }
+        public bool MOSTRAR_EN_MENU { get; set; } = true;
         public int ORDEN_SISTEMA { get; set; }
         public int ORDEN_MENU { get; set; }
         public int ORDEN_OPCION { get; set; }

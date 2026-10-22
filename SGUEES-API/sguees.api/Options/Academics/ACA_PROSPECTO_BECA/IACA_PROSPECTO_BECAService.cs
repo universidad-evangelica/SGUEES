@@ -17,10 +17,4 @@ namespace sguees.Services
         Task<CResult> ReemplazarArchivoAsync(int corrEmpresa, string usuario, int corrProspectoBeca, int corrRespuestaBeca, IFormFile archivo);
     }
 
-    // Qué hace: archivo listo para mostrarse en el navegador.
-    public class AcaProspectoBecaArchivoAbierto
-    {
-        public Stream Stream { get; set; }
-        public string ContentType { get; set; }
-    }
 }

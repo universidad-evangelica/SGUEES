@@ -1,0 +1,76 @@
+<section class="panel" *ngIf="!draft && !asignando">
+ <h2>Tipos de práctica</h2>
+ <p class="ayuda">Administra las prácticas y talleres y asígnalos a las materias que correspondan.</p>
+ <div class="acciones"><dx-button text="Nuevo tipo de práctica" icon="add" type="default" [visible]="permiteAdd" [disabled]="busy || !!draft" (onClick)="nuevo()"></dx-button><dx-button text="Asignar a materias" icon="link" [visible]="puedeAsignar" [disabled]="busy" (onClick)="abrirAsignacion()"></dx-button><dx-button text="Actualizar" icon="refresh" [disabled]="busy || !!draft" (onClick)="cargar()"></dx-button></div>
+ <dx-data-grid [dataSource]="rows" keyExpr="CORR_TIPO_PRACTICA" [showBorders]="true" [columnAutoWidth]="true" [height]="rows.length <= 7 ? 'auto' : 480" [wordWrapEnabled]="true">
+  <dxo-scrolling mode="standard"></dxo-scrolling><dxo-paging [pageSize]="10"></dxo-paging><dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[10,25,50]"></dxo-pager>
+  <dxo-header-filter [visible]="true"></dxo-header-filter><dxo-search-panel [visible]="true"></dxo-search-panel><dxo-column-chooser [enabled]="true" mode="select" title="Columnas visibles"></dxo-column-chooser>
+  <dxi-column dataField="CODIGO_TIPO" caption="Código" [visible]="false"></dxi-column><dxi-column dataField="NOMBRE_TIPO" caption="Tipo de práctica" [minWidth]="200" [allowHiding]="false"></dxi-column><dxi-column dataField="HABILITA_COBROS_ADICIONALES" caption="Cobros adicionales" dataType="boolean" cellTemplate="cobro"></dxi-column><dxi-column dataField="ACTIVO" caption="Estado" dataType="boolean" cellTemplate="estado"></dxi-column><dxi-column dataField="CANTIDAD_ASIGNATURAS" caption="Materias"></dxi-column>
+  <dxi-column caption="Acción" cellTemplate="acciones" [width]="135" [fixed]="true" fixedPosition="left" [allowHiding]="false"></dxi-column>
+  <div *dxTemplate="let cell of 'cobro'">{{cell.value ? 'Sí' : 'No'}}</div><div *dxTemplate="let cell of 'estado'"><span class="catalog-status" [class.inactivo]="!cell.value">{{cell.value ? 'Activo' : 'Inactivo'}}</span></div>
+  <div *dxTemplate="let cell of 'acciones'"><dx-button text="Editar" icon="edit" [visible]="permiteEdit" [disabled]="busy || !!draft" (onClick)="editar(cell.data)"></dx-button></div>
+ </dx-data-grid>
+</section>
+<section class="panel" *ngIf="asignando">
+ <h2>Asignar tipo de práctica a materias</h2>
+ <p class="ayuda">Seleccione facultad y carrera, consulte sus materias y marque únicamente las que correspondan. La relación se guarda en la materia; no necesita tener un plan asociado.</p>
+ <dx-form [formData]="filtrosAsignacion" [colCount]="3" labelLocation="top" [disabled]="busy || revisando">
+  <dxo-col-count-by-screen [xs]="1" [sm]="1" [md]="3" [lg]="3"></dxo-col-count-by-screen>
+  <dxi-item dataField="facultad" editorType="dxSelectBox" [label]="{text:'Facultad'}" [editorOptions]="{dataSource:facultades,valueExpr:'id',displayExpr:'nombre',searchEnabled:true,onValueChanged:cambiarFacultadAsignacion}"></dxi-item>
+  <dxi-item dataField="carrera" editorType="dxSelectBox" [label]="{text:'Carrera'}" [editorOptions]="{dataSource:carrerasAsignacion,valueExpr:'CORR_CARRERA',displayExpr:'NOMBRE_CARRERA',searchEnabled:true,onValueChanged:cambiarCarreraAsignacion}"></dxi-item>
+  <dxi-item dataField="tipo" editorType="dxSelectBox" [label]="{text:'Tipo de práctica a asignar'}" [editorOptions]="{dataSource:tiposActivos,valueExpr:'CORR_TIPO_PRACTICA',displayExpr:'NOMBRE_TIPO',searchEnabled:true,onValueChanged:cambiarTipoAsignacion}"></dxi-item>
+ </dx-form>
+ <div *ngIf="!revisando">
+  <div class="acciones"><dx-button text="Consultar materias" icon="search" [disabled]="busy || !filtrosAsignacion.facultad || !filtrosAsignacion.carrera" (onClick)="listarMaterias()"></dx-button></div>
+  <div class="consulta-estado" role="status" aria-live="polite">
+   <p *ngIf="estadoConsulta === 'pendiente'">Seleccione la facultad y la carrera y pulse <strong>Consultar materias</strong>. Después podrá seleccionar las materias que correspondan al tipo de práctica.</p>
+   <p *ngIf="estadoConsulta === 'cargando'">Consultando las materias de {{carreraAsignacionNombre}}…</p>
+   <p *ngIf="estadoConsulta === 'error'">No se pudo consultar las materias. Pulse <strong>Consultar materias</strong> para intentarlo nuevamente.</p>
+   <ng-container *ngIf="estadoConsulta === 'completa' && !materias.length">
+    <h3>Esta carrera no tiene asignaturas registradas</h3>
+    <p><strong>{{carreraAsignacionNombre}}</strong> no tiene materias para clasificar. Seleccionar un taller o una práctica no crea asignaturas.</p>
+    <p>Cierre esta asignación, vaya a <strong>Asignaturas → Nueva asignatura</strong> y registre la materia con esta facultad y carrera. Luego vuelva aquí para asignar el tipo de práctica. No necesita asociarla primero a un plan académico.</p>
+   </ng-container>
+   <ng-container *ngIf="estadoConsulta === 'completa' && materias.length">
+    <p><strong>{{materias.length}} materia(s) registrada(s)</strong> para {{carreraAsignacionNombre}}.<ng-container *ngIf="filtrosAsignacion.tipo"> {{materiasDisponibles}} disponible(s) para asignar {{tipoAsignado?.NOMBRE_TIPO}}.</ng-container><ng-container *ngIf="!filtrosAsignacion.tipo"> Seleccione el tipo de práctica para habilitar la selección.</ng-container></p>
+    <p *ngIf="filtrosAsignacion.tipo && !materiasDisponibles">No hay materias disponibles para este tipo: revise la columna Disponibilidad. Las materias pueden estar inactivas, protegidas por un plan en uso o tener ya el tipo seleccionado.</p>
+   </ng-container>
+  </div>
+  <p class="ayuda" *ngIf="materias.length">Las materias inactivas, las de planes en uso y las que ya tienen el tipo seleccionado no se pueden marcar. Elegir una carrera no clasifica automáticamente todas sus materias.</p>
+  <dx-data-grid *ngIf="estadoConsulta === 'completa' && materias.length" [dataSource]="materias" keyExpr="CORR_ASIGNATURA" [showBorders]="true" [columnAutoWidth]="true" [height]="390" [disabled]="busy || !filtrosAsignacion.tipo" [selectedRowKeys]="seleccion" (onSelectionChanged)="seleccionarMaterias($event)">
+   <dxo-selection mode="multiple" showCheckBoxesMode="always" selectAllMode="page"></dxo-selection>
+   <dxo-paging [pageSize]="10"></dxo-paging><dxo-pager [visible]="true"></dxo-pager><dxo-search-panel [visible]="true"></dxo-search-panel><dxo-filter-row [visible]="true"></dxo-filter-row>
+   <dxi-column dataField="CODIGO_ASIGNATURA" caption="Código" [width]="140"></dxi-column><dxi-column dataField="NOMBRE_ASIGNATURA" caption="Materia"></dxi-column>
+   <dxi-column dataField="NOMBRE_TIPO_PRACTICA" caption="Tipo actual" cellTemplate="tipoActual"></dxi-column>
+   <dxi-column caption="Disponibilidad" [calculateCellValue]="motivoMateria"></dxi-column>
+   <div *dxTemplate="let cell of 'tipoActual'">{{cell.value || 'Sin clasificación'}}</div>
+  </dx-data-grid>
+  <div class="acciones" *ngIf="estadoConsulta === 'completa' && materias.length"><dx-button [text]="'Revisar selección (' + seleccion.length + ')'" type="default" [disabled]="busy || !seleccion.length || !filtrosAsignacion.tipo" (onClick)="revisarAsignacion()"></dx-button></div>
+ </div>
+ <div *ngIf="revisando" class="revision">
+  <h3>Revisar antes de guardar</h3>
+  <p><strong>{{facultadAsignacionNombre}}</strong> · {{carreraAsignacionNombre}}</p>
+  <p>Se asignará <strong>{{tipoAsignado?.NOMBRE_TIPO}}</strong> a {{revision.length}} materia(s). Se reemplazarán {{reemplazos}} clasificaciones existentes.</p>
+  <p class="ayuda">{{tipoAsignado?.HABILITA_COBROS_ADICIONALES ? 'Este tipo habilita cobros adicionales; los importes se configuran por separado.' : 'Este tipo no habilita cobros adicionales.'}} Guardar esta clasificación no genera cobros.</p>
+  <dx-data-grid [dataSource]="revision" keyExpr="CORR_ASIGNATURA" [showBorders]="true" [columnAutoWidth]="true" [height]="320">
+   <dxo-paging [pageSize]="10"></dxo-paging>
+   <dxi-column dataField="CODIGO_ASIGNATURA" caption="Código"></dxi-column><dxi-column dataField="NOMBRE_ASIGNATURA" caption="Materia"></dxi-column>
+   <dxi-column dataField="NOMBRE_TIPO_PRACTICA" caption="Tipo actual" cellTemplate="antes"></dxi-column><dxi-column caption="Tipo nuevo" cellTemplate="despues"></dxi-column>
+   <div *dxTemplate="let cell of 'antes'">{{cell.value || 'Sin clasificación'}}</div><div *dxTemplate="let cell of 'despues'">{{tipoAsignado?.NOMBRE_TIPO}}</div>
+  </dx-data-grid>
+  <div class="acciones"><dx-button [text]="reemplazos ? 'Confirmar reemplazos y guardar' : 'Confirmar y guardar asignación'" icon="save" type="default" [disabled]="busy" (onClick)="guardarAsignacion()"></dx-button><dx-button text="Volver a selección" [disabled]="busy" (onClick)="revisando=false"></dx-button></div>
+ </div>
+ <div class="acciones"><dx-button text="Cerrar asignación" [disabled]="busy" (onClick)="cerrarAsignacion()"></dx-button></div>
+</section>
+<section class="panel formulario" *ngIf="draft">
+ <h3>{{draft.CORR_TIPO_PRACTICA ? 'Editar tipo de práctica' : 'Nuevo tipo de práctica'}}</h3>
+ <dx-form #formulario [formData]="draft" [colCount]="3" labelLocation="top" [disabled]="busy">
+  <dxo-col-count-by-screen [xs]="1" [sm]="2" [md]="3" [lg]="3"></dxo-col-count-by-screen>
+  <dxi-item dataField="CODIGO_TIPO" [label]="{text:'Código'}" [editorOptions]="{maxLength:30,readOnly:draft.CORR_TIPO_PRACTICA>0}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+  <dxi-item dataField="NOMBRE_TIPO" [label]="{text:'Nombre'}" [editorOptions]="{maxLength:80}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+  <dxi-item dataField="HABILITA_COBROS_ADICIONALES" editorType="dxCheckBox" [label]="{text:'Habilita cobros adicionales'}" [editorOptions]="{readOnly:!!draft.CANTIDAD_ASIGNATURAS}"></dxi-item>
+  <dxi-item dataField="ACTIVO" editorType="dxCheckBox" [label]="{text:'Activo'}"></dxi-item>
+ </dx-form>
+ <p class="ayuda">El código queda reservado. Una regla de cobro utilizada no se modifica; cree otro tipo. Para desactivar, no debe tener asignaturas activas.</p>
+ <div class="acciones"><dx-button text="Guardar" icon="save" type="default" [disabled]="busy" (onClick)="guardar()"></dx-button><dx-button text="Cancelar" [disabled]="busy" (onClick)="cancelar()"></dx-button></div>
+</section>

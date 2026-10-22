@@ -15,6 +15,7 @@ import { AcaFacultadesSedesService } from './aca-facultades-sedes/aca-facultades
 import { AcaFacultadesSedes } from './aca-facultades-sedes/models/aca-facultades-sedes';
 import { AcaFacultades } from './models/aca-facultades';
 import { AcaFacultadesService } from './aca-facultades.service';
+import { AcaCarrerasConfigService } from '../aca-carreras/aca-carreras-config.service';
 
 const ESTADO_FIELD = 'ACTIVO';
 
@@ -55,12 +56,24 @@ export class AcaFacultadesComponent extends CBaseComponent implements OnInit {
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Facultades';
 	// Qué hace: recuerda si cambiaron las sedes para refrescar la columna "Sedes" del grid al volver.
 	private sedesCambiaron = false;
+    empleados:any[]=[];carrerasFacultad:any[]=[];ciclosFacultad:any[]=[];relacionesCargando=false;private secuenciaRelaciones=0;
+    private decanosCache?:{source:any[];id:number|null;rows:any[]};
+    get decanosDisponibles(){const id=this.model?.CORR_DECANO??null;if(this.decanosCache?.source===this.empleados&&this.decanosCache.id===id)return this.decanosCache.rows;const rows=this.empleados.filter(e=>e.ACTIVO||e.Key===id);this.decanosCache={source:this.empleados,id,rows};return rows;}
+    get puedeVerCarreras(){return this.appInfoService.getPermiso('/aca-carreras')?.includes('R');}
+    get puedeCrearCarrera(){return this.appInfoService.getPermiso('/aca-carreras')?.includes('C');}
+    get puedeVerCiclos(){return this.appInfoService.getPermiso('/aca-periodos-academicos')?.includes('R');}
+    readonly carreraColumns:any[]=[{dataField:'CODIGO_CARRERA',caption:'Código',width:110},{dataField:'NOMBRE_CARRERA',caption:'Carrera',minWidth:280},{dataField:'NOMBRE_AREA',caption:'Área académica',width:180},{dataField:'NOMBRE_GRADO',caption:'Grado',width:150},{dataField:'SEDES_ACTIVAS',caption:'Sedes autorizadas',width:220},{dataField:'NOMBRE_RESPONSABLE',caption:'Responsable',width:230},{dataField:'ACTIVO',caption:'Activo',dataType:'boolean',width:80},{caption:'Acción',cellTemplate:'verCarrera',width:150,fixed:true,fixedPosition:'right'}];
+    readonly cicloColumns:any[]=[{dataField:'NOMBRE_AREA',caption:'Área académica',width:170},{dataField:'ANIO',caption:'Año',width:90},{dataField:'NUMERO_PERIODO',caption:'Ciclo',width:80},{dataField:'NOMBRE_SEDE',caption:'Sede',width:200},{dataField:'ESTADO',caption:'Estado del ciclo',width:130},{dataField:'PARTICIPA_FACULTAD',caption:'Participa facultad',dataType:'boolean',width:120},{dataField:'PARTICIPA_SEDE',caption:'Participa sede',dataType:'boolean',width:110},{dataField:'CARRERAS_INCLUIDAS',caption:'Carreras incluidas',width:110},{dataField:'PENDIENTES',caption:'Con observaciones',width:120},{caption:'Acción',cellTemplate:'verCiclo',width:150,fixed:true,fixedPosition:'right'}];
+    cargarRelaciones():void {const id=this.model?.CORR_FACULTAD,seq=++this.secuenciaRelaciones;this.carrerasFacultad=[];this.ciclosFacultad=[];if(!id)return;this.relacionesCargando=true;
+        this.configuracion.facultad(id).pipe(take(1)).subscribe({next:r=>{if(seq!==this.secuenciaRelaciones||id!==this.model?.CORR_FACULTAD)return;this.relacionesCargando=false;if(!r.Result){this.notifyApiResponse(r);return;}this.carrerasFacultad=r.Data.Carreras;this.ciclosFacultad=r.Data.Ciclos;},error:e=>{if(seq===this.secuenciaRelaciones){this.relacionesCargando=false;this.notifyApiError(e);}}});
+    }
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: AcaFacultadesService,
-		private sedeService: AcaFacultadesSedesService
+		private sedeService: AcaFacultadesSedesService,
+        private configuracion:AcaCarrerasConfigService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -77,6 +90,7 @@ export class AcaFacultadesComponent extends CBaseComponent implements OnInit {
 
 	// Qué hace: inicializa la vista: subtítulo, catálogo y combo de sedes.
 	ngOnInit(): void {
+        this.configuracion.catalogos().pipe(take(1)).subscribe({next:r=>{if(r.Result)this.empleados=r.Data.Empleados;else this.notifyApiResponse(r);},error:e=>this.notifyApiError(e)});
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 		this.cargarSedesLookup();
@@ -86,6 +100,7 @@ export class AcaFacultadesComponent extends CBaseComponent implements OnInit {
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
+            this.secuenciaRelaciones++;this.carrerasFacultad=[];this.ciclosFacultad=[];this.relacionesCargando=false;
 			this.subTituloVentana = this.maintenanceSubtitulo;
 			this.limpiarSedes();
 			if (this.sedesCambiaron) {
@@ -108,6 +123,7 @@ export class AcaFacultadesComponent extends CBaseComponent implements OnInit {
 				CODIGO_FACULTAD: xModel.CODIGO_FACULTAD,
 				NOMBRE_FACULTAD: `${xModel.NOMBRE_FACULTAD ?? ''}`.trim(),
 				ACTIVO: xModel.ACTIVO,
+                CORR_DECANO:xModel.CORR_DECANO??null,NOMBRE_DECANO:xModel.NOMBRE_DECANO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -127,6 +143,7 @@ export class AcaFacultadesComponent extends CBaseComponent implements OnInit {
 			CODIGO_FACULTAD: '',
 			NOMBRE_FACULTAD: '',
 			ACTIVO: true,
+            CORR_DECANO:null,
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: new Date(),
@@ -195,6 +212,7 @@ export class AcaFacultadesComponent extends CBaseComponent implements OnInit {
 		}
 		super.rowDblClick(e);
 		this.consultarSedes(this.model?.CORR_FACULTAD);
+        this.cargarRelaciones();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 			this.bloquear();
@@ -210,6 +228,7 @@ export class AcaFacultadesComponent extends CBaseComponent implements OnInit {
 		this.model = this.fillData(e.row.data);
 		this.editarClick(e);
 		this.consultarSedes(this.model.CORR_FACULTAD);
+        this.cargarRelaciones();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 			this.habilitar();
@@ -222,6 +241,7 @@ export class AcaFacultadesComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 		super.nuevo();
+        this.secuenciaRelaciones++;this.carrerasFacultad=[];this.ciclosFacultad=[];this.relacionesCargando=false;
 		this.limpiarSedes();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);

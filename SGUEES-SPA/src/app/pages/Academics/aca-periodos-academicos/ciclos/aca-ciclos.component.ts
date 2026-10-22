@@ -20,6 +20,7 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
     facultadesSede: any[] = [];
     tab = 0; oferta: any[] = []; ofertaConsultada = false; fechaConsulta = this.hoy();
     private inicial: any = {}; private secuencia = 0;
+    private enlaceAtendido=false;
     readonly areaColumns: any[] = [{ dataField: 'NOMBRE_AREA', caption: 'Área académica' },
         { dataField: 'CICLOS_DEFINIDOS', caption: 'Ciclos definidos', width: 150 }, { dataField: 'CICLOS_HABILITADOS', caption: 'Habilitados', width: 130 },
         { caption: 'Acción', cellTemplate: 'abrirArea', width: 150 }];
@@ -139,7 +140,10 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         this.loadingVisible = true;
         forkJoin([this.service.areas(), this.service.catalogos()]).pipe(take(1), finalize(() => this.loadingVisible = false)).subscribe({
             next: ([areas, cat]) => { if (!areas.Result || !cat.Result) { this.notifyApiResponse(!areas.Result ? areas : cat); return; }
-                this.areas = areas.Data; this.catalogos = cat.Data; this.sedesDisponibles = this.catalogos.filter(x => x.TIPO === 'SEDE' && x.ACTIVO); }, error: e => this.notifyApiError(e),
+                this.areas = areas.Data; this.catalogos = cat.Data; this.sedesDisponibles = this.catalogos.filter(x => x.TIPO === 'SEDE' && x.ACTIVO);
+                const id=Number(this.router.snapshot.queryParamMap.get('ciclo'));
+                if(!this.enlaceAtendido&&Number.isInteger(id)&&id>0){this.enlaceAtendido=true;setTimeout(()=>this.abrirCiclo({CORR_CICLO_ACADEMICO:id}));}
+            }, error: e => this.notifyApiError(e),
         });
     }
     verCiclos(area: any): void {
@@ -155,6 +159,7 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         this.service.detalle(ciclo.CORR_CICLO_ACADEMICO).pipe(take(1), finalize(() => this.loadingVisible = false)).subscribe({
             next: r => { if (seq !== this.secuencia) return; if (!r.Result) { this.notifyApiResponse(r); return; }
                 this.sedeId = 0; this.facultadId = 0; this.aplicar(r.Data); this.tab = 0; this.vista = 'ficha';
+                this.areaElegida=this.areas.find(a=>a.CORR_AREA_ACADEMICA===this.model.CORR_AREA_ACADEMICA)??{CORR_AREA_ACADEMICA:this.model.CORR_AREA_ACADEMICA,NOMBRE_AREA:this.model.NOMBRE_AREA,ACTIVO:true};
                 if (paraActivar) this.revisarActivacion(); }, error: e => this.notifyApiError(e),
         });
     }

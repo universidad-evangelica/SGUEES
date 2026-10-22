@@ -20,16 +20,7 @@ namespace sguees.Repositories
         private const string _CampoEstado = "ACTIVO";
         private const bool _UsaEmpresa = true;
 
-        // Qué hace: elimina la facultad y sus sedes en una sola transacción.
-        // Cómo lo hace: las sedes no tienen otros dependientes; el servicio ya validó carreras y períodos.
-        private const string _SqlDelete =
-            "SET XACT_ABORT ON; " +
-            "BEGIN TRANSACTION; " +
-            "DELETE S FROM dbo.ACA_FACULTADES_SEDES S " +
-            "INNER JOIN dbo.ACA_FACULTADES F ON F.CORR_FACULTAD = S.CORR_FACULTAD " +
-            "WHERE F.CORR_EMPRESA = @CORR_EMPRESA AND F.CORR_FACULTAD = @CORR_FACULTAD; " +
-            "DELETE FROM dbo.ACA_FACULTADES WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_FACULTAD = @CORR_FACULTAD; " +
-            "COMMIT TRANSACTION;";
+        // Las escrituras verifican carreras, períodos, historial y ciclos en una transacción SQL.
 
         public ACA_FACULTADESRepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
@@ -96,171 +87,42 @@ namespace sguees.Repositories
         }
 
         public async Task<CResult> CreateAsync(ACA_FACULTADESTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult objResultado = new();
-            try
-            {
-                // Sin CORR_FACULTAD: lo asigna la base (IDENTITY).
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CODIGO_FACULTAD", Value = Data.CODIGO_FACULTAD, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "NOMBRE_FACULTAD", Value = Data.NOMBRE_FACULTAD, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO ?? true, DbType = System.Data.DbType.Boolean },
-                    new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
-                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
-                };
-                // Relectura por la llave natural (UQ_ACA_FACULTADES_CODIGO = empresa + código).
-                var pWhere = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CODIGO_FACULTAD", Value = Data.CODIGO_FACULTAD, DbType = System.Data.DbType.String },
-                };
-
-                var reader = await objData.Insert(_TableName, p, "", pWhere);
-                var response = new List<ACA_FACULTADESView>().FromDataReader(reader).FirstOrDefault();
-                reader.Close();
-                reader = null;
-
-                objResultado = Ok(response, 1, response?.CORR_FACULTAD ?? 0);
-            }
-            catch (Exception e)
-            {
-                objResultado = IsDuplicateKeyError(e)
-                    ? Error(2627, "Ya existe una facultad con ese código. Ingrese otro código para continuar.", e.Source)
-                    : Error(-1, e.Message, e.Source);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return objResultado;
-        }
+        { return await Configurar("CREAR", Data, vLOGIN_SISTEMA, vESTACION); }
 
         public async Task<CResult> UpdateAsync(ACA_FACULTADESTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult objResultado = new();
-            try
-            {
-                // El código y el estado no se editan aquí: el código queda fijo y el estado cambia con ActivarInactivar.
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "NOMBRE_FACULTAD", Value = Data.NOMBRE_FACULTAD, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
-                };
-                var pWhere = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_FACULTAD", Value = Data.CORR_FACULTAD, DbType = System.Data.DbType.Int32 },
-                };
-
-                var reader = await objData.Update(_TableName, p, pWhere);
-                var response = new List<ACA_FACULTADESView>().FromDataReader(reader).FirstOrDefault();
-                reader.Close();
-                reader = null;
-
-                objResultado = Ok(response, response == null ? 0 : 1, response?.CORR_FACULTAD ?? Data.CORR_FACULTAD);
-            }
-            catch (Exception e)
-            {
-                objResultado = Error(-1, e.Message, e.Source);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return objResultado;
-        }
+        { return await Configurar("GUARDAR", Data, vLOGIN_SISTEMA, vESTACION); }
 
         public async Task<CResult> DeleteAsync(ACA_FACULTADESTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult objResultado = new();
-            try
-            {
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_FACULTAD", Value = Data.CORR_FACULTAD, DbType = System.Data.DbType.Int32 },
-                };
-
-                await objData.ExecCmd(System.Data.CommandType.Text, _SqlDelete, true, p);
-
-                objResultado = Ok(null, 1, Data.CORR_FACULTAD);
-            }
-            catch (Exception e)
-            {
-                // Red de seguridad: si entre la validación y el borrado alguien le asignó una carrera, la FK lo impide.
-                objResultado = Error(-1, "No se puede eliminar la facultad porque tiene registros relacionados. Utilice Desactivar.", e.Source);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return objResultado;
-        }
+        { return await Configurar("ELIMINAR", Data, vLOGIN_SISTEMA, vESTACION); }
 
         public async Task<CResult> ActivarInactivarAsync(ACA_FACULTADESTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        { return await Configurar("ESTADO", Data, vLOGIN_SISTEMA, vESTACION); }
+
+        private async Task<CResult> Configurar(string operation, ACA_FACULTADESTable Data, string user, string station)
         {
-            CResult objResultado = new();
             try
             {
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_FACULTAD, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
-                    new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
-                    new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+                var p = new List<CParameter> {
+                    new() { ParameterName="@OPERACION", DbType=System.Data.DbType.AnsiString, Value=(object)(operation) ?? DBNull.Value },
+                    new() { ParameterName="@EMPRESA", DbType=System.Data.DbType.Int32, Value=(object)(Data.CORR_EMPRESA) ?? DBNull.Value },
+                    new() { ParameterName="@FACULTAD", DbType=System.Data.DbType.Int32, Value=(object)(Data.CORR_FACULTAD) ?? DBNull.Value, Direction=System.Data.ParameterDirection.InputOutput },
+                    new() { ParameterName="@SEDE", DbType=System.Data.DbType.Int32, Value=(object)(null) ?? DBNull.Value },
+                    new() { ParameterName="@DECANO", DbType=System.Data.DbType.Int32, Value=(object)(Data.CORR_DECANO) ?? DBNull.Value },
+                    new() { ParameterName="@CODIGO", DbType=System.Data.DbType.AnsiString, Value=(object)(Data.CODIGO_FACULTAD) ?? DBNull.Value },
+                    new() { ParameterName="@NOMBRE", DbType=System.Data.DbType.AnsiString, Value=(object)(Data.NOMBRE_FACULTAD) ?? DBNull.Value },
+                    new() { ParameterName="@ACTIVO", DbType=System.Data.DbType.Boolean, Value=(object)(Data.ACTIVO??true) ?? DBNull.Value },
+                    new() { ParameterName="@USUARIO", DbType=System.Data.DbType.AnsiString, Value=(object)(user) ?? DBNull.Value },
+                    new() { ParameterName="@ESTACION", DbType=System.Data.DbType.AnsiString, Value=(object)(station) ?? DBNull.Value }
                 };
-
-                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
-
-                if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
-                {
-                    var xWhere = new List<CParameter>
-                    {
-                        new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                        new CParameter() { ParameterName = "CORR_FACULTAD", Value = Data.CORR_FACULTAD, DbType = System.Data.DbType.Int32 },
-                    };
-                    var readerGet = await objData.GetDataReader(_ViewName, xWhere);
-                    var response = new List<ACA_FACULTADESView>().FromDataReader(readerGet).FirstOrDefault();
-                    readerGet.Close();
-
-                    objResultado = Ok(response, 1, response?.CORR_FACULTAD ?? Data.CORR_FACULTAD);
-                }
-                else
-                {
-                    objResultado = Error(
-                        (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value,
-                        (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value,
-                        "C" + _TableName + ".Mtto(" + UpdateType.Update.ToString() + ")");
-                }
-            }
-            catch (Exception e)
-            {
-                objResultado = Error(-1, e.Message, e.Source);
-            }
-            finally
-            {
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PR_ACA_FACULTAD_CONFIGURAR", true, p);
+                var id = Convert.ToInt32(objData.objCommand.Parameters["@FACULTAD"].Value);
                 objData.objConnection.Close();
+                if (operation.EndsWith("ELIMINAR")) return Ok(null, 1, id);
+                Data.CORR_FACULTAD = id;
+                var result = await GetAsync(new List<CParameter> { new() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 }, new() { ParameterName = "CORR_FACULTAD", Value = id, DbType = System.Data.DbType.Int32 } }); result.RowsAffected = 1; result.CodeHelper = id; return result;
             }
-
-            return objResultado;
+            catch (Exception ex) { return Error(-1, ex.Message, ex.Source); }
+            finally { objData.objConnection.Close(); }
         }
 
         private static CResult Ok(object data, int rows, int codeHelper)

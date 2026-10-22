@@ -6,6 +6,7 @@ namespace sguees.Services
 {
     public interface IACA_CARRERASService
     {
+        Task<CResult> GetCatalogoAsync(CatalogoCarrera catalogo, int empresa);
         Task<CResult> GetAllAsync(ACA_CARRERASParam xWhere);
         Task<CResult> GetAsync(ACA_CARRERASParam xWhere);
         Task<CResult> CreateAsync(ACA_CARRERASTable Data, string vLOGIN_SISTEMA, string vESTACION);

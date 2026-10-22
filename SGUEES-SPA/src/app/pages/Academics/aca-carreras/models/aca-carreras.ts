@@ -7,6 +7,11 @@ export interface AcaCarrera {
     CORR_FACULTAD: number | null;
     CORR_GRADO_ACADEMICO: number | null;
     ACTIVO: boolean;
+    CORR_DECANO?: number | null;
+    NOMBRE_DECANO?: string;
+    MAX_REPETICIONES?: number;
+    CREDITOS_REQUERIDOS?: number | null;
+    NOTA_MINIMA?: number | null;
     NOMBRE_AREA?: string;
     NOMBRE_FACULTAD?: string;
     NOMBRE_GRADO?: string;
@@ -17,6 +22,8 @@ export interface AcaCarrera {
     FECHA_ACTU?: string;
 }
 export interface CatalogoCarrera {
+    CORR_DECANO?: number | null;
+    NOMBRE_DECANO?: string;
     Key: number;
     Value: string;
     ACTIVO: boolean;

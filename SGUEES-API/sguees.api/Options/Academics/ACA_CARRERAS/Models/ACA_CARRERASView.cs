@@ -15,6 +15,11 @@ namespace sguees.Models
         public string CODIGO_CARRERA { get; set; }
         public string NOMBRE_CARRERA { get; set; }
         public bool ACTIVO { get; set; }
+        public int? CORR_DECANO { get; set; }
+        public string NOMBRE_DECANO { get; set; }
+        public short MAX_REPETICIONES { get; set; }
+        public decimal? CREDITOS_REQUERIDOS { get; set; }
+        public decimal? NOTA_MINIMA { get; set; }
         public string NOMBRE_AREA { get; set; }
         public string NOMBRE_FACULTAD { get; set; }
         public string NOMBRE_GRADO { get; set; }

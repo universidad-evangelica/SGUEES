@@ -1,0 +1,13 @@
+.carrera-datos-compactos {
+    max-width: 1100px;
+    padding: 16px 12px;
+}
+.carrera-reglas-ayuda {
+    margin: 12px 0 0;
+    line-height: 1.5;
+    color: inherit;
+    opacity: .8;
+}
+@media (max-width: 599px) {
+    .carrera-datos-compactos { padding: 12px 0; }
+}

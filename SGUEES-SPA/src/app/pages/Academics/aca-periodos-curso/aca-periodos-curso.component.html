@@ -1,0 +1,25 @@
+<section class="panel" *ngIf="!draft">
+ <h2>Períodos de curso</h2>
+ <p class="ayuda">Define la duración habitual de las materias. No modifica el calendario de los ciclos académicos.</p>
+ <div class="acciones"><dx-button text="Nuevo período" icon="add" type="default" [visible]="permiteAdd" [disabled]="busy || !!draft" (onClick)="nuevo()"></dx-button><dx-button text="Actualizar" icon="refresh" [disabled]="busy || !!draft" (onClick)="cargar()"></dx-button></div>
+ <dx-data-grid [dataSource]="rows" keyExpr="CORR_PERIODO_CURSO" [showBorders]="true" [columnAutoWidth]="true" [height]="rows.length <= 7 ? 'auto' : 480" [wordWrapEnabled]="true">
+  <dxo-scrolling mode="standard"></dxo-scrolling><dxo-paging [pageSize]="10"></dxo-paging><dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[10,25,50]"></dxo-pager>
+  <dxo-header-filter [visible]="true"></dxo-header-filter><dxo-search-panel [visible]="true"></dxo-search-panel><dxo-column-chooser [enabled]="true" mode="select" title="Columnas visibles"></dxo-column-chooser>
+  <dxi-column dataField="CODIGO_PERIODO" caption="Código" [visible]="false"></dxi-column><dxi-column dataField="NOMBRE_PERIODO" caption="Período" [allowHiding]="false"></dxi-column><dxi-column dataField="DURACION_MESES" caption="Meses" dataType="number"></dxi-column><dxi-column dataField="ACTIVO" caption="Estado" dataType="boolean" cellTemplate="estado"></dxi-column><dxi-column dataField="CANTIDAD_ASIGNATURAS" caption="Materias"></dxi-column>
+  <dxi-column caption="Acción" cellTemplate="acciones" [width]="135" [fixed]="true" fixedPosition="left" [allowHiding]="false"></dxi-column>
+  <div *dxTemplate="let cell of 'estado'"><span class="catalog-status" [class.inactivo]="!cell.value">{{cell.value ? 'Activo' : 'Inactivo'}}</span></div>
+  <div *dxTemplate="let cell of 'acciones'"><dx-button text="Editar" icon="edit" [visible]="permiteEdit" [disabled]="busy || !!draft" (onClick)="editar(cell.data)"></dx-button></div>
+ </dx-data-grid>
+</section>
+<section class="panel formulario" *ngIf="draft">
+ <h3>{{draft.CORR_PERIODO_CURSO ? 'Editar período' : 'Nuevo período'}}</h3>
+ <dx-form #formulario [formData]="draft" [colCount]="3" labelLocation="top" [disabled]="busy">
+  <dxo-col-count-by-screen [xs]="1" [sm]="2" [md]="3" [lg]="3"></dxo-col-count-by-screen>
+  <dxi-item dataField="CODIGO_PERIODO" [label]="{text:'Código'}" [editorOptions]="{maxLength:20,readOnly:draft.CORR_PERIODO_CURSO>0}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+  <dxi-item dataField="NOMBRE_PERIODO" [label]="{text:'Nombre'}" [editorOptions]="{maxLength:80}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+  <dxi-item dataField="DURACION_MESES" editorType="dxNumberBox" [label]="{text:'Duración en meses'}" [editorOptions]="{min:1,max:120,showSpinButtons:true,format:'#0',readOnly:!!draft.CANTIDAD_ASIGNATURAS}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+  <dxi-item dataField="ACTIVO" editorType="dxCheckBox" [label]="{text:'Activo'}"></dxi-item>
+ </dx-form>
+ <p class="ayuda">El código queda reservado. Una duración utilizada no se modifica; cree otro período. Para desactivar, no debe tener asignaturas activas.</p>
+ <div class="acciones"><dx-button text="Guardar" icon="save" type="default" [disabled]="busy" (onClick)="guardar()"></dx-button><dx-button text="Cancelar" [disabled]="busy" (onClick)="cancelar()"></dx-button></div>
+</section>

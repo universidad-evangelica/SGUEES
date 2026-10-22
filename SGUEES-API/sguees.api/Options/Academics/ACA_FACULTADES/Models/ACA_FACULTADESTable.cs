@@ -7,6 +7,7 @@ namespace sguees.Models
     // Cómo lo hace: los tipos coinciden con la tabla; CORR_FACULTAD es IDENTITY y lo genera la base.
     public class ACA_FACULTADESTable : BaseEntity
     {
+        public int? CORR_DECANO { get; set; }
         public int CORR_FACULTAD { get; set; }
         public int CORR_EMPRESA { get; set; }
         public string CODIGO_FACULTAD { get; set; }

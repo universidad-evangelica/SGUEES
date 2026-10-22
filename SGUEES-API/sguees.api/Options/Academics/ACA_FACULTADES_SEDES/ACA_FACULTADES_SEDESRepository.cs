@@ -73,101 +73,18 @@ namespace sguees.Repositories
         }
 
         public async Task<CResult> CreateAsync(ACA_FACULTADES_SEDESTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult objResultado = new();
-            try
-            {
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_FACULTAD", Value = Data.CORR_FACULTAD, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_SEDE", Value = Data.CORR_SEDE, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO ?? true, DbType = System.Data.DbType.Boolean },
-                    new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
-                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
-                };
-
-                var reader = await objData.Insert(_TableName, p, "", KeyParameters(Data));
-                var response = new List<ACA_FACULTADES_SEDESView>().FromDataReader(reader).FirstOrDefault();
-                reader.Close();
-                reader = null;
-
-                objResultado = Ok(response, 1, response?.CORR_SEDE ?? Data.CORR_SEDE);
-            }
-            catch (Exception e)
-            {
-                objResultado = IsDuplicateKeyError(e)
-                    ? Error(2627, "La sede ya está asignada a esta facultad.", e.Source)
-                    : Error(-1, e.Message, e.Source);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return objResultado;
-        }
+        { return await Configurar("SEDE_CREAR", Data, vLOGIN_SISTEMA, vESTACION); }
 
         public async Task<CResult> UpdateAsync(ACA_FACULTADES_SEDESTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult objResultado = new();
-            try
-            {
-                // La sede es parte de la llave: al editar solo cambia el estado.
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO ?? true, DbType = System.Data.DbType.Boolean },
-                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
-                };
-
-                var reader = await objData.Update(_TableName, p, KeyParameters(Data));
-                var response = new List<ACA_FACULTADES_SEDESView>().FromDataReader(reader).FirstOrDefault();
-                reader.Close();
-                reader = null;
-
-                objResultado = Ok(response, response == null ? 0 : 1, response?.CORR_SEDE ?? Data.CORR_SEDE);
-            }
-            catch (Exception e)
-            {
-                objResultado = Error(-1, e.Message, e.Source);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return objResultado;
-        }
+        { return await Configurar("SEDE_GUARDAR", Data, vLOGIN_SISTEMA, vESTACION); }
 
         public async Task<CResult> DeleteAsync(ACA_FACULTADES_SEDESTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult objResultado = new();
-            try
-            {
-                var rows = (int)await objData.Delete(_TableName, KeyParameters(Data));
-                objResultado = Ok(null, rows, Data.CORR_SEDE);
-            }
-            catch (Exception e)
-            {
-                objResultado = Error(-1, e.Message, e.Source);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return objResultado;
-        }
+        { return await Configurar("SEDE_ELIMINAR", Data, vLOGIN_SISTEMA, vESTACION); }
 
         // Qué hace: confirma que la facultad exista en la empresa de la sesión.
         public async Task<bool> FacultadEsDeEmpresaAsync(int corrEmpresa, int corrFacultad)
         {
-            return await ExisteAsync("ACA_FACULTADES", new List<CParameter>
+            return await ExisteAsync("V_ACA_FACULTADES", new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_FACULTAD", Value = corrFacultad, DbType = System.Data.DbType.Int32 },
@@ -177,7 +94,7 @@ namespace sguees.Repositories
         // Qué hace: confirma que la sede exista, esté activa (ESTADO_SEDE = 'A') y sea de la empresa de la sesión.
         public async Task<bool> SedeActivaDeEmpresaAsync(int corrEmpresa, int corrSede)
         {
-            return await ExisteAsync("GEN_SEDES", new List<CParameter>
+            return await ExisteAsync("V_ACA_SEDES_VALIDACION", new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_SEDE", Value = corrSede, DbType = System.Data.DbType.Int32 },
@@ -207,6 +124,33 @@ namespace sguees.Repositories
                 new CParameter() { ParameterName = "CORR_FACULTAD", Value = Data.CORR_FACULTAD, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_SEDE", Value = Data.CORR_SEDE, DbType = System.Data.DbType.Int32 },
             };
+        }
+
+        private async Task<CResult> Configurar(string operation, ACA_FACULTADES_SEDESTable Data, string user, string station)
+        {
+            try
+            {
+                var p = new List<CParameter> {
+                    new() { ParameterName="@OPERACION", DbType=System.Data.DbType.AnsiString, Value=(object)(operation) ?? DBNull.Value },
+                    new() { ParameterName="@EMPRESA", DbType=System.Data.DbType.Int32, Value=(object)(Data.CORR_EMPRESA) ?? DBNull.Value },
+                    new() { ParameterName="@FACULTAD", DbType=System.Data.DbType.Int32, Value=(object)(Data.CORR_FACULTAD) ?? DBNull.Value, Direction=System.Data.ParameterDirection.InputOutput },
+                    new() { ParameterName="@SEDE", DbType=System.Data.DbType.Int32, Value=(object)(Data.CORR_SEDE) ?? DBNull.Value },
+                    new() { ParameterName="@DECANO", DbType=System.Data.DbType.Int32, Value=(object)(null) ?? DBNull.Value },
+                    new() { ParameterName="@CODIGO", DbType=System.Data.DbType.AnsiString, Value=(object)(null) ?? DBNull.Value },
+                    new() { ParameterName="@NOMBRE", DbType=System.Data.DbType.AnsiString, Value=(object)(null) ?? DBNull.Value },
+                    new() { ParameterName="@ACTIVO", DbType=System.Data.DbType.Boolean, Value=(object)(Data.ACTIVO??true) ?? DBNull.Value },
+                    new() { ParameterName="@USUARIO", DbType=System.Data.DbType.AnsiString, Value=(object)(user) ?? DBNull.Value },
+                    new() { ParameterName="@ESTACION", DbType=System.Data.DbType.AnsiString, Value=(object)(station) ?? DBNull.Value }
+                };
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PR_ACA_FACULTAD_CONFIGURAR", true, p);
+                var id = Convert.ToInt32(objData.objCommand.Parameters["@FACULTAD"].Value);
+                objData.objConnection.Close();
+                if (operation.EndsWith("ELIMINAR")) return Ok(null, 1, Data.CORR_SEDE);
+
+                var result = await GetAsync(KeyParameters(Data)); result.RowsAffected = 1; result.CodeHelper = Data.CORR_SEDE; return result;
+            }
+            catch (Exception ex) { return Error(-1, ex.Message, ex.Source); }
+            finally { objData.objConnection.Close(); }
         }
 
         private static CResult Ok(object data, int rows, int codeHelper)
