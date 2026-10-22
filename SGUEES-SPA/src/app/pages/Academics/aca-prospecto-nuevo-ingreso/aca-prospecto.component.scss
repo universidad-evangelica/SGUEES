@@ -487,7 +487,8 @@
 	line-height: 22px;
 }
 
-:host ::ng-deep .aca-prospecto-req--vacio .dx-texteditor {
+:host ::ng-deep .aca-prospecto-req--vacio .dx-texteditor,
+:host ::ng-deep .dx-texteditor.aca-prospecto-alta-vacio {
 	border-color: #e53935 !important;
 }
 

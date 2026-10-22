@@ -177,8 +177,8 @@
                             [colCount]="8"
                             [readOnly]="readOnly"
                             [items]="itemsPersona"
-                            (onContentReady)="pintarRequeridos()"
-                            (onFieldDataChanged)="pintarRequeridos()"
+                            (onContentReady)="pintarRequeridos($event)"
+                            (onFieldDataChanged)="pintarRequeridos($event)"
                         >
                             <div *dxTemplate="let cellInfo of 'CORR_SEXOLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(personaModel?.CORR_SEXO)">
                                 <app-data-lookup

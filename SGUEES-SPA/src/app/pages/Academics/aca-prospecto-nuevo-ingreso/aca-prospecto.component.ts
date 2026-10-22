@@ -826,12 +826,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     // Qué hace: enciende el borde rojo de los editores que el dx-form ya marca como requeridos.
     // Cómo lo hace: en el alta solo revisa los tres datos del encabezado. Después valida el formulario completo.
-    pintarRequeridos(): void {
+    pintarRequeridos(e?: any): void {
         if (!this.mostrarFaltantesApartado() || this.readOnly) {
             return;
         }
         if (this.esAlta()) {
-            this.pintarRequeridosAlta();
+            this.pintarRequeridosAlta(e?.component ?? this.formPersona?.instance);
             return;
         }
         this.formPersona?.instance?.validate();
@@ -841,19 +841,23 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: en el alta pinta en rojo solo nombres, primer apellido y fecha de nacimiento.
-    // Cómo lo hace: apaga el inválido del resto de editores y marca esos tres si están vacíos.
-    private pintarRequeridosAlta(): void {
-        const form = this.formPersona?.instance;
-        if (!form) {
+    // Cómo lo hace: pone la clase en el editor. La fecha no tiene regla del dx-form, por eso no basta isValid.
+    private pintarRequeridosAlta(form: any): void {
+        if (!form?.getEditor?.('NOMBRES')) {
             return;
         }
-        ['APELLIDO2', 'DUI', 'CARNET_RESIDENCIA', 'NIT', 'LUGAR_NACIMIENTO', 'IGLESIA_ACTUAL', 'DIRECCION_ACTUAL'].forEach((campo) => {
-            form.getEditor(campo)?.option('isValid', true);
-        });
-        const persona = this.leerFormData(this.formPersona, this.personaModel);
-        form.getEditor('NOMBRES')?.option('isValid', !this.datoVacio(persona?.NOMBRES));
-        form.getEditor('APELLIDO1')?.option('isValid', !this.datoVacio(persona?.APELLIDO1));
-        form.getEditor('FECHA_NACIMIENTO')?.option('isValid', !!persona?.FECHA_NACIMIENTO);
+        const persona = this.leerFormData(this.formPersona, this.personaModel) ?? this.personaModel;
+        this.marcarEditorAlta(form, 'NOMBRES', this.datoVacio(persona?.NOMBRES));
+        this.marcarEditorAlta(form, 'APELLIDO1', this.datoVacio(persona?.APELLIDO1));
+        this.marcarEditorAlta(form, 'FECHA_NACIMIENTO', !persona?.FECHA_NACIMIENTO);
+    }
+
+    private marcarEditorAlta(form: any, campo: string, vacio: boolean): void {
+        const editor = form.getEditor(campo);
+        const crudo = editor?.element?.();
+        const nodo = (crudo?.jquery ? crudo.get(0) : crudo) as HTMLElement | undefined;
+        const caja = nodo?.classList?.contains('dx-texteditor') ? nodo : nodo?.querySelector?.('.dx-texteditor');
+        caja?.classList.toggle('aca-prospecto-alta-vacio', vacio);
     }
 
     // Qué hace: cuenta lo que el alta pide en Datos personales.
