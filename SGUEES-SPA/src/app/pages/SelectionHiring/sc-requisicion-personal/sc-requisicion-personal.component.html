@@ -128,6 +128,19 @@
           >
           </app-data-lookup>
         </div>
+        <!-- motivo: Selector lookup de empleado sustituto (app-data-lookup) filtrado por unidad y puesto -->
+        <div *dxTemplate="let cellInfo of 'CORR_EMPLEADO_SUSTITUTOLookup'">
+          <app-data-lookup
+            [model]="mCORR_EMPLEADO_SUSTITUTO"
+            [(value)]="model.CORR_EMPLEADO_SUSTITUTO"
+            [selectedRowKeys]="selectedLookUpCORR_EMPLEADO_SUSTITUTO"
+            [readOnly]="readOnly || !model.CORR_UNIDAD || !model.CORR_PUESTO"
+            [valueExpr]="'CORR_EMPLEADO'"
+            [displayExpr]="'NOMBRE_EMPLEADO'"
+            [lookupColumns]="empleadoSustitutoLookupColumns"
+          >
+          </app-data-lookup>
+        </div>
 		<!-- motivo: Chip de estado del formulario: refleja el estado de flujo/bitácora (Aprobado JI, Aprobado JU, Aprobado GG, Devuelta JI, etc.) si existe -->
 		<div *dxTemplate="let cellInfo of 'CORR_ESTADO_REQUISICIONChip'">
 			<span
@@ -150,7 +163,8 @@
           </div>
         </div>
       </dx-form>
-      <div class="dx-grid-deta">
+      <!-- motivo: Grilla de observadores: visible únicamente cuando la requisición ya fue guardada en BD (CORR_REQUISICION_PERSONAL > 0) -->
+      <div class="dx-grid-deta" *ngIf="model?.CORR_REQUISICION_PERSONAL > 0">
         <dx-toolbar class="mb-20">
           <dxi-item location="before">
             <div *dxTemplate>

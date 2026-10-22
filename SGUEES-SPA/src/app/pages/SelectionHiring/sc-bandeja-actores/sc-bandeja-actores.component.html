@@ -327,7 +327,7 @@
 							<span class="bandeja-field__label">Tipo de vacante</span>
 							<span class="bandeja-field__value">{{ selectedItem.NOMBRE_TIPO_VACANTE }}</span>
 						</div>
-						<!-- Validación estricta !== contra null para cumplir con regla eqeqeq del linter -->
+						<!-- motivo: Comparación estricta !== para validación de plazas, salario y entrevistas según regla eqeqeq -->
 						<div class="bandeja-field" *ngIf="selectedItem.CANTIDAD_PLAZAS !== null">
 							<span class="bandeja-field__label">Cantidad de plazas</span>
 							<span class="bandeja-field__value">
@@ -448,8 +448,9 @@
 						[disabled]="accionEnCurso"
 						(onClick)="accionAprobar()"
 					></dx-button>
+					<!-- motivo: Botón para observar/devolver la requisición con comentarios obligatorios -->
 					<dx-button
-						text="Devolver"
+						text="Con observaciones"
 						type="default"
 						icon="revert"
 						[width]="'100%'"

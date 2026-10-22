@@ -47,6 +47,18 @@ namespace SGUEES.Services
 				});
 			}
 
+			// Qué hace: Añade el parámetro NOMBRE_UNIDAD al listado de parámetros de búsqueda.
+			// Cómo lo hace: Valida que la cadena no esté vacía e inserta el CParameter correspondiente con tipo String.
+			if (!string.IsNullOrWhiteSpace(xWhere.NOMBRE_UNIDAD))
+			{
+				p.Add(new CParameter
+				{
+					ParameterName = "NOMBRE_UNIDAD",
+					Value = xWhere.NOMBRE_UNIDAD.Trim(),
+					DbType = DbType.String,
+				});
+			}
+
 			if (xWhere.FECHA_DESDE.HasValue)
 			{
 				p.Add(new CParameter

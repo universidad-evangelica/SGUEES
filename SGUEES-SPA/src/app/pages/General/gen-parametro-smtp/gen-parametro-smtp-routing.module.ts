@@ -12,11 +12,8 @@ import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { DxTooltipModule } from 'devextreme-angular/ui/tooltip';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
-import { DxPopupModule } from 'devextreme-angular/ui/popup';
-import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
-import { TextEditorModule } from 'src/app/shared/components';
 import { ToastModule } from 'primeng/toast';
 import { GenParametroSmtpComponent } from './gen-parametro-smtp.component';
 
@@ -35,9 +32,6 @@ const routes: Routes = [{ path: '', component: GenParametroSmtpComponent }];
 		DxTextBoxModule,
 		DxTooltipModule,
 		DxDataGridModule,
-		DxPopupModule,
-		DxTextAreaModule,
-		TextEditorModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
 		ToastModule,
