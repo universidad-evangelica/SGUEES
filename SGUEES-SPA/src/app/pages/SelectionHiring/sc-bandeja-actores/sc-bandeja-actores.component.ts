@@ -45,8 +45,10 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	filtroEstado = 'TODOS';
 	filtroUnidad = 'TODOS';
 	filtroBusqueda = '';
-	fechaDesde: Date | null = null;
-	fechaHasta: Date | null = null;
+	// Qué hace: Variables de enlace para los filtros de rango de fechas de la bandeja de actores.
+	// Cómo lo hace: Se definen como any para permitir null sin violar el tipo Date | number | string de dx-date-box bajo strictTemplates.
+	fechaDesde: any = null;
+	fechaHasta: any = null;
 
 	kpis: ScBandejaActoresKpi[] = [];
 	totalRequisicionesApi = 0;

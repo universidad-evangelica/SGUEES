@@ -27,6 +27,16 @@ export class SegUsuarioComponent extends CBaseComponent implements OnInit {
 	opcionDetallePageSize = 20;
 	readOnly = false;
 
+	// Qué hace: estado para la pestaña de asociación 1 a 1 de Persona Natural con el Usuario.
+	// Cómo lo hace: almacena la fila única asignada, catálogo de disponibles para el modal y configuración de columnas.
+	personaAsignada: any[] = [];
+	personaAsignadaColumns: any[] = [];
+	personasDisponibles: any[] = [];
+	personasDisponiblesColumns: any[] = [];
+	modalAsociarVisible = false;
+	personaSeleccionadaKey: number | null = null;
+	cargandoPersonasDisponibles = false;
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -37,6 +47,8 @@ export class SegUsuarioComponent extends CBaseComponent implements OnInit {
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 		this.opcionDetalleColumns = this.service.getOpcionDetalleColumns();
+		this.personaAsignadaColumns = this.service.getPersonaAsignadaColumns();
+		this.personasDisponiblesColumns = this.service.getPersonasDisponiblesColumns();
 	}
 
 	ngOnInit(): void {
@@ -138,17 +150,20 @@ export class SegUsuarioComponent extends CBaseComponent implements OnInit {
 
 	override nuevo(): void {
 		super.nuevo();
+		this.personaAsignada = [];
 		this.consultarSEG_USUARIO_OPCION();
 	}
 
 	override editarClick(e: any): void {
 		super.editarClick(e);
 		this.consultarSEG_USUARIO_OPCION();
+		this.consultarPersonaAsignada();
 	}
 
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
 		this.consultarSEG_USUARIO_OPCION();
+		this.consultarPersonaAsignada();
 	}
 
 	guardar(): void {
@@ -488,6 +503,128 @@ export class SegUsuarioComponent extends CBaseComponent implements OnInit {
 				error: (error: any) => {
 					this.notifyApiError(error);
 					this.loadingVisible = false;
+				},
+			});
+	}
+
+	// Qué hace: consulta la persona natural asociada al usuario en edición.
+	// Cómo lo hace: llama a getPersonaAsignada por LOGIN_SISTEMA y asigna el resultado a personaAsignada (0 o 1 elemento).
+	consultarPersonaAsignada(): void {
+		if (!this.model?.LOGIN_SISTEMA) {
+			this.personaAsignada = [];
+			return;
+		}
+
+		this.service
+			.getPersonaAsignada(this.model.LOGIN_SISTEMA)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && response.Data) {
+						this.personaAsignada = [response.Data];
+					} else {
+						this.personaAsignada = [];
+					}
+				},
+				error: (error: any) => {
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: abre el modal para seleccionar la persona natural a vincular o reemplazar.
+	// Cómo lo hace: limpia la selección previa para exigir elegir una nueva persona y carga el catálogo filtrado.
+	abrirModalAsociarPersona(): void {
+		if (this.readOnly) return;
+
+		if (!this.model?.LOGIN_SISTEMA) {
+			this.notifyFx('Debe guardar primero los datos del usuario antes de asociar una persona.', NotifyType.Warning);
+			return;
+		}
+
+		this.personaSeleccionadaKey = null;
+		this.modalAsociarVisible = true;
+		this.cargarPersonasDisponibles();
+	}
+
+	// Qué hace: obtiene el catálogo de personas naturales para el modal de asociación excluyendo la ya asignada al usuario actual.
+	// Cómo lo hace: consulta el servicio pasando loginSistema y aplica filtro de seguridad en memoria.
+	cargarPersonasDisponibles(buscar?: string): void {
+		this.cargandoPersonasDisponibles = true;
+		const login = this.model?.LOGIN_SISTEMA ?? '';
+		const corrActual = this.personaAsignada[0]?.CORR_PERSONA;
+
+		this.service
+			.getPersonasDisponibles(buscar, login)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoPersonasDisponibles = false;
+					if (response?.Result) {
+						const lista = (response.Data ?? []) as any[];
+						this.personasDisponibles = corrActual
+							? lista.filter((p: any) => p.CORR_PERSONA !== corrActual)
+							: lista;
+					} else {
+						this.personasDisponibles = [];
+					}
+				},
+				error: (error: any) => {
+					this.cargandoPersonasDisponibles = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: registra la persona seleccionada en la grilla del modal.
+	// Cómo lo hace: captura la clave CORR_PERSONA de la fila seleccionada.
+	onPersonaSeleccionadaChanged(e: any): void {
+		const keys = e.selectedRowKeys ?? [];
+		this.personaSeleccionadaKey = keys.length ? keys[0] : null;
+	}
+
+	// Qué hace: confirma y persiste la asociación 1 a 1 entre la persona natural y el usuario.
+	// Cómo lo hace: valida selección, verifica que la persona esté activa emitiendo warning si no lo está, y persiste llamando al servicio.
+	confirmarAsociacion(): void {
+		if (!this.personaSeleccionadaKey) {
+			this.notifyFx('Seleccione una persona natural de la lista.', NotifyType.Warning);
+			return;
+		}
+
+		const personaSeleccionada = this.personasDisponibles.find(
+			(p: any) => p.CORR_PERSONA === this.personaSeleccionadaKey
+		);
+
+		if (personaSeleccionada && (personaSeleccionada.ACTIVO_PERSONA === false || personaSeleccionada.ACTIVO_PERSONA === 0)) {
+			this.notifyFx(
+				'No se puede asociar esta persona al usuario porque se encuentra inactiva.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		const esEdicion = this.personaAsignada.length > 0;
+		this.loadingVisible = true;
+		this.service
+			.asociarPersona(this.model.LOGIN_SISTEMA, this.personaSeleccionadaKey)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (response?.Result) {
+						this.personaAsignada = response.Data ? [response.Data] : [];
+						this.modalAsociarVisible = false;
+						const mensaje = esEdicion
+							? 'Asociación de persona actualizada con exito!'
+							: 'Persona natural asociada con exito!';
+						this.notifyFx(mensaje, NotifyType.Success, { raw: true });
+					} else {
+						this.notifyApiResponse(response);
+					}
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
 				},
 			});
 	}
