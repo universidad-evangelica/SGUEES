@@ -158,7 +158,8 @@
         <section class="sguees-section-card aca-prospecto-card">
             <!-- Qué hace: cada bloque del formulario va en su propia pestaña para no bajar por toda la ficha. -->
             <!-- Cómo lo hace: deferRendering=false deja todas renderizadas para validar al guardar. -->
-            <dx-tab-panel #tabPanel class="aca-prospecto-tab-panel" [selectedIndex]="0" [animationEnabled]="false" [swipeEnabled]="false" [deferRendering]="false" itemTitleTemplate="tituloApartado">
+            <!-- Qué hace: en el alta solo se abren Datos personales y Contacto. El resto espera a que exista la solicitud. -->
+            <dx-tab-panel #tabPanel class="aca-prospecto-tab-panel" [selectedIndex]="0" [animationEnabled]="false" [swipeEnabled]="false" [deferRendering]="false" itemTitleTemplate="tituloApartado" (onSelectionChanging)="bloquearApartados($event)">
 
                 <!-- ================= Datos personales ================= -->
                 <dxi-item title="Datos personales" [icon]="'user'">
@@ -490,7 +491,7 @@
                 </dxi-item>
 
                 <!-- ================= Salud ================= -->
-                <dxi-item title="Salud" [icon]="'heart'">
+                <dxi-item title="Salud" [icon]="'heart'" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab">
                         <!-- Igual que el portal: el check habilita la limitación y al guardar queda POSEE_DISCAPACIDAD. -->
                         <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
@@ -537,7 +538,7 @@
                 </dxi-item>
 
                 <!-- ================= Datos familiares ================= -->
-                <dxi-item title="Datos familiares" [icon]="'group'">
+                <dxi-item title="Datos familiares" [icon]="'group'" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab">
                         <!-- Familia: mientras se edita un familiar, el formulario ocupa el lugar de la grilla. -->
                         <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
@@ -636,7 +637,7 @@
                 </dxi-item>
 
                 <!-- ================= Educación ================= -->
-                <dxi-item title="Educación" [icon]="'bookmark'" [visible]="esAcademico">
+                <dxi-item title="Educación" [icon]="'bookmark'" [visible]="esAcademico" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab">
                         <header class="aca-prospecto-section-head">
                             <span class="aca-prospecto-section-title">Carrera a la que aplica</span>
@@ -795,7 +796,7 @@
                 </dxi-item>
 
                 <!-- ================= Información adicional ================= -->
-                <dxi-item title="Información adicional" [icon]="'info'">
+                <dxi-item title="Información adicional" [icon]="'info'" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab">
                         <!-- Información adicional: N medios, uno por medio. "Otro" y "Referido amigo/familiar"
                              llevan campos propios, igual que en el portal. -->
@@ -881,7 +882,7 @@
                 </dxi-item>
 
                 <!-- Documentos del tipo 104 que además cumplen la regla de este prospecto. -->
-                <dxi-item title="Documentación" [icon]="'file'">
+                <dxi-item title="Documentación" [icon]="'file'" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab aca-prospecto-docs">
                         <header class="aca-prospecto-section-head">
                             <span class="aca-prospecto-section-title">Documentación obligatoria</span>

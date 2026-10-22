@@ -768,9 +768,28 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return estado !== 39 && estado !== 46;
     }
 
+    // Qué hace: en el alta impide abrir los apartados que todavía no aplican.
+    // Cómo lo hace: Datos personales y Contacto siguen activos; el resto se cancela.
+    bloquearApartados(e: any): void {
+        const titulo = e?.addedItems?.[0]?.title;
+        if (this.esAlta() && titulo && titulo !== 'Datos personales' && titulo !== 'Contacto') {
+            e.cancel = true;
+        }
+    }
+
     // Qué hace: cuántos datos de ese apartado faltan para el 100 % de enviar y aprobar.
-    // Cómo lo hace: los mismos campos que exige el API. Contacto no entra. -1 oculta el círculo.
+    // Cómo lo hace: en el alta solo cuenta nombre, primer apellido, fecha, correo y teléfono.
+    //               Los demás apartados no muestran número hasta que la solicitud exista.
     faltanApartado(data: any): number {
+        if (this.esAlta()) {
+            if (data?.title === 'Datos personales') {
+                return this.faltanAltaPersonales();
+            }
+            if (data?.title === 'Contacto') {
+                return this.faltanAltaContacto();
+            }
+            return -1;
+        }
         switch (data?.title) {
             case 'Datos personales':
                 return this.faltanDatosPersonales();
@@ -813,6 +832,29 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.formEstudioMedia?.instance?.validate();
         this.formEmergencia?.instance?.validate();
         this.formFamiliar?.instance?.validate();
+    }
+
+    // Qué hace: cuenta lo que el alta pide en Datos personales.
+    // Cómo lo hace: nombres, primer apellido y fecha de nacimiento.
+    private faltanAltaPersonales(): number {
+        const persona = this.leerFormData(this.formPersona, this.personaModel);
+        if (!persona) {
+            return 3;
+        }
+        let faltan = 0;
+        if (this.datoVacio(persona.NOMBRES)) faltan += 1;
+        if (this.datoVacio(persona.APELLIDO1)) faltan += 1;
+        if (!persona.FECHA_NACIMIENTO) faltan += 1;
+        return faltan;
+    }
+
+    // Qué hace: cuenta lo que el alta pide en Contacto.
+    // Cómo lo hace: un correo y un teléfono con valor.
+    private faltanAltaContacto(): number {
+        let faltan = 0;
+        if (!this.contactoAlta(true)) faltan += 1;
+        if (!this.contactoAlta(false)) faltan += 1;
+        return faltan;
     }
 
     private faltanDatosPersonales(): number {
