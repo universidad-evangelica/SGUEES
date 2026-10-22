@@ -1,6 +1,7 @@
 // Qué hace: endpoints REST para la configuración de parámetros SMTP.
 // Cómo lo hace: expone operaciones GetAll, Get, Post, Put y Delete protegidas con políticas de seguridad basadas en claims.
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -33,6 +34,30 @@ namespace sguees.Controllers
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAllAsync(Data);
+		}
+
+		// Qué hace: catálogo de cuentas SMTP para asignar remitente en la pantalla de plantillas de correo.
+		// Cómo lo hace: consulta las cuentas SMTP de la empresa actual y devuelve pares Key/Value ordenados bajo la política de plantillas.
+		[HttpGet("GetCORR_PARAMETRO_SMTP_GEN_PARAMETRO_PLANTILLA")]
+		[Authorize(Policy = "/gen-parametro-plantilla|R")]
+		public async Task<CResult> GetCORR_PARAMETRO_SMTP_GEN_PARAMETRO_PLANTILLA()
+		{
+			var data = new GEN_PARAMETRO_SMTPParam { CORR_EMPRESA = GetCorrEmpresa() };
+			var resultado = await _service.GetAllAsync(data);
+			if (resultado?.Data is IEnumerable<GEN_PARAMETRO_SMTPView> rows)
+			{
+				var items = rows
+					.Select(x => new
+					{
+						Key = x.CORR_PARAMETRO_SMTP,
+						Value = $"{x.CORREO_REMITENTE} ({x.SERVIDOR_CORREO})"
+					})
+					.OrderByDescending(x => x.Key)
+					.ToList();
+				resultado.Data = items;
+				resultado.RowsAffected = items.Count;
+			}
+			return resultado;
 		}
 
 		// Qué hace: obtiene un registro específico de parámetros SMTP.

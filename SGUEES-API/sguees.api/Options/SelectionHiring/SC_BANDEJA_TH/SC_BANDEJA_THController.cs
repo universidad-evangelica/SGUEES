@@ -22,6 +22,7 @@ namespace SGUEES.Controllers
 		private readonly ISC_BANDEJA_TH_REQUISICIONService _requisicionService;
 		private readonly ISC_BANDEJA_TH_CANDIDATOService _candidatoService;
 		private readonly ISC_BANDEJA_TH_CONTRATOService _contratoService;
+		private readonly ISC_BANDEJA_TH_TODASService _todasService;
 		private readonly ISC_REQUISICION_CANDIDATOService _requisicionCandidatoService;
 		private readonly ISC_MOVIMIENTO_PERSONALService _movimientoPersonalService;
 
@@ -29,6 +30,7 @@ namespace SGUEES.Controllers
 			ISC_BANDEJA_TH_REQUISICIONService requisicionService,
 			ISC_BANDEJA_TH_CANDIDATOService candidatoService,
 			ISC_BANDEJA_TH_CONTRATOService contratoService,
+			ISC_BANDEJA_TH_TODASService todasService,
 			ISC_REQUISICION_CANDIDATOService requisicionCandidatoService,
 			ISC_MOVIMIENTO_PERSONALService movimientoPersonalService)
 		{
@@ -38,10 +40,27 @@ namespace SGUEES.Controllers
 				?? throw new System.ArgumentNullException(nameof(candidatoService));
 			_contratoService = contratoService
 				?? throw new System.ArgumentNullException(nameof(contratoService));
+			_todasService = todasService
+				?? throw new System.ArgumentNullException(nameof(todasService));
 			_requisicionCandidatoService = requisicionCandidatoService
 				?? throw new System.ArgumentNullException(nameof(requisicionCandidatoService));
 			_movimientoPersonalService = movimientoPersonalService
 				?? throw new System.ArgumentNullException(nameof(movimientoPersonalService));
+		}
+
+		// Qué hace: Consulta paginada unificada de Requisiciones, Candidatos y Contrataciones para la pestaña Todas.
+		// Cómo lo hace: Inyecta CORR_EMPRESA del usuario autenticado y delega a _todasService.GetTodasAsync.
+		[HttpGet("GetTodas")]
+		[Authorize(Policy = "/sc-bandeja-th|R")]
+		public async Task<CResult> GetTodas([FromQuery] SC_BANDEJA_TH_TODASParam Data)
+		{
+			Data.CORR_EMPRESA = Empresa();
+			if (Data.PAGE <= 0)
+			{
+				Data.PAGE = 1;
+			}
+
+			return await _todasService.GetTodasAsync(Data);
 		}
 
 		[HttpGet("GetRequisiciones")]

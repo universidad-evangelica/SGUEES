@@ -22,6 +22,7 @@ import { GenParentescoComponent } from './gen-parentesco/gen-parentesco.componen
 import { GenTipoContactoComponent } from './gen-tipo-contacto/gen-tipo-contacto.component';
 import { GenEmpleadoComponent } from './gen-empleado/gen-empleado.component';
 import { GenParametroSmtpComponent } from './gen-parametro-smtp/gen-parametro-smtp.component';
+import { GenParametroPlantillaComponent } from './gen-parametro-plantilla/gen-parametro-plantilla.component';
 
 const routes: Routes = [
   {
@@ -175,6 +176,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-parametro-smtp/gen-parametro-smtp.module').then(m => m.GenParametroSmtpModule)
+  },
+  {
+    path: 'gen-parametro-plantilla',
+    component: GenParametroPlantillaComponent,
+    data: { titulo: 'Plantillas de Correo' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-parametro-plantilla/gen-parametro-plantilla.module').then(m => m.GenParametroPlantillaModule)
   }
 ];
 

@@ -31,4 +31,18 @@ namespace sguees.Models
 		public string ESTACION_ACTU { get; set; }
 		public DateTime? FECHA_ACTU { get; set; }
 	}
+
+	// Qué hace: DTO para el catálogo/lookup de empleados sustitutos en requisición.
+	// Cómo lo hace: contiene correlativo, código y nombre del empleado asignado a la unidad y puesto.
+	public class GEN_EMPLEADO_SUSTITUTOView
+	{
+		public int CORR_EMPLEADO { get; set; }
+		public string CODIGO_EMPLEADO { get; set; }
+		public string NOMBRE_EMPLEADO { get; set; }
+		public int CORR_UNIDAD { get; set; }
+		public int CORR_PUESTO { get; set; }
+		// Qué hace: estado del empleado como texto ('Activo' o 'Inactivo').
+		// Cómo lo hace: calculado en la consulta a partir de ACTIVO_EMPLEADO.
+		public string ESTADO_EMPLEADO { get; set; }
+	}
 }

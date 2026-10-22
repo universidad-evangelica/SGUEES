@@ -1,5 +1,5 @@
 // Qué hace: endpoints REST para gestionar el versionamiento de plantillas de correo.
-// Cómo lo hace: expone GetAll, Get, CrearVersion y ActivarVersion bajo la política de autorización /gen-parametro-smtp.
+// Cómo lo hace: expone GetAll, Get, CrearVersion y ActivarVersion bajo las políticas de autorización /gen-parametro-plantilla y /gen-parametro-smtp.
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -28,7 +28,7 @@ namespace sguees.Controllers
 		// Qué hace: obtiene todas las versiones de una plantilla de correo.
 		// Cómo lo hace: toma CORR_EMPRESA del usuario en sesión y consulta el servicio.
 		[HttpGet("GetAll")]
-		[Authorize(Policy = "/gen-parametro-smtp|R")]
+		[Authorize(Policy = "/gen-parametro-plantilla,/gen-parametro-smtp|R")]
 		public async Task<CResult> GetAll([FromQuery] GEN_PARAMETRO_PLANTILLA_VERSIONParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -38,7 +38,7 @@ namespace sguees.Controllers
 		// Qué hace: obtiene una versión específica de la plantilla de correo.
 		// Cómo lo hace: consulta por empresa, plantilla y número de versión.
 		[HttpGet("Get")]
-		[Authorize(Policy = "/gen-parametro-smtp|R")]
+		[Authorize(Policy = "/gen-parametro-plantilla,/gen-parametro-smtp|R")]
 		public async Task<CResult> Get([FromQuery] GEN_PARAMETRO_PLANTILLA_VERSIONParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -48,7 +48,7 @@ namespace sguees.Controllers
 		// Qué hace: registra una nueva versión para una plantilla de correo existente.
 		// Cómo lo hace: asigna CORR_EMPRESA, usuario y estación del cliente, y delega la creación al servicio.
 		[HttpPost("CrearVersion")]
-		[Authorize(Policy = "/gen-parametro-smtp|C")]
+		[Authorize(Policy = "/gen-parametro-plantilla,/gen-parametro-smtp|C")]
 		public async Task<IActionResult> CrearVersion(GEN_PARAMETRO_PLANTILLA_VERSIONTable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -59,7 +59,7 @@ namespace sguees.Controllers
 		// Qué hace: activa una versión específica de la plantilla desactivando las demás.
 		// Cómo lo hace: toma la versión y plantilla seleccionadas e invoca ActivarVersionAsync en el servicio.
 		[HttpPost("ActivarVersion")]
-		[Authorize(Policy = "/gen-parametro-smtp|U")]
+		[Authorize(Policy = "/gen-parametro-plantilla,/gen-parametro-smtp|U")]
 		public async Task<IActionResult> ActivarVersion([FromBody] GEN_PARAMETRO_PLANTILLA_VERSIONParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();

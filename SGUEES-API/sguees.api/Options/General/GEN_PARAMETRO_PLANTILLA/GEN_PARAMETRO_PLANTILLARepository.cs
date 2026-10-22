@@ -282,8 +282,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: obtiene la lista de módulos / sistemas registrados a los que el usuario tiene acceso.
-		// Cómo lo hace: consulta SEG_SISTEMA cruzando con SEG_USUARIO_OPCION filtrado por el LOGIN_SISTEMA en sesión.
+		// Qué hace: obtiene la lista de módulos / sistemas registrados a los que el usuario tiene acceso excluyendo las opciones de configuración de correo.
+		// Cómo lo hace: consulta SEG_SISTEMA cruzando con SEG_USUARIO_OPCION filtrado por LOGIN_SISTEMA y excluyendo GEN_PARAMETRO_PLANTILLA y GEN_PARAMETRO_SMTP.
 		public async Task<CResult> GetModulosAsync(string loginSistema = "")
 		{
 			CResult objResultado = new();
@@ -298,12 +298,17 @@ namespace sguees.Repositories
 							FROM dbo.SEG_SISTEMA s
 							JOIN dbo.SEG_USUARIO_OPCION uo ON uo.CODIGO_SISTEMA = s.CODIGO_SISTEMA
 							WHERE LTRIM(RTRIM(uo.LOGIN_SISTEMA)) = LTRIM(RTRIM(@LOGIN_SISTEMA))
+							  AND uo.CODIGO_OPCION NOT IN ('GEN_PARAMETRO_PLANTILLA', 'GEN_PARAMETRO_SMTP')
 							ORDER BY s.NOMBRE_SISTEMA";
 					p.Add(new CParameter { ParameterName = "LOGIN_SISTEMA", Value = loginSistema.Trim(), DbType = System.Data.DbType.String });
 				}
 				else
 				{
-					sql = "SELECT CODIGO_SISTEMA AS [Key], NOMBRE_SISTEMA AS [Value] FROM dbo.SEG_SISTEMA ORDER BY NOMBRE_SISTEMA";
+					sql = @"SELECT DISTINCT s.CODIGO_SISTEMA AS [Key], s.NOMBRE_SISTEMA AS [Value] 
+							FROM dbo.SEG_SISTEMA s
+							JOIN dbo.SEG_CONFIG_OPCION co ON co.CODIGO_SISTEMA = s.CODIGO_SISTEMA
+							WHERE co.CODIGO_OPCION NOT IN ('GEN_PARAMETRO_PLANTILLA', 'GEN_PARAMETRO_SMTP')
+							ORDER BY s.NOMBRE_SISTEMA";
 				}
 
 				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, p);
@@ -334,8 +339,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: obtiene las opciones de menú de un módulo a las que el usuario tiene permiso asignado.
-		// Cómo lo hace: consulta SEG_CONFIG_OPCION cruzando con SEG_USUARIO_OPCION filtrado por CODIGO_SISTEMA y LOGIN_SISTEMA.
+		// Qué hace: obtiene las opciones de menú de un módulo a las que el usuario tiene permiso asignado, excluyendo las opciones de configuración de correo.
+		// Cómo lo hace: consulta SEG_CONFIG_OPCION cruzando con SEG_USUARIO_OPCION filtrado por CODIGO_SISTEMA y LOGIN_SISTEMA, omitiendo GEN_PARAMETRO_PLANTILLA y GEN_PARAMETRO_SMTP.
 		public async Task<CResult> GetOpcionesPorModuloAsync(string codigoSistema, string loginSistema = "")
 		{
 			CResult objResultado = new();
@@ -356,6 +361,7 @@ namespace sguees.Repositories
 														   AND uo.CODIGO_OPCION = c.CODIGO_OPCION
 							WHERE c.CODIGO_SISTEMA = @CODIGO_SISTEMA 
 							  AND LTRIM(RTRIM(uo.LOGIN_SISTEMA)) = LTRIM(RTRIM(@LOGIN_SISTEMA))
+							  AND c.CODIGO_OPCION NOT IN ('GEN_PARAMETRO_PLANTILLA', 'GEN_PARAMETRO_SMTP')
 							ORDER BY o.NOMBRE_OPCION";
 					p.Add(new CParameter { ParameterName = "LOGIN_SISTEMA", Value = loginSistema.Trim(), DbType = System.Data.DbType.String });
 				}
@@ -365,6 +371,7 @@ namespace sguees.Repositories
 							FROM dbo.SEG_CONFIG_OPCION c 
 							JOIN dbo.SEG_OPCION_SISTEMA o ON o.CODIGO_OPCION = c.CODIGO_OPCION 
 							WHERE c.CODIGO_SISTEMA = @CODIGO_SISTEMA 
+							  AND c.CODIGO_OPCION NOT IN ('GEN_PARAMETRO_PLANTILLA', 'GEN_PARAMETRO_SMTP')
 							ORDER BY o.NOMBRE_OPCION";
 				}
 
