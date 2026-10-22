@@ -1,0 +1,73 @@
+<!-- Contenedor principal del catálogo de Configuración de Correo SMTP. -->
+<div class="sguees-mtto-view">
+	<!-- Barra de herramientas superior dinámica. -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[showRibbon]="true"
+		[showExport]="permitePrint"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="permiteAdd"
+		[showRefresh]="true"
+		[showEstadoToolbar]="false"
+		[focusedRow]="isBrowse() ? model : null"
+		(consultar)="consultar()"
+		(nuevo)="nuevo()"
+		(guardar)="guardar()"
+		(cancelar)="cancelar()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Formulario de creación y edición de configuración SMTP. -->
+	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+		<dx-form
+			#fData
+			id="fData"
+			[formData]="model"
+			[labelLocation]="'top'"
+			[colCount]="mttoFormColCount"
+			[colCountByScreen]="mttoFormColCountByScreen"
+			[showRequiredMark]="false"
+			[items]="items"
+		>
+		</dx-form>
+	</div>
+
+	<!-- Grilla con el listado de configuraciones SMTP registradas. -->
+	<app-data-grid-mtto
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[showEstadoToolbar]="false"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permitePrint]="permitePrint"
+		[permiteEditar]="getPermiteEditar"
+		[permiteDele]="getPermiteDele"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[exportFileName]="'Parametros_SMTP'"
+		(rowDblClick)="rowDblClick($event)"
+		(editClick)="onEditClick($event)"
+		(rowRemoving)="rowRemoving($event)"
+		(focusedRowChanged)="focusedRowChanged($event)"
+	>
+		<!-- Template visual para columna Usa SSL/TLS -->
+		<div *dxTemplate="let cell of 'sslTemplate'">
+			<span [class]="cell.value ? 'badge-ssl-si' : 'badge-ssl-no'">
+				{{ cell.value ? 'SÍ' : 'NO' }}
+			</span>
+		</div>
+	</app-data-grid-mtto>
+</div>

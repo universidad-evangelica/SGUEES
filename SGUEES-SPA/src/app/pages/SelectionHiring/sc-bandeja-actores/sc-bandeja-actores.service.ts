@@ -14,12 +14,14 @@ export const BANDEJA_ACTORES_ESTADOS_REQUISICION: {
 	ESTADO_REQUISICION: string;
 }[] = [
 	{ CORR_ESTADO_REQUISICION: 2, ESTADO_REQUISICION: 'En Aprobación' },
-	{ CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Devuelta' },
+	{ CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Observada' },
 	{ CORR_ESTADO_REQUISICION: 4, ESTADO_REQUISICION: 'Rechazada' },
 	{ CORR_ESTADO_REQUISICION: 5, ESTADO_REQUISICION: 'Aprobada' },
 ];
 
+/** Catálogo OPERACION del SP PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA. */
 export const OPERACION_BANDEJA_ACTORES = {
+	ENVIAR: 2,
 	APROBAR: 3,
 	DEVOLVER: 4,
 	RECHAZAR: 5,
@@ -31,12 +33,26 @@ export const OPERACION_BANDEJA_ACTORES = {
 export class ScBandejaActoresService {
 	constructor(private repo: ScBandejaActoresRepository) {}
 
+	// Qué hace: Formatea visualmente el estado del flujo expandiendo siglas de roles y cambiando 'Devuelta' por 'Observada'.
+	// Cómo lo hace: Aplica expresiones regulares para reemplazar Devuelta/Devuelto por Observada y expandir JI, JU, GG a sus nombres completos.
+	formatearNombreEstadoFlujo(texto?: string | null): string {
+		if (!texto?.trim()) {
+			return '';
+		}
+		return texto
+			.replace(/\bDevuelt[ao]\b/gi, 'Observada')
+			.replace(/\bJI\b/g, 'Jefe Inmediato')
+			.replace(/\bJU\b/g, 'Jefe de Unidad')
+			.replace(/\bGG\b/g, 'Gerente General')
+			.trim();
+	}
+
 	// Qué hace: Retorna la etiqueta descriptiva del estado de requisición para la bandeja de actores.
-	// Cómo lo hace: Si viene NOMBRE_ESTADO_FLUJO de la bitácora (ej. Aprobado JI, Aprobado JU, Aprobado GG), lo prioriza; de lo contrario toma el catálogo o 'Borrador'.
+	// Cómo lo hace: Si viene NOMBRE_ESTADO_FLUJO de la bitácora, formatea el texto expandiendo nombres de roles y cambiando Devuelta por Observada; de lo contrario toma el catálogo o 'Borrador'.
 	getEstadoRequisicionLabel(corrEstado: number | null | undefined, nombreEstadoFlujo?: string | null): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
 		if (corr >= 2 && corr <= 5 && nombreEstadoFlujo?.trim()) {
-			return nombreEstadoFlujo.trim();
+			return this.formatearNombreEstadoFlujo(nombreEstadoFlujo);
 		}
 		const item = BANDEJA_ACTORES_ESTADOS_REQUISICION.find(
 			(x) => x.CORR_ESTADO_REQUISICION === corr
@@ -332,7 +348,7 @@ export class ScBandejaActoresService {
 		return rows.map((h) => ({
 			FECHA: h?.FECHA_ACCION,
 			USUARIO: h?.LOGIN_SISTEMA || '—',
-			ACCION: h?.ESTADO_DESTINO || h?.NOMBRE_PASO || 'Movimiento',
+			ACCION: this.formatearNombreEstadoFlujo(h?.ESTADO_DESTINO || h?.NOMBRE_PASO || 'Movimiento'),
 			COMENTARIO: h?.COMENTARIO || undefined,
 		}));
 	}

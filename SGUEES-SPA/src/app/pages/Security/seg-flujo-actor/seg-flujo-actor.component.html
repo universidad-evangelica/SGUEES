@@ -1,116 +1,151 @@
-<!-- Barra de herramientas principal -->
+<!-- Qué hace: pantalla del actor. La barra global vive solo en este encabezado. -->
+<div class="sguees-mtto-view">
 <app-barra-data-mtto
     [tituloVentana]="tituloVentana"
+    [showRibbon]="true"
+    [showExport]="permitePrint"
+    [showRefresh]="true"
     [isBrowse]="isBrowse()"
     [isForm]="isForm()"
-    [showExport]="permitePrint"
-    [showRibbon]="true"
-    [showRefresh]="true"
-	[showEstadoToolbar]="true"
     [permiteAdd]="permiteAdd"
     (nuevo)="nuevo()"
     (guardar)="guardar()"
     (cancelar)="cancelar()"
+    (consultar)="consultar()"
 >
 </app-barra-data-mtto>
 
-<!-- ================================================ -->
-<!-- PANTALLA DE EDICIÓN / CREACIÓN (SOLO !isBrowse) -->
-<!-- ================================================ -->
-<div *ngIf="!isBrowse()" class="actor-edit-shell">
-
-    <!-- SECCIÓN 1: Formulario del Actor -->
-    <section class="sguees-section-card actor-form-card">
-        <header class="seg-flujo-actor-section-head">
-            <span class="seg-flujo-actor-section-title">Datos del Actor</span>
-            <span class="seg-flujo-actor-section-subtitle">Información general del actor de flujo</span>
-        </header>
-        <dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
-        </dx-form>
-    </section>
-
-    <!-- SECCIÓN 2: Gestión de Asignaciones (SOLO si existe el actor) -->
-    <section class="sguees-section-card seg-flujo-actor-asignaciones-card" *ngIf="model && model.CORR_ACTOR > 0">
-        <header class="seg-flujo-actor-section-head">
-            <span class="seg-flujo-actor-section-title">Asignaciones del Actor</span>
-            <span class="seg-flujo-actor-section-subtitle">Usuarios asignados al actor {{ model.NOMBRE_ACTOR }}</span>
-        </header>
-
-        <!-- Barra de herramientas de Asignaciones -->
-        <app-barra-data-mtto
-            [isBrowse]="isAsignacionBrowse()"
-            [isForm]="isAsignacionForm()"
-            [permiteAdd]="getPermiteAddAsignacion"
-            (nuevo)="nuevoAsignacion()"
-            (guardar)="guardarAsignacion()"
-            (cancelar)="cancelarAsignacion()"
-        >
-        </app-barra-data-mtto>
-
-        <!-- Formulario de Asignación (se muestra cuando NO está en browse) -->
-        <div *ngIf="!isAsignacionBrowse()" style="margin-top: 15px;">
-            <dx-form #fDataAsignacion id="fDataAsignacion" [formData]="asignacionModel" [labelLocation]="'top'" [colCount]="8" [items]="asignacionItems">
-                <div *dxTemplate="let cellInfo of 'CORR_UNIDADTemplate'">
-                    <dx-select-box
-                        [dataSource]="unidades"
-                        [(value)]="asignacionModel.CORR_UNIDAD"
-                        displayExpr="NOMBRE_UNIDAD_TREE"
-                        valueExpr="CORR_UNIDAD"
-                        placeholder="Seleccionar unidad..."
-                        [showClearButton]="true"
-                        [searchEnabled]="true"
-                        [searchTimeout]="200"
-                        (onValueChanged)="onFiltroUnidadEmpleadoChanged($event.value)"
-                    >
-                    </dx-select-box>
-                </div>
-                <div *dxTemplate="let cellInfo of 'LOGIN_SISTEMATemplate'">
-                    <app-data-lookup
-                        [model]="empleadosDisponibles"
-                        [(value)]="asignacionModel.LOGIN_SISTEMA"
-                        [valueExpr]="'LOGIN_SISTEMA_WEB'"
-                        [displayExpr]="'NOMBRE_EMPLEADO'"
-                        [lookupColumns]="[
-                            { dataField: 'NOMBRE_EMPLEADO', caption: 'Empleado', width: 200 },
-                            { dataField: 'LOGIN_SISTEMA_WEB', caption: 'Login', width: 200 },
-                            { dataField: 'UNIDAD_EMPLEADO', caption: 'Unidad', width: 200 }
-                        ]"
-                        [selectedRowKeys]="selectedLookUpLOGIN_SISTEMA"
-                        [readOnly]="asignacionReadOnly"
-                    >
-                    </app-data-lookup>
-                </div>
-            </dx-form>
-        </div>
-
-        <!-- Grid de Asignaciones (siempre visible) -->
-        <div >
-            <app-data-grid-mtto
-                [isBrowse]="isAsignacionBrowse()"
-                [models]="asignacionModels"
-                [columns]="asignacionColumns"
-                [keyExpr]="'CORR_ASIGNACION'"
-                [permiteEditar]="getPermiteEditarAsignacion"
-                [permiteDele]="getPermiteDeleAsignacion"
-                (rowDblClick)="rowDblClickAsignacion($event)"
-                (rowRemoving)="rowRemovingAsignacion($event)"
-                (editClick)="editarAsignacion($event)"
-            >
-            </app-data-grid-mtto>
-        </div>
-    </section>
-
+<!-- Qué hace: formulario del actor. Guardar y Cancelar están en la barra de arriba. -->
+<div class="content-block dx-card responsive-paddings" *ngIf="isForm()">
+    <dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+    </dx-form>
 </div>
 
-<!-- ================================================ -->
-<!-- GRID PRINCIPAL (siempre visible) -->
-<!-- ================================================ -->
+<!-- Qué hace: asignaciones del actor abierto. Sus botones no usan la barra global. -->
+<section class="sguees-section-card seg-flujo-actor-asignaciones-card" *ngIf="isForm() && model && model.CORR_ACTOR > 0">
+    <header class="seg-flujo-actor-section-head">
+        <span class="seg-flujo-actor-section-title">Asignaciones del Actor</span>
+        <span class="seg-flujo-actor-section-subtitle">Usuarios asignados al actor {{ model.NOMBRE_ACTOR }}</span>
+    </header>
+
+    <!-- Qué hace: Nuevo, Guardar y Cancelar de la asignación, sin la barra de mantenimiento. -->
+    <div class="seg-flujo-actor-asignaciones-toolbar" *ngIf="(isAsignacionBrowse() && getPermiteAddAsignacion) || !isAsignacionBrowse()">
+        <dx-button
+            *ngIf="isAsignacionBrowse() && getPermiteAddAsignacion"
+            class="seg-flujo-actor-asignaciones-toolbar-btn"
+            icon="plus"
+            text="Nuevo"
+            type="success"
+            stylingMode="contained"
+            (onClick)="nuevoAsignacion()"
+        ></dx-button>
+        <dx-button
+            *ngIf="!isAsignacionBrowse()"
+            class="seg-flujo-actor-asignaciones-toolbar-btn"
+            icon="save"
+            text="Guardar"
+            type="success"
+            stylingMode="contained"
+            (onClick)="guardarAsignacion()"
+        ></dx-button>
+        <dx-button
+            *ngIf="!isAsignacionBrowse()"
+            class="seg-flujo-actor-asignaciones-toolbar-btn"
+            icon="close"
+            text="Cancelar"
+            type="danger"
+            stylingMode="contained"
+            (onClick)="cancelarAsignacion()"
+        ></dx-button>
+    </div>
+
+    <div *ngIf="!isAsignacionBrowse()">
+        <dx-form #fDataAsignacion id="fDataAsignacion" [formData]="asignacionModel" [labelLocation]="'top'" [colCount]="8" [items]="asignacionItems">
+            <!-- Qué hace: combo de unidad con el catálogo GetCORR_UNIDADES. -->
+            <div *dxTemplate="let cellInfo of 'CORR_UNIDADTemplate'">
+                <dx-select-box
+                    [dataSource]="unidades"
+                    [(value)]="asignacionModel.CORR_UNIDAD"
+                    displayExpr="NOMBRE_UNIDAD_TREE"
+                    valueExpr="CORR_UNIDAD"
+                    placeholder="Seleccionar unidad..."
+                    [showClearButton]="true"
+                    [searchEnabled]="true"
+                    [searchTimeout]="200"
+                    (onValueChanged)="onFiltroUnidadEmpleadoChanged($event.value)"
+                >
+                </dx-select-box>
+            </div>
+            <!-- Qué hace: empleado de la unidad elegida. -->
+            <div *dxTemplate="let cellInfo of 'LOGIN_SISTEMATemplate'">
+                <app-data-lookup
+                    [model]="empleadosDisponibles"
+                    [(value)]="asignacionModel.LOGIN_SISTEMA"
+                    [valueExpr]="'LOGIN_SISTEMA_WEB'"
+                    [displayExpr]="'NOMBRE_EMPLEADO'"
+                    [lookupColumns]="[
+                        { dataField: 'NOMBRE_EMPLEADO', caption: 'Empleado', width: 200 },
+                        { dataField: 'LOGIN_SISTEMA_WEB', caption: 'Login', width: 200 },
+                        { dataField: 'UNIDAD_EMPLEADO', caption: 'Unidad', width: 200 }
+                    ]"
+                    [selectedRowKeys]="selectedLookUpLOGIN_SISTEMA"
+                    [readOnly]="asignacionReadOnly"
+                >
+                </app-data-lookup>
+            </div>
+        </dx-form>
+    </div>
+
+    <!-- Qué hace: lista las asignaciones que ya devolvió la consulta del actor. -->
+    <!-- Cómo lo hace: grilla normal, la de mantenimiento dejaba el paginador en -1 y no pintaba las filas. -->
+    <dx-data-grid
+        *ngIf="isAsignacionBrowse()"
+        class="theme-dependent sguees-data-grid-mtto"
+        [dataSource]="asignacionModels"
+        keyExpr="CORR_ASIGNACION"
+        [columnAutoWidth]="false"
+        [showBorders]="true"
+        [showColumnLines]="true"
+        [showRowLines]="true"
+        [rowAlternationEnabled]="true"
+        [hoverStateEnabled]="true"
+        [allowColumnResizing]="true"
+        [columnResizingMode]="'widget'"
+        [width]="'100%'"
+        noDataText="Sin asignaciones."
+        (onRowDblClick)="rowDblClickAsignacion($event)"
+    >
+        <dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+        <dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
+        <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+        <dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+        <dxo-load-panel [enabled]="false"></dxo-load-panel>
+        <dxi-column caption="" [width]="90" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesAsignacionTpl" alignment="center"></dxi-column>
+        <div *dxTemplate="let cell of 'accionesAsignacionTpl'">
+            <dx-button *ngIf="permiteEdit" icon="edit" stylingMode="text" hint="Editar" (onClick)="editarAsignacion(cell.data)"></dx-button>
+            <dx-button *ngIf="permiteDele" icon="trash" stylingMode="text" hint="Eliminar" (onClick)="pedirEliminarAsignacion(cell.data)"></dx-button>
+        </div>
+        <dxi-column dataField="CORR_ASIGNACION" caption="Corr." [width]="100" dataType="number"></dxi-column>
+        <dxi-column dataField="LOGIN_SISTEMA" caption="Login Sistema" [width]="250" [minWidth]="180"></dxi-column>
+        <dxi-column dataField="CORR_UNIDAD" caption="Unidad" [width]="150"></dxi-column>
+        <dxi-column dataField="ACTIVO" caption="Activo" [width]="120" alignment="center" cellTemplate="activoAsignacionTpl"></dxi-column>
+        <div *dxTemplate="let cell of 'activoAsignacionTpl'">
+            {{ cell.value ? 'Sí' : 'No' }}
+        </div>
+        <dxi-column dataField="USUARIO_CREA" caption="Usuario Crea" [width]="200"></dxi-column>
+        <dxi-column dataField="ESTACION_CREA" caption="Estacion Crea" [width]="200"></dxi-column>
+        <dxi-column dataField="FECHA_CREA" caption="Fecha Crea" [width]="200" dataType="datetime" format="dd/MM/yyyy HH:mm"></dxi-column>
+    </dx-data-grid>
+</section>
+
+<!-- Qué hace: listado de actores. La barra de arriba es la del ribbon; esta grilla no arma otra. -->
 <app-data-grid-mtto
     [isBrowse]="isBrowse()"
     [models]="models"
     [columns]="columns"
     [summary]="summary"
     [keyExpr]="'CORR_ACTOR'"
+    [nativeToolbar]="true"
     [unifiedToolbar]="false"
     [showAdd]="false"
     [showSearch]="false"
@@ -133,6 +168,6 @@
     [showIndicator]="true"
     [showPane]="true"
     [shading]="true"
-    (onShown)="(loadingVisible)"
 >
 </dx-load-panel>
+</div>

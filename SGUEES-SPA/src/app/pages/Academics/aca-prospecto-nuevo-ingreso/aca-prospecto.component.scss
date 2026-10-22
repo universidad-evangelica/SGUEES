@@ -1,0 +1,762 @@
+.aca-prospecto-shell {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
+}
+
+// Qué hace: datos del prospecto a la izquierda y el boceto del flujo a la derecha.
+// Cómo lo hace: en pantallas angostas el flujo baja debajo de los datos.
+.aca-prospecto-cabecera {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 520px;
+	gap: var(--sguees-content-gap, 16px);
+	align-items: stretch;
+}
+
+// Qué hace: los dos cards de la cabecera miden lo mismo, también en alta y en borrador.
+// Cómo lo hace: la grilla estira la fila; sin height fijo el card sigue el alto de Datos del prospecto.
+.aca-prospecto-cabecera > .aca-prospecto-card {
+	align-self: stretch;
+	height: auto;
+	margin-bottom: 0;
+}
+
+// Qué hace: el flujo queda a la misma altura que Datos del prospecto.
+// Cómo lo hace: el card llena la fila y solo la lista de pasos hace scroll si no cabe.
+.aca-prospecto-flujo {
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
+	overflow: hidden;
+}
+
+.aca-prospecto-flujo > .aca-prospecto-section-head,
+.aca-prospecto-flujo > .aca-prospecto-plazo,
+.aca-prospecto-flujo > .aca-prospecto-badge {
+	flex-shrink: 0;
+}
+
+.aca-prospecto-flujo > .aca-prospecto-badge {
+	align-self: flex-start;
+}
+
+.aca-prospecto-flujo-pasos {
+	flex: 1 1 auto;
+	min-height: 0;
+	margin: 16px 0 0;
+	padding: 0 6px 0 0;
+	list-style: none;
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+}
+
+.aca-prospecto-flujo-pasos::-webkit-scrollbar {
+	width: 6px;
+}
+
+.aca-prospecto-flujo-pasos::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.28);
+	border-radius: 999px;
+}
+
+// Qué hace: cada paso alinea la marca con el texto para que la línea caiga en el centro del círculo.
+// Cómo lo hace: columna fija de 24px; el paso hecho dibuja la línea hasta el borde inferior.
+.aca-prospecto-paso {
+	display: grid;
+	grid-template-columns: 24px 1fr;
+	column-gap: 10px;
+	row-gap: 2px;
+	align-items: start;
+	position: relative;
+	padding: 0 0 18px;
+}
+
+.aca-prospecto-paso:last-child {
+	padding-bottom: 0;
+}
+
+.aca-prospecto-paso-marca {
+	grid-row: 1 / span 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: #1565c0;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	position: relative;
+	z-index: 1;
+}
+
+.aca-prospecto-paso-marca--hecho {
+	background: #43a047;
+}
+
+.aca-prospecto-paso-marca--hecho::after {
+	content: '';
+	width: 5px;
+	height: 9px;
+	margin-top: -2px;
+	border: solid #fff;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}
+
+.aca-prospecto-paso--hecho:not(:last-child)::before {
+	content: '';
+	position: absolute;
+	left: 11px;
+	top: 24px;
+	bottom: 0;
+	width: 2px;
+	background: rgba(255, 255, 255, 0.32);
+}
+
+.aca-prospecto-paso--pendiente .aca-prospecto-paso-marca {
+	background: rgba(255, 255, 255, 0.18);
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.aca-prospecto-paso--pendiente .aca-prospecto-paso-titulo,
+.aca-prospecto-paso--pendiente .aca-prospecto-paso-detalle {
+	opacity: 0.55;
+}
+
+.aca-prospecto-paso--actual .aca-prospecto-paso-titulo {
+	color: #64b5f6;
+}
+
+.aca-prospecto-paso--aprobado .aca-prospecto-paso-titulo {
+	color: #66bb6a;
+}
+
+.aca-prospecto-paso-marca--rechazado {
+	background: #e53935;
+}
+
+.aca-prospecto-paso-marca--rechazado::after {
+	content: '\00d7';
+	color: #fff;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1;
+	margin-top: -1px;
+}
+
+.aca-prospecto-paso--rechazado .aca-prospecto-paso-titulo {
+	color: #ef5350;
+}
+
+.aca-prospecto-borrador-nota {
+	margin: 12px 0 0;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.aca-prospecto-plazo {
+	margin: 0 0 12px;
+	padding: 12px 14px;
+	border-radius: 8px;
+	border: 1px solid transparent;
+}
+
+.aca-prospecto-plazo p {
+	margin: 4px 0 0;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.aca-prospecto-plazo-titulo {
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.aca-prospecto-plazo.aca-prospecto-vence--corto,
+.aca-prospecto-plazo.aca-prospecto-vence--vencido {
+	color: #ffcdd2;
+	background: rgba(198, 40, 40, 0.18);
+	border-color: rgba(198, 40, 40, 0.45);
+	border-left-width: 4px;
+	border-left-color: #ef5350;
+}
+
+.aca-prospecto-plazo.aca-prospecto-vence--medio {
+	color: #ffe082;
+	background: rgba(245, 166, 35, 0.16);
+	border-color: rgba(245, 166, 35, 0.4);
+	border-left-width: 4px;
+	border-left-color: #ffb300;
+}
+
+.aca-prospecto-plazo.aca-prospecto-vence--largo {
+	color: #c8e6c9;
+	background: rgba(46, 125, 50, 0.16);
+	border-color: rgba(46, 125, 50, 0.4);
+	border-left-width: 4px;
+	border-left-color: #66bb6a;
+}
+
+// Qué hace: en tema claro el aviso, la línea y la barra usan tonos oscuros sobre fondo blanco.
+// Cómo lo hace: el body lleva sguees-theme-light; el oscuro conserva los colores de arriba.
+:host-context(.sguees-theme-light) {
+	.aca-prospecto-plazo.aca-prospecto-vence--corto,
+	.aca-prospecto-plazo.aca-prospecto-vence--vencido {
+		color: #b71c1c;
+		background: rgba(198, 40, 40, 0.1);
+		border-color: rgba(198, 40, 40, 0.28);
+		border-left-color: #c62828;
+	}
+
+	.aca-prospecto-plazo.aca-prospecto-vence--medio {
+		color: #e65100;
+		background: rgba(245, 166, 35, 0.18);
+		border-color: rgba(230, 81, 0, 0.35);
+		border-left-color: #ef6c00;
+	}
+
+	.aca-prospecto-plazo.aca-prospecto-vence--largo {
+		color: #1b5e20;
+		background: rgba(46, 125, 50, 0.1);
+		border-color: rgba(27, 94, 32, 0.28);
+		border-left-color: #2e7d32;
+	}
+
+	.aca-prospecto-paso--hecho:not(:last-child)::before {
+		background: rgba(15, 23, 42, 0.22);
+	}
+
+	.aca-prospecto-paso--pendiente .aca-prospecto-paso-marca {
+		background: rgba(15, 23, 42, 0.12);
+		color: rgba(15, 23, 42, 0.55);
+	}
+
+	.aca-prospecto-paso--actual .aca-prospecto-paso-titulo {
+		color: #1565c0;
+	}
+
+	.aca-prospecto-paso--aprobado .aca-prospecto-paso-titulo {
+		color: #2e7d32;
+	}
+
+	.aca-prospecto-paso--rechazado .aca-prospecto-paso-titulo {
+		color: #c62828;
+	}
+
+	.aca-prospecto-flujo-pasos {
+		scrollbar-color: rgba(15, 23, 42, 0.28) transparent;
+	}
+
+	.aca-prospecto-flujo-pasos::-webkit-scrollbar-thumb {
+		background: rgba(15, 23, 42, 0.28);
+	}
+}
+
+.aca-prospecto-vence-bloque {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin: 4px 0 16px;
+}
+
+.aca-prospecto-flujo-vencida {
+	margin: 0 0 12px;
+}
+
+.aca-prospecto-vence-leyenda {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+	border-radius: 8px;
+	border: 1px solid rgba(66, 165, 245, 0.45);
+	background: rgba(21, 101, 192, 0.14);
+	color: #90caf9;
+}
+
+.aca-prospecto-vence-puntos {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 14px;
+}
+
+.aca-prospecto-vence-puntos-titulo {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sguees-text-primary);
+}
+
+.aca-prospecto-vence-leyenda-icon {
+	flex-shrink: 0;
+	margin-top: 1px;
+	font-size: 18px;
+}
+
+.aca-prospecto-vence-leyenda-texto {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.45;
+	color: inherit;
+}
+
+:host-context(.sguees-theme-light) .aca-prospecto-vence-leyenda {
+	color: #1565c0;
+	background: rgba(21, 101, 192, 0.08);
+	border-color: rgba(21, 101, 192, 0.35);
+}
+
+:host ::ng-deep .aca-prospecto-vence {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 18px;
+	white-space: nowrap;
+}
+
+:host ::ng-deep .aca-prospecto-vence--largo {
+	color: #2e7d32;
+	background: rgba(46, 125, 50, 0.15);
+}
+
+:host ::ng-deep .aca-prospecto-vence--medio {
+	color: #f9a825;
+	background: rgba(249, 168, 37, 0.18);
+}
+
+:host ::ng-deep .aca-prospecto-vence--corto {
+	color: #e53935;
+	background: rgba(229, 57, 53, 0.16);
+}
+
+:host ::ng-deep .aca-prospecto-vence--vencido {
+	color: #fff;
+	background: #e53935;
+}
+
+:host ::ng-deep .aca-prospecto-vence--sin {
+	color: var(--sguees-text-secondary, #90a4ae);
+}
+
+:host ::ng-deep .dx-button-mode-contained.dx-button-default[title='Reaperturar solicitud'] {
+	background-color: #f9a825;
+	border-color: #f9a825;
+
+	.dx-icon,
+	.dx-button-text {
+		color: #1b1b1b;
+	}
+
+	&.dx-state-hover,
+	&.dx-state-focused,
+	&.dx-state-active {
+		background-color: #f57f17;
+		border-color: #f57f17;
+	}
+}
+
+// Qué hace: Enviar solicitud se distingue en naranja del azul de Nuevo.
+// Cómo lo hace: el hint del botón es su título, igual que Reaperturar solicitud.
+:host ::ng-deep .dx-button-mode-contained.dx-button-default[title='Enviar solicitud'] {
+	background-color: #f57c00;
+	border-color: #f57c00;
+
+	.dx-icon,
+	.dx-button-text {
+		color: #fff;
+	}
+
+	&.dx-state-hover,
+	&.dx-state-focused,
+	&.dx-state-active {
+		background-color: #ef6c00;
+		border-color: #ef6c00;
+	}
+}
+
+.aca-prospecto-paso-titulo {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sguees-text-primary);
+}
+
+.aca-prospecto-paso-detalle {
+	font-size: 12px;
+	color: var(--sguees-text-secondary, var(--texteditor-label-color));
+}
+
+:host ::ng-deep td.aca-prospecto-badge-cell {
+	vertical-align: middle;
+}
+
+:host ::ng-deep .aca-prospecto-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 18px;
+	white-space: nowrap;
+}
+
+:host ::ng-deep .aca-prospecto-badge--pendiente {
+	color: #ef6c00;
+	background: rgba(239, 108, 0, 0.18);
+}
+
+:host ::ng-deep .aca-prospecto-badge--aprobado {
+	color: #2e7d32;
+	background: rgba(46, 125, 50, 0.15);
+}
+
+:host ::ng-deep .aca-prospecto-badge--rechazada {
+	color: #c62828;
+	background: rgba(198, 40, 40, 0.15);
+}
+
+:host ::ng-deep .aca-prospecto-badge--default {
+	color: var(--sguees-text-secondary, #607d8b);
+	background: rgba(96, 125, 139, 0.15);
+}
+
+@media (max-width: 1360px) {
+	.aca-prospecto-cabecera {
+		grid-template-columns: 1fr;
+	}
+}
+
+.aca-prospecto-tabs-lista.aca-prospecto-tab-panel {
+	margin: 16px 0 20px;
+}
+
+:host ::ng-deep .aca-prospecto-tabs-lista .dx-multiview-wrapper {
+	display: none;
+}
+
+:host ::ng-deep .aca-prospecto-tabs-lista .aca-prospecto-tab-lista {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+:host ::ng-deep .aca-prospecto-tabs-lista .aca-prospecto-tab-conteo {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: rgba(100, 181, 246, 0.18);
+	color: #64b5f6;
+	font-size: 11.5px;
+	font-weight: 800;
+	line-height: 1;
+}
+
+:host-context(.sguees-theme-light) ::ng-deep .aca-prospecto-tabs-lista .aca-prospecto-tab-conteo {
+	background: rgba(21, 101, 192, 0.12);
+	color: #1565c0;
+}
+
+:host ::ng-deep .aca-prospecto-tab-panel .aca-prospecto-tab-lista {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+:host ::ng-deep .aca-prospecto-tab-panel .aca-prospecto-tab-conteo {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 6px;
+	border-radius: 999px;
+	font-size: 11.5px;
+	font-weight: 800;
+	line-height: 22px;
+}
+
+:host ::ng-deep .aca-prospecto-req--vacio .dx-texteditor {
+	border-color: #e53935 !important;
+}
+
+:host ::ng-deep .dx-invalid .dx-texteditor {
+	border-color: #e53935 !important;
+}
+
+:host ::ng-deep .aca-prospecto-tab-panel .aca-prospecto-tab-conteo--ok {
+	background: rgba(31, 157, 95, 0.18);
+	color: #66bb6a;
+}
+
+:host ::ng-deep .aca-prospecto-tab-panel .aca-prospecto-tab-conteo--falta {
+	background: rgba(214, 69, 69, 0.16);
+	color: #ef5350;
+}
+
+:host-context(.sguees-theme-light) ::ng-deep .aca-prospecto-tab-panel .aca-prospecto-tab-conteo--ok {
+	background: rgba(31, 157, 95, 0.14);
+	color: #1f9d5f;
+}
+
+:host-context(.sguees-theme-light) ::ng-deep .aca-prospecto-tab-panel .aca-prospecto-tab-conteo--falta {
+	background: rgba(214, 69, 69, 0.12);
+	color: #d64545;
+}
+
+.aca-prospecto-tab-panel {
+	margin-top: 0;
+}
+
+.aca-prospecto-tab-principal-contenido {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
+	padding-top: var(--sguees-space-3, 12px);
+}
+
+.aca-prospecto-bitacora {
+	margin-top: 12px;
+}
+
+.aca-prospecto-bitacora-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.aca-prospecto-bitacora-title-icon {
+	font-size: 1.1rem;
+	opacity: 0.9;
+}
+
+.aca-prospecto-bitacora-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	min-height: 120px;
+	padding: 24px 20px;
+	border: 1px solid color-mix(in srgb, var(--base-text-color) 12%, transparent);
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--base-text-color) 4%, transparent);
+	text-align: center;
+}
+
+.aca-prospecto-bitacora-empty-icon {
+	font-size: 1rem;
+	opacity: 0.85;
+	flex-shrink: 0;
+}
+
+.aca-prospecto-aprobar p {
+	margin: 0 0 12px;
+}
+
+.aca-prospecto-aprobar-acciones {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.aca-prospecto-bitacora-empty-text {
+	font-size: 0.95rem;
+	line-height: 1.45;
+	color: var(--sguees-text-secondary, color-mix(in srgb, var(--base-text-color) 72%, transparent));
+}
+
+.aca-prospecto-tab {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-space-4, 16px);
+	padding-top: var(--sguees-space-3, 12px);
+}
+
+.aca-prospecto-section-head {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: var(--sguees-space-4, 16px);
+	padding-bottom: var(--sguees-space-3, 12px);
+	border-bottom: 1px solid var(--border-color);
+}
+
+.aca-prospecto-tab .aca-prospecto-section-head {
+	margin-bottom: 0;
+}
+
+// Qué hace: encabezado de sección con su propio control a la derecha (interruptor del empleo).
+// Cómo lo hace: el título y el subtítulo se agrupan en una columna y el control queda al extremo;
+//               en pantallas angostas el control baja debajo del texto.
+.aca-prospecto-section-head--accion {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: var(--sguees-space-3, 12px);
+}
+
+// Qué hace: botones Aceptar/Cancelar del formulario que reemplaza a una grilla hija.
+.aca-prospecto-form-acciones {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--sguees-space-2, 8px);
+	margin-top: var(--sguees-space-3, 12px);
+}
+
+.aca-prospecto-section-head-texto {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.aca-prospecto-section-title {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+.aca-prospecto-section-subtitle {
+	font-size: 12px;
+	color: var(--sguees-text-secondary, var(--texteditor-label-color));
+}
+
+.aca-prospecto-vacio {
+	margin: 0;
+	padding: 14px 16px;
+	font-size: 13px;
+	color: var(--sguees-text-secondary, #6c757d);
+	background: var(--sguees-surface-subtle, #f8f9fa);
+	border: 1px dashed var(--border-color);
+	border-radius: var(--sguees-radius-md, 10px);
+}
+
+// Qué hace: jerarquía visual del formulario de preguntas del SE (sección > subsección).
+// Cómo lo hace: DevExtreme dibuja los grupos fuera del encapsulado del componente, por eso ::ng-deep.
+:host ::ng-deep .aca-prospecto-seccion .dx-form-group-caption {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+:host ::ng-deep .aca-prospecto-seccion .aca-prospecto-subseccion .dx-form-group-caption {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sguees-text-secondary, var(--texteditor-label-color));
+	padding-bottom: 4px;
+}
+
+// Qué hace: dibuja el corazón del tab Salud.
+// Cómo lo hace: DevExtreme no incluye el icono heart; se pinta con el color del tab.
+:host ::ng-deep .dx-icon-heart {
+	background-color: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+}
+
+:host ::ng-deep .dx-icon-heart::before {
+	content: "";
+}
+
+.aca-prospecto-aviso {
+	margin: 0;
+	padding: 12px 16px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sguees-text-primary);
+	background: var(--sguees-surface-subtle, #eef1f6);
+	border-left: 4px solid var(--base-accent, #164194);
+	border-radius: var(--sguees-radius-md, 10px);
+}
+
+// Qué hace: en cada documento, Subir abre el archivo y el ojo lo muestra.
+// Cómo lo hace: el input queda dentro del botón para que el navegador no cierre el selector.
+:host ::ng-deep .aca-prospecto-doc-celda {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+:host ::ng-deep .aca-prospecto-doc-acciones {
+	display: inline-flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	flex-shrink: 0;
+	white-space: nowrap;
+}
+
+:host ::ng-deep .aca-prospecto-doc-subir,
+:host ::ng-deep .aca-prospecto-doc-ver {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	height: 26px;
+	margin: 0;
+	padding: 0 8px;
+	border: 1px solid var(--sguees-border, rgba(255, 255, 255, 0.24));
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 12px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+:host ::ng-deep .aca-prospecto-doc-ver {
+	width: 26px;
+	padding: 0;
+}
+
+:host ::ng-deep .aca-prospecto-doc-input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	border: 0;
+}
+
+:host ::ng-deep .aca-prospecto-doc-nombre {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+// Qué hace: oculta el basurero azul que la grilla pinta al final de la fila.
+// Cómo lo hace: esa columna la agrega el modo de edición; en documentos no se elimina nada.
+:host ::ng-deep .aca-prospecto-docs .dx-command-edit {
+	width: 0 !important;
+	min-width: 0 !important;
+	max-width: 0 !important;
+	padding: 0 !important;
+	border: none !important;
+	font-size: 0 !important;
+}
+
+:host ::ng-deep .aca-prospecto-docs .dx-command-edit .dx-link {
+	display: none !important;
+}

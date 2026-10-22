@@ -1,14 +1,31 @@
 /* stylelint-disable no-duplicate-selectors */
 @use "../../../../../variables.scss" as *;
 
+// Qué hace: en claro las letras del menú son oscuras en el mismo instante del cambio.
+// Cómo lo hace: el color queda en el componente, no en la hoja que se oculta al cambiar de tema.
+:host-context(.sguees-theme-light) {
+  --sguees-nav-text: #1f2937;
+  --sguees-nav-text-muted: rgba(31, 41, 55, 0.62);
+  --side-panel-background: #f7f8fa;
+}
+
+:host-context(.sguees-theme-light) .menu-container {
+  background-color: #f7f8fa !important;
+}
+
+:host-context(.sguees-theme-dark) .menu-container {
+  background-color: #1f1f1f !important;
+}
+
 :host {
   --sguees-nav-item-h1: 40px;
   --sguees-nav-item-h2: 36px;
   --sguees-nav-item-h3: 32px;
   --sguees-nav-indent: 12px;
   --sguees-nav-accent: var(--accent-color, #479ef5);
-  --sguees-nav-text: var(--base-text-color, #f3f3f3);
-  --sguees-nav-text-muted: var(--base-text-color-alpha, rgba(243, 243, 243, 0.68));
+  --sguees-nav-text: #f3f3f3;
+  --sguees-nav-text-muted: rgba(243, 243, 243, 0.68);
+  --side-panel-background: #1f1f1f;
   --sguees-nav-hover: color-mix(in srgb, var(--sguees-nav-text) 6%, transparent);
   --sguees-nav-active-bg: color-mix(in srgb, var(--sguees-nav-accent) 16%, transparent);
   --sguees-nav-surface: color-mix(in srgb, var(--sguees-nav-text) 3%, transparent);
@@ -108,6 +125,11 @@
         border-left: none;
       }
 
+      .dx-treeview-item,
+      .dx-treeview-item-content {
+        color: var(--sguees-nav-text) !important;
+      }
+
       .dx-treeview-item {
         position: relative;
         display: flex;
@@ -118,7 +140,6 @@
         border-radius: 6px;
         border: none;
         background: transparent;
-        color: var(--sguees-nav-text);
         box-shadow: none;
       }
 
@@ -130,9 +151,15 @@
       .dx-treeview-node.dx-state-selected > .dx-treeview-item,
       .dx-treeview-item.dx-state-focused {
         background-color: var(--sguees-nav-active-bg);
-        color: var(--sguees-nav-accent);
+        color: var(--sguees-nav-accent) !important;
         font-weight: 600;
         box-shadow: none;
+      }
+
+      .dx-treeview-node.dx-state-selected > .dx-treeview-item .dx-treeview-item-content,
+      .dx-treeview-item.dx-state-focused .dx-treeview-item-content {
+        background: transparent !important;
+        color: var(--sguees-nav-accent) !important;
       }
 
       // Activo: barra izquierda + fondo sutil (única excepción a ::before)

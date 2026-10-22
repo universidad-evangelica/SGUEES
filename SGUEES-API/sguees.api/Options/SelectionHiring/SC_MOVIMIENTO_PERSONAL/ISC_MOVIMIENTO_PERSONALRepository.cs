@@ -31,5 +31,8 @@ namespace SGUEES.Repositories
 		// Qué hace: define el contrato para ejecutar el SP de contratación a empleado.
 		// Cómo lo hace: recibe parámetros de empresa y movimiento para invocar PRAL_MTTO_SC_CONTRATAR_CANDIDATO_A_EMPLEADO.
 		Task<CResult> ContratarEmpleadoAsync(SC_MOVIMIENTO_PERSONALParam Data, string vLOGIN_SISTEMA, string vESTACION);
+
+		/// <summary>Contexto SEG_FLUJO → GEN_NOTIFICACION tras Autoriza (DIRECTO).</summary>
+		Task<SC_MOVIMIENTO_FLUJO_NOTIF_DTO> GetContextoNotificacionFlujoAsync(int corrEmpresa, int corrMovimiento);
 	}
 }

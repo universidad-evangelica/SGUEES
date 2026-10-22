@@ -151,5 +151,29 @@ namespace sguees.Controllers
 				ErrorMessage = "",
 			});
 		}
+
+		// Qué hace: obtiene la lista de plantillas de correo activas disponibles para Solicitud de Empleo.
+		// Cómo lo hace: invoca GetPlantillasDisponiblesAsync con el CORR_EMPRESA del usuario bajo la política /sc-solicitud-empleo|R.
+		[HttpGet("GetPlantillasDisponibles")]
+		[Authorize(Policy = "/sc-solicitud-empleo|R")]
+		public async Task<CResult> GetPlantillasDisponibles()
+		{
+			int corrEmpresa = int.Parse(User.Claims.Single(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetPlantillasDisponiblesAsync(corrEmpresa);
+		}
+
+		// Qué hace: envía por correo la plantilla seleccionada al candidato de la solicitud.
+		// Cómo lo hace: valida el modelo y ejecuta EnviarCorreoPlantillaAsync bajo la política /sc-solicitud-empleo|U.
+		[HttpPost("EnviarCorreoPlantilla")]
+		[Authorize(Policy = "/sc-solicitud-empleo|U")]
+		public async Task<IActionResult> EnviarCorreoPlantilla([FromBody] SC_SOLICITUD_EMPLEO_ENVIAR_CORREOParam data)
+		{
+			int corrEmpresa = int.Parse(User.Claims.Single(e => e.Type == "CORR_EMPRESA").Value);
+			string usuario = User.Claims.SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "RRHH";
+			string estacion = ClientInfoHelper.GetClientStation(HttpContext);
+
+			var resultado = await _service.EnviarCorreoPlantillaAsync(corrEmpresa, usuario, estacion, data);
+			return resultado.Result ? Ok(resultado) : BadRequest(resultado);
+		}
 	}
 }

@@ -144,6 +144,7 @@ header {
   svg {
     width: 14px;
     height: 14px;
+    display: block;
   }
 }
 
@@ -154,13 +155,41 @@ header {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.75rem;
+  color: #e0e7ff;
+}
+
+:host-context(.sguees-theme-light) .sguees-guia-trigger {
+  color: #312e81;
+  background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 100%);
+  border-color: #a5b4fc;
+}
+
+:host-context(.sguees-theme-light) .sguees-guia-trigger__label {
+  color: #312e81;
 }
 
 @media (max-width: 768px) {
+  // Qué hace: en el celular el recorrido queda en un círculo completo.
+  // Cómo lo hace: el botón mide lo mismo que la barra, sin relleno que recorte el icono.
   .sguees-guia-trigger {
-    padding: 0 8px;
-    width: 34px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    padding: 0;
+    gap: 0;
     justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .sguees-guia-trigger__icon {
+    width: 18px;
+    height: 18px;
+
+    svg {
+      width: 12px;
+      height: 12px;
+      display: block;
+    }
   }
 
   .sguees-guia-trigger__label {

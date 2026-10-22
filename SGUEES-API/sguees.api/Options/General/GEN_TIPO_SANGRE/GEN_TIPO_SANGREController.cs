@@ -1,4 +1,3 @@
-using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -27,9 +26,17 @@ namespace sguees.Controllers
         }
 
         // Qué hace: tipos de sangre para los combos de la edición de prospectos (vistas de prospectos).
-        [HttpGet("GetCORR_TIPO_SANGRE_ACA_PROSPECTO")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
-        public async Task<CResult> GetCORR_TIPO_SANGRE_ACA_PROSPECTO([FromQuery] GEN_TIPO_SANGREParam Data)
+        [HttpGet("GetCORR_TIPO_SANGRE_ACA_PROSPECTO_NUEVO_INGRESO")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
+        public async Task<CResult> GetCORR_TIPO_SANGRE_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] GEN_TIPO_SANGREParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetCORR_TIPO_SANGRE_ACA_PROSPECTOAsync(Data);
+        }
+
+        [HttpGet("GetCORR_TIPO_SANGRE_ACA_PROSPECTO_ECONOMICO")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
+        public async Task<CResult> GetCORR_TIPO_SANGRE_ACA_PROSPECTO_ECONOMICO([FromQuery] GEN_TIPO_SANGREParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetCORR_TIPO_SANGRE_ACA_PROSPECTOAsync(Data);

@@ -134,8 +134,14 @@ DocProject/Help/*.hhp
 DocProject/Help/Html2
 DocProject/Help/html
 
-# Click-Once directory
+# Click-Once / File System publish output (no subir a git)
 publish/
+publicación/
+publicacion/
+COPIAR-AL-250/
+RESTABLECER-*/
+RESTABLECER-IIS/
+RESTABLECER-CRYSTAL/
 
 # Publish Web Output
 *.[Pp]ublish.xml
@@ -144,6 +150,9 @@ publish/
 # but database connection strings (with potential passwords) will be unencrypted
 *.pubxml
 *.publishproj
+# Instrucciones temporales de deploy
+**/LEE-PRIMERO.txt
+**/LEE-DESPUES-DE-COPIAR.txt
 
 # NuGet Packages
 *.nupkg

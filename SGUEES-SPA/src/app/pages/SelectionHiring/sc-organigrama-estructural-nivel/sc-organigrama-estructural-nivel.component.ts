@@ -104,7 +104,7 @@ export class SC_OrganigramaEstructuralNivelComponent extends CBaseComponent impl
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
-                            this.models.push(response.Data);
+                            this.models = [...(this.models || []), response.Data];
                             this.model = response.Data;
                             this.AsignaStatus(UpdateType.Browse);
                             this.notifyFx('Nivel creado con exito!', NotifyType.Success);
@@ -126,10 +126,14 @@ export class SC_OrganigramaEstructuralNivelComponent extends CBaseComponent impl
                     next: (response: any) => {
                         if (response.Result) {
                             this.model = response.Data;
-                            const vIndex = this.models.findIndex(
+                            const vIndex = (this.models || []).findIndex(
                                 (item: any) => item.CORR_NIVEL === response.Data.CORR_NIVEL
                             );
-                            this.models[vIndex] = response.Data;
+                            if (vIndex >= 0) {
+                                const filas = [...this.models];
+                                filas[vIndex] = response.Data;
+                                this.models = filas;
+                            }
                             this.AsignaStatus(UpdateType.Browse);
                             this.notifyFx('Nivel modificado con exito!', NotifyType.Success);
                         } else {

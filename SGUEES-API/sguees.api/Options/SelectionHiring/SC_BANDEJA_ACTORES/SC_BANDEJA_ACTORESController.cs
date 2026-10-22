@@ -124,7 +124,8 @@ namespace SGUEES.Controllers
 		}
 
 		/// <summary>
-		/// Aprobar / Devolver / Rechazar requisición (OPERACION 3/4/5).
+		/// Enviar / Aprobar / Devolver / Rechazar requisición (OPERACION 2/3/4/5).
+		/// Devuelta → ENVIAR(2); En Aprobación → APROBAR(3)/DEVOLVER(4)/RECHAZAR(5).
 		/// Reutiliza el mismo SP de flujo; el motor valida al actor.
 		/// </summary>
 		[HttpPut("AutorizaRequisicion")]

@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
+using sguees.Services;
 using SGUEES.Models;
 using SGUEES.Repositories;
 
@@ -11,11 +14,17 @@ namespace SGUEES.Services
 	/// </summary>
 	public class SC_MOVIMIENTO_PERSONALService : ISC_MOVIMIENTO_PERSONALService
 	{
-		private readonly ISC_MOVIMIENTO_PERSONALRepository _repo;
+		private const string CodigoOpcionMenuMovimiento = "SC_MOVIMIENTO_PERSONAL";
 
-		public SC_MOVIMIENTO_PERSONALService(ISC_MOVIMIENTO_PERSONALRepository repo)
+		private readonly ISC_MOVIMIENTO_PERSONALRepository _repo;
+		private readonly IGEN_NOTIFICACIONService _notificacion;
+
+		public SC_MOVIMIENTO_PERSONALService(
+			ISC_MOVIMIENTO_PERSONALRepository repo,
+			IGEN_NOTIFICACIONService notificacion)
 		{
 			_repo = repo;
+			_notificacion = notificacion ?? throw new ArgumentNullException(nameof(notificacion));
 		}
 
 		public async Task<CResult> GetAllAsync(SC_MOVIMIENTO_PERSONALParam xWhere)
@@ -201,7 +210,23 @@ namespace SGUEES.Services
 				Data.CORR_UNIDAD_DOCUMENTO = null;
 			}
 
-			return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
+			var login = vLOGIN_SISTEMA.Trim();
+			var resultado = await _repo.AutorizaAsync(Data, login);
+			if (!resultado.Result || Data.OPERACION < 2 || Data.OPERACION > 5)
+			{
+				return resultado;
+			}
+
+			try
+			{
+				await NotificarDesdeFlujoAsync(Data, login);
+			}
+			catch
+			{
+				// Persistencia de flujo ya confirmada.
+			}
+
+			return resultado;
 		}
 
 		/// <summary>
@@ -301,7 +326,23 @@ namespace SGUEES.Services
 				FECHA_ACTU = ahora,
 			};
 
-			return await _repo.ConfirmarAsync(data, vLOGIN_SISTEMA.Trim(), vESTACION ?? string.Empty);
+			var login = vLOGIN_SISTEMA.Trim();
+			var resultado = await _repo.ConfirmarAsync(data, login, vESTACION ?? string.Empty);
+			if (!resultado.Result)
+			{
+				return resultado;
+			}
+
+			try
+			{
+				await NotificarDesdeConfirmarAsync(row, login, Data.FECHA_EFECTIVA.Value.Date);
+			}
+			catch
+			{
+				// Confirmación ya persistida.
+			}
+
+			return resultado;
 		}
 
 		public async Task<CResult> GetBitacoraAsync(SC_MOVIMIENTO_PERSONAL_BITACORAParam xWhere)
@@ -581,10 +622,188 @@ namespace SGUEES.Services
 		}
 
 		// Qué hace: invoca la contratación del candidato a empleado.
-		// Cómo lo hace: delega la ejecución del SP al repositorio.
+		// Cómo lo hace: delega la ejecución del SP al repositorio; si OK, notifica al creador.
 		public async Task<CResult> ContratarEmpleadoAsync(SC_MOVIMIENTO_PERSONALParam Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
-			return await _repo.ContratarEmpleadoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			var login = (vLOGIN_SISTEMA ?? string.Empty).Trim();
+			SC_MOVIMIENTO_PERSONALView previo = null;
+			if (Data != null && Data.CORR_EMPRESA > 0 && Data.CORR_MOVIMIENTO_PERSONAL > 0)
+			{
+				var actual = await GetAsync(new SC_MOVIMIENTO_PERSONALParam
+				{
+					CORR_EMPRESA = Data.CORR_EMPRESA,
+					CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+				});
+				previo = actual.Data as SC_MOVIMIENTO_PERSONALView;
+			}
+
+			var resultado = await _repo.ContratarEmpleadoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			if (!resultado.Result || previo == null)
+			{
+				return resultado;
+			}
+
+			try
+			{
+				await NotificarDesdeContratarAsync(previo, login);
+			}
+			catch
+			{
+				// Contratación ya persistida.
+			}
+
+			return resultado;
+		}
+
+		/// <summary>
+		/// Riel flujo (DIRECTO): mismo patrón que requisición — pendientes / creador.
+		/// </summary>
+		private async Task NotificarDesdeFlujoAsync(SC_MOVIMIENTO_PERSONAL_AUTORIZAParam data, string loginActor)
+		{
+			var dto = await _repo.GetContextoNotificacionFlujoAsync(
+				data.CORR_EMPRESA,
+				data.CORR_MOVIMIENTO_PERSONAL);
+
+			if (dto == null)
+			{
+				return;
+			}
+
+			var corrMov = dto.CORR_MOVIMIENTO_PERSONAL > 0
+				? dto.CORR_MOVIMIENTO_PERSONAL
+				: data.CORR_MOVIMIENTO_PERSONAL;
+
+			var nombreTipo = string.IsNullOrWhiteSpace(dto.NOMBRE_TIPO)
+				? "Movimiento de personal"
+				: dto.NOMBRE_TIPO.Trim();
+			var nombreEstado = string.IsNullOrWhiteSpace(dto.NOMBRE_ESTADO)
+				? "Actualización de flujo"
+				: dto.NOMBRE_ESTADO.Trim();
+			var titulo = $"{nombreTipo} #{corrMov} - {nombreEstado}";
+			var mensaje = string.IsNullOrWhiteSpace(dto.DESCRIPCION_ESTADO)
+				? $"El movimiento No.{corrMov} cambió a estado {nombreEstado}."
+				: dto.DESCRIPCION_ESTADO.Trim();
+
+			var urlDestino = await _notificacion.ResolverUrlDestinoAsync(
+				CodigoOpcionMenuMovimiento,
+				corrMov);
+			if (string.IsNullOrWhiteSpace(urlDestino) && corrMov > 0)
+			{
+				urlDestino = $"/sc-movimiento-personal?corr={corrMov}";
+			}
+
+			var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var creador = dto.LOGIN_CREADOR?.Trim();
+
+			if (data.OPERACION == 4 || data.OPERACION == 5)
+			{
+				if (!string.IsNullOrWhiteSpace(creador))
+				{
+					destinatarios.Add(creador);
+				}
+			}
+			else
+			{
+				foreach (var loginPendiente in dto.LOGINS_PENDIENTES ?? Enumerable.Empty<string>())
+				{
+					if (!string.IsNullOrWhiteSpace(loginPendiente))
+					{
+						destinatarios.Add(loginPendiente.Trim());
+					}
+				}
+
+				if (destinatarios.Count == 0 && !string.IsNullOrWhiteSpace(creador))
+				{
+					destinatarios.Add(creador);
+				}
+			}
+
+			destinatarios.Remove(loginActor);
+			if (destinatarios.Count == 0)
+			{
+				return;
+			}
+
+			foreach (var loginDestino in destinatarios)
+			{
+				await _notificacion.NotificarUsuarioAsync(
+					corrEmpresa: data.CORR_EMPRESA,
+					loginDestino: loginDestino,
+					titulo: titulo,
+					mensaje: mensaje,
+					urlDestino: urlDestino,
+					usuarioCrea: loginActor,
+					estacionCrea: "API");
+			}
+		}
+
+		/// <summary>
+		/// Acción: TH confirma → avisa al creador del movimiento (jefe que dictaminó APLICA o solicitante DIRECTO).
+		/// </summary>
+		private async Task NotificarDesdeConfirmarAsync(
+			SC_MOVIMIENTO_PERSONALView row,
+			string loginActor,
+			DateTime fechaEfectiva)
+		{
+			var creador = row.USUARIO_CREA?.Trim();
+			if (string.IsNullOrWhiteSpace(creador)
+				|| string.Equals(creador, loginActor, StringComparison.OrdinalIgnoreCase))
+			{
+				return;
+			}
+
+			var corr = row.CORR_MOVIMIENTO_PERSONAL;
+			var nombre = string.IsNullOrWhiteSpace(row.NOMBRE_COMPLETO) ? "persona" : row.NOMBRE_COMPLETO.Trim();
+			var titulo = $"Movimiento personal #{corr} - Confirmado";
+			var mensaje = $"TH confirmó el movimiento de {nombre} (fecha efectiva {fechaEfectiva:dd/MM/yyyy}).";
+
+			var urlDestino = await _notificacion.ResolverUrlDestinoAsync(CodigoOpcionMenuMovimiento, corr);
+			if (string.IsNullOrWhiteSpace(urlDestino))
+			{
+				urlDestino = $"/sc-movimiento-personal?corr={corr}";
+			}
+
+			await _notificacion.NotificarUsuarioAsync(
+				corrEmpresa: row.CORR_EMPRESA,
+				loginDestino: creador,
+				titulo: titulo,
+				mensaje: mensaje,
+				urlDestino: urlDestino,
+				usuarioCrea: loginActor,
+				estacionCrea: "API");
+		}
+
+		/// <summary>
+		/// Acción: Crear Empleado → avisa al creador del movimiento.
+		/// </summary>
+		private async Task NotificarDesdeContratarAsync(SC_MOVIMIENTO_PERSONALView row, string loginActor)
+		{
+			var creador = row.USUARIO_CREA?.Trim();
+			if (string.IsNullOrWhiteSpace(creador)
+				|| string.Equals(creador, loginActor, StringComparison.OrdinalIgnoreCase))
+			{
+				return;
+			}
+
+			var corr = row.CORR_MOVIMIENTO_PERSONAL;
+			var nombre = string.IsNullOrWhiteSpace(row.NOMBRE_COMPLETO) ? "persona" : row.NOMBRE_COMPLETO.Trim();
+			var titulo = $"Movimiento personal #{corr} - Empleado creado";
+			var mensaje = $"Se creó el empleado a partir del movimiento de {nombre}.";
+
+			var urlDestino = await _notificacion.ResolverUrlDestinoAsync(CodigoOpcionMenuMovimiento, corr);
+			if (string.IsNullOrWhiteSpace(urlDestino))
+			{
+				urlDestino = $"/sc-movimiento-personal?corr={corr}";
+			}
+
+			await _notificacion.NotificarUsuarioAsync(
+				corrEmpresa: row.CORR_EMPRESA,
+				loginDestino: creador,
+				titulo: titulo,
+				mensaje: mensaje,
+				urlDestino: urlDestino,
+				usuarioCrea: loginActor,
+				estacionCrea: "API");
 		}
 
 		private static CResult ValidationError(string message)

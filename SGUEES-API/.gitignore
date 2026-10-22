@@ -29,6 +29,9 @@ eadmindevgeneral.api/
 Imagenes/
 Script/
 
+# Fotografías de candidatos (temp y definitiva)
+sguees.api/uploads/
+
 # Visual Studo 2015 cache/options directory
 .vs/
 

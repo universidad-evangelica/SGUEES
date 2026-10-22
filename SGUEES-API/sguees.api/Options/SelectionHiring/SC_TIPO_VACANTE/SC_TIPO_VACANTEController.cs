@@ -137,7 +137,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetCORR_TIPO_VACANTE_SC_REQUISICION_PERSONAL")]
-        [Authorize(Policy = "/sc-tipo-contratacion|R")]
+        [Authorize(Policy = "/sc-requisicion-personal|R")]
         public async Task<CResult> GetCORR_TIPO_VACANTE_SC_REQUISICION_PERSONAL([FromQuery] SC_TIPO_VACANTEParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

@@ -743,7 +743,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // 
             this.lblLinePromocion.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
             this.lblLinePromocion.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[TEXTO_SUSTITUTO]")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[TEXTO_PROMOCION]")});
             this.lblLinePromocion.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
             this.lblLinePromocion.LocationFloat = new DevExpress.Utils.PointFloat(240F, 271F);
             this.lblLinePromocion.Name = "lblLinePromocion";
@@ -788,7 +788,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // 
             this.lblLineTransferencia.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
             this.lblLineTransferencia.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[TEXTO_SUSTITUTO]")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[TEXTO_TRANSFERENCIA]")});
             this.lblLineTransferencia.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
             this.lblLineTransferencia.LocationFloat = new DevExpress.Utils.PointFloat(240F, 296F);
             this.lblLineTransferencia.Name = "lblLineTransferencia";
@@ -833,7 +833,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // 
             this.lblLineRenuncia.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
             this.lblLineRenuncia.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[TEXTO_SUSTITUTO]")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[TEXTO_RENUNCIA]")});
             this.lblLineRenuncia.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
             this.lblLineRenuncia.LocationFloat = new DevExpress.Utils.PointFloat(240F, 321F);
             this.lblLineRenuncia.Name = "lblLineRenuncia";
@@ -907,11 +907,11 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             this.lblTxtOtros.Text = "Otros";
             this.lblTxtOtros.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
             // 
-            // lblLineOtros
+            // lblLineOtros — nombre del empleado si CORR_TIPO_VACANTE=5; JUSTIFICACION solo en lblJustificacion
             // 
             this.lblLineOtros.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
             this.lblLineOtros.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[JUSTIFICACION]")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[TEXTO_OTROS]")});
             this.lblLineOtros.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
             this.lblLineOtros.LocationFloat = new DevExpress.Utils.PointFloat(240F, 371F);
             this.lblLineOtros.Name = "lblLineOtros";
@@ -995,12 +995,15 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // 
             // lblJefeNombre
             // 
-            this.lblJefeNombre.Borders = DevExpress.XtraPrinting.BorderSide.None;
+            this.lblJefeNombre.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
+            this.lblJefeNombre.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_JEFE_INMEDIATO]")});
+            this.lblJefeNombre.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
             this.lblJefeNombre.LocationFloat = new DevExpress.Utils.PointFloat(240F, 50.00006F);
             this.lblJefeNombre.Name = "lblJefeNombre";
             this.lblJefeNombre.SizeF = new System.Drawing.SizeF(300.1785F, 17.99994F);
             this.lblJefeNombre.StylePriority.UseBorders = false;
-            this.lblJefeNombre.Text = " ";
+            this.lblJefeNombre.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
             // 
             // lblJefeFechaPref
             // 
@@ -1017,10 +1020,14 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // lblJefeFecha
             // 
             this.lblJefeFecha.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
+            this.lblJefeFecha.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_JEFE_INMEDIATO]")});
+            this.lblJefeFecha.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
             this.lblJefeFecha.LocationFloat = new DevExpress.Utils.PointFloat(616F, 50F);
             this.lblJefeFecha.Name = "lblJefeFecha";
             this.lblJefeFecha.SizeF = new System.Drawing.SizeF(120F, 18F);
-            this.lblJefeFecha.Text = " ";
+            this.lblJefeFecha.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
+            this.lblJefeFecha.TextFormatString = "{0:dd/MM/yyyy HH:mm}";
             // 
             // lblDecanoPref
             // 
@@ -1036,12 +1043,15 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // 
             // lblDecanoNombre
             // 
-            this.lblDecanoNombre.Borders = DevExpress.XtraPrinting.BorderSide.None;
+            this.lblDecanoNombre.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
+            this.lblDecanoNombre.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_DECANO_GERENTE]")});
+            this.lblDecanoNombre.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
             this.lblDecanoNombre.LocationFloat = new DevExpress.Utils.PointFloat(240F, 120.0001F);
             this.lblDecanoNombre.Name = "lblDecanoNombre";
             this.lblDecanoNombre.SizeF = new System.Drawing.SizeF(300.1785F, 18F);
             this.lblDecanoNombre.StylePriority.UseBorders = false;
-            this.lblDecanoNombre.Text = " ";
+            this.lblDecanoNombre.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
             // 
             // lblDecanoFechaPref
             // 
@@ -1058,10 +1068,14 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // lblDecanoFecha
             // 
             this.lblDecanoFecha.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
+            this.lblDecanoFecha.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_DECANO_GERENTE]")});
+            this.lblDecanoFecha.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
             this.lblDecanoFecha.LocationFloat = new DevExpress.Utils.PointFloat(616F, 120F);
             this.lblDecanoFecha.Name = "lblDecanoFecha";
             this.lblDecanoFecha.SizeF = new System.Drawing.SizeF(120F, 18F);
-            this.lblDecanoFecha.Text = " ";
+            this.lblDecanoFecha.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
+            this.lblDecanoFecha.TextFormatString = "{0:dd/MM/yyyy HH:mm}";
             // 
             // lblVraPref
             // 
@@ -1077,12 +1091,15 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // 
             // lblVraNombre
             // 
-            this.lblVraNombre.Borders = DevExpress.XtraPrinting.BorderSide.None;
+            this.lblVraNombre.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
+            this.lblVraNombre.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_VRA]")});
+            this.lblVraNombre.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
             this.lblVraNombre.LocationFloat = new DevExpress.Utils.PointFloat(240F, 190F);
             this.lblVraNombre.Name = "lblVraNombre";
             this.lblVraNombre.SizeF = new System.Drawing.SizeF(300.1785F, 18F);
             this.lblVraNombre.StylePriority.UseBorders = false;
-            this.lblVraNombre.Text = " ";
+            this.lblVraNombre.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
             // 
             // lblVraFechaPref
             // 
@@ -1099,10 +1116,14 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // lblVraFecha
             // 
             this.lblVraFecha.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
+            this.lblVraFecha.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_VRA]")});
+            this.lblVraFecha.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
             this.lblVraFecha.LocationFloat = new DevExpress.Utils.PointFloat(616F, 190F);
             this.lblVraFecha.Name = "lblVraFecha";
             this.lblVraFecha.SizeF = new System.Drawing.SizeF(120F, 18F);
-            this.lblVraFecha.Text = " ";
+            this.lblVraFecha.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
+            this.lblVraFecha.TextFormatString = "{0:dd/MM/yyyy HH:mm}";
             // 
             // lblHdrReq
             // 
@@ -1166,13 +1187,14 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_REQUISICION_PERSONAL
             // lblLineNuevaCreacion
             // 
             this.lblLineNuevaCreacion.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
+            this.lblLineNuevaCreacion.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[TEXTO_NUEVA_CREACION]")});
             this.lblLineNuevaCreacion.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
             this.lblLineNuevaCreacion.LocationFloat = new DevExpress.Utils.PointFloat(240F, 346F);
             this.lblLineNuevaCreacion.Name = "lblLineNuevaCreacion";
             this.lblLineNuevaCreacion.SizeF = new System.Drawing.SizeF(520F, 18F);
             this.lblLineNuevaCreacion.StylePriority.UseBorders = false;
             this.lblLineNuevaCreacion.StylePriority.UseFont = false;
-            this.lblLineNuevaCreacion.Text = " ";
             // 
             // rptRequisicionPersonal
             // 

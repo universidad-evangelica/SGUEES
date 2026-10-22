@@ -1,0 +1,55 @@
+-- Qué hace: script de documentación de la tabla ACA_PROSPECTO_FAMILIAR (ya existente en BD).
+-- Cómo lo hace: refleja columnas, PK, CHECK, defaults, FK e índices consultados en SQL Server (sin crear/alterar la tabla).
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+/*
+Tabla: dbo.ACA_PROSPECTO_FAMILIAR
+Fuente: estructura leída desde SGUEES (solo documentación; no ejecutar CREATE TABLE en producción).
+Sin índices adicionales. Sin columnas calculadas. Sin triggers.
+*/
+CREATE TABLE [dbo].[ACA_PROSPECTO_FAMILIAR]
+(
+	[CORR_PROSPECTO_FAMILIAR] [int] IDENTITY(1,1) NOT NULL,
+	[CORR_PROSPECTO_PERSONA] [int] NOT NULL,
+	[CORR_PARENTESCO] [int] NOT NULL,
+	[NOMBRES] [varchar(200)] NULL,
+	[APELLIDO1] [varchar(200)] NULL,
+	[APELLIDO2] [varchar(200)] NULL,
+	[TRABAJA] [bit] NULL,
+	[PROFESION] [varchar(100)] NULL,
+	[OCUPACION] [varchar(100)] NULL,
+	[NOMBRE_EMPRESA] [varchar(100)] NULL,
+	[TELEFONO_TRABAJO] [varchar(20)] NULL,
+	[DIRECCION_TRABAJO] [varchar(300)] NULL,
+	[DIRECCION_CASA] [varchar(300)] NULL,
+	[TELEFONO] [varchar(20)] NULL,
+	[TELEFONO2] [varchar(20)] NULL,
+	[VIVE_CON_EL] [bit] NULL,
+	[ACTIVO] [bit] NULL,
+	[ES_EMERGENCIA] [bit] NULL,
+	[DIRECCION_EMERGENCIA] [varchar(300)] NULL,
+	[TELEFONO_EMERGENCIA] [varchar(20)] NULL,
+	[FINANCIA_ESTUDIOS] [bit] NULL,
+	[USUARIO_CREA] [varchar(100)] NOT NULL,
+	[ESTACION_CREA] [varchar(50)] NOT NULL,
+	[FECHA_CREA] [datetime] NOT NULL,
+	[USUARIO_ACTU] [varchar(100)] NULL,
+	[ESTACION_ACTU] [varchar(50)] NULL,
+	[FECHA_ACTU] [datetime] NULL,
+	CONSTRAINT [PK_ACA_PROSPECTO_FAMILIAR] PRIMARY KEY CLUSTERED ([CORR_PROSPECTO_FAMILIAR] ASC)
+);
+GO
+
+ALTER TABLE [dbo].[ACA_PROSPECTO_FAMILIAR] ADD CONSTRAINT [DF__ACA_PROSP__FECHA__184E2D62] DEFAULT (getdate()) FOR [FECHA_CREA]
+GO
+
+ALTER TABLE [dbo].[ACA_PROSPECTO_FAMILIAR] ADD CONSTRAINT [FK_PROSP_FAM_PARENTESCO] FOREIGN KEY ([CORR_PARENTESCO]) REFERENCES [dbo].[GEN_PARENTESCO] ([CORR_PARENTESCO]);
+GO
+
+ALTER TABLE [dbo].[ACA_PROSPECTO_FAMILIAR] ADD CONSTRAINT [FK_PROSP_FAM_PROSPECTO] FOREIGN KEY ([CORR_PROSPECTO_PERSONA]) REFERENCES [dbo].[ACA_PROSPECTO_PERSONA] ([CORR_PROSPECTO_PERSONA]) ON DELETE CASCADE;
+GO
+-- Sin índices adicionales.
+-- Sin triggers.

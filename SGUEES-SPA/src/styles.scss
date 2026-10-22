@@ -26,6 +26,48 @@ body {
   color: var(--sguees-text-primary, var(--base-text-color));
 }
 
+// Qué hace: el fondo y las letras cambian en el mismo instante que el tema.
+// Cómo lo hace: estos colores viven en la hoja fija, no en la que se apaga al cambiar de modo.
+body.sguees-theme-light {
+  --base-text-color: #242424;
+  --base-text-color-alpha: rgba(36, 36, 36, 0.68);
+  --base-bg: #fafafa;
+  --side-panel-background: #f7f8fa;
+  --sguees-page-bg: #f5f7fa;
+  --sguees-text-primary: #1f2937;
+  background-color: #f5f7fa;
+  color: #1f2937;
+}
+
+body.sguees-theme-dark {
+  --base-text-color: #f3f3f3;
+  --base-text-color-alpha: rgba(243, 243, 243, 0.68);
+  --base-bg: #1f1f1f;
+  --side-panel-background: #1f1f1f;
+  --sguees-page-bg: #1a1d21;
+  --sguees-text-primary: #e8eaed;
+  background-color: #1a1d21;
+  color: #e8eaed;
+}
+
+// Qué hace: el panel del menú no se pone blanco mientras cambia el tema.
+// Cómo lo hace: el fondo del cajón sigue la clase del body, que cambia junto con el interruptor.
+body.sguees-theme-light .dx-drawer-panel-content {
+  background-color: #f7f8fa !important;
+}
+
+body.sguees-theme-dark .dx-drawer-panel-content {
+  background-color: #1f1f1f !important;
+}
+
+// Qué hace: al vencer la sesión no deja a la vista el formulario que estaba abierto.
+// Cómo lo hace: oculta el marco y los popup hasta que el login ya está en pantalla.
+body.sguees-sesion-cerrada app-side-nav-outer-toolbar,
+body.sguees-sesion-cerrada .dx-popup-wrapper,
+body.sguees-sesion-cerrada .dx-overlay-shader {
+  display: none !important;
+}
+
 a {
   color: var(--sguees-brand-primary, var(--accent-color));
 }

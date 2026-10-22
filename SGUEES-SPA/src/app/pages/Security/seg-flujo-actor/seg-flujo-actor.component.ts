@@ -11,8 +11,7 @@ import { SegFlujoActor } from './models/seg-flujo-actor';
 import { SegFlujoActorService } from './seg-flujo-actor.service';
 import { SegFlujoActorAsignacionService } from './seg-flujo-actor-asignacion/seg-flujo-actor-asignacion.service';
 import { SegFlujoActorAsignacion } from './seg-flujo-actor-asignacion/models/seg-flujo-actor-asignacion';
-import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
-import { IParam } from 'src/app/FxAPI/IParam';
+import { confirm } from 'devextreme/ui/dialog';
 
 @Component({
     selector: 'app-seg-flujo-actor',
@@ -24,8 +23,7 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
         public override appInfoService: AppInfoService,
         public override router: ActivatedRoute,
         private service: SegFlujoActorService,
-        private asignacionService: SegFlujoActorAsignacionService,
-        private pageContext: MttoPageContextService
+        private asignacionService: SegFlujoActorAsignacionService
     ) {
         super(appInfoService, router);
         this.columns = this.service.getColumns();
@@ -310,24 +308,10 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
                 this.AsignaStatus(UpdateType.Browse);
                 this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
                 finalizarCancelacion();
-                // setTimeout DENTRO del callback: corre DESPUÉS de ngOnDestroy de la barra
-                // hija, que llama reset(). Así se restauran permiteAdd y unifiedToolbar.
-                setTimeout(() => {
-                    this.pageContext.updateFromBarra(
-                        { permiteAdd: this.permiteAdd, unifiedToolbar: true },
-                        { add: () => this.nuevo() }
-                    );
-                });
             });
         } else {
             this.AsignaStatus(UpdateType.Browse);
             finalizarCancelacion();
-            setTimeout(() => {
-                this.pageContext.updateFromBarra(
-                    { permiteAdd: this.permiteAdd, unifiedToolbar: true },
-                    { add: () => this.nuevo() }
-                );
-            });
         }
     }
 
@@ -439,12 +423,13 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
                 .subscribe({
                     next: (response: any) => {
                         if (response.Result) {
-                            this.asignacionModels.push(response.Data);
-                            this.asignacionModel = this.fillAsignacionData(response.Data);
+                            this.asignacionModels = [...this.asignacionModels, response.Data];
+                            this.asignacionModel = this.fillAsignacionData();
                             this.banderaMttoAsignacion = UpdateType.Browse;
                             this.asignacionReadOnly = false;
+                            this.filtroUnidadEmpleado = 0;
+                            this.empleadosDisponibles = [];
                             this.notifyFx('Asignación creada con exito!', NotifyType.Success);
-                            this.consultarAsignaciones(this.model.CORR_ACTOR);
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -465,12 +450,17 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
                             const vIndex = this.asignacionModels.findIndex(
                                 (item: any) => item.CORR_ASIGNACION === response.Data.CORR_ASIGNACION
                             );
-                            this.asignacionModels[vIndex] = response.Data;
-                            this.asignacionModel = this.fillAsignacionData(response.Data);
+                            if (vIndex >= 0) {
+                                const filas = [...this.asignacionModels];
+                                filas[vIndex] = response.Data;
+                                this.asignacionModels = filas;
+                            }
+                            this.asignacionModel = this.fillAsignacionData();
                             this.banderaMttoAsignacion = UpdateType.Browse;
                             this.asignacionReadOnly = false;
+                            this.filtroUnidadEmpleado = 0;
+                            this.empleadosDisponibles = [];
                             this.notifyFx('Asignación modificada con exito!', NotifyType.Success);
-                            this.consultarAsignaciones(this.model.CORR_ACTOR);
                         } else {
                             this.notifyFx(response.ErrorMessage, NotifyType.Error);
                         }
@@ -509,28 +499,31 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
         return vRow[0]?.LOGIN_SISTEMA_WEB;
     }
 
-    rowRemovingAsignacion(e: any) {
-        if (!e.data) return;
-
-        this.asignacionService
-            .delete(e.data)
-            .pipe(take(1))
-            .subscribe({
+    // Qué hace: quita la asignación del actor después de confirmar.
+    // Cómo lo hace: el API borra la fila y se saca del arreglo local, sin volver a consultar todo.
+    pedirEliminarAsignacion(fila: any): void {
+        if (!fila?.CORR_ASIGNACION) {
+            return;
+        }
+        confirm(
+            `<div class="sguees-confirm-message">Se eliminará la asignación de ${fila.LOGIN_SISTEMA || 'este usuario'}. ¿Desea continuar?</div>`,
+            'Eliminar asignación'
+        ).then((acepta: boolean) => {
+            if (!acepta) {
+                return;
+            }
+            this.asignacionService.delete(fila).pipe(take(1)).subscribe({
                 next: (response: any) => {
                     if (response.Result) {
+                        this.asignacionModels = this.asignacionModels.filter((item) => item.CORR_ASIGNACION !== fila.CORR_ASIGNACION);
                         this.notifyFx('Asignación eliminada con exito!', NotifyType.Success);
-                        this.consultarAsignaciones(this.model.CORR_ACTOR);
-                        e.component.refresh();
-                    } else {
-                        e.cancel = true;
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        return;
                     }
+                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
                 },
-                error: (error: any) => {
-                    e.cancel = true;
-                    this.notifyFx(error, NotifyType.Error);
-                },
+                error: (error: any) => this.notifyFx(error, NotifyType.Error),
             });
+        });
     }
     //#endregion
 }

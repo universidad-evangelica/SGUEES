@@ -13,8 +13,8 @@ import { SC_OrganigramaEstructuralNivelService } from '../sc-organigrama-estruct
 import { IParam } from 'src/app/FxAPI/IParam';
 import { environment } from 'src/environments/environment';
 import { confirm } from 'devextreme/ui/dialog';
-import { SC_OrganigramaEstructuralJefesService } from './sc-organigrama-estructural-jefes.service';
-import { SC_OrganigramaEstructuralJefe } from './models/sc-organigrama-estructural-jefe';
+import { SC_OrganigramaEstructuralJefesService } from './sc-organigrama-estructural-jefes/sc-organigrama-estructural-jefes.service';
+import { SC_OrganigramaEstructuralJefe } from './sc-organigrama-estructural-jefes/models/sc-organigrama-estructural-jefe';
 
 @Component({
     selector: 'app-sc-organigrama-estructural-unidades',
@@ -27,36 +27,6 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     @ViewChild('fDataJefe') fDataJefe: any;
     //#endregion
 
-    constructor(
-        public override appInfoService: AppInfoService,
-        public override router: ActivatedRoute,
-        private service: SC_OrganigramaEstructuralUnidadesService,
-        private nivelService: SC_OrganigramaEstructuralNivelService,
-        private jefeService: SC_OrganigramaEstructuralJefesService
-    ) {
-        super(appInfoService, router);
-        this.columns = this.service.getColumns();
-        this.summary = this.service.getSummary();
-        this.items = this.service.getItems();
-
-        //  Inicializar columnas y items de jefes
-        this.jefesColumns = this.jefeService.getColumns();
-        this.jefesItems = this.jefeService.getItems();
-    }
-
-    private configurarItemsJefe(esEdicion: boolean): void {
-        this.jefesItems = this.jefeService.getItems().map((item: any) => {
-            if (item.dataField === 'CORR_EMPLEADO' || item.dataField === 'FECHA_INICIO') {
-                return {
-                    ...item,
-                    visible: !esEdicion,
-                };
-            }
-
-            return { ...item };
-        });
-    }
-
     //#region <Declarando Variables>
     // Variables para Unidades
     unidades: SC_OrganigramaEstructuralUnidad[] = [];
@@ -65,6 +35,10 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     unidadModelUpdate: SC_OrganigramaEstructuralUnidad = this.fillUnidadData();
     mCORR_NIVEL: any;
     mCORR_UNIDAD: any;
+    // Qué hace: columnas del catálogo de niveles que abre el lookup.
+    nivelLookupColumns = [{ dataField: 'NOMBRE_NIVEL', caption: 'Nivel', width: 240 }];
+    // Qué hace: columnas del catálogo de unidades padre que abre el lookup.
+    unidadLookupColumns = [{ dataField: 'NOMBRE_UNIDAD_TREE', caption: 'Unidad', width: 320 }];
     readOnly = false;
     // Variables para Jefes
     jefesModels: SC_OrganigramaEstructuralJefe[] = [];
@@ -85,6 +59,40 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     mostrarFormulario = false;
     //#endregion
 
+    // Qué hace: inicializa dependencias y estructura de columnas/items para unidades y jefes.
+    // Cómo lo hace: invoca super() e inicializa columns, items y summary mediante los servicios inyectados.
+    constructor(
+        public override appInfoService: AppInfoService,
+        public override router: ActivatedRoute,
+        private service: SC_OrganigramaEstructuralUnidadesService,
+        private nivelService: SC_OrganigramaEstructuralNivelService,
+        private jefeService: SC_OrganigramaEstructuralJefesService
+    ) {
+        super(appInfoService, router);
+        this.columns = this.service.getColumns();
+        this.summary = this.service.getSummary();
+        this.items = this.service.getItems();
+
+        //  Inicializar columnas y items de jefes
+        this.jefesColumns = this.jefeService.getColumns();
+        this.jefesItems = this.jefeService.getItems();
+    }
+
+    // Qué hace: ajusta la visibilidad de campos del formulario de jefes según si es modo edición o alta.
+    // Cómo lo hace: mapea la definición de items del servicio alternando la propiedad visible de campos clave.
+    private configurarItemsJefe(esEdicion: boolean): void {
+        this.jefesItems = this.jefeService.getItems().map((item: any) => {
+            if (item.dataField === 'CORR_EMPLEADO' || item.dataField === 'FECHA_INICIO') {
+                return {
+                    ...item,
+                    visible: !esEdicion,
+                };
+            }
+
+            return { ...item };
+        });
+    }
+
     //#region <Inicializando Opciones>
     ngOnInit(): void {
         this.inicializaOpciones();
@@ -100,6 +108,8 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
         this.getCORR_NIVELES();
         this.getCORR_UNIDADES();
     }
+    // Qué hace: carga el catálogo de niveles del formulario.
+    // Cómo lo hace: getLookUp GetCORR_NIVELES de SC_ORGANIGRAMA_ESTRUCTURAL_NIVEL.
     getCORR_NIVELES() {
         this.appInfoService
             .getLookUp('SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES', 'SC_ORGANIGRAMA_ESTRUCTURAL_NIVEL', 'GetCORR_NIVELES', undefined, environment.UrlGENERALAPI)
@@ -116,6 +126,8 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
             });
     }
 
+    // Qué hace: carga el catálogo de unidades padre.
+    // Cómo lo hace: getLookUp GetCORR_UNIDADES y arma el texto código más nombre.
     getCORR_UNIDADES() {
         this.appInfoService
             .getLookUp(
@@ -313,9 +325,8 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
             .pipe(take(1))
             .subscribe({
                 next: (response: any) => {
-                    if (response.Result) {
-                        this.jefesModels = (response.Data || []).filter((item: any) => item);
-                    }
+                    const filas = Array.isArray(response?.Data) ? response.Data : [];
+                    this.jefesModels = filas.filter((item: any) => item).map((item: any) => ({ ...item }));
                 },
                 error: (error: any) => {
                     this.notifyFx(error, NotifyType.Error);
@@ -442,28 +453,31 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
         });
     }
 
-    eliminarJefe(e: any): void {
-        if (!e.data) return;
-
-        this.jefeService
-            .delete(e.data)
-            .pipe(take(1))
-            .subscribe({
+    // Qué hace: quita al jefe de la unidad después de confirmar.
+    // Cómo lo hace: el API borra la fila y la grilla se actualiza con la lista que devuelve la consulta.
+    pedirEliminarJefe(fila: any): void {
+        if (!fila?.CORR_JEFE) {
+            return;
+        }
+        confirm(
+            `<div class="sguees-confirm-message">Se quitará a ${fila.NOMBRE_EMPLEADO || 'este empleado'} como jefe de la unidad. ¿Desea continuar?</div>`,
+            'Quitar jefe'
+        ).then((acepta: boolean) => {
+            if (!acepta) {
+                return;
+            }
+            this.jefeService.delete(fila).pipe(take(1)).subscribe({
                 next: (response: any) => {
                     if (response.Result) {
                         this.notifyFx('Jefe removido con exito!', NotifyType.Success);
                         this.cargarJefes(this.unidadModel.CORR_UNIDAD);
-                        e.component.refresh();
-                    } else {
-                        e.cancel = true;
-                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        return;
                     }
+                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
                 },
-                error: (error: any) => {
-                    e.cancel = true;
-                    this.notifyFx(error, NotifyType.Error);
-                },
+                error: (error: any) => this.notifyFx(error, NotifyType.Error),
             });
+        });
     }
 
     cancelarJefe(): void {

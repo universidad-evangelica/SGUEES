@@ -1,20 +1,20 @@
-<!-- ================================================ -->
-<!-- BARRA DE HERRAMIENTAS PRINCIPAL                   -->
-<!-- ================================================ -->
+<!-- Qué hace: pantalla del organigrama. La barra global vive solo en este encabezado. -->
+<div class="sguees-mtto-view">
+<!-- Qué hace: título del organigrama, sin la pestaña Principal. Nuevo sigue en el árbol. -->
 <app-barra-data-mtto
     [tituloVentana]="tituloVentana"
-    [isBrowse]="true"
-    [isForm]="false"
+    [isBrowse]="isBrowse()"
+    [isForm]="isForm()"
     [permiteAdd]="false"
     [showRefresh]="true"
     (consultar)="consultar()"
+    (guardar)="guardar()"
+    (cancelar)="cancelar()"
 >
 </app-barra-data-mtto>
 
-<!-- ================================================ -->
-<!-- ÁRBOL DE UNIDADES (visible cuando !mostrarFormulario) -->
-<!-- ================================================ -->
-<section class="sguees-section-card" *ngIf="!mostrarFormulario">
+<!-- Qué hace: árbol de unidades mientras no se está editando. -->
+<section class="sguees-section-card" *ngIf="isBrowse()">
     <app-mtto-header
         [title]="'Unidades del Organigrama'"
         [subtitle]="'Vista jerarquica de la estructura organizativa'"
@@ -36,7 +36,6 @@
         >
         </dx-button>
     </app-mtto-header>
-
 <dx-tree-view
     #treeView
     [dataSource]="unidades"
@@ -67,47 +66,38 @@
 </dx-tree-view>
 </section>
 
-<!-- ================================================ -->
-<!-- FORMULARIO DE UNIDAD (visible cuando mostrarFormulario) -->
-<!-- ================================================ -->
-<section class="sguees-section-card" *ngIf="mostrarFormulario">
-    <app-barra-data-mtto
-        [tituloVentana]="'Unidad'"
-        [isBrowse]="isBrowse()"
-        [isForm]="isForm()"
-        [permiteAdd]="false"
-        (guardar)="guardar()"
-        (cancelar)="cancelarUnidadGestion()"
-    >
-    </app-barra-data-mtto>
-    <div class="content-block dx-card responsive-paddings" style="margin-top: 15px;">
-       <dx-form #fData id="fData" [formData]="unidadModel" [labelLocation]="'top'" [colCount]="8" [items]="items">
-		<div *dxTemplate="let cellInfo of 'CORR_NIVELESLookup'">
-			<app-data-lookup
-            [model]="mCORR_NIVEL"
-            [(value)]="unidadModel.CORR_NIVEL"
-            [valueExpr]="'CORR_NIVEL'"
-            [displayExpr]="'NOMBRE_NIVEL'"
-            (valueChange)="onNivelChange($event)"
-            [selectedRowKeys]="selectedLookUpCORR_NIVEL"
-			[readOnly]="readOnly"
+<!-- Qué hace: formulario de la unidad. Guardar y Cancelar están en la barra de arriba. -->
+<div class="content-block dx-card responsive-paddings" *ngIf="isForm()">
+    <dx-form #fData id="fData" [formData]="unidadModel" [labelLocation]="'top'" [colCount]="8" [items]="items">
+        <!-- Qué hace: combo de nivel con el catálogo GetCORR_NIVELES. -->
+        <div *dxTemplate="let cellInfo of 'CORR_NIVELESLookup'">
+            <app-data-lookup
+                [model]="mCORR_NIVEL"
+                [(value)]="unidadModel.CORR_NIVEL"
+                [valueExpr]="'CORR_NIVEL'"
+                [displayExpr]="'NOMBRE_NIVEL'"
+                [lookupColumns]="nivelLookupColumns"
+                (valueChange)="onNivelChange($event)"
+                [selectedRowKeys]="selectedLookUpCORR_NIVEL"
+                [readOnly]="readOnly"
             >
             </app-data-lookup>
-		</div>
-		<div *dxTemplate="let cellInfo of 'CORR_UNIDADESLookup'">
-        <app-data-lookup
-            [model]="mCORR_UNIDAD"
-            [(value)]="unidadModel.CORR_UNIDAD_PADRE"
-            [valueExpr]="'CORR_UNIDAD'"
-            [displayExpr]="'NOMBRE_UNIDAD_TREE'"
-            [selectedRowKeys]="selectedLookUpCORR_UNIDAD"
-            [readOnly]="readOnly"
-        >
-        </app-data-lookup>
+        </div>
+        <!-- Qué hace: combo de unidad padre con el catálogo GetCORR_UNIDADES. -->
+        <div *dxTemplate="let cellInfo of 'CORR_UNIDADESLookup'">
+            <app-data-lookup
+                [model]="mCORR_UNIDAD"
+                [(value)]="unidadModel.CORR_UNIDAD_PADRE"
+                [valueExpr]="'CORR_UNIDAD'"
+                [displayExpr]="'NOMBRE_UNIDAD_TREE'"
+                [lookupColumns]="unidadLookupColumns"
+                [selectedRowKeys]="selectedLookUpCORR_UNIDAD"
+                [readOnly]="readOnly"
+            >
+            </app-data-lookup>
+        </div>
+    </dx-form>
 </div>
-	</dx-form>
-    </div>
-</section>
 
 <!-- ================================================ -->
 <!-- LOAD PANEL                                       -->
@@ -122,23 +112,43 @@
     [shading]="true"
 >
 </dx-load-panel>
-<!-- SECCIÓN 3: Gestión de Jefes (SOLO si existe la unidad) -->
-<section class="sguees-section-card organigrama-section-card" *ngIf="mostrarFormulario && unidadModel && unidadModel.CORR_UNIDAD > 0">
+<!-- Qué hace: jefes de la unidad abierta. Sus botones no usan la barra global. -->
+<section class="sguees-section-card organigrama-section-card" *ngIf="isForm() && unidadModel && unidadModel.CORR_UNIDAD > 0">
     <header class="organigrama-section-head">
         <span class="organigrama-section-title">Jefes de la Unidad</span>
         <span class="organigrama-section-subtitle">Empleados asignados como jefes de {{ unidadModel.NOMBRE_UNIDAD }}</span>
     </header>
 
-    <!-- Barra de herramientas de Jefes -->
-    <app-barra-data-mtto
-        [isBrowse]="isJefeBrowse()"
-        [isForm]="isJefeForm()"
-        [permiteAdd]="getPermiteAddJefe"
-        (nuevo)="nuevoJefe()"
-        (guardar)="guardarJefe()"
-        (cancelar)="cancelarJefe()"
-    >
-    </app-barra-data-mtto>
+    <!-- Qué hace: Nuevo, Guardar y Cancelar del jefe, sin la barra de mantenimiento. -->
+    <div class="organigrama-jefes-toolbar" *ngIf="(isJefeBrowse() && getPermiteAddJefe) || !isJefeBrowse()">
+        <dx-button
+            *ngIf="isJefeBrowse() && getPermiteAddJefe"
+            class="organigrama-jefes-toolbar-btn"
+            icon="plus"
+            text="Nuevo"
+            type="success"
+            stylingMode="contained"
+            (onClick)="nuevoJefe()"
+        ></dx-button>
+        <dx-button
+            *ngIf="!isJefeBrowse()"
+            class="organigrama-jefes-toolbar-btn"
+            icon="save"
+            text="Guardar"
+            type="success"
+            stylingMode="contained"
+            (onClick)="guardarJefe()"
+        ></dx-button>
+        <dx-button
+            *ngIf="!isJefeBrowse()"
+            class="organigrama-jefes-toolbar-btn"
+            icon="close"
+            text="Cancelar"
+            type="danger"
+            stylingMode="contained"
+            (onClick)="cancelarJefe()"
+        ></dx-button>
+    </div>
 
     <!-- Formulario de Jefe -->
     <div *ngIf="!isJefeBrowse()" >
@@ -180,19 +190,47 @@
         </dx-form>
     </div>
 
-    <!-- Grid de Jefes -->
-    <div >
-        <app-data-grid-mtto
-            [isBrowse]="isJefeBrowse()"
-            [models]="jefesModels"
-            [columns]="jefesColumns"
-            [keyExpr]="'CORR_JEFE'"
-            [permiteEditar]="getPermiteEditarJefe"
-            [permiteDele]="getPermiteDeleJefe"
-            (rowDblClick)="rowDblClickJefe($event)"
-            (rowRemoving)="eliminarJefe($event)"
-            (editClick)="editarJefe($event)"
-        >
-        </app-data-grid-mtto>
-    </div>
+    <!-- Qué hace: lista los jefes que ya devolvió la consulta de la unidad. -->
+    <!-- Cómo lo hace: grilla normal, la de mantenimiento dejaba el paginador en -1 y no pintaba las filas. -->
+    <dx-data-grid
+        *ngIf="isJefeBrowse()"
+        class="theme-dependent sguees-data-grid-mtto"
+        [dataSource]="jefesModels"
+        keyExpr="CORR_JEFE"
+        [columnAutoWidth]="false"
+        [showBorders]="true"
+        [showColumnLines]="true"
+        [showRowLines]="true"
+        [rowAlternationEnabled]="true"
+        [hoverStateEnabled]="true"
+        [allowColumnResizing]="true"
+        [columnResizingMode]="'widget'"
+        [width]="'100%'"
+        noDataText="Sin jefes asignados."
+        (onRowDblClick)="rowDblClickJefe($event)"
+    >
+        <dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+        <dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
+        <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+        <dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+        <dxo-load-panel [enabled]="false"></dxo-load-panel>
+        <dxi-column caption="" [width]="90" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesJefeTpl" alignment="center"></dxi-column>
+        <div *dxTemplate="let cell of 'accionesJefeTpl'">
+            <dx-button *ngIf="permiteEdit" icon="edit" stylingMode="text" hint="Editar" (onClick)="editarJefe(cell.data)"></dx-button>
+            <dx-button *ngIf="permiteDele" icon="trash" stylingMode="text" hint="Eliminar" (onClick)="pedirEliminarJefe(cell.data)"></dx-button>
+        </div>
+        <dxi-column dataField="CORR_JEFE" caption="Corr." [width]="90" dataType="number"></dxi-column>
+        <dxi-column dataField="NOMBRE_EMPLEADO" caption="Empleado" [width]="280" [minWidth]="200"></dxi-column>
+        <dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="260" [minWidth]="180"></dxi-column>
+        <dxi-column dataField="FECHA_INICIO" caption="Fecha inicio" [width]="140" dataType="date" format="dd/MM/yyyy"></dxi-column>
+        <dxi-column dataField="FECHA_FIN" caption="Fecha fin" [width]="140" cellTemplate="fechaFinJefeTpl"></dxi-column>
+        <div *dxTemplate="let cell of 'fechaFinJefeTpl'">
+            {{ cell.value ? (cell.value | date:'dd/MM/yyyy') : 'Activo' }}
+        </div>
+        <dxi-column dataField="ACTIVO" caption="Activo" [width]="100" alignment="center" cellTemplate="activoJefeTpl"></dxi-column>
+        <div *dxTemplate="let cell of 'activoJefeTpl'">
+            {{ cell.value ? 'Sí' : 'No' }}
+        </div>
+    </dx-data-grid>
 </section>
+</div>

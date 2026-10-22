@@ -51,7 +51,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	@ViewChild('entrevistaDocumentoFileInput', { static: false })
 	entrevistaDocumentoFileInput?: ElementRef<HTMLInputElement>;
 
-	protected override etiquetaRegistro = 'el expediente de candidato';
+	protected override etiquetaRegistro = 'la requisición de personal';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoPageSize = 15;
 	protected override mttoPageSizes = [15, 25, 50, 100];
@@ -59,171 +59,73 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
-	constructor(
-		public override appInfoService: AppInfoService,
-		public override router: ActivatedRoute,
-		private navRouter: Router,
-		private service: ScRequisicionPersonalService,
-		private observadoresService: ScRequisicionObservadoresService,
-		private solicitudService: ScSolicitudEmpleoService,
-		private messageService: MessageService, //Import para usar PrimeNG Toast
-		private authService: AuthService,
-		private sanitizer: DomSanitizer,
-	) {
-		super(appInfoService, router);
-		this.columns = this.service.getColumns();
-		this.summary = this.service.getSummary();
-		this.items = this.service.getItems();
+	// Qué hace: estado y modelo para el modal de agregar observador a la requisición.
+	// Cómo lo hace: controla la visibilidad del dx-popup y almacena el login seleccionado y los items del formulario.
+	popupObservadorVisible = false;
+	modelObservador: any = { LOGIN_SISTEMA: '' };
+	itemsObservadorModal: any[] = [];
 
+	// Qué hace: define las columnas visibles y anchos fijos de los desplegables de búsqueda (lookups).
+	// Cómo lo hace: configura dataField, caption y width numérico para cada selector de la requisición.
+	loginSistemaLookupColumns: any[] = [
+		{ dataField: 'LOGIN_SISTEMA', caption: 'Login Sistema', width: 120 },
+		{ dataField: 'NOMBRE_USUARIO', caption: 'Nombre Usuario', width: 250 },
+	];
 
-		this.columnsObservadores = this.service.getObservadoresColumns();
-		this.summaryObservadores = this.service.getObservadoresSummary();
-		this.itemsObservadorModal = this.observadoresService.getItemsObservadorModal();
+	tipoModalidadLookupColumns: any[] = [
+		{ dataField: 'CORR_TIPO_MODALIDAD', caption: 'Modalidad', width: 120 },
+		{ dataField: 'MODALIDAD_NOMBRE', caption: 'Tipo Modalidad', width: 280 },
+	];
 
-		this.columnsBitacora = this.service.getBitacoraColumns();
-		this.summaryBitacora = this.service.getBitacoraSummary();
+	tipoContratacionLookupColumns: any[] = [
+		{ dataField: 'CORR_TIPO_CONTRATACION', caption: 'Contratacion', width: 120 },
+		{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contratacion', width: 280 },
+	];
 
-		this.columnsCandidatos = this.service.getCandidatosColumns();
-		this.summaryCandidatos = this.service.getCandidatosSummary();
-		this.entrevistaColumns = this.service.getEntrevistaColumns();
-		this.entrevistaItems = this.service.getEntrevistaItems([]);
-		this.entrevistaDocumentoColumns = this.service.getEntrevistaDocumentoColumns();
-		this.entrevistaDocumentoItems = this.service.getEntrevistaDocumentoItems();
-		this.marcarRealizadaItems = this.service.getMarcarRealizadaEntrevistaItems();
-		this.documentoColumns = this.service.getExpedienteDocumentoColumns();
-	}
+	tipoVacanteLookupColumns: any[] = [
+		{ dataField: 'CORR_TIPO_VACANTE', caption: 'Vacante', width: 120 },
+		{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 280 },
+	];
 
-	//Variables
+	unidadLookupColumns: any[] = [
+		{ dataField: 'CORR_UNIDAD', caption: 'Unidad', width: 120 },
+		{ dataField: 'NOMBRE_UNIDAD', caption: 'Nombre Unidad', width: 250 },
+	];
+
+	puestoLookupColumns: any[] = [
+		{ dataField: 'CORR_PUESTO', caption: 'Puesto', width: 100 },
+		{ dataField: 'CODIGO_PUESTO', caption: 'Código', width: 120 },
+		{ dataField: 'NOMBRE_PUESTO', caption: 'Nombre Puesto', width: 250 },
+	];
+
+	descriptorPuestoLookupColumns: any[] = [
+		{ dataField: 'CODIGO_DESCRIPTOR_PUESTO', caption: 'Código Descriptor', width: 140 },
+		{ dataField: 'NOMBRE_PUESTO', caption: 'Nombre Puesto', width: 250 },
+	];
+
+	// Qué hace: columnas del lookup selector para empleado sustituto.
+	// Cómo lo hace: define código, nombre y estado del empleado con anchos fijos (ocultando el correlativo interno).
+	empleadoSustitutoLookupColumns: any[] = [
+		{ dataField: 'CODIGO_EMPLEADO', caption: 'Código', width: 100 },
+		{ dataField: 'NOMBRE_EMPLEADO', caption: 'Nombre Empleado', width: 250 },
+		{ dataField: 'ESTADO_EMPLEADO', caption: 'Estado', width: 120 },
+	];
+
+	// Qué hace: banderas de control de modo sólo lectura y proceso de envío de requisición.
+	// Cómo lo hace: variables booleanas que condicionan la habilitación de controles y botones.
 	readOnly = false;
 	enviandoRequisicion = false;
 
-	/**
-	 * Texto del botón "Enviar requisición".
-	 * Visible con requisición guardada en Borrador o Devuelta (edición o consulta).
-	 */
-	get btnEnviarRequisicion(): string {
-		return this.motivoNoPuedeEnviarRequisicion() === null ? 'Enviar requisición' : '';
-	}
-
-	/**
-	 * Botón Imprimir — mismo criterio que Activar proceso en expediente:
-	 * visible al tener requisición seleccionada/abierta (CORR > 0).
-	 */
-	get btnImprimirRequisicion(): string {
-		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
-		return corr > 0 ? 'Imprimir' : '';
-	}
-
+	// Qué hace: estado para el modal de visualización e impresión de reporte universal de la requisición.
+	// Cómo lo hace: controla visibilidad del dx-popup, URL sanitizada del visor y estados de carga y timeout.
 	imprimirPopupVisible = false;
 	imprimirUrl: SafeResourceUrl | null = null;
 	/** dx-load-panel dentro del popup hasta DocumentReady de DevExpress (postMessage). */
 	imprimirLoading = false;
 	private imprimirLoadFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
-	/**
-	 * Abre el visor universal SelectionHiring.aspx (XtraReports).
-	 * fuente = ruta del componente (sc-requisicion-personal); report = catálogo SPA/RPT.
-	 * Para agregar otro reporte: case en SelectionHiring.aspx.cs + buildSelectionHiringRptUrl.
-	 */
-	imprimirRequisicion(): void {
-		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
-		const corrEmpresa =
-			Number(this.model?.CORR_EMPRESA) ||
-			Number(this.authService?.decodedToken?.CORR_EMPRESA) ||
-			0;
-		if (corr <= 0 || corrEmpresa <= 0) {
-			this.notifyFx('Guarde o seleccione una requisición para imprimir.', NotifyType.Warning);
-			return;
-		}
-
-		const fuente = resolveSelectionHiringFuente(this.router, this.urlOpcion);
-		if (!fuente) {
-			this.notifyFx('No se pudo resolver la fuente del reporte (ruta SPA).', NotifyType.Error);
-			return;
-		}
-
-		this.clearImprimirLoadFallback();
-		this.imprimirUrl = null;
-		this.imprimirLoading = true;
-		this.imprimirPopupVisible = true;
-
-		this.service
-			.getRptToken()
-			.pipe(take(1))
-			.subscribe({
-				next: (res: any) => {
-					const token = res?.Token || res?.Data?.Token || res?.token;
-					if (!token) {
-						this.imprimirLoading = false;
-						this.imprimirPopupVisible = false;
-						this.notifyFx('No se pudo obtener el token de reportería.', NotifyType.Error);
-						return;
-					}
-					// Visor universal: ?fuente=&report=&CORR_...=&token=
-					// Si en el futuro esta fuente tuviera varios reportes, agregar formato: 'corto'|'extenso'
-					const url = buildSelectionHiringRptUrl({
-						fuente,
-						report: SELECTION_HIRING_RPT.REQUISICION_PERSONAL,
-						params: {
-							CORR_EMPRESA: corrEmpresa,
-							CORR_REQUISICION_PERSONAL: corr,
-						},
-						token,
-					});
-					this.imprimirUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-					// Respaldo si DocumentReady no llega (p. ej. error de red).
-					this.imprimirLoadFallbackTimer = setTimeout(() => {
-						this.imprimirLoading = false;
-						this.imprimirLoadFallbackTimer = null;
-					}, 45000);
-				},
-				error: (err: any) => {
-					this.imprimirLoading = false;
-					this.imprimirPopupVisible = false;
-					this.notifyFx(err?.ErrorMessage || err?.message || err || 'Error al preparar impresión', NotifyType.Error);
-				},
-			});
-	}
-
-	/** DevExpress DocumentReady (o error ASPX) → quitar "Cargando...". */
-	@HostListener('window:message', ['$event'])
-	onImprimirRptMessage(event: MessageEvent): void {
-		const data = event?.data;
-		if (!data || data.type !== 'sguees-rpt-ready' || data.source !== SELECTION_HIRING_RPT_MESSAGE_SOURCE) {
-			return;
-		}
-		this.clearImprimirLoadFallback();
-		this.imprimirLoading = false;
-	}
-
-	/** Fallback: si el shell del iframe cargó pero no hay viewer, no dejar el panel colgado. */
-	onImprimirIframeLoad(): void {
-		// El aviso real llega por postMessage (DocumentReady). Aquí solo un respaldo corto
-		// por si la página de error no pudo ejecutar script.
-		if (!this.imprimirLoading) {
-			return;
-		}
-		this.clearImprimirLoadFallback();
-		this.imprimirLoadFallbackTimer = setTimeout(() => {
-			this.imprimirLoading = false;
-			this.imprimirLoadFallbackTimer = null;
-		}, 8000);
-	}
-
-	cerrarImprimirPopup(): void {
-		this.clearImprimirLoadFallback();
-		this.imprimirPopupVisible = false;
-		this.imprimirUrl = null;
-		this.imprimirLoading = false;
-	}
-
-	private clearImprimirLoadFallback(): void {
-		if (this.imprimirLoadFallbackTimer != null) {
-			clearTimeout(this.imprimirLoadFallbackTimer);
-			this.imprimirLoadFallbackTimer = null;
-		}
-	}
-
+	// Qué hace: almacena los orígenes de datos para los selectores (lookups) de la requisición.
+	// Cómo lo hace: arreglos que se pueblan en llenaComboBox() para desplegar opciones en el formulario.
 	mCORR_TIPO_MODALIDAD: any[] = [];
 	mCORR_TIPO_CONTRATACION: any[] = [];
 	mCORR_TIPO_VACANTE: any[] = [];
@@ -231,6 +133,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	mCORR_UNIDAD: any[] = [];
 	mCORR_PUESTO: any[] = [];
 	mCORR_DESCRIPTOR_PUESTO: any[] = [];
+	mCORR_EMPLEADO_SUSTITUTO: any[] = [];
 	mCORR_TIPO_ENTREVISTA: any[] = [];
 
 	/** Columnas del grid del tab (definidas en service.getTabDetalleColumns). */
@@ -328,6 +231,163 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	documentoPreviewEsImagen = false;
 	private documentoPreviewObjectUrl: string | null = null;
 
+	constructor(
+		public override appInfoService: AppInfoService,
+		public override router: ActivatedRoute,
+		private navRouter: Router,
+		private service: ScRequisicionPersonalService,
+		private observadoresService: ScRequisicionObservadoresService,
+		private solicitudService: ScSolicitudEmpleoService,
+		private messageService: MessageService, //Import para usar PrimeNG Toast
+		private authService: AuthService,
+		private sanitizer: DomSanitizer,
+	) {
+		super(appInfoService, router);
+		this.columns = this.service.getColumns();
+		this.summary = this.service.getSummary();
+		this.items = this.service.getItems();
+
+
+		this.columnsObservadores = this.service.getObservadoresColumns();
+		this.summaryObservadores = this.service.getObservadoresSummary();
+		this.itemsObservadorModal = this.observadoresService.getItemsObservadorModal();
+
+		this.columnsBitacora = this.service.getBitacoraColumns();
+		this.summaryBitacora = this.service.getBitacoraSummary();
+
+		this.columnsCandidatos = this.service.getCandidatosColumns();
+		this.summaryCandidatos = this.service.getCandidatosSummary();
+		this.entrevistaColumns = this.service.getEntrevistaColumns();
+		this.entrevistaItems = this.service.getEntrevistaItems([]);
+		this.entrevistaDocumentoColumns = this.service.getEntrevistaDocumentoColumns();
+		this.entrevistaDocumentoItems = this.service.getEntrevistaDocumentoItems();
+		this.marcarRealizadaItems = this.service.getMarcarRealizadaEntrevistaItems();
+		this.documentoColumns = this.service.getExpedienteDocumentoColumns();
+	}
+
+	/**
+	 * Texto del botón "Enviar requisición".
+	 * Visible con requisición guardada en Borrador o Devuelta (edición o consulta).
+	 */
+	get btnEnviarRequisicion(): string {
+		return this.motivoNoPuedeEnviarRequisicion() === null ? 'Enviar requisición' : '';
+	}
+
+	/**
+	 * Botón Imprimir — mismo criterio que Activar proceso en expediente:
+	 * visible al tener requisición seleccionada/abierta (CORR > 0).
+	 */
+	get btnImprimirRequisicion(): string {
+		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
+		return corr > 0 ? 'Imprimir' : '';
+	}
+
+	/**
+	 * Abre el visor universal SelectionHiring.aspx (XtraReports).
+	 * fuente = ruta del componente (sc-requisicion-personal); report = catálogo SPA/RPT.
+	 * Para agregar otro reporte: case en SelectionHiring.aspx.cs + buildSelectionHiringRptUrl.
+	 */
+	imprimirRequisicion(): void {
+		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
+		const corrEmpresa =
+			Number(this.model?.CORR_EMPRESA) ||
+			Number(this.authService?.decodedToken?.CORR_EMPRESA) ||
+			0;
+		if (corr <= 0 || corrEmpresa <= 0) {
+			this.notifyFx('Guarde o seleccione una requisición para imprimir.', NotifyType.Warning);
+			return;
+		}
+
+		const fuente = resolveSelectionHiringFuente(this.router, this.urlOpcion);
+		if (!fuente) {
+			this.notifyFx('No se pudo resolver la fuente del reporte (ruta SPA).', NotifyType.Error);
+			return;
+		}
+
+		this.clearImprimirLoadFallback();
+		this.imprimirUrl = null;
+		this.imprimirLoading = true;
+		this.imprimirPopupVisible = true;
+
+		this.service
+			.getRptToken()
+			.pipe(take(1))
+			.subscribe({
+				next: (res: any) => {
+					const token = res?.Token || res?.Data?.Token || res?.token;
+					if (!token) {
+						this.imprimirLoading = false;
+						this.imprimirPopupVisible = false;
+						this.notifyFx('No se pudo obtener el token de reportería.', NotifyType.Error);
+						return;
+					}
+					// Visor universal: ?fuente=&report=&CORR_...=&token=
+					// Si en el futuro esta fuente tuviera varios reportes, agregar formato: 'corto'|'extenso'
+					const url = buildSelectionHiringRptUrl({
+						fuente,
+						report: SELECTION_HIRING_RPT.REQUISICION_PERSONAL,
+						params: {
+							CORR_EMPRESA: corrEmpresa,
+							CORR_REQUISICION_PERSONAL: corr,
+						},
+						token,
+					});
+					this.imprimirUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+					// Respaldo si DocumentReady no llega (p. ej. error de red).
+					this.imprimirLoadFallbackTimer = setTimeout(() => {
+						this.imprimirLoading = false;
+						this.imprimirLoadFallbackTimer = null;
+					}, 45000);
+				},
+				error: (err: any) => {
+					this.imprimirLoading = false;
+					this.imprimirPopupVisible = false;
+					this.notifyFx(err?.ErrorMessage || err?.message || err || 'Error al preparar impresión', NotifyType.Error);
+				},
+			});
+	}
+
+	// Qué hace: escucha mensajes del visor de reportes para remover el indicador de carga.
+	// Cómo lo hace: valida tipo y origen del evento window:message y desactiva el estado de carga.
+	// eslint-disable-next-line @typescript-eslint/member-ordering
+	@HostListener('window:message', ['$event'])
+	onImprimirRptMessage(event: MessageEvent): void {
+		const data = event?.data;
+		if (!data || data.type !== 'sguees-rpt-ready' || data.source !== SELECTION_HIRING_RPT_MESSAGE_SOURCE) {
+			return;
+		}
+		this.clearImprimirLoadFallback();
+		this.imprimirLoading = false;
+	}
+
+	/** Fallback: si el shell del iframe cargó pero no hay viewer, no dejar el panel colgado. */
+	onImprimirIframeLoad(): void {
+		// El aviso real llega por postMessage (DocumentReady). Aquí solo un respaldo corto
+		// por si la página de error no pudo ejecutar script.
+		if (!this.imprimirLoading) {
+			return;
+		}
+		this.clearImprimirLoadFallback();
+		this.imprimirLoadFallbackTimer = setTimeout(() => {
+			this.imprimirLoading = false;
+			this.imprimirLoadFallbackTimer = null;
+		}, 8000);
+	}
+
+	cerrarImprimirPopup(): void {
+		this.clearImprimirLoadFallback();
+		this.imprimirPopupVisible = false;
+		this.imprimirUrl = null;
+		this.imprimirLoading = false;
+	}
+
+	private clearImprimirLoadFallback(): void {
+		if (this.imprimirLoadFallbackTimer != null) {
+			clearTimeout(this.imprimirLoadFallbackTimer);
+			this.imprimirLoadFallbackTimer = null;
+		}
+	}
+
 	get editandoEntrevista(): boolean {
 		return (this.entrevistaModel?.CORR_EXPEDIENTE_ENTREVISTA ?? 0) > 0;
 	}
@@ -381,47 +441,6 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		return corr > 0 ? `Adjuntos — Entrevista #${corr}` : 'Adjuntos de entrevista';
 	}
 
-	/** Modal agregar observador */
-	popupObservadorVisible = false;
-	modelObservador: any = { LOGIN_SISTEMA: '' };
-	itemsObservadorModal: any[] = [];
-
-	loginSistemaLookupColumns: any[] = [
-		{ dataField: 'LOGIN_SISTEMA', caption: 'Login Sistema', width: 120 },
-		{ dataField: 'NOMBRE_USUARIO', caption: 'Nombre Usuario', width: 250 },
-	];
-
-	tipoModalidadLookupColumns: any[] = [
-		{ dataField: 'CORR_TIPO_MODALIDAD', caption: 'Modalidad', width: 120 },
-		{ dataField: 'MODALIDAD_NOMBRE', caption: 'Tipo Modalidad', width: 280 },
-	];
-
-	tipoContratacionLookupColumns: any[] = [
-		{ dataField: 'CORR_TIPO_CONTRATACION', caption: 'Contratacion', width: 120 },
-		{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contratacion', width: 280 },
-	];
-
-	tipoVacanteLookupColumns: any[] = [
-		{ dataField: 'CORR_TIPO_VACANTE', caption: 'Vacante', width: 120 },
-		{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 280 },
-	];
-
-	unidadLookupColumns: any[] = [
-		{ dataField: 'CORR_UNIDAD', caption: 'Unidad', width: 120 },
-		{ dataField: 'NOMBRE_UNIDAD', caption: 'Nombre Unidad', width: 250 },
-	];
-
-	puestoLookupColumns: any[] = [
-		{ dataField: 'CORR_PUESTO', caption: 'Puesto', width: 100 },
-		{ dataField: 'CODIGO_PUESTO', caption: 'Código', width: 120 },
-		{ dataField: 'NOMBRE_PUESTO', caption: 'Nombre Puesto', width: 250 },
-	];
-
-	descriptorPuestoLookupColumns: any[] = [
-		{ dataField: 'CODIGO_DESCRIPTOR_PUESTO', caption: 'Código Descriptor', width: 140 },
-		{ dataField: 'NOMBRE_PUESTO', caption: 'Nombre Puesto', width: 250 },
-	];
-
 	ngOnInit(): void {
 		this.inicializaOpciones();
 		this.llenaComboBox();
@@ -453,8 +472,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.cerrarWorkspaceEntrevistas(false);
 	}
 
-	/** Carga observadores desde SC_REQUISICION_OBSERVADORES. */
+	// Qué hace: Carga los observadores ligados a la requisición actual.
+	// Cómo lo hace: Valida que la requisición exista en BD antes de consultar el endpoint por CORR_REQUISICION_PERSONAL.
 	cargarObservadores(): void {
+		if (!this.model?.CORR_REQUISICION_PERSONAL || this.model.CORR_REQUISICION_PERSONAL <= 0) {
+			this.modelsObservadores = [];
+			return;
+		}
+
 		this.observadoresService
 			.getForRequisicionPersonal(this.fillParam(this.model?.CORR_REQUISICION_PERSONAL))
 			.pipe(take(1))
@@ -570,9 +595,36 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		return !!this.candidatoSeleccionado && (estado === '' || estado === 'PENDIENTE');
 	}
 
+	// Qué hace: Retorna el número de plazas cubiertas de la requisición activa.
+	// Cómo lo hace: Cuenta candidatos con decisión APLICA o estado 5 (Contratado) en modelsCandidatos o toma PLAZAS_CUBIERTAS del modelo.
+	get plazasCubiertasRequisicion(): number {
+		if (this.modelsCandidatos && this.modelsCandidatos.length > 0) {
+			return this.modelsCandidatos.filter(
+				(c: any) => `${c?.ESTADO_DECISION ?? ''}`.toUpperCase() === 'APLICA' || Number(c?.CORR_ESTADO_EXPEDIENTE) === 5
+			).length;
+		}
+		return Number(this.model?.PLAZAS_CUBIERTAS ?? 0);
+	}
+
+	// Qué hace: Indica si todas las plazas de la requisición han sido cubiertas.
+	// Cómo lo hace: Compara si plazasCubiertasRequisicion es mayor o igual que CANTIDAD_PLAZAS y esta última es mayor a 0.
+	get vacantesCompletas(): boolean {
+		const total = Number(this.model?.CANTIDAD_PLAZAS ?? 0);
+		return total > 0 && this.plazasCubiertasRequisicion >= total;
+	}
+
 	abrirDecisionCandidato(estado: 'APLICA' | 'NO_APLICA'): void {
 		if (!this.candidatoSeleccionado) {
 			this.notifyFx('Seleccione un candidato en el listado.', NotifyType.Warning);
+			return;
+		}
+		// Qué hace: Impide generar movimiento de personal si todas las plazas ya fueron cubiertas.
+		// Cómo lo hace: Si la acción es 'APLICA' y vacantesCompletas es true, muestra alerta preventiva y detiene el flujo.
+		if (estado === 'APLICA' && this.vacantesCompletas) {
+			this.notifyFx(
+				`Todas las plazas de esta requisición ya han sido cubiertas (${this.plazasCubiertasRequisicion} de ${this.model.CANTIDAD_PLAZAS}).`,
+				NotifyType.Warning
+			);
 			return;
 		}
 		if (!this.esSolicitanteRequisicion) {
@@ -750,6 +802,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.fotoPreviewVisible = false;
 	}
 
+	// Qué hace: escucha la pulsación de la tecla Escape para cerrar la vista previa de foto si está activa.
+	// Cómo lo hace: evalúa si fotoPreviewVisible es true y ejecuta cerrarFotoPreview().
+	// eslint-disable-next-line @typescript-eslint/member-ordering
 	@HostListener('document:keydown.escape')
 	onEscape(): void {
 		if (this.fotoPreviewVisible) {
@@ -1108,6 +1163,11 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			next: (response: any) => {
 				if (response.Result) {
 					this.mCORR_TIPO_VACANTE = response.Data;
+					// Qué hace: Si el formulario está abierto, sincroniza la visibilidad y carga de sustituto.
+					// Cómo lo hace: Invoca sincronizarVisibilidadEmpleadoSustituto una vez disponible el catálogo.
+					if (this.isForm()) {
+						this.sincronizarVisibilidadEmpleadoSustituto();
+					}
 				}
 			},
 			error: (error: any) => {
@@ -1153,7 +1213,21 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.mCORR_PUESTO = response.Data ?? [];
+						const puestos = response.Data ?? [];
+						const unidadActual = this.mCORR_UNIDAD.find(
+							(u: any) => u.CORR_UNIDAD === unidad
+						);
+						// Qué hace: Excluye el puesto que el usuario desempeña en la unidad (puesto de jefatura/coordinación).
+						// Cómo lo hace: Compara CORR_PUESTO de la unidad del usuario con cada puesto devuelto; solo lo excluye si no es el puesto ya guardado previamente.
+						if (unidadActual?.ES_POR_PUESTO && unidadActual?.CORR_PUESTO) {
+							this.mCORR_PUESTO = puestos.filter(
+								(p: any) =>
+									p.CORR_PUESTO !== unidadActual.CORR_PUESTO ||
+									p.CORR_PUESTO === this.model?.CORR_PUESTO
+							);
+						} else {
+							this.mCORR_PUESTO = puestos;
+						}
 					} else {
 						this.mCORR_PUESTO = [];
 						this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1193,20 +1267,56 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			});
 	}
 
-	/** En edición/consulta: carga puestos y descriptores según valores del registro. */
+	// Qué hace: Consulta los empleados activos que laboran en la misma unidad y puesto de la requisición.
+	// Cómo lo hace: Llama al endpoint GetCORR_EMPLEADO_SUSTITUTO_SC_REQUISICION_PERSONAL pasando CORR_UNIDAD y CORR_PUESTO.
+	getCORR_EMPLEADO_SUSTITUTO(corrUnidad?: number, corrPuesto?: number): void {
+		const unidad = corrUnidad ?? this.model?.CORR_UNIDAD;
+		const puesto = corrPuesto ?? this.model?.CORR_PUESTO;
+		if (!unidad || unidad <= 0 || !puesto || puesto <= 0) {
+			this.mCORR_EMPLEADO_SUSTITUTO = [];
+			return;
+		}
+
+		this.appInfoService
+			.getLookUp(
+				'SC_REQUISICION_PERSONAL',
+				'GEN_EMPLEADO_PUESTO',
+				'GetCORR_EMPLEADO_SUSTITUTO',
+				[
+					{ Parameter: 'CORR_UNIDAD', Value: unidad },
+					{ Parameter: 'CORR_PUESTO', Value: puesto },
+				],
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_EMPLEADO_SUSTITUTO = response?.Result ? (response.Data ?? []) : [];
+				},
+				error: (error: any) => {
+					this.mCORR_EMPLEADO_SUSTITUTO = [];
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	/** En edición/consulta: carga puestos, descriptores y empleados sustitutos según valores del registro. */
 	precargarCascadaUnidadPuestoDescriptor(): void {
 		const unidad = this.model?.CORR_UNIDAD;
 		const puesto = this.model?.CORR_PUESTO;
 		if (!unidad || unidad <= 0) {
 			this.mCORR_PUESTO = [];
 			this.mCORR_DESCRIPTOR_PUESTO = [];
+			this.mCORR_EMPLEADO_SUSTITUTO = [];
 			return;
 		}
 		this.getCORR_PUESTO(unidad);
 		if (puesto && puesto > 0) {
 			this.getCORR_DESCRIPTOR_PUESTO(unidad, puesto);
+			this.getCORR_EMPLEADO_SUSTITUTO(unidad, puesto);
 		} else {
 			this.mCORR_DESCRIPTOR_PUESTO = [];
+			this.mCORR_EMPLEADO_SUSTITUTO = [];
 		}
 	}
 
@@ -1235,7 +1345,15 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				PLAZAS_CUBIERTAS: xModel.PLAZAS_CUBIERTAS,
 				FECHA_REQUISICION: xModel.FECHA_REQUISICION,
 				JUSTIFICACION: xModel.JUSTIFICACION,
-				CORR_EMPLEADO_SUSTITUTO: xModel.CORR_EMPLEADO_SUSTITUTO,
+				// Qué hace: Normaliza el empleado sustituto a número para que el app-data-lookup haga match con el catálogo numérico.
+				// Cómo lo hace: Convierte el valor a Number si no es nulo/vacío, o asigna null.
+				CORR_EMPLEADO_SUSTITUTO:
+					xModel.CORR_EMPLEADO_SUSTITUTO != null &&
+					xModel.CORR_EMPLEADO_SUSTITUTO !== '' &&
+					!isNaN(Number(xModel.CORR_EMPLEADO_SUSTITUTO)) &&
+					Number(xModel.CORR_EMPLEADO_SUSTITUTO) > 0
+						? Number(xModel.CORR_EMPLEADO_SUSTITUTO)
+						: null,
 				SALARIO: xModel.SALARIO,
 				CORR_ESTADO_REQUISICION: xModel.CORR_ESTADO_REQUISICION,
 				FECHA_APROBACION: xModel.FECHA_APROBACION,
@@ -1262,11 +1380,13 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			CORR_TIPO_MODALIDAD: 0,
 			CORR_TIPO_CONTRATACION: 0,
 			CORR_TIPO_VACANTE: 0,
-			CANTIDAD_PLAZAS: 0,
+			// Qué hace: Inicializa la cantidad de plazas requeridas por defecto en 1.
+			// Cómo lo hace: Asigna el valor 1 a CANTIDAD_PLAZAS en el modelo base para nuevos registros.
+			CANTIDAD_PLAZAS: 1,
 			PLAZAS_CUBIERTAS: 0,
 			FECHA_REQUISICION: new Date(),
 			JUSTIFICACION: '',
-			CORR_EMPLEADO_SUSTITUTO: '',
+			CORR_EMPLEADO_SUSTITUTO: null,
 			SALARIO: 0,
 			CORR_ESTADO_REQUISICION: 1, // Default: Borrador
 			FECHA_APROBACION: null,
@@ -1340,12 +1460,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		});
 	}
 
+	// Qué hace: guarda la requisición en la base de datos (creación o actualización) y permanece en el formulario en modo edición.
+	// Cómo lo hace: valida el formulario, ejecuta insert o update en el servicio y al recibir respuesta exitosa sincroniza en memoria (model, modelUpdate y models), cambia el estado a UpdateType.Update y carga los observadores sin salir a la grilla.
 	guardar(): void {
-		// Solo Borrador/Devuelta (o alta nueva). En consulta / estados cerrados no hay Guardar.
+		// Solo Borrador/Observada (o alta nueva). En consulta / estados cerrados no hay Guardar.
 		if (this.banderaMtto !== UpdateType.Add
 			&& !this.service.esEstadoRequisicionEditable(this.model?.CORR_ESTADO_REQUISICION)) {
 			this.notifyFx(
-				'Solo se puede modificar una requisición en Borrador o Devuelta.',
+				'Solo se puede modificar una requisición en Borrador u Observada.',
 				NotifyType.Warning
 			);
 			return;
@@ -1369,7 +1491,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 						if (response.Result) {
 							this.models.push(response.Data);
 							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
+							this.modelUpdate = { ...response.Data };
+							this.AsignaStatus(UpdateType.Update);
+							this.cargarObservadores();
 							this.notifyFx('Registro creado con exito!', NotifyType.Success);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1389,9 +1513,12 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 					next: (response: any) => {
 						if (response.Result) {
 							this.model = response.Data;
+							this.modelUpdate = { ...response.Data };
 							const vIndex = this.models.findIndex((item: any) => item.CORR_REQUISICION_PERSONAL === response.Data.CORR_REQUISICION_PERSONAL);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
+							if (vIndex >= 0) {
+								this.models[vIndex] = response.Data;
+							}
+							this.AsignaStatus(UpdateType.Update);
 							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1601,9 +1728,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}
 
 		const estado = this.model?.CORR_ESTADO_REQUISICION ?? 1;
-		// 1 = Borrador, 3 = Devuelta (puede reenviarse). Visible también en consulta (sin Guardar).
+		// 1 = Borrador, 3 = Observada (puede reenviarse). Visible también en consulta (sin Guardar).
 		if (!this.service.esEstadoRequisicionEnviable(estado)) {
-			return 'Solo se puede enviar una requisición en Borrador o Devuelta.';
+			return 'Solo se puede enviar una requisición en Borrador u Observada.';
 		}
 
 		return null;
@@ -1666,28 +1793,35 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	/**
-	 * Cascada: unidad → limpia puesto y descriptor; carga puestos de la unidad.
+	 * Cascada: unidad → limpia puesto, descriptor y sustituto; carga puestos de la unidad.
 	 * Arrow function para conservar this (se pasa a app-data-lookup).
 	 */
 	selectedLookUpCORR_UNIDAD = (vRow: any): any => {
 		const corrUnidad = vRow[0].CORR_UNIDAD;
 		this.model.CORR_PUESTO = 0;
 		this.model.CORR_DESCRIPTOR_PUESTO = 0;
+		this.model.CORR_EMPLEADO_SUSTITUTO = null;
 		this.mCORR_PUESTO = [];
 		this.mCORR_DESCRIPTOR_PUESTO = [];
+		this.mCORR_EMPLEADO_SUSTITUTO = [];
 		setTimeout(() => this.getCORR_PUESTO(corrUnidad), 0);
 		return corrUnidad;
 	};
 
 	/**
-	 * Cascada: puesto → limpia descriptor; carga descriptores de unidad + puesto.
+	 * Cascada: puesto → limpia descriptor y sustituto; carga descriptores y sustitutos de unidad + puesto.
 	 */
 	selectedLookUpCORR_PUESTO = (vRow: any): any => {
 		const corrPuesto = vRow[0].CORR_PUESTO;
 		this.model.CORR_DESCRIPTOR_PUESTO = 0;
+		this.model.CORR_EMPLEADO_SUSTITUTO = null;
 		this.mCORR_DESCRIPTOR_PUESTO = [];
+		this.mCORR_EMPLEADO_SUSTITUTO = [];
 		setTimeout(
-			() => this.getCORR_DESCRIPTOR_PUESTO(this.model.CORR_UNIDAD, corrPuesto),
+			() => {
+				this.getCORR_DESCRIPTOR_PUESTO(this.model.CORR_UNIDAD, corrPuesto);
+				this.getCORR_EMPLEADO_SUSTITUTO(this.model.CORR_UNIDAD, corrPuesto);
+			},
 			0
 		);
 		return corrPuesto;
@@ -1698,6 +1832,12 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	 */
 	selectedLookUpCORR_DESCRIPTOR_PUESTO = (vRow: any): any => {
 		return vRow[0].CORR_DESCRIPTOR_PUESTO;
+	};
+
+	// Qué hace: retorna el correlativo numérico de empleado seleccionado en el lookup de sustituto.
+	// Cómo lo hace: extrae y convierte CORR_EMPLEADO de la fila seleccionada a Number.
+	selectedLookUpCORR_EMPLEADO_SUSTITUTO = (vRow: any): any => {
+		return Number(vRow[0].CORR_EMPLEADO);
 	};
 
 	/**
@@ -1763,7 +1903,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.model.REQUIERE_SUSTITUCION = requiereSustitucion === true;
 		// Si ya no requiere sustitución, limpiar el empleado seleccionado.
 		if (!this.model.REQUIERE_SUSTITUCION) {
-			this.model.CORR_EMPLEADO_SUSTITUTO = '';
+			this.model.CORR_EMPLEADO_SUSTITUTO = null;
+		} else if (!this.mCORR_EMPLEADO_SUSTITUTO?.length && this.model.CORR_UNIDAD && this.model.CORR_PUESTO) {
+			this.getCORR_EMPLEADO_SUSTITUTO(this.model.CORR_UNIDAD, this.model.CORR_PUESTO);
 		}
 		// Diferir itemOption para no remontar el lookup a mitad de la selección
 		setTimeout(() => this.aplicarVisibilidadEmpleadoSustituto(requiereSustitucion), 0);
@@ -1800,6 +1942,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		// Sin vacante seleccionada → ocultar sustituto
 		const requiereSustitucion = item ? item.REQUIERE_SUSTITUCION : false;
 		this.model.REQUIERE_SUSTITUCION = requiereSustitucion === true;
+		if (requiereSustitucion && this.model?.CORR_UNIDAD && this.model?.CORR_PUESTO && !this.mCORR_EMPLEADO_SUSTITUTO?.length) {
+			this.getCORR_EMPLEADO_SUSTITUTO(this.model.CORR_UNIDAD, this.model.CORR_PUESTO);
+		}
 		this.aplicarVisibilidadEmpleadoSustituto(requiereSustitucion);
 	}
 
@@ -1816,12 +1961,19 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		return nombre || this.getLoginSesion();
 	}
 
-	/**
-	 * Desde requisición solo se edita/elimina si:
-	 * - la entrevista la creó el usuario de sesión, y
-	 * - el estado actual es PROGRAMADA.
-	 */
+	// Qué hace: Determina si las entrevistas del candidato deben estar bloqueadas en modo solo lectura.
+	// Cómo lo hace: Evalúa si el expediente del candidato ya se encuentra formalmente en estado 5 (Contratado).
+	get candidatoEntrevistasSoloLectura(): boolean {
+		const corrEstadoExpediente = Number(this.candidatoEntrevistaSeleccionado?.CORR_ESTADO_EXPEDIENTE ?? 0);
+		return corrEstadoExpediente === 5;
+	}
+
+	// Qué hace: Valida si el usuario actual tiene permisos para gestionar (crear, editar, eliminar o confirmar) una entrevista.
+	// Cómo lo hace: Retorna false si el candidato está seleccionado/contratado; de lo contrario verifica que la entrevista sea propia y en estado PROGRAMADA.
 	puedeGestionarEntrevista(row?: ScExpedienteEntrevista | null): boolean {
+		if (this.candidatoEntrevistasSoloLectura) {
+			return false;
+		}
 		if (!row || (row.CORR_EXPEDIENTE_ENTREVISTA ?? 0) <= 0) {
 			return true; // alta nueva
 		}
@@ -1963,17 +2115,21 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			});
 	}
 
+	// Qué hace: Inicializa el modelo para una nueva entrevista y ajusta el modo de solo lectura.
+	// Cómo lo hace: Establece entrevistaReadOnly en true si el candidato ya fue seleccionado/contratado, o en false para un candidato pendiente.
 	nuevaEntrevista(): void {
-		this.entrevistaReadOnly = false;
+		this.entrevistaReadOnly = this.candidatoEntrevistasSoloLectura;
 		this.entrevistaModel = this.fillEntrevistaData();
 		this.syncEntrevistaForm();
 	}
 
+	// Qué hace: Carga una entrevista en el formulario superior para edición o consulta.
+	// Cómo lo hace: Asigna los datos de la fila y establece entrevistaReadOnly en true si el candidato está seleccionado o si no se tienen permisos de edición.
 	editarEntrevista(row: ScExpedienteEntrevista): void {
 		if (!row) {
 			return;
 		}
-		this.entrevistaReadOnly = !this.puedeGestionarEntrevista(row);
+		this.entrevistaReadOnly = this.candidatoEntrevistasSoloLectura || !this.puedeGestionarEntrevista(row);
 		this.entrevistaModel = this.fillEntrevistaData(row);
 		this.syncEntrevistaForm();
 	}
@@ -1985,8 +2141,10 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.editarEntrevista(e?.data);
 	}
 
+	// Qué hace: Valida y envía al backend el registro o actualización de la entrevista.
+	// Cómo lo hace: Bloquea la acción si el proceso está guardando, si el formulario está en solo lectura o si el candidato ya fue seleccionado/contratado.
 	guardarEntrevista(): void {
-		if (this.guardandoEntrevista || this.entrevistaReadOnly) {
+		if (this.guardandoEntrevista || this.entrevistaReadOnly || this.candidatoEntrevistasSoloLectura) {
 			return;
 		}
 

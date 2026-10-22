@@ -18,8 +18,6 @@ using sgueesRpt.Reports.Accounting.CON_GASTOS;
 
 using sgueesRpt.Reports.Accounting.CON_PARTIDA;
 
-using sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports;
-
 using sgueesRpt.Reports.Accounting.ESTADO_RESULTADOS;
 
 using sgueesRpt.Reports.Accounting.LIBRO_DIARIO_AUXILIAR;
@@ -285,36 +283,6 @@ namespace sgueesRpt.Controllers
 				"V_CON_PARTIDA_IMPR",
 
 				"Partida Contable");
-
-		}
-
-
-
-		/// <summary>
-
-		/// Piloto DevExpress — misma data que PostConPartidaImpr (Crystal queda intacto).
-
-		/// </summary>
-
-		[HttpPost]
-
-		[Route("PostConPartidaImprDx")]
-
-		public IHttpActionResult PostConPartidaImprDx([FromBody] List<CON_PARTIDA_IMPRView> data)
-
-		{
-
-			return DevExpressReportExportHelper.ExportPdf(
-
-				() => new PARTIDA_CONTABLE_DXReport(),
-
-				(report, rows) => ((PARTIDA_CONTABLE_DXReport)report).Bind(rows),
-
-				data,
-
-				Request,
-
-				"PARTIDA_CONTABLE_DX.pdf");
 
 		}
 

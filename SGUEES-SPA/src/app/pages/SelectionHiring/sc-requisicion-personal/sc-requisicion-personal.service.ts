@@ -15,6 +15,23 @@ import { ScRequisicionCandidatoService } from './sc-requisicion-candidato/sc-req
 	providedIn: 'root',
 })
 export class ScRequisicionPersonalService {
+	// Qué hace: Catálogo local de estados de la requisición de personal.
+	// Cómo lo hace: Arreglo constante con los identificadores y descripciones de cada fase de la requisición.
+	readonly estadosRequisicion: { CORR_ESTADO_REQUISICION: number; ESTADO_REQUISICION: string }[] = [
+		{ CORR_ESTADO_REQUISICION: 1, ESTADO_REQUISICION: 'Borrador' },
+		{ CORR_ESTADO_REQUISICION: 2, ESTADO_REQUISICION: 'En Aprobación' },
+		{ CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Observada' },
+		{ CORR_ESTADO_REQUISICION: 4, ESTADO_REQUISICION: 'Rechazada' },
+		{ CORR_ESTADO_REQUISICION: 5, ESTADO_REQUISICION: 'Aprobada' },
+		{ CORR_ESTADO_REQUISICION: 6, ESTADO_REQUISICION: 'Publicada' },
+		{ CORR_ESTADO_REQUISICION: 7, ESTADO_REQUISICION: 'En Reclutamiento' },
+		{ CORR_ESTADO_REQUISICION: 8, ESTADO_REQUISICION: 'En Selección' },
+		{ CORR_ESTADO_REQUISICION: 9, ESTADO_REQUISICION: 'En Contratación' },
+		{ CORR_ESTADO_REQUISICION: 10, ESTADO_REQUISICION: 'Parcial Cubierta' },
+		{ CORR_ESTADO_REQUISICION: 11, ESTADO_REQUISICION: 'Cerrada' },
+		{ CORR_ESTADO_REQUISICION: 12, ESTADO_REQUISICION: 'Cancelada' },
+	];
+
     constructor(
 		private repo: ScRequisicionPersonalRepository,
 		private entrevistaRepo: ScExpedienteEntrevistaRepository,
@@ -81,7 +98,8 @@ export class ScRequisicionPersonalService {
 
         // Solo aplica si el tipo de vacante requiere sustitución (flag UI desde lookup).
         if (model.REQUIERE_SUSTITUCION === true) {
-            if (model.CORR_EMPLEADO_SUSTITUTO == null || model.CORR_EMPLEADO_SUSTITUTO === '' || model.CORR_EMPLEADO_SUSTITUTO === '0') {
+            const corrSustituto = model.CORR_EMPLEADO_SUSTITUTO;
+            if (corrSustituto == null || corrSustituto === '' || corrSustituto === '0' || Number(corrSustituto) <= 0) {
                 msg('Debe seleccionar el empleado sustituto', NotifyType.Warning);
                 return false;
             }
@@ -119,28 +137,27 @@ export class ScRequisicionPersonalService {
         return `${year}-${month}-${day}`;
     }
 
-    /** Catálogo de estados de la requisición (flujo; el cambio lo hace otro proceso). */
-	readonly estadosRequisicion: { CORR_ESTADO_REQUISICION: number; ESTADO_REQUISICION: string }[] = [
-		{ CORR_ESTADO_REQUISICION: 1, ESTADO_REQUISICION: 'Borrador' },
-		{ CORR_ESTADO_REQUISICION: 2, ESTADO_REQUISICION: 'En Aprobación' },
-		{ CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Devuelta' },
-		{ CORR_ESTADO_REQUISICION: 4, ESTADO_REQUISICION: 'Rechazada' },
-		{ CORR_ESTADO_REQUISICION: 5, ESTADO_REQUISICION: 'Aprobada' },
-		{ CORR_ESTADO_REQUISICION: 6, ESTADO_REQUISICION: 'Publicada' },
-		{ CORR_ESTADO_REQUISICION: 7, ESTADO_REQUISICION: 'En Reclutamiento' },
-		{ CORR_ESTADO_REQUISICION: 8, ESTADO_REQUISICION: 'En Selección' },
-		{ CORR_ESTADO_REQUISICION: 9, ESTADO_REQUISICION: 'En Contratación' },
-		{ CORR_ESTADO_REQUISICION: 10, ESTADO_REQUISICION: 'Parcial Cubierta' },
-		{ CORR_ESTADO_REQUISICION: 11, ESTADO_REQUISICION: 'Cerrada' },
-		{ CORR_ESTADO_REQUISICION: 12, ESTADO_REQUISICION: 'Cancelada' },
-	];
+
+	// Qué hace: Formatea visualmente el estado del flujo expandiendo siglas de roles y cambiando 'Devuelta' por 'Observada'.
+	// Cómo lo hace: Aplica expresiones regulares para reemplazar Devuelta/Devuelto por Observada y expandir JI, JU, GG a sus nombres completos.
+	formatearNombreEstadoFlujo(texto?: string | null): string {
+		if (!texto?.trim()) {
+			return '';
+		}
+		return texto
+			.replace(/\bDevuelt[ao]\b/gi, 'Observada')
+			.replace(/\bJI\b/g, 'Jefe Inmediato')
+			.replace(/\bJU\b/g, 'Jefe de Unidad')
+			.replace(/\bGG\b/g, 'Gerente General')
+			.trim();
+	}
 
 	// Qué hace: Retorna el texto visible del chip de estado en la grilla y el formulario.
-	// Cómo lo hace: Si la requisición está en circuito de flujo (estados 2..5) y posee NOMBRE_ESTADO_FLUJO de la bitácora, prioriza ese texto; de lo contrario toma el catálogo de negocio o 'Borrador'.
+	// Cómo lo hace: Si la requisición está en circuito de flujo (estados 2..5) y posee NOMBRE_ESTADO_FLUJO de la bitácora, formatea el texto expandiendo nombres de roles y cambiando Devuelta por Observada; de lo contrario toma el catálogo de negocio o 'Borrador'.
 	getEstadoRequisicionLabel(corrEstado: number | null | undefined, nombreEstadoFlujo?: string | null): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
 		if (corr >= 2 && corr <= 5 && nombreEstadoFlujo?.trim()) {
-			return nombreEstadoFlujo.trim();
+			return this.formatearNombreEstadoFlujo(nombreEstadoFlujo);
 		}
 		const item = this.estadosRequisicion.find((x) => x.CORR_ESTADO_REQUISICION === corr);
 		return item?.ESTADO_REQUISICION ?? 'Borrador';
@@ -178,7 +195,7 @@ export class ScRequisicionPersonalService {
 				}
 				return 'estado-req--aprobada';
 			}
-			if (nombre.includes('devuelt')) {
+			if (nombre.includes('devuelt') || nombre.includes('observad')) {
 				return 'estado-req--devuelta';
 			}
 			if (nombre.includes('rechaz') || nombre.includes('deneg')) {
@@ -248,6 +265,14 @@ export class ScRequisicionPersonalService {
 
         const modelToInsert = {
             ...model,
+            // Qué hace: Formatea el correlativo del empleado sustituto a string para la BD varchar.
+            // Cómo lo hace: Si tiene valor mayor a 0 lo envía como string, de lo contrario envía null.
+            CORR_EMPLEADO_SUSTITUTO:
+                model.CORR_EMPLEADO_SUSTITUTO != null &&
+                model.CORR_EMPLEADO_SUSTITUTO !== '' &&
+                Number(model.CORR_EMPLEADO_SUSTITUTO) > 0
+                    ? String(model.CORR_EMPLEADO_SUSTITUTO)
+                    : null,
             FECHA_REQUISICION: this.formatearDateOnly(model.FECHA_REQUISICION),
             FECHA_APROBACION: this.formatearDateOnly(model.FECHA_APROBACION),
             FECHA_CIERRE: this.formatearDateOnly(model.FECHA_CIERRE),
@@ -259,6 +284,14 @@ export class ScRequisicionPersonalService {
 	update(model: any): Observable<IResult> {
         const modelToUpdate = {
             ...model,
+            // Qué hace: Formatea el correlativo del empleado sustituto a string para la BD varchar.
+            // Cómo lo hace: Si tiene valor mayor a 0 lo envía como string, de lo contrario envía null.
+            CORR_EMPLEADO_SUSTITUTO:
+                model.CORR_EMPLEADO_SUSTITUTO != null &&
+                model.CORR_EMPLEADO_SUSTITUTO !== '' &&
+                Number(model.CORR_EMPLEADO_SUSTITUTO) > 0
+                    ? String(model.CORR_EMPLEADO_SUSTITUTO)
+                    : null,
             FECHA_REQUISICION: this.formatearDateOnly(model.FECHA_REQUISICION),
             FECHA_APROBACION: this.formatearDateOnly(model.FECHA_APROBACION),
             FECHA_CIERRE: this.formatearDateOnly(model.FECHA_CIERRE),
@@ -330,6 +363,22 @@ export class ScRequisicionPersonalService {
 
 	getEstadoDecisionLabel(estado: string | null | undefined): string {
 		return this.requisicionCandidatoService.getEstadoDecisionLabel(estado);
+	}
+
+	// Qué hace: Retorna el texto descriptivo del estado del expediente del candidato.
+	// Cómo lo hace: Homologa los estados de selección (2, 3, 4) como 'Proceso de selección', 5 como 'Contratado' y 1 como 'Borrador'.
+	getEstadoExpedienteLabel(corrEstado?: number): string {
+		const corr = Number(corrEstado) || 0;
+		if (corr === 5) {
+			return 'Contratado';
+		}
+		if (corr >= 2 && corr <= 4) {
+			return 'Proceso de selección';
+		}
+		if (corr === 1) {
+			return 'Borrador';
+		}
+		return '';
 	}
 
 	/** Entrevistas del candidato/solicitud/requisición (permiso requisición). */
@@ -680,7 +729,7 @@ export class ScRequisicionPersonalService {
             {
                 dataField: 'CORR_ESTADO_REQUISICION',
                 caption: 'Estado',
-                width: 170,
+                width: 220,
                 alignment: 'center',
                 cssClass: 'requisicion-grid-estado-col',
                 allowFiltering: true,
@@ -705,8 +754,16 @@ export class ScRequisicionPersonalService {
             { dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 220 },
             { dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 120 },
             { dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contrato', width: 140 },
-            { dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 200 },
-            { dataField: 'CANTIDAD_PLAZAS', caption: 'No. Plazas', width: 120 },
+            // Qué hace: Muestra el conteo de plazas cubiertas sobre el total solicitado de la requisición.
+            // Cómo lo hace: Formatea 'cubiertas / total' a partir de PLAZAS_CUBIERTAS y CANTIDAD_PLAZAS.
+            {
+                dataField: 'CANTIDAD_PLAZAS',
+                caption: 'Plazas (Cubiertas / Total)',
+                width: 175,
+                alignment: 'center',
+                calculateCellValue: (row: any) =>
+                    `${row?.PLAZAS_CUBIERTAS ?? 0} / ${row?.CANTIDAD_PLAZAS ?? 0}`,
+            },
             { dataField: 'SALARIO', caption: 'Salario', width: 120, format: '#,##0.00' },
             { dataField: 'TIEMPO_CONTRATO', caption: 'Contrato (Meses)', width: 170 },
             { dataField: 'HORARIO', caption: 'Horario', width: 200 },
@@ -724,21 +781,24 @@ export class ScRequisicionPersonalService {
         };
     }
 
+    // Qué hace: Define los ítems del formulario principal de la requisición.
+    // Cómo lo hace: Configura las propiedades de cada campo en el dx-form usando showColon: false y sufijo :* en campos obligatorios.
     getItems(): any {
         return [
             { dataField: 'CORR_REQUISICION_PERSONAL', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
-								// Solo lectura: el cambio de estado lo hace otro proceso (chip/badge).
-                                
+								// Qué hace: Muestra el chip con el estado del flujo de la requisición.
+								// Cómo lo hace: Configura label 'Estado' en colSpan: 1 alineado con el layout.
 								{
 									dataField: 'CORR_ESTADO_REQUISICION',
-									label: { text: 'Estado requisición' },
+									label: { text: 'Estado' },
 									colSpan: 1,
 									template: 'CORR_ESTADO_REQUISICIONChip',
 								},
                                 {
                                     dataField: 'FECHA_REQUISICION',
-                                    label: { text: 'Fecha requisición' },
+                                    label: { text: 'Fecha:*', showColon: false },
                                     colSpan: 2,
+                                    cssClass: 'requisicion-form-fecha',
                                     editorType: 'dxDateBox',
                                     editorOptions: {
                                         type: 'date',
@@ -749,64 +809,77 @@ export class ScRequisicionPersonalService {
                                 },
                                 {
                                     dataField: 'CORR_UNIDAD',
-                                    label: { text: 'Unidad Organizativa' },
+                                    label: { text: 'Unidad Organizativa:*', showColon: false },
                                     colSpan: 4,
                                     template: 'CORR_UNIDADLookup',
                                 },
                                 {
                                     dataField: 'CORR_PUESTO',
-                                    label: { text: 'Puesto' },
+                                    label: { text: 'Puesto:*', showColon: false },
                                     colSpan: 4,
                                     template: 'CORR_PUESTOLookup',
                                 },
                                 {
                                     dataField: 'CORR_DESCRIPTOR_PUESTO',
-                                    label: { text: 'Descriptor Puesto' },
+                                    label: { text: 'Descriptor Puesto:*', showColon: false },
                                     colSpan: 4,
                                     template: 'CORR_DESCRIPTOR_PUESTOLookup',
                                 },
                                 {
                                     dataField: 'CORR_TIPO_MODALIDAD',
-                                    label: { text: 'Tipo Modalidad' },
+                                    label: { text: 'Tipo Modalidad:*', showColon: false },
                                     colSpan: 2,
                                     template: 'CORR_TIPO_MODALIDADLookup',
                                 },
                                 {
                                     dataField: 'CORR_TIPO_CONTRATACION',
-                                    label: { text: 'Tipo Contratacion' },
+                                    label: { text: 'Tipo Contratacion:*', showColon: false },
                                     colSpan: 2,
                                     template: 'CORR_TIPO_CONTRATACIONLookup',
                                 },
                                 {
                                     dataField: 'CORR_TIPO_VACANTE',
-                                    label: { text: 'Tipo Vacante' },
+                                    label: { text: 'Tipo Vacante:*', showColon: false },
                                     colSpan: 2,
                                     template: 'CORR_TIPO_VACANTELookup',
                                 },
+                                // Qué hace: Configuración de cantidad de plazas requeridas con mínimo 1.
+                                // Cómo lo hace: Establece editorType dxNumberBox con min: 1 y spin buttons.
                                 {
                                     dataField: 'CANTIDAD_PLAZAS',
-                                    label: { text: 'Cantidad plazas' },
+                                    label: { text: 'Cantidad plazas:*', showColon: false },
                                     colSpan: 1,
                                     editorType: 'dxNumberBox',
-                                    editorOptions: { min: 0, showSpinButtons: true },
+                                    editorOptions: { min: 1, showSpinButtons: true },
                                 },
+                                // Qué hace: Muestra las plazas cubiertas en modo solo lectura.
+                                // Cómo lo hace: Configura editorType dxNumberBox con readOnly: true para que sea visible pero no editable.
                                 {
                                     dataField: 'PLAZAS_CUBIERTAS',
                                     label: { text: 'Plazas cubiertas' },
                                     colSpan: 1,
                                     editorType: 'dxNumberBox',
-                                    editorOptions: { min: 0, showSpinButtons: true },
+                                    editorOptions: { readOnly: true },
+                                },
+                                // Qué hace: Selector lookup de empleado sustituto si el tipo de vacante lo requiere.
+                                // Cómo lo hace: Utiliza template CORR_EMPLEADO_SUSTITUTOLookup (app-data-lookup) con ancho completo colSpan: 8.
+                                {
+                                    dataField: 'CORR_EMPLEADO_SUSTITUTO',
+                                    label: { text: 'Empleado sustituto:*', showColon: false },
+                                    visible: false, // Visible cuando REQUIERE_SUSTITUCION === true
+                                    colSpan: 8,
+                                    template: 'CORR_EMPLEADO_SUSTITUTOLookup',
                                 },
                                 {
                                     dataField: 'SALARIO',
-                                    label: { text: 'Salario' },
+                                    label: { text: 'Salario:*', showColon: false },
                                     colSpan: 1,
                                     editorType: 'dxNumberBox',
                                     editorOptions: { min: 0, format: '#,##0.00' },
                                 },
                                 {
                                     dataField: 'TIEMPO_CONTRATO',
-                                    label: { text: 'Tiempo contrato (meses)' },
+                                    label: { text: 'Tiempo contrato (meses):*', showColon: false },
                                     colSpan: 2,
                                     visible: false, // Visible cuando ES_PERMANENTE !== true (tipo no permanente)
                                     editorType: 'dxNumberBox',
@@ -818,25 +891,6 @@ export class ScRequisicionPersonalService {
                                     colSpan: 4,
                                     editorType: 'dxTextArea',
                                     editorOptions: { placeholder: 'Detalle horario laboral...', showClearButton: true, maxLength: 100 },
-                                },
-                                {
-                                    dataField: 'CORR_EMPLEADO_SUSTITUTO',
-                                    label: { text: 'Empleado sustituto' },
-                                    visible: false, // Visible cuando REQUIERE_SUSTITUCION === true
-                                    colSpan: 8, // Ancho completo al mostrarse (antes de JUSTIFICACION)
-                                    editorType: 'dxSelectBox',
-                                    editorOptions: { 
-                                        dataSource: [
-                                        { CORR_EMPLEADO_SUSTITUTO: 1, EMPLEADO_SUSTITUTO: 'Javier Orellana' },
-                                        { CORR_EMPLEADO_SUSTITUTO: 2, EMPLEADO_SUSTITUTO: 'Juan Pérez' },
-                                        { CORR_EMPLEADO_SUSTITUTO: 3, EMPLEADO_SUSTITUTO: 'María López' },
-                                        ],
-                                        displayExpr: 'EMPLEADO_SUSTITUTO',
-                                        valueExpr: 'CORR_EMPLEADO_SUSTITUTO',
-                                        placeholder: 'Seleccione un empleado sustituto...',
-                                        searchEnabled: true,
-                                        showClearButton: true,
-                                    }
                                 },
                                 {
                                     itemType: 'simple',
@@ -879,7 +933,12 @@ export class ScRequisicionPersonalService {
         return [
             { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr. Requisición', width: 130 },
             { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 140 },
-            { dataField: 'ESTADO_DESTINO', caption: 'Estado destino', width: 160 },
+            {
+                dataField: 'ESTADO_DESTINO',
+                caption: 'Estado destino',
+                width: 220,
+                calculateCellValue: (row: any) => this.formatearNombreEstadoFlujo(row?.ESTADO_DESTINO),
+            },
             // Qué hace: define la columna Fecha / Hora ordenada de la acción más reciente a la más antigua.
             // Cómo lo hace: añade sortOrder: 'desc' y calculateSortValue: 'CORR_BITACORA' para desempatar acciones del mismo minuto.
             {
@@ -983,6 +1042,8 @@ export class ScRequisicionPersonalService {
 	}
 
     /** Columnas visibles del tab Candidatos. */
+    // Qué hace: Retorna la definición de columnas para el grid de candidatos de la requisición.
+    // Cómo lo hace: Mapea las propiedades del modelo y formatea fechas, estado de expediente y decisión de jefatura.
     getCandidatosColumns(): any[] {
         return [
             { dataField: 'NOMBRE_PERSONA', caption: 'Candidato', minWidth: 240 },
@@ -998,7 +1059,7 @@ export class ScRequisicionPersonalService {
                 dataField: 'CORR_ESTADO_EXPEDIENTE',
                 caption: 'Estado expediente',
                 width: 180,
-                calculateCellValue: () => 'Proceso de selección',
+                calculateCellValue: (row: any) => this.getEstadoExpedienteLabel(row?.CORR_ESTADO_EXPEDIENTE),
             },
             {
                 dataField: 'ESTADO_DECISION',

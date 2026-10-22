@@ -13,6 +13,17 @@ export class ScBandejaThRepository {
 
 	constructor(private objData: CData) {}
 
+	// Qué hace: Solicita la lista unificada de movimientos para la pestaña Todas.
+	// Cómo lo hace: Invoca el endpoint GetTodas del controlador SC_BANDEJA_TH enviando los parámetros de búsqueda y paginación.
+	getTodas(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetTodas',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	getRequisiciones(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(
 			this.xController,

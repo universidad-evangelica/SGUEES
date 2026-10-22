@@ -30,11 +30,11 @@ export const ESTADO_EXPEDIENTE_ID = {
 	CONTRATADO: 5,
 } as const;
 
-/** Catálogo maestro de estados del expediente unificado con bandeja TH. */
+// Qué hace: Catálogo maestro de estados formales del expediente general del candidato.
+// Cómo lo hace: Define los tres estados del ciclo de vida del expediente (Borrador, Proceso de selección y Contratado).
 export const ESTADOS_EXPEDIENTE: ScEstadoExpediente[] = [
 	{ CORR_ESTADO_EXPEDIENTE: ESTADO_EXPEDIENTE_ID.BORRADOR, ESTADO_EXPEDIENTE: 'Borrador' },
 	{ CORR_ESTADO_EXPEDIENTE: ESTADO_EXPEDIENTE_ID.PROCESO_SELECCION, ESTADO_EXPEDIENTE: 'Proceso de selección' },
-	{ CORR_ESTADO_EXPEDIENTE: ESTADO_EXPEDIENTE_ID.SELECCIONADO, ESTADO_EXPEDIENTE: 'Seleccionado' },
-	{ CORR_ESTADO_EXPEDIENTE: ESTADO_EXPEDIENTE_ID.LISTO_CREAR_USUARIO, ESTADO_EXPEDIENTE: 'Listo para crear empleado' },
 	{ CORR_ESTADO_EXPEDIENTE: ESTADO_EXPEDIENTE_ID.CONTRATADO, ESTADO_EXPEDIENTE: 'Contratado' },
 ];
+

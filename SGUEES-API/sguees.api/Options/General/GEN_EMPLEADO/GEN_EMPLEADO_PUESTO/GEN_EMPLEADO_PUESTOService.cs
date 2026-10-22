@@ -26,5 +26,10 @@ namespace sguees.Services
 			string vLOGIN_SISTEMA,
 			string vESTACION)
 			=> _repo.SaveAllAsync(corrEmpleado, Data, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
+
+		// Qué hace: obtiene empleados activos de una unidad y puesto específico.
+		// Cómo lo hace: delega la consulta a GetEmpleadosSustitutosAsync en el repositorio.
+		public Task<CResult> GetEmpleadosSustitutosAsync(int corrUnidad, int corrPuesto, int corrEmpresa)
+			=> _repo.GetEmpleadosSustitutosAsync(corrUnidad, corrPuesto, corrEmpresa);
 	}
 }

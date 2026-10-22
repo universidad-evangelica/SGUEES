@@ -1,4 +1,4 @@
-import { currentTheme as currentVizTheme, refreshTheme } from 'devextreme/viz/themes';
+import { currentTheme as currentVizTheme } from 'devextreme/viz/themes';
 import themes from 'devextreme/ui/themes';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
@@ -124,15 +124,15 @@ export class ThemeService {
 
   private applyDevExtremeTheme(definition: AppThemeDefinition): void {
     const viewport = this.getViewPortElement();
-    themeCss.detachCssClasses(viewport);
-    themeCss.attachCssClasses(viewport, definition.dxThemeName);
+    if (!viewport.classList.contains('dx-theme-fluent')) {
+      themeCss.attachCssClasses(viewport, definition.dxThemeName);
+    }
 
     try {
       currentVizTheme(definition.dxThemeName);
     } catch {
-      // refreshTheme recalcula widgets aunque el viz theme no exista con el mismo nombre.
+      // El tema visual de gráficas usa el mismo nombre; si no existe, el CSS del bundle basta.
     }
-    refreshTheme();
   }
 
   private getFluentBundleLinks(): HTMLLinkElement[] {
@@ -142,9 +142,21 @@ export class ThemeService {
     );
   }
 
+  // Qué hace: deja visible solo la hoja del tema elegido.
+  // Cómo lo hace: las dos hojas siguen cargadas; la que no toca se oculta con media, sin descargarla.
   private setFluentBundles(activeBundle: 'light' | 'dark'): void {
-    this.getFluentBundleLinks().forEach((link) => {
-      link.disabled = !link.href.includes(`${FLUENT_BUNDLE_MARKER}${activeBundle}`);
+    const marca = `${FLUENT_BUNDLE_MARKER}${activeBundle}`;
+    const links = this.getFluentBundleLinks();
+    const activos = links.filter((link) => link.href.includes(marca));
+    const otros = links.filter((link) => !link.href.includes(marca));
+
+    activos.forEach((link) => {
+      link.disabled = false;
+      link.media = 'all';
+    });
+    otros.forEach((link) => {
+      link.disabled = false;
+      link.media = 'not all';
     });
   }
 

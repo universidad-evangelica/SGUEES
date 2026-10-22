@@ -1,11 +1,9 @@
 using System;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using sguees.api.Policies;
 using sguees.api.Shared;
 using sguees.Models;
 using sguees.Services;
@@ -72,9 +70,18 @@ namespace sguees.Controllers
             return result.Result ? Ok(result) : BadRequest(result);
         }
 
-        [HttpGet("GetCORR_CARRERA_ACA_PROSPECTO")]
-        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
-        public Task<CResult> GetCORR_CARRERA_ACA_PROSPECTO([FromQuery] ACA_CARRERASParam data)
+        // Qué hace: carreras para los combos de la edición de prospectos (vistas de prospectos).
+        [HttpGet("GetCORR_CARRERA_ACA_PROSPECTO_NUEVO_INGRESO")]
+        [Authorize(Policy = "/aca-prospecto-nuevo-ingreso|R")]
+        public Task<CResult> GetCORR_CARRERA_ACA_PROSPECTO_NUEVO_INGRESO([FromQuery] ACA_CARRERASParam data)
+        {
+            data.CORR_EMPRESA = Empresa;
+            return _service.GetCORR_CARRERA_ACA_PROSPECTOAsync(data);
+        }
+
+        [HttpGet("GetCORR_CARRERA_ACA_PROSPECTO_ECONOMICO")]
+        [Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
+        public Task<CResult> GetCORR_CARRERA_ACA_PROSPECTO_ECONOMICO([FromQuery] ACA_CARRERASParam data)
         {
             data.CORR_EMPRESA = Empresa;
             return _service.GetCORR_CARRERA_ACA_PROSPECTOAsync(data);
