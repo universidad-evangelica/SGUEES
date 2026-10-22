@@ -620,6 +620,12 @@
 	gap: var(--sguees-space-3, 12px);
 }
 
+// Qué hace: el botón Nuevo de Contacto, Familia e Información adicional queda a la izquierda.
+// Cómo lo hace: el botón va primero en la fila y el título sigue a su lado, sin empujarlo al extremo.
+.aca-prospecto-section-head--boton {
+	justify-content: flex-start;
+}
+
 // Qué hace: botones Aceptar/Cancelar del formulario que reemplaza a una grilla hija.
 .aca-prospecto-form-acciones {
 	display: flex;

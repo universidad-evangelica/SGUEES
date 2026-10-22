@@ -438,11 +438,8 @@
                     <div class="aca-prospecto-tab">
                         <!-- Contactos: N teléfonos y correos; el principal de cada tipo es el que usa el portal
                              (perfil y correo del token), por eso no se puede eliminar. -->
-                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
-                            <span class="aca-prospecto-section-head-texto">
-                                <span class="aca-prospecto-section-title">Contacto</span>
-                                <span class="aca-prospecto-section-subtitle">{{ contactoModel ? 'Acepte o cancele para volver al listado' : 'Teléfonos y correos; uno principal por tipo' }}</span>
-                            </span>
+                        <!-- Qué hace: Nuevo queda a la izquierda del título, en borrador, pendiente y alta. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion aca-prospecto-section-head--boton">
                             <dx-button
                                 *ngIf="!readOnly && !contactoModel"
                                 [text]="'Nuevo'"
@@ -452,6 +449,10 @@
                                 (onClick)="nuevoContacto()"
                             >
                             </dx-button>
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">Contacto</span>
+                                <span class="aca-prospecto-section-subtitle">{{ contactoModel ? 'Acepte o cancele para volver al listado' : 'Teléfonos y correos; uno principal por tipo' }}</span>
+                            </span>
                         </header>
                         <app-data-grid-mtto
                             *ngIf="!contactoModel; else formularioContacto"
@@ -551,11 +552,8 @@
                             <p class="aca-prospecto-vence-leyenda-texto">Para completar Datos familiares marque un familiar como contacto de emergencia, en su ficha dentro de Familia, y llene el teléfono de emergencia y la dirección de emergencia.</p>
                         </div>
                         <!-- Familia: mientras se edita un familiar, el formulario ocupa el lugar de la grilla. -->
-                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
-                            <span class="aca-prospecto-section-head-texto">
-                                <span class="aca-prospecto-section-title">Familia</span>
-                                <span class="aca-prospecto-section-subtitle">{{ familiarModel ? 'Acepte o cancele para volver al listado' : 'Padre, madre, cónyuge y cualquier otro familiar' }}</span>
-                            </span>
+                        <!-- Qué hace: Nuevo queda a la izquierda del título. En el alta este tab sigue apagado. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion aca-prospecto-section-head--boton">
                             <dx-button
                                 *ngIf="!readOnly && !familiarModel"
                                 [text]="'Nuevo'"
@@ -565,6 +563,10 @@
                                 (onClick)="nuevoFamiliar()"
                             >
                             </dx-button>
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">Familia</span>
+                                <span class="aca-prospecto-section-subtitle">{{ familiarModel ? 'Acepte o cancele para volver al listado' : 'Padre, madre, cónyuge y cualquier otro familiar' }}</span>
+                            </span>
                         </header>
                         <app-data-grid-mtto
                             *ngIf="!familiarModel; else formularioFamiliar"
@@ -810,11 +812,8 @@
                     <div class="aca-prospecto-tab">
                         <!-- Información adicional: N medios, uno por medio. "Otro" y "Referido amigo/familiar"
                              llevan campos propios, igual que en el portal. -->
-                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
-                            <span class="aca-prospecto-section-head-texto">
-                                <span class="aca-prospecto-section-title">Información adicional</span>
-                                <span class="aca-prospecto-section-subtitle">{{ medioModel ? 'Acepte o cancele para volver al listado' : '¿Cómo se enteró de la universidad?' }}</span>
-                            </span>
+                        <!-- Qué hace: Nuevo queda a la izquierda del título. En el alta este tab sigue apagado. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion aca-prospecto-section-head--boton">
                             <dx-button
                                 *ngIf="!readOnly && !medioModel"
                                 [text]="'Nuevo'"
@@ -824,6 +823,10 @@
                                 (onClick)="nuevoMedio()"
                             >
                             </dx-button>
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">Información adicional</span>
+                                <span class="aca-prospecto-section-subtitle">{{ medioModel ? 'Acepte o cancele para volver al listado' : '¿Cómo se enteró de la universidad?' }}</span>
+                            </span>
                         </header>
                         <app-data-grid-mtto
                             *ngIf="!medioModel; else formularioMedio"
