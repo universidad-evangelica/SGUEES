@@ -125,10 +125,15 @@
                 <p class="aca-prospecto-vence-leyenda-texto" *ngIf="esBorrador">La inscripción de este ciclo ya cerró. No se puede editar ni enviar esta solicitud.</p>
                 <p class="aca-prospecto-vence-leyenda-texto" *ngIf="!esBorrador">La inscripción de este ciclo ya cerró. No se puede editar, aprobar, rechazar ni revertir esta solicitud.</p>
             </div>
+            <!-- Qué hace: en el alta explica qué hay que llenar para crear la solicitud y abrir el resto de apartados. -->
+            <div class="aca-prospecto-vence-leyenda aca-prospecto-alta-nota" *ngIf="esAlta()">
+                <span class="dx-icon-info aca-prospecto-vence-leyenda-icon" aria-hidden="true"></span>
+                <p class="aca-prospecto-vence-leyenda-texto">Para crear la solicitud complete los apartados principales: nombres, primer apellido, fecha de nacimiento, ciclo, carrera y modalidad. En Contacto registre dos contactos, un teléfono y un correo. Al llenar lo solicitado y guardar, se habilitan los demás apartados.</p>
+            </div>
             <!-- Qué hace: el color del badge sigue el estado del flujo 104. -->
             <span class="aca-prospecto-badge" [ngClass]="claseEstadoSolicitud()">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>
-            <!-- Qué hace: un borrador todavía no tiene pasos. Enviar solicitud es el que abre el flujo. -->
-            <p class="aca-prospecto-borrador-nota" *ngIf="!model.CORR_ESTADO">Esta solicitud está en borrador. Guardar no la envía. Enviar solicitud la manda al flujo.</p>
+            <!-- Qué hace: un borrador ya creado todavía no tiene pasos. Enviar solicitud es el que abre el flujo. -->
+            <p class="aca-prospecto-borrador-nota" *ngIf="!esAlta() && !model.CORR_ESTADO">Esta solicitud está en borrador. Guardar no la envía. Enviar solicitud la manda al flujo.</p>
             <!-- Qué hace: tres pasos. Ingresada está en el analista; Aprobada está en Solicitud aprobada. -->
             <ol class="aca-prospecto-flujo-pasos" *ngIf="model.CORR_ESTADO">
                 <li class="aca-prospecto-paso aca-prospecto-paso--hecho">
