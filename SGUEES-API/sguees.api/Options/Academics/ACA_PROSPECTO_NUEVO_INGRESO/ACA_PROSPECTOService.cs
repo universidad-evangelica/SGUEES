@@ -58,8 +58,10 @@ namespace sguees.Services
                 return ErrorValidacion("Los nombres no pueden superar 150 caracteres.");
             if (data.APELLIDO1.Length > 50 || data.APELLIDO2.Length > 50)
                 return ErrorValidacion("Cada apellido no puede superar 50 caracteres.");
-            if (data.FECHA_NACIMIENTO == null || data.FECHA_NACIMIENTO.Value.Date > DateTime.Today)
-                return ErrorValidacion("Ingrese una fecha de nacimiento válida.");
+            if (data.FECHA_NACIMIENTO == null)
+                return ErrorValidacion("Ingrese la fecha de nacimiento.");
+            if (data.FECHA_NACIMIENTO.Value.Date > DateTime.Today)
+                return ErrorValidacion("La fecha de nacimiento no puede ser posterior a hoy.");
             if (data.ANIO <= 0 || data.NUMERO_PERIODO <= 0)
                 return ErrorValidacion("Seleccione el ciclo.");
             if (data.CORR_CARRERA <= 0 || data.CORR_MODALIDAD <= 0)

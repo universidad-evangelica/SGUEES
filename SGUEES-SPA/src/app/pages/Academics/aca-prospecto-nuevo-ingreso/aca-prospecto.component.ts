@@ -815,6 +815,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return valor === null || valor === undefined || String(valor).trim() === '';
     }
 
+    // Qué hace: dice si la fecha de nacimiento quedó después del día de hoy.
+    // Cómo lo hace: compara solo el día, en formato yyyy-MM-dd, sin la hora.
+    private fechaPosteriorAHoy(valor: any): boolean {
+        if (!valor) {
+            return false;
+        }
+        const texto = String(valor).slice(0, 10);
+        const hoy = new Date();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        return texto > `${hoy.getFullYear()}-${mes}-${dia}`;
+    }
+
     // Qué hace: el campo obligatorio vacío se pinta en rojo mientras se puede enviar o aprobar.
     // Cómo lo hace: en el alta no marca los catálogos; solo nombres, apellido y fecha llevan borde.
     reqVacio(valor: any): boolean {
@@ -2630,6 +2643,16 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             );
             return;
         }
+        if (/fecha de nacimiento/i.test(texto)) {
+            this.notifyFx(
+                /posterior a hoy|válida/i.test(texto)
+                    ? 'La fecha de nacimiento no puede ser posterior a hoy.'
+                    : 'Ingrese la fecha de nacimiento.',
+                NotifyType.Warning,
+                { raw: true }
+            );
+            return;
+        }
         this.notifyFx(texto, NotifyType.Error, { raw: true });
     }
 
@@ -2647,6 +2670,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         }
         if (!persona?.FECHA_NACIMIENTO) {
             this.notifyFx('Ingrese la fecha de nacimiento.', NotifyType.Warning, { raw: true });
+            return null;
+        }
+        if (this.fechaPosteriorAHoy(persona.FECHA_NACIMIENTO)) {
+            this.notifyFx('La fecha de nacimiento no puede ser posterior a hoy.', NotifyType.Warning, { raw: true });
             return null;
         }
         if (!ciclo) {
@@ -2810,7 +2837,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return false;
         }
         if (!this.esAlta()) {
-            const aviso = this.avisoParaEnviar(this.leerFormData(this.formPersona, this.personaModel), this.contactos, 'guardar');
+            const persona = this.leerFormData(this.formPersona, this.personaModel);
+            if (this.fechaPosteriorAHoy(persona?.FECHA_NACIMIENTO)) {
+                this.notifyFx('La fecha de nacimiento no puede ser posterior a hoy.', NotifyType.Warning, { raw: true });
+                return false;
+            }
+            const aviso = this.avisoParaEnviar(persona, this.contactos, 'guardar');
             if (aviso) {
                 this.notifyFx(aviso, NotifyType.Warning, { raw: true });
                 this.pintarRequeridos();
