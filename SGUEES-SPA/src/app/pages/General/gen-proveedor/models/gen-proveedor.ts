@@ -1,0 +1,31 @@
+export interface GenProveedor {
+	CORR_EMPRESA: number;
+	CORR_PROVEEDOR: number;
+	CORR_PERSONA: number;
+	CODIGO_PROVEEDOR: string;
+	TIPO_PERSONERIA: string;
+	NOMBRE_TIPO_PERSONERIA?: string;
+	NOMBRE_PROVEEDOR: string;
+	PRIMER_NOMBRE?: string;
+	SEGUNDO_NOMBRE?: string;
+	PRIMER_APELLIDO?: string;
+	SEGUNDO_APELLIDO?: string;
+	NOMBRE_COMERCIAL?: string;
+	CORR_FORMA_PAGO: number;
+	NOMBRE_FORMA_PAGO?: string;
+	CUENTA_BANCARIA: string;
+	CORR_BANCO: number;
+	NOMBRE_BANCO?: string;
+	ESTADO_PROVEEDOR: string;
+	ACTIVO_PROVEEDOR: boolean;
+	NOMBRE_ESTADO_PROVEEDOR?: string;
+	ESTADO_PROVEEDOR_WEB: string;
+	CORR_CONDICION_PAGO: number;
+	NOMBRE_CONDICION_PAGO?: string;
+	USUARIO_CREA?: string;
+	FECHA_CREA?: Date;
+	ESTACION_CREA?: string;
+	USUARIO_ACTU?: string;
+	FECHA_ACTU?: Date;
+	ESTACION_ACTU?: string;
+}

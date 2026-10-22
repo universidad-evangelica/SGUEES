@@ -1,0 +1,127 @@
+<div class="sguees-mtto-view">
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[showRibbon]="true"
+	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showExport]="permitePrint"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRow]="isBrowse() ? model : null"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+	(consultar)="consultar()"
+	(activarInactivar)="activar_inactivar()"
+>
+</app-barra-data-mtto>
+
+<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+	<dx-form
+		#fData
+		id="fData"
+		[formData]="model"
+		[labelLocation]="'top'"
+		[colCount]="mttoFormColCount"
+		[colCountByScreen]="mttoFormColCountByScreen"
+		[showRequiredMark]="false"
+		[items]="items"
+	>
+		<div *dxTemplate="let cellInfo of 'CORR_PERSONALookup'">
+			<app-data-lookup
+				[model]="mCORR_PERSONA"
+				[(value)]="model.CORR_PERSONA"
+				[valueExpr]="'CORR_PERSONA'"
+				[displayExpr]="'NOMBRE_PERSONA'"
+				[selectedRowKeys]="selectedLookUpCORR_PERSONA"
+				[readOnly]="readOnly || model.CORR_PROVEEDOR > 0"
+				[lookupColumns]="[
+					{ dataField: 'CORR_PERSONA', caption: 'Corr.', width: 90 },
+					{ dataField: 'CODIGO_PERSONA', caption: 'Código', width: 120 },
+					{ dataField: 'NOMBRE_PERSONA', caption: 'Nombre', width: 280 },
+					{ dataField: 'NOMBRE_TIPO_PERSONERIA', caption: 'Personería', width: 110 }
+				]"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_BANCOLookup'">
+			<app-data-lookup
+				[model]="mCORR_BANCO"
+				[(value)]="model.CORR_BANCO"
+				[valueExpr]="'CORR_BANCO'"
+				[displayExpr]="'NOMBRE_BANCO'"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_FORMA_PAGOLookup'">
+			<app-data-lookup
+				[model]="mCORR_FORMA_PAGO"
+				[(value)]="model.CORR_FORMA_PAGO"
+				[valueExpr]="'CORR_FORMA_PAGO'"
+				[displayExpr]="'NOMBRE_FORMA_PAGO'"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_CONDICION_PAGOLookup'">
+			<app-data-lookup
+				[model]="mCORR_CONDICION_PAGO"
+				[(value)]="model.CORR_CONDICION_PAGO"
+				[valueExpr]="'CORR_CONDICION_PAGO'"
+				[displayExpr]="'NOMBRE_CONDICION_PAGO'"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+</div>
+
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showSearch]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[exportFileName]="'Proveedores'"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+
+</div>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

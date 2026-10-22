@@ -6,6 +6,7 @@ namespace sguees.Models
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_PROVEEDOR { get; set; }
+		public long? CORR_PERSONA { get; set; }
 		public string CODIGO_PROVEEDOR { get; set; }
 		public string TIPO_PERSONERIA { get; set; }
 		public string NOMBRE_TIPO_PERSONERIA { get; set; }
@@ -33,6 +34,7 @@ namespace sguees.Models
 		public string CUENTA_BANCARIA { get; set; }
 		public int CORR_BANCO { get; set; }
 		public string ESTADO_PROVEEDOR { get; set; }
+		public bool ACTIVO_PROVEEDOR { get; set; }
 		public string NOMBRE_ESTADO_PROVEEDOR { get; set; }
 		public string ESTADO_PROVEEDOR_WEB { get; set; }
 		public int CORR_CONDICION_PAGO { get; set; }
