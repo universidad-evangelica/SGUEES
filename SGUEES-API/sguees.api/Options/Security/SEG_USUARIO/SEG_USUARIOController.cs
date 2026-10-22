@@ -312,5 +312,66 @@ namespace sguees.Controllers
 		{
 			return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
 		}
+
+		// Qué hace: obtiene la persona natural asociada a un usuario (1 a 1).
+		// Cómo lo hace: consulta el servicio pasando LOGIN_SISTEMA protegido por política de lectura.
+		[HttpGet("GetPersonaAsignada")]
+		[Authorize(Policy = "/seg-usuario|R")]
+		public async Task<CResult> GetPersonaAsignada([FromQuery] string LOGIN_SISTEMA)
+		{
+			return await _service.GetPersonaAsignadaAsync(LOGIN_SISTEMA);
+		}
+
+		// Qué hace: obtiene personas naturales disponibles para asociar excluyendo la del usuario actual.
+		// Cómo lo hace: consulta el servicio con filtros de búsqueda y loginSistema.
+		[HttpGet("GetPersonasNaturalesDisponibles")]
+		[Authorize(Policy = "/seg-usuario|R")]
+		public async Task<CResult> GetPersonasNaturalesDisponibles([FromQuery] string buscar, [FromQuery] string loginSistema = null)
+		{
+			return await _service.GetPersonasNaturalesDisponiblesAsync(buscar, loginSistema);
+		}
+
+		// Qué hace: asocia una persona natural a un usuario garantizando relación 1 a 1.
+		// Cómo lo hace: toma usuario/estación del token de sesión y delega al servicio.
+		[HttpPost("AsociarPersona")]
+		[Authorize(Policy = "/seg-usuario|U")]
+		public async Task<IActionResult> AsociarPersona([FromBody] SEG_USUARIO_ASOCIAR_PERSONAParam Data)
+		{
+			if (Data == null || string.IsNullOrWhiteSpace(Data.LOGIN_SISTEMA) || Data.CORR_PERSONA <= 0)
+			{
+				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = "Datos de asociación inválidos." });
+			}
+
+			var vLOGIN_SISTEMA = User.Claims.FirstOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "Admin";
+			var vESTACION = ClientInfoHelper.GetClientStation(HttpContext);
+
+			var resultado = await _service.AsociarPersonaAsync(Data.LOGIN_SISTEMA, Data.CORR_PERSONA, vLOGIN_SISTEMA, vESTACION);
+			if (resultado.ErrorCode == 0)
+			{
+				return Ok(resultado);
+			}
+
+			return BadRequest(resultado);
+		}
+
+		// Qué hace: desasocia una persona natural de su usuario.
+		// Cómo lo hace: elimina el registro en GEN_PERSONA_USUARIO filtrando por LOGIN_SISTEMA.
+		[HttpDelete("DesasociarPersona")]
+		[Authorize(Policy = "/seg-usuario|U")]
+		public async Task<IActionResult> DesasociarPersona([FromQuery] string LOGIN_SISTEMA)
+		{
+			if (string.IsNullOrWhiteSpace(LOGIN_SISTEMA))
+			{
+				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = "Debe especificar el usuario a desasociar." });
+			}
+
+			var resultado = await _service.DesasociarPersonaAsync(LOGIN_SISTEMA);
+			if (resultado.ErrorCode == 0)
+			{
+				return Ok(resultado);
+			}
+
+			return BadRequest(resultado);
+		}
 	}
 }

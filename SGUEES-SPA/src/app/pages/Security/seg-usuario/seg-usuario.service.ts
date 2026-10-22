@@ -4,6 +4,7 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { SegUsuarioRepository } from './seg-usuario.repository';
 import { SegUsuario } from './models/seg-usuario';
@@ -190,5 +191,69 @@ export class SegUsuarioService {
 
 	restablecerContrasena(LOGIN_SISTEMA: string): Observable<IResult> {
 		return this.http.post<IResult>(this.urlMtto + 'RestablecerContrasena', { LOGIN_SISTEMA });
+	}
+
+	// Qué hace: define las columnas con anchos fijos para la grilla de persona asociada (1 a 1).
+	// Cómo lo hace: retorna array de configuraciones de columna con width numérico, omitiendo CODIGO_ROL según requerimiento.
+	getPersonaAsignadaColumns(): any[] {
+		return [
+			{ dataField: 'NOMBRE_COMPLETO', caption: 'Nombre de la Persona', width: 320 },
+			{ dataField: 'TIPO_PERSONA', caption: 'Tipo / Rol', width: 150 },
+			{ dataField: 'DUI', caption: 'DUI / Identificación', width: 180 },
+			{ dataField: 'SEXO', caption: 'Sexo', width: 110 },
+			{
+				dataField: 'FECHA_ASOCIACION',
+				caption: 'Fecha Asociación',
+				width: 150,
+				dataType: 'date',
+				format: 'dd/MM/yyyy',
+			},
+		];
+	}
+
+	// Qué hace: define las columnas para el selector modal de personas naturales disponibles con estado.
+	// Cómo lo hace: combina anchos fijos, minWidth y el helper estándar createEstadoColumnConfig para el badge de estado.
+	getPersonasDisponiblesColumns(): any[] {
+		return [
+			{ dataField: 'NOMBRE_COMPLETO', caption: 'Nombre Completo', minWidth: 320 },
+			{ dataField: 'TIPO_PERSONA', caption: 'Tipo / Rol', width: 180, minWidth: 150 },
+			{ dataField: 'DUI', caption: 'DUI', width: 170, minWidth: 140 },
+			{ dataField: 'SEXO', caption: 'Sexo', width: 130, minWidth: 110 },
+			createEstadoColumnConfig('ACTIVO_PERSONA', ESTADO_ACTIVO_INACTIVO_LABELS, { caption: 'Estado' }),
+		];
+	}
+
+	// Qué hace: obtiene la persona natural asociada a un usuario del sistema (1 a 1).
+	// Cómo lo hace: invoca el repositorio pasando LOGIN_SISTEMA como parámetro.
+	getPersonaAsignada(loginSistema: string): Observable<IResult> {
+		const xWhere: IParam[] = [{ Parameter: 'LOGIN_SISTEMA', Value: loginSistema }];
+		return this.repo.getPersonaAsignada(xWhere);
+	}
+
+	// Qué hace: obtiene el catálogo de personas naturales disponibles para asociar excluyendo la del usuario actual.
+	// Cómo lo hace: invoca el repositorio con filtros de búsqueda y loginSistema.
+	getPersonasDisponibles(buscar?: string, loginSistema?: string): Observable<IResult> {
+		const xWhere: IParam[] = [
+			{ Parameter: 'buscar', Value: buscar ?? '' },
+			{ Parameter: 'loginSistema', Value: loginSistema ?? '' },
+		];
+		return this.repo.getPersonasDisponibles(xWhere);
+	}
+
+	// Qué hace: asocia una persona natural a un usuario garantizando relación 1 a 1.
+	// Cómo lo hace: envía payload con LOGIN_SISTEMA y CORR_PERSONA al repositorio.
+	asociarPersona(loginSistema: string, corrPersona: number): Observable<IResult> {
+		const payload = {
+			LOGIN_SISTEMA: loginSistema,
+			CORR_PERSONA: corrPersona,
+		};
+		return this.repo.asociarPersona(payload);
+	}
+
+	// Qué hace: desasocia la persona natural del usuario.
+	// Cómo lo hace: envía petición delete al repositorio con LOGIN_SISTEMA.
+	desasociarPersona(loginSistema: string): Observable<IResult> {
+		const xWhere: IParam[] = [{ Parameter: 'LOGIN_SISTEMA', Value: loginSistema }];
+		return this.repo.desasociarPersona(xWhere);
 	}
 }

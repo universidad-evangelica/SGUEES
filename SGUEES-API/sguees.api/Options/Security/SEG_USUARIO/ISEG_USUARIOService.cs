@@ -29,5 +29,9 @@ namespace sguees.Services
 		Task<CResult> CambioClavePerfilAsync(string loginSistema, SEG_USUARIO_CAMBIO_CLAVE_PERFILParam data);
 		Task<CResult> getUSUARIO_PERMISOS(string vLOGIN_SISTEMA, string CODIGO_SUITE);
 		Task<CResult> GetAllSEG_USUARIO_LOOKUP(SEG_USUARIOParam xWhere);
+		Task<CResult> GetPersonaAsignadaAsync(string loginSistema);
+		Task<CResult> GetPersonasNaturalesDisponiblesAsync(string buscar, string loginSistema = null);
+		Task<CResult> AsociarPersonaAsync(string loginSistema, long corrPersona, string usuario, string estacion);
+		Task<CResult> DesasociarPersonaAsync(string loginSistema);
 	}
 }

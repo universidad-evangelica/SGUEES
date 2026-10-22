@@ -1183,5 +1183,33 @@ namespace sguees.Services
 
 			return new CResult { Result = true, ErrorCode = 0, RowsAffected = 0 };
 		}
+
+		// Qué hace: obtiene la persona natural asociada a un usuario del sistema (1 a 1).
+		// Cómo lo hace: delega la consulta al repositorio por LOGIN_SISTEMA.
+		public async Task<CResult> GetPersonaAsignadaAsync(string loginSistema)
+		{
+			return await _repo.GetPersonaAsignadaAsync(loginSistema);
+		}
+
+		// Qué hace: obtiene la lista de personas naturales disponibles para asociar excluyendo la del usuario actual.
+		// Cómo lo hace: delega la consulta con filtro de búsqueda y loginSistema al repositorio.
+		public async Task<CResult> GetPersonasNaturalesDisponiblesAsync(string buscar, string loginSistema = null)
+		{
+			return await _repo.GetPersonasNaturalesDisponiblesAsync(buscar, loginSistema);
+		}
+
+		// Qué hace: asocia una persona natural a un usuario garantizando relación 1 a 1.
+		// Cómo lo hace: delega al repositorio pasando datos de auditoría.
+		public async Task<CResult> AsociarPersonaAsync(string loginSistema, long corrPersona, string usuario, string estacion)
+		{
+			return await _repo.AsociarPersonaAsync(loginSistema, corrPersona, usuario, estacion);
+		}
+
+		// Qué hace: desasocia una persona natural de su usuario.
+		// Cómo lo hace: delega al repositorio la eliminación del registro en GEN_PERSONA_USUARIO.
+		public async Task<CResult> DesasociarPersonaAsync(string loginSistema)
+		{
+			return await _repo.DesasociarPersonaAsync(loginSistema);
+		}
 	}
 }
