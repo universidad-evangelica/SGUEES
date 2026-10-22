@@ -545,6 +545,11 @@
                 <!-- ================= Datos familiares ================= -->
                 <dxi-item title="Datos familiares" [icon]="'group'" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab">
+                        <!-- El número del apartado no cuenta al padre ni a la madre: cuenta el contacto de emergencia. -->
+                        <div class="aca-prospecto-vence-leyenda aca-prospecto-alta-nota" *ngIf="isForm() && faltanFamilia() > 0">
+                            <span class="dx-icon-info aca-prospecto-vence-leyenda-icon" aria-hidden="true"></span>
+                            <p class="aca-prospecto-vence-leyenda-texto">Para completar Datos familiares marque un familiar como contacto de emergencia, en su ficha dentro de Familia, y llene el teléfono de emergencia y la dirección de emergencia.</p>
+                        </div>
                         <!-- Familia: mientras se edita un familiar, el formulario ocupa el lugar de la grilla. -->
                         <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
                             <span class="aca-prospecto-section-head-texto">

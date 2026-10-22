@@ -945,7 +945,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return tiene ? 0 : 1;
     }
 
-    private faltanFamilia(): number {
+    // Qué hace: lo que falta del contacto de emergencia para que Datos familiares quede completo.
+    // Cómo lo hace: sin familiar marcado cuenta 4 (nombre, parentesco, teléfono y dirección).
+    //               Con uno marcado, solo los de esos cuatro que sigan vacíos. Padre y madre no entran.
+    faltanFamilia(): number {
         const emergencia = this.emergenciaModel || (this.familiares || []).find((f) => f?.ES_EMERGENCIA === true);
         if (!emergencia) {
             return 4;
