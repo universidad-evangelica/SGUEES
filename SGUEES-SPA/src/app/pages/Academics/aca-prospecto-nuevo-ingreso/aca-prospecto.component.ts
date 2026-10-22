@@ -1,7 +1,7 @@
 import { Component, NgZone, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, forkJoin } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { Observable, forkJoin, of } from 'rxjs';
+import { switchMap, take } from 'rxjs/operators';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
 import { DxCheckBoxComponent } from 'devextreme-angular/ui/check-box';
 import { confirm } from 'devextreme/ui/dialog';
@@ -2869,9 +2869,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: agrega el paso de guardado de una sección de estudios.
-    // Cómo lo hace: eliminar si se apagó el interruptor y la fila existía; crear si no tiene llave;
-    //               actualizar solo si cambió. Sin modelo o sin cambios, la sección no participa: así
-    //               trabajar en una sección nunca obliga a tocar las otras.
+    // Cómo lo hace: eliminar si se apagó el interruptor y la fila existía; si no tiene llave, crea o
+    //               actualiza la fila que ya exista; si tiene llave, actualiza solo cuando cambió.
     private agregarPasoEstudio(
         pasos: { nombre: string; accion: () => Observable<IResult> }[],
         nombre: string,
@@ -2892,11 +2891,47 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (!this.estudioCambio(seccion, modelo, form)) {
             return;
         }
+        const datos = this.leerFormData(form, modelo);
         if (!(modelo.CORR_PROSPECTO_ESTUDIO > 0)) {
-            pasos.push({ nombre: `${nombre} (nuevo)`, accion: () => this.serviceEstudio.insert(this.leerFormData(form, modelo)) });
+            pasos.push({ nombre, accion: () => this.guardarEstudioSiNoExiste(seccion, datos) });
             return;
         }
-        pasos.push({ nombre, accion: () => this.serviceEstudio.update(this.leerFormData(form, modelo)) });
+        pasos.push({ nombre, accion: () => this.serviceEstudio.update(datos) });
+    }
+
+    // Qué hace: crea el estudio, o actualiza la fila si ya existe.
+    // Cómo lo hace: vuelve a leer las secciones antes de insertar. Si el portal ya dejó esa sección,
+    //               se usa su llave y se actualiza, para no intentar crear una segunda.
+    private guardarEstudioSiNoExiste(seccion: string, modelo: any): Observable<IResult> {
+        const corr = Number(this.model?.CORR_PROSPECTO);
+        return this.serviceEstudio.getEstudiosPorProspecto(corr).pipe(
+            take(1),
+            switchMap((response: any) => {
+                if (!response?.Result) {
+                    return of(response);
+                }
+                const filas = Array.isArray(response?.Data) ? response.Data : [];
+                const existente = filas.find((fila: any) => fila?.SECCION === seccion && Number(fila?.CORR_PROSPECTO_ESTUDIO) > 0);
+                if (!existente) {
+                    return this.serviceEstudio.insert(modelo);
+                }
+                const payload = { ...modelo, CORR_PROSPECTO_ESTUDIO: existente.CORR_PROSPECTO_ESTUDIO };
+                this.adoptarEstudioExistente(seccion, payload);
+                return this.serviceEstudio.update(payload);
+            }),
+        );
+    }
+
+    // Qué hace: la sección abierta pasa a usar la fila que ya está en la base.
+    // Cómo lo hace: copia la llave al modelo de esa sección para que el siguiente guardado sea una actualización.
+    private adoptarEstudioExistente(seccion: string, payload: any): void {
+        if (seccion === SECCION_MEDIA) {
+            this.estudioMedia = { ...this.estudioMedia, ...payload };
+        } else if (seccion === SECCION_UNIVERSIDAD) {
+            this.estudioUniversidad = { ...this.estudioUniversidad, ...payload };
+        } else if (seccion === SECCION_GRADUADO_UEES) {
+            this.estudioUees = { ...this.estudioUees, ...payload };
+        }
     }
 
     private armarPasosGuardado(): { nombre: string; accion: () => Observable<IResult> }[] {
@@ -3552,8 +3587,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     //#region <Metodos Información Académica - Carga>
     // Qué hace: reparte los estudios en sus tres secciones (la vista ya los clasifica).
-    // Cómo lo hace: educación media siempre se muestra (si no existe, se crea al guardar); las otras
-    //               dos solo si tienen fila. Además carga los departamentos del país de la media.
+    // Cómo lo hace: educación media siempre se muestra. Si no hay fila, el formulario vacío no se guarda
+    //               hasta que cambie un campo. Además carga los departamentos del país de la media.
     cargarEstudios(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceEstudio.getEstudiosPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.estudioMedia = data.find((e) => e.SECCION === SECCION_MEDIA) ?? null;
@@ -3577,14 +3612,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: dice si una sección debe guardarse.
-    // Cómo lo hace: es nueva (sin llave) o su contenido cambió respecto de como se cargó. Las secciones
-    //               intactas no se envían ni se validan: cada bloque es independiente de los otros.
+    // Cómo lo hace: compara lo que hay en pantalla con lo cargado. El bachillerato vacío, sin llave,
+    //               no se envía hasta que cambie un campo.
     private estudioCambio(seccion: string, modelo: any, form: DxFormComponent | undefined): boolean {
         if (!modelo) {
             return false;
-        }
-        if (!(modelo.CORR_PROSPECTO_ESTUDIO > 0)) {
-            return true;
         }
         return this.huellaEstudio(this.leerFormData(form, modelo)) !== (this.estudioOriginal[seccion] ?? '');
     }
@@ -3822,13 +3854,17 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         };
     }
 
-    // Qué hace: la educación media siempre debe existir; si el prospecto no la tiene, abre el
-    //           formulario vacío para crearla al guardar (solo en edición).
+    // Qué hace: si no hay bachillerato, abre el formulario vacío sin marcarlo como cambio.
+    // Cómo lo hace: guarda la firma de ese formulario vacío. Guardar no lo envía hasta que se modifique un campo.
     private sincronizarEstudioMedia(): void {
         if (this.readOnly || !this.personaModel || !this.estudiosCargados || this.estudioMedia) {
             return;
         }
         this.estudioMedia = this.serviceEstudio.getModeloNuevo(SECCION_MEDIA, this.personaModel);
+        this.estudioOriginal = {
+            ...this.estudioOriginal,
+            [SECCION_MEDIA]: this.huellaEstudio(this.estudioMedia),
+        };
     }
     // #endregion
 
