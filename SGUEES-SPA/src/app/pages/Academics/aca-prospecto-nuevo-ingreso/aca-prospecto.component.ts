@@ -63,6 +63,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     @ViewChild('chkDeportado', { static: false }) chkDeportado?: DxCheckBoxComponent;
     @ViewChild('chkUniversidad', { static: false }) chkUniversidad?: DxCheckBoxComponent;
     @ViewChild('chkUees', { static: false }) chkUees?: DxCheckBoxComponent;
+    @ViewChild('gridDocumentos') gridDocumentos?: { gData?: { instance?: { repaint: () => void } } };
     @ViewChild('tabLista') tabLista?: { instance?: { element?: () => HTMLElement; repaint: () => void; option: (nombre: string, valor?: unknown) => unknown } };
 
     protected override mttoGridKeyExpr = 'CORR_PROSPECTO';
@@ -1575,6 +1576,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     override bloquear(): void {
         this.readOnly = true;
+        this.refrescarOpcionesDocumento();
     }
 
     override habilitar(): void {
@@ -1583,6 +1585,14 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.sincronizarEstudioMedia();
         this.sincronizarDiscapacidad();
         this.sincronizarDeportado();
+        this.refrescarOpcionesDocumento();
+    }
+
+    // Qué hace: al pasar de consulta a Modificar, vuelve a pintar subir y eliminar en Documentación.
+    // Cómo lo hace: esas opciones se arman una vez, con el modo de ese momento. Los demás apartados
+    //               leen readOnly en el HTML y sí se actualizan. Aquí se redibuja la grilla.
+    private refrescarOpcionesDocumento(): void {
+        setTimeout(() => this.gridDocumentos?.gData?.instance?.repaint());
     }
 
     // Qué hace: concilia la declaración "trabaja" con la existencia del empleo al entrar a edición.
