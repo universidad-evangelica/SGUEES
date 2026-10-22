@@ -793,6 +793,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         switch (data?.title) {
             case 'Datos personales':
                 return this.faltanDatosPersonales();
+            case 'Contacto':
+                return this.faltanAltaContacto();
             case 'Salud':
                 return this.faltanSalud();
             case 'Datos familiares':
@@ -883,18 +885,38 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return faltan;
     }
 
-    private faltanDatosPersonales(): number {
-        const persona = this.personaModel;
-        if (!persona) {
-            return 11;
+    // Qué hace: impide guardar, enviar o aprobar si faltan la identidad o los dos contactos.
+    // Cómo lo hace: nombres, primer apellido, fecha de nacimiento, un teléfono y un correo.
+    private avisoParaEnviar(persona: any, contactos: any[], verbo: 'enviar' | 'aprobar' | 'guardar' = 'enviar'): string {
+        const partes: string[] = [];
+        if (this.datoVacio(persona?.NOMBRES) || this.datoVacio(persona?.APELLIDO1) || !persona?.FECHA_NACIMIENTO) {
+            partes.push('nombres, primer apellido y fecha de nacimiento');
         }
+        const lista = contactos || [];
+        const correo = lista.some((c) => c?.ES_CORREO && !this.datoVacio(c?.CONTACTO));
+        const telefono = lista.some((c) => c?.ES_TELEFONO && !this.datoVacio(c?.CONTACTO));
+        if (!correo || !telefono) {
+            partes.push('un teléfono y un correo en Contacto');
+        }
+        return partes.length ? `No se puede ${verbo}. Complete ${partes.join(' y ')}.` : '';
+    }
+
+    private faltanDatosPersonales(): number {
+        const persona = this.leerFormData(this.formPersona, this.personaModel);
+        if (!persona) {
+            return 14;
+        }
+        let faltan = 0;
+        if (this.datoVacio(persona.NOMBRES)) faltan += 1;
+        if (this.datoVacio(persona.APELLIDO1)) faltan += 1;
+        if (!persona.FECHA_NACIMIENTO) faltan += 1;
         const campos = [
             persona.LUGAR_NACIMIENTO,
             persona.DUI,
             persona.IGLESIA_ACTUAL,
             persona.DIRECCION_ACTUAL,
         ];
-        let faltan = campos.filter((campo) => this.datoVacio(campo)).length;
+        faltan += campos.filter((campo) => this.datoVacio(campo)).length;
         const codigos = [
             persona.CORR_PAIS_PROCEDENCIA,
             persona.CORR_PAIS_RESIDENCIA,
@@ -1205,6 +1227,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             }
             return;
         }
+        const enviar = () => {
         this.loadingVisible = true;
         this.service
             .enviar(corr, 'Envío de la solicitud de nuevo ingreso.')
@@ -1248,6 +1271,38 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     this.notifyApiError(error);
                 },
             });
+        };
+        if (Number(this.personaModel?.CORR_PROSPECTO) === corr) {
+            const aviso = this.avisoParaEnviar(this.leerFormData(this.formPersona, this.personaModel), this.contactos);
+            if (aviso) {
+                this.notifyFx(aviso, NotifyType.Warning, { raw: true });
+                this.pintarRequeridos();
+                return;
+            }
+            enviar();
+            return;
+        }
+        this.loadingVisible = true;
+        forkJoin({
+            persona: this.servicePersona.getPersonaPorProspecto(corr).pipe(take(1)),
+            contactos: this.serviceContacto.getContactosPorProspecto(corr).pipe(take(1)),
+        }).subscribe({
+            next: ({ persona, contactos }: any) => {
+                this.loadingVisible = false;
+                const fila = Array.isArray(persona?.Data) ? persona.Data[0] : persona?.Data;
+                const lista = Array.isArray(contactos?.Data) ? contactos.Data : [];
+                const aviso = this.avisoParaEnviar(fila, lista);
+                if (aviso) {
+                    this.notifyFx(aviso, NotifyType.Warning, { raw: true });
+                    return;
+                }
+                enviar();
+            },
+            error: (error: any) => {
+                this.loadingVisible = false;
+                this.notifyApiError(error);
+            },
+        });
     }
 
     // Qué hace: oculta el lápiz cuando la solicitud ya fue aprobada, rechazada o el ciclo ya venció.
@@ -1403,6 +1458,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.notifyFx('Debe ingresar un comentario.', NotifyType.Warning);
             return;
         }
+        const ejecutar = () => {
         this.popupAprobarVisible = false;
         this.loadingVisible = true;
         const llamada =
@@ -1470,6 +1526,42 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 } else {
                     this.notifyFx(response?.ErrorMessage || 'No se pudo completar la acción.', NotifyType.Warning, { raw: true });
                 }
+            },
+            error: (error: any) => {
+                this.loadingVisible = false;
+                this.notifyApiError(error);
+            },
+        });
+        };
+        if (accion !== 'aprobar') {
+            ejecutar();
+            return;
+        }
+        if (Number(this.personaModel?.CORR_PROSPECTO) === corr) {
+            const falta = this.avisoParaEnviar(this.leerFormData(this.formPersona, this.personaModel), this.contactos, 'aprobar');
+            if (falta) {
+                this.notifyFx(falta, NotifyType.Warning, { raw: true });
+                this.pintarRequeridos();
+                return;
+            }
+            ejecutar();
+            return;
+        }
+        this.loadingVisible = true;
+        forkJoin({
+            persona: this.servicePersona.getPersonaPorProspecto(corr).pipe(take(1)),
+            contactos: this.serviceContacto.getContactosPorProspecto(corr).pipe(take(1)),
+        }).subscribe({
+            next: ({ persona, contactos }: any) => {
+                this.loadingVisible = false;
+                const fila = Array.isArray(persona?.Data) ? persona.Data[0] : persona?.Data;
+                const lista = Array.isArray(contactos?.Data) ? contactos.Data : [];
+                const falta = this.avisoParaEnviar(fila, lista, 'aprobar');
+                if (falta) {
+                    this.notifyFx(falta, NotifyType.Warning, { raw: true });
+                    return;
+                }
+                ejecutar();
             },
             error: (error: any) => {
                 this.loadingVisible = false;
@@ -2686,6 +2778,14 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.notifyFx('Acepte o cancele el familiar que está editando antes de guardar.', NotifyType.Warning, { raw: true });
             return false;
         }
+        if (!this.esAlta()) {
+            const aviso = this.avisoParaEnviar(this.leerFormData(this.formPersona, this.personaModel), this.contactos, 'guardar');
+            if (aviso) {
+                this.notifyFx(aviso, NotifyType.Warning, { raw: true });
+                this.pintarRequeridos();
+                return false;
+            }
+        }
 
         return true;
     }
@@ -3481,9 +3581,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         }
     }
 
+    // Qué hace: lista los campos que cambiaron, marcando que se editaron.
     private cambiosCampos(antes: any, ahora: any, etiquetas: Record<string, string>): string {
         const nombres = Object.keys(etiquetas).filter((campo) => !this.mismoValor(antes?.[campo], ahora?.[campo]));
-        return nombres.map((campo) => etiquetas[campo]).join(', ');
+        if (!nombres.length) {
+            return '';
+        }
+        return `se editó ${nombres.map((campo) => etiquetas[campo]).join(', ')}`;
     }
 
     private cambiosFilas(original: Record<string, string>, actuales: any[], eliminados: any[], llave: string, payload: (fila: any) => any, nombre: (fila: any) => string, etiquetas: Record<string, string>, detalle?: (fila: any) => string): string {
@@ -3505,7 +3609,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             const campos = this.cambiosCampos(previo, datos, etiquetas);
             if (campos) {
                 const extra = (detalle?.(fila) || '').trim();
-                lineas.push(extra ? `${etiqueta}: ${campos} (${extra})` : `${etiqueta}: ${campos}`);
+                lineas.push(extra ? `${etiqueta} (${campos}: ${extra})` : `${etiqueta} (${campos})`);
             }
         });
         Object.keys(original ?? {}).forEach((id) => {
@@ -3554,20 +3658,20 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return 'se agregó';
         }
         if (antes && !ahora) {
-            return 'se quitó';
+            return 'se eliminó';
         }
         if (!antes || antes === ahora) {
             return '';
         }
         let previo: any = {};
         let actual: any = {};
-        try { previo = JSON.parse(antes); actual = JSON.parse(ahora); } catch { return 'se modificó'; }
+        try { previo = JSON.parse(antes); actual = JSON.parse(ahora); } catch { return 'se editó'; }
         return this.cambiosCampos(previo, actual, {
             NIVEL_ESTUDIO: 'Nivel', GRADUADO_UEES: 'Graduado UEES', GRADUADO: 'Graduado', NOMBRE_INSTITUCION: 'Institución',
             TIPO_EDUCACION: 'Tipo de educación', TITULO_OBTENIDO: 'Título', CARRERA_TEXTO: 'Carrera', NIVEL_CURSADO: 'Nivel cursado',
             CORR_CARRERA: 'Carrera', ANIO_TITULACION: 'Año de titulación', FECHA_GRADUACION: 'Fecha de graduación',
             CUOTA: 'Cuota', QUIEN_PAGO_CUOTA: 'Quién pagó la cuota', CORR_PAIS: 'País', CORR_DEPTO: 'Departamento',
-        }) || 'se modificó';
+        }) || 'se editó';
     }
 
     private cambioEmpleo(): string {
@@ -3576,18 +3680,18 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return 'se agregó el empleo';
         }
         if (this.empleoOriginalPayload && !ahora) {
-            return 'se quitó el empleo';
+            return 'se eliminó el empleo';
         }
         if (!this.empleoOriginalPayload || this.empleoOriginalPayload === ahora) {
             return '';
         }
         let previo: any = {};
         let actual: any = {};
-        try { previo = JSON.parse(this.empleoOriginalPayload); actual = JSON.parse(ahora); } catch { return 'se modificó el empleo'; }
+        try { previo = JSON.parse(this.empleoOriginalPayload); actual = JSON.parse(ahora); } catch { return 'se editó el empleo'; }
         return this.cambiosCampos(previo, actual, {
             EMPRESA: 'Empresa', CORR_SECTOR_LABORAL: 'Sector laboral', TIENE_EMPLEO_FUERA: 'Empleo fuera del país',
             CORR_PAIS: 'País', CORR_DEPTO: 'Departamento', CORR_MUNICIPIO: 'Municipio',
-        }) || 'se modificó el empleo';
+        }) || 'se editó el empleo';
     }
 
     private mismoValor(a: any, b: any): boolean {

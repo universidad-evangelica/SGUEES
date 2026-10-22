@@ -110,6 +110,7 @@ export class AcaProspectoPersonaService {
                     colSpan: 2,
                     editorType: 'dxDateBox',
                     editorOptions: { type: 'date', displayFormat: 'dd/MM/yyyy', dateSerializationFormat: 'yyyy-MM-dd' },
+                    validationRules: [{ type: 'required', message: 'Ingrese la fecha de nacimiento' }],
                 },
                 { dataField: 'LUGAR_NACIMIENTO', label: { text: 'Lugar de nacimiento' }, colSpan: 2, editorOptions: { maxLength: 200 }, validationRules: [{ type: 'required', message: 'Ingrese el lugar de nacimiento' }] },
                 { dataField: 'CORR_SEXO', label: { text: 'Sexo' }, colSpan: 2, template: 'CORR_SEXOLookup', validationRules: [{ type: 'required', message: 'Seleccione el sexo' }] },
