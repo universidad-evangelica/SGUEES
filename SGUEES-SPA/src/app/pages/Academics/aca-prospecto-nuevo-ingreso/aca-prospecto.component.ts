@@ -813,8 +813,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: el campo obligatorio vacío se pinta en rojo mientras se puede enviar o aprobar.
+    // Cómo lo hace: en el alta no marca los catálogos; solo nombres, apellido y fecha llevan borde.
     reqVacio(valor: any): boolean {
-        if (!this.mostrarFaltantesApartado()) {
+        if (this.esAlta() || !this.mostrarFaltantesApartado()) {
             return false;
         }
         if (typeof valor === 'number') {
@@ -824,14 +825,35 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: enciende el borde rojo de los editores que el dx-form ya marca como requeridos.
+    // Cómo lo hace: en el alta solo revisa los tres datos del encabezado. Después valida el formulario completo.
     pintarRequeridos(): void {
         if (!this.mostrarFaltantesApartado() || this.readOnly) {
+            return;
+        }
+        if (this.esAlta()) {
+            this.pintarRequeridosAlta();
             return;
         }
         this.formPersona?.instance?.validate();
         this.formEstudioMedia?.instance?.validate();
         this.formEmergencia?.instance?.validate();
         this.formFamiliar?.instance?.validate();
+    }
+
+    // Qué hace: en el alta pinta en rojo solo nombres, primer apellido y fecha de nacimiento.
+    // Cómo lo hace: apaga el inválido del resto de editores y marca esos tres si están vacíos.
+    private pintarRequeridosAlta(): void {
+        const form = this.formPersona?.instance;
+        if (!form) {
+            return;
+        }
+        ['APELLIDO2', 'DUI', 'CARNET_RESIDENCIA', 'NIT', 'LUGAR_NACIMIENTO', 'IGLESIA_ACTUAL', 'DIRECCION_ACTUAL'].forEach((campo) => {
+            form.getEditor(campo)?.option('isValid', true);
+        });
+        const persona = this.leerFormData(this.formPersona, this.personaModel);
+        form.getEditor('NOMBRES')?.option('isValid', !this.datoVacio(persona?.NOMBRES));
+        form.getEditor('APELLIDO1')?.option('isValid', !this.datoVacio(persona?.APELLIDO1));
+        form.getEditor('FECHA_NACIMIENTO')?.option('isValid', !!persona?.FECHA_NACIMIENTO);
     }
 
     // Qué hace: cuenta lo que el alta pide en Datos personales.
