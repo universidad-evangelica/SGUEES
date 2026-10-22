@@ -2623,8 +2623,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             });
     }
 
-    // Qué hace: si el nombre y la fecha, o el correo, ya están en otra solicitud, lo avisa en amarillo.
-    // Cómo lo hace: reconoce el texto que devuelve el registro y lo cambia por un mensaje que el usuario entienda.
+    // Qué hace: un dato mal llenado al crear se avisa en amarillo; un fallo del sistema se queda en rojo.
+    // Cómo lo hace: el nombre duplicado, el correo duplicado y la fecha tienen su texto. El resto de validaciones
+    //               del registro (largo, forma de ingreso, correo, teléfono y ciclo cerrado) también salen en amarillo.
     private avisarNoCreada(mensaje: string): void {
         const texto = mensaje || 'No se pudo crear la solicitud.';
         if (/nombre y .*fecha de nacimiento/i.test(texto)) {
@@ -2653,7 +2654,21 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             );
             return;
         }
-        this.notifyFx(texto, NotifyType.Error, { raw: true });
+        this.notifyFx(texto, this.esAvisoDeUsuario(texto) ? NotifyType.Warning : NotifyType.Error, { raw: true });
+    }
+
+    // Qué hace: si un apartado no se guardó, avisa en amarillo cuando el dato se puede corregir y en rojo si falló el sistema.
+    // Cómo lo hace: conserva el nombre del apartado y usa la frase que devolvió el API para elegir el color.
+    private avisarPaso(nombre: string, detalle: string): void {
+        const texto = detalle || 'no se pudo guardar';
+        this.notifyFx(`${nombre}: ${texto}`, this.esAvisoDeUsuario(texto) ? NotifyType.Warning : NotifyType.Error, { raw: true });
+    }
+
+    // Qué hace: distingue un dato que el usuario puede corregir de un fallo al guardar.
+    // Cómo lo hace: el API responde igual en los dos casos; estas frases son la validación de lo que escribió.
+    private esAvisoDeUsuario(mensaje: string): boolean {
+        return /no puede superar \d+ caracteres|no pueden ser negativos|no puede ser negativa|formato válido|c[oó]digo de pa[ií]s|parentesco|nombre del familiar|a[nñ]o de titulaci[oó]n|antes del departamento|antes del municipio|forma de ingreso|ingrese un correo|ingrese un tel[eé]fono|tel[eé]fono o el correo|inscripci[oó]n de este ciclo ya venci[oó]|no hay un per[ií]odo activo|seleccione el ciclo|seleccione la carrera|seleccione ciclo, carrera|seleccione el medio|seleccione la limitaci[oó]n|pa[ií]s de la deportaci[oó]n|nivel de estudio debe ser|financia estudios|cada apellido|los nombres no pueden|indique si el contacto/i
+            .test(mensaje || '');
     }
 
     // Qué hace: junta los datos que pide el registro de admisión.
@@ -3055,12 +3070,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                         this.ejecutarPasos(pasos, indice + 1);
                     } else {
                         this.loadingVisible = false;
-                        this.notifyFx(`${paso.nombre}: ${response?.ErrorMessage ?? 'no se pudo guardar'}`, NotifyType.Error, { raw: true });
+                        this.avisarPaso(paso.nombre, response?.ErrorMessage ?? 'no se pudo guardar');
                     }
                 },
                 error: (error: any) => {
                     this.loadingVisible = false;
-                    this.notifyFx(`${paso.nombre}: ${this.mensajeError(error)}`, NotifyType.Error, { raw: true });
+                    this.avisarPaso(paso.nombre, this.mensajeError(error));
                 },
             });
     }
