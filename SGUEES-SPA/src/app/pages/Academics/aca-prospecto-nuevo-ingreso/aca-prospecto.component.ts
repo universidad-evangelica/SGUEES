@@ -206,7 +206,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     //               y declara que trabaja, se prepararía un empleo "nuevo" aunque ya tenga uno.
     empleoCargado = false;
 
-    // Documentos que aplican a esta solicitud (tipo 104 y regla del prospecto).
+    // Documentos de la solicitud: tipo 104 con su regla, o marcados en el período.
     documentos: any[] = [];
     bitacorasFlujo: any[] = [];
     bitacorasEdicion: any[] = [];
@@ -3079,7 +3079,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: medios de origen con su código y su firma, para enviar al API solo los que cambien.
-    // Qué hace: documentos de esta solicitud según el tipo 104 y la regla del prospecto.
+    // Qué hace: documentos de esta solicitud, en borrador o pendiente.
+    // Cómo lo hace: la vista trae el tipo 104 con su regla y los marcados en el período.
     cargarDocumentos(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceDocumento.getDocumentosPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.documentos = data ?? [];

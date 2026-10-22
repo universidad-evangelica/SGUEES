@@ -13,6 +13,7 @@ import { AcaProspectoComponent as AcaProspectoNuevoIngresoComponent } from './ac
 import { AcaProspectoComponent as AcaProspectoSocioeconomicoComponent } from './aca-prospecto-socioeconomico/aca-prospecto.component';
 import { AcaProspectoComponent as AcaProspectoBecaComponent } from './aca-prospecto-beca/aca-prospecto.component';
 import { AcaDocumentoAdmisionFlujoTipoDocumentoComponent } from './aca-documento-admision-flujo-tipo-documento/aca-documento-admision-flujo-tipo-documento.component';
+import { AcaDocumentoAdmisionPeriodosAcademicosComponent } from './aca-documento-admision-periodos-academicos/aca-documento-admision-periodos-academicos.component';
 
 const routes: Routes = [
   // Qué hace: abre Solicitud nuevo ingreso, Solicitud beca y Solicitud socioeconómica.
@@ -51,6 +52,16 @@ const routes: Routes = [
     canDeactivate: [AppCanDeactivateGuard],
     data: { titulo: 'Documentos por solicitud' },
     loadChildren: () => import('./aca-documento-admision-flujo-tipo-documento/aca-documento-admision-flujo-tipo-documento.module').then((m) => m.AcaDocumentoAdmisionFlujoTipoDocumentoModule),
+  },
+  // Qué hace: abre Documentos por período.
+  // Cómo lo hace: la dirección del menú es /aca-documento-admision-periodos-academicos.
+  {
+    path: 'aca-documento-admision-periodos-academicos',
+    component: AcaDocumentoAdmisionPeriodosAcademicosComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Documentos por período' },
+    loadChildren: () => import('./aca-documento-admision-periodos-academicos/aca-documento-admision-periodos-academicos.module').then((m) => m.AcaDocumentoAdmisionPeriodosAcademicosModule),
   },
   {
     path: 'aca-bec-origen-beca',

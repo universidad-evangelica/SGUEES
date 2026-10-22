@@ -1,7 +1,9 @@
 -- Qué hace: documentos que se le piden a una solicitud de nuevo ingreso.
--- Cómo lo hace: el documento tiene que estar marcado en el tipo 104 y, además,
---               tener la regla de equivalencia y cuota máxima de ese prospecto.
+-- Cómo lo hace: entra si está en el tipo 104 y cumple la regla de equivalencia y cuota,
+--               o si está marcado en el período de esa solicitud.
+--               Si no está en ninguna de las dos, no aparece.
 --               El archivo cargado sale de ACA_PROSPECTO_DOCUMENTO.
+--               Vale para borrador y pendientes: las dos leen esta vista al abrir la solicitud.
 -- El usuario ejecuta este script en SGUEES. No modifica las tablas.
 SET ANSI_NULLS ON
 GO
@@ -46,6 +48,46 @@ INNER JOIN dbo.ACA_DOCUMENTO_ADMISION_REGLA AS R
         WHERE PE.CORR_PROSPECTO = P.CORR_PROSPECTO
         ORDER BY S.CORR_PROSPECTO_SOCIOECONOMICO DESC
    ), 0) AS bit)
+OUTER APPLY (
+    SELECT TOP 1
+        C.CORR_PROSPECTO_DOCUMENTO,
+        C.NOMBRE_ARCHIVO,
+        C.FECHA_CARGA,
+        C.ESTADO_REVISION
+    FROM dbo.ACA_PROSPECTO_DOCUMENTO AS C
+    WHERE C.CORR_PROSPECTO = P.CORR_PROSPECTO
+      AND C.CORR_DOCUMENTO_ADMISION = D.CORR_DOCUMENTO_ADMISION
+      AND C.ACTIVO = 1
+    ORDER BY C.FECHA_CARGA DESC, C.CORR_PROSPECTO_DOCUMENTO DESC
+) AS DOC
+
+UNION
+
+SELECT
+    AA.CORR_EMPRESA,
+    P.CORR_PROSPECTO,
+    D.CORR_DOCUMENTO_ADMISION,
+    D.NOMBRE_DOCUMENTO,
+    D.CODIGO,
+    D.OBLIGATORIO,
+    D.ORDEN,
+    D.FORMATOS_PERMITIDOS,
+    D.TAMANO_MAXIMO_MB,
+    DOC.CORR_PROSPECTO_DOCUMENTO,
+    DOC.NOMBRE_ARCHIVO,
+    DOC.FECHA_CARGA,
+    DOC.ESTADO_REVISION
+FROM dbo.ACA_PROSPECTO AS P
+INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS AS PA
+    ON PA.CORR_PERIODO_ACADEMICO = P.CORR_PERIODO_ACADEMICO
+INNER JOIN dbo.ACA_AREAS_ACADEMICAS AS AA
+    ON AA.CORR_AREA_ACADEMICA = PA.CORR_AREA_ACADEMICA
+INNER JOIN dbo.ACA_DOCUMENTO_ADMISION_PERIODOS_ACADEMICOS AS DP
+    ON DP.CORR_EMPRESA = AA.CORR_EMPRESA
+   AND DP.CORR_PERIODO_ACADEMICO = P.CORR_PERIODO_ACADEMICO
+INNER JOIN dbo.ACA_DOCUMENTO_ADMISION AS D
+    ON D.CORR_DOCUMENTO_ADMISION = DP.CORR_DOCUMENTO_ADMISION
+   AND D.ACTIVO = 1
 OUTER APPLY (
     SELECT TOP 1
         C.CORR_PROSPECTO_DOCUMENTO,
