@@ -32,6 +32,7 @@
 	>
 		<div *dxTemplate="let cellInfo of 'CORR_PERSONALookup'">
 			<app-data-lookup
+				#personaLookup
 				[model]="mCORR_PERSONA"
 				[(value)]="model.CORR_PERSONA"
 				[valueExpr]="'CORR_PERSONA'"

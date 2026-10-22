@@ -261,6 +261,10 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 
 		private static List<CParameter> BuildMttoParameters(UpdateType tipo, GEN_PROVEEDORTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			// DELETE solo manda PK por query; fechas default (0001-01-01) provocan SqlDateTime overflow.
+			var fechaCrea = ToSqlDateTime(Data.FECHA_CREA);
+			var fechaActu = ToSqlDateTime(Data.FECHA_ACTU);
+
 			return new List<CParameter>
 			{
 				new() { ParameterName = "@TIPO_ACTUALIZA", Value = (int)tipo, DbType = System.Data.DbType.Int32 },
@@ -268,6 +272,7 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 				new() { ParameterName = "@CORR_PROVEEDOR", Value = Data.CORR_PROVEEDOR, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 				new() { ParameterName = "@CORR_PERSONA", Value = Data.CORR_PERSONA, DbType = System.Data.DbType.Int64 },
 				new() { ParameterName = "@CODIGO_PROVEEDOR", Value = Data.CODIGO_PROVEEDOR ?? string.Empty, DbType = System.Data.DbType.String },
+				new() { ParameterName = "@NOMBRE_COMERCIAL", Value = Data.NOMBRE_COMERCIAL ?? string.Empty, DbType = System.Data.DbType.String },
 				new() { ParameterName = "@CORR_FORMA_PAGO", Value = Data.CORR_FORMA_PAGO, DbType = System.Data.DbType.Int32 },
 				new() { ParameterName = "@CUENTA_BANCARIA", Value = Data.CUENTA_BANCARIA ?? string.Empty, DbType = System.Data.DbType.String },
 				new() { ParameterName = "@CORR_BANCO", Value = Data.CORR_BANCO, DbType = System.Data.DbType.Int32 },
@@ -275,10 +280,10 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 				new() { ParameterName = "@ESTADO_PROVEEDOR_WEB", Value = Data.ESTADO_PROVEEDOR_WEB ?? "D", DbType = System.Data.DbType.String },
 				new() { ParameterName = "@CORR_CONDICION_PAGO", Value = Data.CORR_CONDICION_PAGO, DbType = System.Data.DbType.Int32 },
 				new() { ParameterName = "@USUARIO_CREA", Value = Data.USUARIO_CREA ?? string.Empty, DbType = System.Data.DbType.String },
-				new() { ParameterName = "@FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
+				new() { ParameterName = "@FECHA_CREA", Value = fechaCrea, DbType = System.Data.DbType.DateTime },
 				new() { ParameterName = "@ESTACION_CREA", Value = Data.ESTACION_CREA ?? string.Empty, DbType = System.Data.DbType.String },
 				new() { ParameterName = "@USUARIO_ACTU", Value = Data.USUARIO_ACTU ?? string.Empty, DbType = System.Data.DbType.String },
-				new() { ParameterName = "@FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
+				new() { ParameterName = "@FECHA_ACTU", Value = fechaActu, DbType = System.Data.DbType.DateTime },
 				new() { ParameterName = "@ESTACION_ACTU", Value = Data.ESTACION_ACTU ?? string.Empty, DbType = System.Data.DbType.String },
 				new() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
 				new() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
@@ -286,6 +291,12 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 				new() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 				new() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
 			};
+		}
+
+		private static System.DateTime ToSqlDateTime(System.DateTime value)
+		{
+			var minSql = new System.DateTime(1753, 1, 1);
+			return value < minSql ? System.DateTime.Now : value;
 		}
 	}
 }

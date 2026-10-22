@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { DataLookupComponent } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { GenProveedor } from './models/gen-proveedor';
@@ -14,11 +15,13 @@ import { GenProveedorService } from './gen-proveedor.service';
 	templateUrl: './gen-proveedor.component.html',
 })
 export class GenProveedorComponent extends CBaseComponent implements OnInit {
+	@ViewChild('personaLookup') personaLookup?: DataLookupComponent;
+
 	protected override etiquetaRegistro = 'el proveedor';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_PROVEEDOR';
 	protected override mttoCampoEstado = 'ACTIVO_PROVEEDOR';
-	protected override mttoEstadoDescribeField = 'NOMBRE_PROVEEDOR';
+	protected override mttoEstadoDescribeField = 'NOMBRE_COMERCIAL';
 
 	//#region <Declarando Variables>
 	mCORR_PERSONA: any;
@@ -27,7 +30,6 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 	mCORR_CONDICION_PAGO: any;
 	readOnly = false;
 	personaLookupColumns = [
-		{ dataField: 'CORR_PERSONA', caption: 'Corr.', width: 90 },
 		{ dataField: 'CODIGO_PERSONA', caption: 'Código', width: 120 },
 		{ dataField: 'NOMBRE_PERSONA', caption: 'Nombre', width: 280 },
 		{ dataField: 'NOMBRE_TIPO_PERSONERIA', caption: 'Personería', width: 110 },
@@ -150,6 +152,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 				TIPO_PERSONERIA: xModel.TIPO_PERSONERIA,
 				NOMBRE_TIPO_PERSONERIA: xModel.NOMBRE_TIPO_PERSONERIA,
 				NOMBRE_PROVEEDOR: xModel.NOMBRE_PROVEEDOR,
+				NOMBRE_COMERCIAL: xModel.NOMBRE_COMERCIAL ?? '',
 				CORR_FORMA_PAGO: xModel.CORR_FORMA_PAGO,
 				CUENTA_BANCARIA: xModel.CUENTA_BANCARIA,
 				CORR_BANCO: xModel.CORR_BANCO,
@@ -168,6 +171,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 			TIPO_PERSONERIA: '',
 			NOMBRE_TIPO_PERSONERIA: '',
 			NOMBRE_PROVEEDOR: '',
+			NOMBRE_COMERCIAL: '',
 			CORR_FORMA_PAGO: 0,
 			CUENTA_BANCARIA: '',
 			CORR_BANCO: 0,
@@ -201,9 +205,34 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 	guardar(): void {
 		this.model.ESTADO_PROVEEDOR = this.model.ACTIVO_PROVEEDOR ? 'A' : 'I';
 		this.guardarMtto({
-			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			esValido: () => this.validarYEnfocar(),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
+		});
+	}
+
+	/** Valida negocio y enfoca el primer campo faltante (Persona o Código). */
+	private validarYEnfocar(): boolean {
+		const ok = this.service.esValido(this.model, this.notifyFx.bind(this));
+		if (!ok) {
+			this.enfocarCampoRequerido();
+		}
+		return ok;
+	}
+
+	private enfocarCampoRequerido(): void {
+		setTimeout(() => {
+			if (!this.model?.CORR_PERSONA || this.model.CORR_PERSONA <= 0) {
+				// Template lookup: el dx-form no pinta el "!"; lo marcamos en el drop-down.
+				this.personaLookup?.markInvalid('La persona es obligatoria');
+				this.personaLookup?.focus();
+				return;
+			}
+			
+			this.personaLookup?.markValid();
+			if (!this.model?.CODIGO_PROVEEDOR?.trim()) {
+				this.dataForm.instance.getEditor('CODIGO_PROVEEDOR')?.focus();
+			}
 		});
 	}
 
@@ -224,7 +253,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_PROVEEDOR')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CODIGO_PROVEEDOR')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NOMBRE_PROVEEDOR')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_COMERCIAL')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_TIPO_PERSONERIA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CUENTA_BANCARIA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ACTIVO_PROVEEDOR')?.option('readOnly', true);
@@ -235,8 +264,8 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 		this.readOnly = false;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_PROVEEDOR')?.option('readOnly', true);
-			this.dataForm.instance.getEditor('NOMBRE_PROVEEDOR')?.option('readOnly', true);
 			this.dataForm.instance.getEditor('NOMBRE_TIPO_PERSONERIA')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('NOMBRE_COMERCIAL')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('CODIGO_PROVEEDOR')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ACTIVO_PROVEEDOR')?.option('readOnly', false);
 		});
@@ -244,7 +273,12 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 
 	override setFocus() {
 		setTimeout(() => {
-			this.dataForm.instance.getEditor('CODIGO_PROVEEDOR')?.focus();
+			// Nuevo: Persona (lookup). Edición: Código (Persona queda readOnly).
+			if (this.model?.CORR_PROVEEDOR > 0) {
+				this.dataForm.instance.getEditor('CODIGO_PROVEEDOR')?.focus();
+			} else {
+				this.personaLookup?.focus();
+			}
 		});
 	}
 	//#endregion
@@ -252,10 +286,15 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 	selectedLookUpCORR_PERSONA(vRow: any): any {
 		const row = Array.isArray(vRow) ? vRow[0] : vRow;
 		if (row) {
+			const nombrePersona = row.NOMBRE_PERSONA ?? '';
 			this.model.CORR_PERSONA = row.CORR_PERSONA;
-			this.model.NOMBRE_PROVEEDOR = row.NOMBRE_PERSONA ?? '';
+			// NOMBRE_PROVEEDOR = nombre concatenado de la persona (solo lectura de negocio).
+			this.model.NOMBRE_PROVEEDOR = nombrePersona;
+			// NOMBRE_COMERCIAL = Nombre/Razón social (editable; se precarga desde persona).
+			this.model.NOMBRE_COMERCIAL = nombrePersona;
 			this.model.TIPO_PERSONERIA = row.TIPO_PERSONERIA ?? '';
 			this.model.NOMBRE_TIPO_PERSONERIA = row.NOMBRE_TIPO_PERSONERIA ?? '';
+			this.personaLookup?.markValid();
 		}
 		return row?.CORR_PERSONA;
 	}

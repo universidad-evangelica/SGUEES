@@ -1,7 +1,17 @@
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, NgModule, Output, OnInit, OnChanges, SimpleChanges } from '@angular/core';
-import { DxDropDownBoxModule } from 'devextreme-angular/ui/drop-down-box';
+import {
+	Component,
+	EventEmitter,
+	Input,
+	NgModule,
+	Output,
+	OnInit,
+	OnChanges,
+	SimpleChanges,
+	ViewChild,
+} from '@angular/core';
+import { DxDropDownBoxComponent, DxDropDownBoxModule } from 'devextreme-angular/ui/drop-down-box';
 
 @Component({
 	selector: 'app-data-lookup',
@@ -9,6 +19,8 @@ import { DxDropDownBoxModule } from 'devextreme-angular/ui/drop-down-box';
 	styleUrls: ['./data-lookup.component.scss'],
 })
 export class DataLookupComponent implements OnInit, OnChanges {
+	@ViewChild('dataLookUp', { static: false }) dataLookUp?: DxDropDownBoxComponent;
+
 	@Input() model!: any;
 	@Input() valueExpr: string = 'Key';
 	@Input() displayExpr: string = 'Value';
@@ -19,6 +31,9 @@ export class DataLookupComponent implements OnInit, OnChanges {
 	@Input() setValue!: Function;
 	@Input() lookupColumns: any[] | null = null;
 	@Input() dropDownWidth: number | string | null = null;
+	/** Estado visual de validación (templates no lo heredan del dx-form). */
+	@Input() isValid = true;
+	@Input() validationError: { message?: string } | null = null;
 
 	@Output() valueChange = new EventEmitter<any>();
 	claseOpend = false;
@@ -29,6 +44,21 @@ export class DataLookupComponent implements OnInit, OnChanges {
 	gridSelectedKeys: any[] = [];
 
 	constructor() {}
+
+	/** Enfoca el dx-drop-down-box interno (útil desde mtto / validación). */
+	focus(): void {
+		this.dataLookUp?.instance?.focus();
+	}
+
+	markInvalid(message: string): void {
+		this.isValid = false;
+		this.validationError = { message };
+	}
+
+	markValid(): void {
+		this.isValid = true;
+		this.validationError = null;
+	}
 
 	ngOnInit(): void {
 		this.buildColumns();
@@ -64,6 +94,9 @@ export class DataLookupComponent implements OnInit, OnChanges {
 		this.value = nextValue;
 		this.internalValue = this.toLookupValue(this.value);
 		this.syncGridSelectedKeys();
+		if (this.hasLookupValue(this.value)) {
+			this.markValid();
+		}
 		this.valueChange.emit(this.value);
 	}
 
@@ -92,8 +125,13 @@ export class DataLookupComponent implements OnInit, OnChanges {
 		this.value = newValue;
 		this.internalValue = this.toLookupValue(newValue);
 		this.syncGridSelectedKeys();
+		this.markValid();
 		this.valueChange.emit(this.value);
 		this.claseOpend = false;
+	}
+
+	private hasLookupValue(v: any): boolean {
+		return !(v === null || v === undefined || v === '' || v === 0);
 	}
 
 	private syncInternalValue(): void {
