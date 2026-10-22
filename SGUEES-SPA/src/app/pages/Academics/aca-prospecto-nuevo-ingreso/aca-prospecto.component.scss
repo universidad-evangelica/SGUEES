@@ -497,6 +497,13 @@
 	border-color: #e53935 !important;
 }
 
+// Qué hace: el texto de Datos personales llega al borde de su columna, igual que el combo.
+// Cómo lo hace: el dx-textbox ocupa el 100% de la celda (Iglesia y Dirección van a colSpan 2).
+:host ::ng-deep dx-form.sguees-form-premium .dx-field-item-content > .dx-textbox {
+	width: 100% !important;
+	max-width: 100%;
+}
+
 :host ::ng-deep .aca-prospecto-tab-panel .aca-prospecto-tab-conteo--ok {
 	background: rgba(31, 157, 95, 0.18);
 	color: #66bb6a;
