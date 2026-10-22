@@ -26,6 +26,12 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 	mCORR_FORMA_PAGO: any;
 	mCORR_CONDICION_PAGO: any;
 	readOnly = false;
+	personaLookupColumns = [
+		{ dataField: 'CORR_PERSONA', caption: 'Corr.', width: 90 },
+		{ dataField: 'CODIGO_PERSONA', caption: 'Código', width: 120 },
+		{ dataField: 'NOMBRE_PERSONA', caption: 'Nombre', width: 280 },
+		{ dataField: 'NOMBRE_TIPO_PERSONERIA', caption: 'Personería', width: 110 },
+	];
 	// #endregion
 
 	constructor(

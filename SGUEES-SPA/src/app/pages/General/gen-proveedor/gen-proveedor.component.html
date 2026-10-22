@@ -37,13 +37,8 @@
 				[valueExpr]="'CORR_PERSONA'"
 				[displayExpr]="'NOMBRE_PERSONA'"
 				[selectedRowKeys]="selectedLookUpCORR_PERSONA"
-				[readOnly]="readOnly || model.CORR_PROVEEDOR > 0"
-				[lookupColumns]="[
-					{ dataField: 'CORR_PERSONA', caption: 'Corr.', width: 90 },
-					{ dataField: 'CODIGO_PERSONA', caption: 'Código', width: 120 },
-					{ dataField: 'NOMBRE_PERSONA', caption: 'Nombre', width: 280 },
-					{ dataField: 'NOMBRE_TIPO_PERSONERIA', caption: 'Personería', width: 110 }
-				]"
+				[readOnly]="readOnly || (model?.CORR_PROVEEDOR > 0)"
+				[lookupColumns]="personaLookupColumns"
 			>
 			</app-data-lookup>
 		</div>
