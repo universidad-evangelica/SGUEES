@@ -15,5 +15,9 @@ namespace sguees.Repositories
 		Task<List<SEG_USUARIO_CLAVE_HISTORIALView>> GetUltimasClavesAsync(string loginSistema, int numeroUltimasClaves);
 		Task<System.DateTime?> GetUltimoAccesoExitosoAsync(string loginSistema);
 		Task<string> GetNombreEmpresaAsync(int corrEmpresa);
+		Task<CResult> GetPersonaAsignadaAsync(string loginSistema);
+		Task<CResult> GetPersonasNaturalesDisponiblesAsync(string buscar, string loginSistema = null);
+		Task<CResult> AsociarPersonaAsync(string loginSistema, long corrPersona, string usuario, string estacion);
+		Task<CResult> DesasociarPersonaAsync(string loginSistema);
 	}
 }

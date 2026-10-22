@@ -134,9 +134,171 @@
 					</dx-data-grid>
 				</div>
 			</dxi-item>
+
+			<!-- motivo: pestaña para asociar el usuario a una persona natural (relación 1 a 1) -->
+			<dxi-item title="Asociar persona" icon="user">
+				<div class="dx-grid-deta seg-opciones-grid">
+					<!-- motivo: toolbar solo visible cuando aún no hay ninguna persona asignada -->
+					<div class="seg-opciones-toolbar" *ngIf="!readOnly && personaAsignada.length === 0" style="display: flex; gap: 8px;">
+						<dx-button
+							icon="user"
+							text="Asociar persona"
+							type="default"
+							stylingMode="contained"
+							(onClick)="abrirModalAsociarPersona()"
+						></dx-button>
+					</div>
+
+					<!-- motivo: grilla de persona asociada con columna Options estándar para editar y quitar -->
+					<dx-data-grid
+						class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise"
+						[dataSource]="personaAsignada"
+						[columnAutoWidth]="false"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[width]="'100%'"
+						[keyExpr]="'CORR_PERSONA'"
+						noDataText="No hay persona natural asociada a este usuario."
+					>
+						<dxo-load-panel [enabled]="true"></dxo-load-panel>
+						<dxo-paging [enabled]="false"></dxo-paging>
+
+						<dxi-column dataField="NOMBRE_COMPLETO" caption="Nombre de la Persona" [width]="320"></dxi-column>
+						<dxi-column dataField="TIPO_PERSONA" caption="Tipo / Rol" [width]="150"></dxi-column>
+						<dxi-column dataField="DUI" caption="DUI / Identificación" [width]="180"></dxi-column>
+						<!-- motivo: columna Sexo con ancho suficiente para mostrar el texto completo sin truncamiento -->
+						<dxi-column dataField="SEXO" caption="Sexo" [width]="140" [minWidth]="130"></dxi-column>
+
+						<!-- motivo: columna Estado con badge visual activo/inactivo estándar del sistema -->
+						<dxi-column
+							dataField="ACTIVO_PERSONA"
+							caption="Estado"
+							[width]="130"
+							alignment="center"
+							cellTemplate="estadoPersonaTemplate"
+						>
+							<div *dxTemplate="let cell of 'estadoPersonaTemplate'">
+								<span
+									class="estado-badge"
+									[class.estado-badge--activo]="cell.value === true || cell.value === 1"
+									[class.estado-badge--inactivo]="cell.value === false || cell.value === 0"
+								>
+									{{ cell.value === true || cell.value === 1 ? 'Activo' : 'Inactivo' }}
+								</span>
+							</div>
+						</dxi-column>
+
+						<dxi-column
+							dataField="FECHA_ASOCIACION"
+							caption="Fecha Asociación"
+							[width]="150"
+							dataType="date"
+							format="dd/MM/yyyy"
+						></dxi-column>
+					</dx-data-grid>
+				</div>
+			</dxi-item>
 		</dx-tab-panel>
 	</section>
 </div>
+
+<!-- motivo: modal con formato estándar de tabla enterprise para seleccionar persona a vincular o editar -->
+<dx-popup
+	[width]="980"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[showTitle]="true"
+	[title]="personaAsignada.length > 0 ? 'Editar Persona Asociada a Usuario' : 'Asociar Persona a Usuario'"
+	[dragEnabled]="false"
+	[closeOnOutsideClick]="false"
+	[(visible)]="modalAsociarVisible"
+>
+	<div *dxTemplate="let data of 'content'" class="seg-modal-asociar-content">
+		<dx-data-grid
+			class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise"
+			[dataSource]="personasDisponibles"
+			[columns]="personasDisponiblesColumns"
+			[showBorders]="true"
+			[showColumnLines]="true"
+			[showRowLines]="true"
+			[rowAlternationEnabled]="true"
+			[hoverStateEnabled]="true"
+			[allowColumnResizing]="true"
+			[columnResizingMode]="'widget'"
+			[columnAutoWidth]="true"
+			[width]="'100%'"
+			[height]="400"
+			[keyExpr]="'CORR_PERSONA'"
+			[selectedRowKeys]="personaSeleccionadaKey ? [personaSeleccionadaKey] : []"
+			(onSelectionChanged)="onPersonaSeleccionadaChanged($event)"
+		>
+			<!-- motivo: toolbar de grilla alineando a la misma altura el texto descriptivo a la izquierda y el buscador a la derecha -->
+			<dxo-toolbar>
+				<dxi-item location="before">
+					<div *dxTemplate style="font-size: 13px; display: flex; align-items: center;">
+						<span>
+							{{ personaAsignada.length > 0
+								? 'Seleccione la nueva persona para reemplazar la asociación del usuario'
+								: 'Seleccione la persona que desea vincular con el usuario' }}
+							<strong>{{ model?.LOGIN_SISTEMA }}</strong>:
+						</span>
+					</div>
+				</dxi-item>
+				<dxi-item name="searchPanel" location="after"></dxi-item>
+			</dxo-toolbar>
+
+			<dxo-selection mode="single"></dxo-selection>
+			<!-- motivo: panel de búsqueda con ancho suficiente para mostrar el placeholder completo -->
+			<dxo-search-panel
+				[visible]="true"
+				[width]="260"
+				placeholder="Buscar por nombre o DUI"
+			></dxo-search-panel>
+			<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+			<dxo-header-filter [visible]="true"></dxo-header-filter>
+			<dxo-load-panel [enabled]="true"></dxo-load-panel>
+			<!-- motivo: configuración de paginación con selector dinámico de tamaños 5, 10, 15, todos y flechas de navegación -->
+			<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+			<dxo-pager
+				[visible]="true"
+				[showInfo]="true"
+				[showNavigationButtons]="true"
+				[showPageSizeSelector]="true"
+				[allowedPageSizes]="[5, 10, 15, 'all']"
+			></dxo-pager>
+			<!-- motivo: resumen de conteo total de registros en el pie de tabla -->
+			<dxo-summary>
+				<dxi-total-item
+					column="NOMBRE_COMPLETO"
+					summaryType="count"
+					valueFormat="#,##0"
+					displayFormat="Cant: {0}"
+				></dxi-total-item>
+			</dxo-summary>
+		</dx-data-grid>
+
+		<div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+			<dx-button
+				text="Cancelar"
+				stylingMode="outlined"
+				(onClick)="modalAsociarVisible = false"
+			></dx-button>
+			<dx-button
+				[text]="personaAsignada.length > 0 ? 'Actualizar' : 'Asociar'"
+				icon="check"
+				type="default"
+				stylingMode="contained"
+				[disabled]="!personaSeleccionadaKey"
+				(onClick)="confirmarAsociacion()"
+			></dx-button>
+		</div>
+	</div>
+</dx-popup>
 
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
