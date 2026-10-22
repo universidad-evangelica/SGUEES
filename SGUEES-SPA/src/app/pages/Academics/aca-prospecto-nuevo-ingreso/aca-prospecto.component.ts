@@ -805,7 +805,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             case 'Información adicional':
                 return this.faltanMedio();
             case 'Documentación':
-                return (this.documentos || []).filter((d) => !d?.NOMBRE_ARCHIVO).length;
+                return (this.documentos || []).filter((d) => this.documentoObligatorio(d) && !d?.NOMBRE_ARCHIVO).length;
             default:
                 return -1;
         }
@@ -900,6 +900,24 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             partes.push('un teléfono y un correo en Contacto');
         }
         return partes.length ? `No se puede ${verbo}. Complete ${partes.join(' y ')}.` : '';
+    }
+
+    // Qué hace: al enviar o aprobar exige los mismos apartados que marcan número en los tabs.
+    // Cómo lo hace: Guardar no pasa por aquí. El alta tampoco: ahí solo pide el encabezado.
+    private avisoParaCompletar(verbo: 'enviar' | 'aprobar'): string {
+        const titulos = ['Datos personales', 'Contacto', 'Salud', 'Datos familiares', 'Educación', 'Información adicional', 'Documentación'];
+        const faltan = titulos
+            .map((titulo) => ({ titulo, n: this.faltanApartado({ title: titulo }) }))
+            .filter((apartado) => apartado.n > 0);
+        if (!faltan.length) {
+            return '';
+        }
+        const lista = faltan.map((apartado) => `${apartado.titulo} (${apartado.n})`).join(', ');
+        return `No se puede ${verbo}. Complete los apartados que faltan: ${lista}.`;
+    }
+
+    private documentoObligatorio(fila: any): boolean {
+        return fila?.OBLIGATORIO === true || fila?.OBLIGATORIO === 1;
     }
 
     private faltanDatosPersonales(): number {
@@ -1277,7 +1295,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             });
         };
         if (Number(this.personaModel?.CORR_PROSPECTO) === corr) {
-            const aviso = this.avisoParaEnviar(this.leerFormData(this.formPersona, this.personaModel), this.contactos);
+            const aviso = this.avisoParaCompletar('enviar');
             if (aviso) {
                 this.notifyFx(aviso, NotifyType.Warning, { raw: true });
                 this.pintarRequeridos();
@@ -1542,7 +1560,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return;
         }
         if (Number(this.personaModel?.CORR_PROSPECTO) === corr) {
-            const falta = this.avisoParaEnviar(this.leerFormData(this.formPersona, this.personaModel), this.contactos, 'aprobar');
+            const falta = this.avisoParaCompletar('aprobar');
             if (falta) {
                 this.notifyFx(falta, NotifyType.Warning, { raw: true });
                 this.pintarRequeridos();
@@ -2765,8 +2783,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.ejecutarPasos(pasos, 0);
     }
 
-    // Qué hace: deja guardar una solicitud ingresada aunque los formularios no estén al 100 %.
-    // Cómo lo hace: el 100 % se exige solo al aprobar. Aquí solo se evita guardar con una ficha a medias.
+    // Qué hace: deja guardar una solicitud aunque los apartados no estén completos.
+    // Cómo lo hace: el detalle se exige al enviar y al aprobar. Aquí solo se frena la identidad y los dos contactos.
     private validarFormularios(): boolean {
         // Una ficha abierta (familiar, contacto, medio, limitación o deportación) se acepta o se cancela antes de guardar.
         if (this.medioModel) {
