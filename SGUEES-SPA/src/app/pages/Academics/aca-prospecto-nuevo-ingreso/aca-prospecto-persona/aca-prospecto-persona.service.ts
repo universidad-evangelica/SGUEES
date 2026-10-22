@@ -119,13 +119,13 @@ export class AcaProspectoPersonaService {
                 { dataField: 'CORR_PAIS_NACIONALIDAD', label: { text: 'Nacionalidad' }, colSpan: 2, template: 'CORR_PAIS_NACIONALIDADLookup' },
                 { dataField: 'CORR_PAIS_PROCEDENCIA', label: { text: 'País de procedencia' }, colSpan: 2, template: 'CORR_PAIS_PROCEDENCIALookup', validationRules: [{ type: 'required', message: 'Seleccione el país de procedencia' }] },
                 { dataField: 'CORR_RELIGION', label: { text: 'Religión' }, colSpan: 2, template: 'CORR_RELIGIONLookup', validationRules: [{ type: 'required', message: 'Seleccione la religión' }] },
-                { dataField: 'IGLESIA_ACTUAL', label: { text: 'Iglesia actual' }, colSpan: 4, editorOptions: { maxLength: 100 }, validationRules: [{ type: 'required', message: 'Ingrese la iglesia actual' }] },
+                { dataField: 'IGLESIA_ACTUAL', label: { text: 'Iglesia actual' }, colSpan: 2, editorOptions: { maxLength: 100, width: '100%' }, validationRules: [{ type: 'required', message: 'Ingrese la iglesia actual' }] },
             ] },
             { itemType: 'group', caption: 'Residencia', colSpan: 8, colCount: 8, items: [
                 { dataField: 'CORR_PAIS_RESIDENCIA', label: { text: 'País' }, colSpan: 2, template: 'CORR_PAIS_RESIDENCIALookup', validationRules: [{ type: 'required', message: 'Seleccione el país de residencia' }] },
                 { dataField: 'CORR_DEPTO_RESIDENCIA', label: { text: 'Departamento' }, colSpan: 2, template: 'CORR_DEPTO_RESIDENCIALookup', validationRules: [{ type: 'required', message: 'Seleccione el departamento' }] },
                 { dataField: 'CORR_MUNICIPIO_RESIDENCIA', label: { text: 'Municipio' }, colSpan: 2, template: 'CORR_MUNICIPIO_RESIDENCIALookup', validationRules: [{ type: 'required', message: 'Seleccione el municipio' }] },
-                { dataField: 'DIRECCION_ACTUAL', label: { text: 'Dirección actual' }, colSpan: 8, editorOptions: { maxLength: 300 }, validationRules: [{ type: 'required', message: 'Ingrese la dirección actual' }] },
+                { dataField: 'DIRECCION_ACTUAL', label: { text: 'Dirección actual' }, colSpan: 2, editorOptions: { maxLength: 300, width: '100%' }, validationRules: [{ type: 'required', message: 'Ingrese la dirección actual' }] },
             ] },
             // Trabaja, discapacidad y deportación no van aquí: en el portal cada una se marca en su
             // sección (información laboral, salud y país de deportación) y al guardar enciende la bandera.
