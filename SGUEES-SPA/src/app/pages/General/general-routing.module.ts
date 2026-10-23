@@ -12,6 +12,7 @@ import { GenEstructuraTerritorialComponent } from './gen-estructura-territorial/
 import { GenDivisionComponent } from './gen-division/gen-division.component';
 import { GenGerenciaComponent } from './gen-gerencia/gen-gerencia.component';
 import { GenBancoComponent } from './gen-banco/gen-banco.component';
+import { GenProveedorComponent } from './gen-proveedor/gen-proveedor.component';
 import { GenUnidadesPuestoComponent } from './gen-unidades-puesto/gen-unidades-puesto.component';
 import { GenActividadEconomicaComponent } from './gen-actividad-economica/gen-actividad-economica.component';
 import { GenTipoContribuyenteComponent } from './gen-tipo-contribuyente/gen-tipo-contribuyente.component';
@@ -96,6 +97,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-banco/gen-banco.module').then(m => m.GenBancoModule)
+  },
+  {
+    path: 'gen-proveedor',
+    component: GenProveedorComponent,
+    data: { titulo: 'Proveedores' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-proveedor/gen-proveedor.module').then(m => m.GenProveedorModule)
   },
   {
     path: 'gen-unidades-puesto',

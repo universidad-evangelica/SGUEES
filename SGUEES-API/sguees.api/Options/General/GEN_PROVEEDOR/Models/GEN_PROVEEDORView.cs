@@ -6,6 +6,7 @@ namespace sguees.Models
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_PROVEEDOR { get; set; }
+		public long? CORR_PERSONA { get; set; }
 		public string CODIGO_PROVEEDOR { get; set; }
 		public string TIPO_PERSONERIA { get; set; }
 		public string NOMBRE_TIPO_PERSONERIA { get; set; }
@@ -22,8 +23,12 @@ namespace sguees.Models
 		public int CORR_ACTIVIDAD_ECONOMICA { get; set; }
 		public string DIRECCION_PROVEEDOR { get; set; }
 		public int CORR_PAIS { get; set; }
+		public string NOMBRE_PAIS { get; set; }
 		public int CORR_DEPTO { get; set; }
+		public string NOMBRE_DEPTO { get; set; }
 		public int CORR_MUNICIPIO { get; set; }
+		public string NOMBRE_MUNICIPIO { get; set; }
+		public string NOMBRE_ACTIVIDAD_ECONOMICA { get; set; }
 		public string NOMBRE_CONTACTO { get; set; }
 		public string TELEFONO_FIJO { get; set; }
 		public string TELEFONO_MOVIL { get; set; }
@@ -33,6 +38,7 @@ namespace sguees.Models
 		public string CUENTA_BANCARIA { get; set; }
 		public int CORR_BANCO { get; set; }
 		public string ESTADO_PROVEEDOR { get; set; }
+		public bool ACTIVO_PROVEEDOR { get; set; }
 		public string NOMBRE_ESTADO_PROVEEDOR { get; set; }
 		public string ESTADO_PROVEEDOR_WEB { get; set; }
 		public int CORR_CONDICION_PAGO { get; set; }

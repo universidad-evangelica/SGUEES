@@ -39,6 +39,14 @@ namespace sguees.Controllers
 			return await _service.GetAsync(Data);
 		}
 
+		[HttpGet("GetCORR_PERSONA")]
+		[Authorize(Policy = "/gen-proveedor|R")]
+		public async Task<CResult> GetCORR_PERSONA([FromQuery] GEN_PROVEEDORParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetPersonasLookupAsync(Data);
+		}
+
 		[HttpPost]
 		[Authorize(Policy = "/gen-proveedor|C")]
 		public async Task<IActionResult> Post(GEN_PROVEEDORTable Data)
@@ -62,6 +70,19 @@ namespace sguees.Controllers
 			SetUpdateAudit(Data);
 			var resultado = await _service.UpdateAsync(Data, Data.USUARIO_ACTU, Data.ESTACION_ACTU);
 			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("ActivarInactivar")]
+		[Authorize(Policy = "/gen-proveedor|U")]
+		public async Task<IActionResult> ActivarInactivar(GEN_PROVEEDORTable Data)
+		{
+			this.ApplyQueryKeys(Data, nameof(GEN_PROVEEDORTable.CORR_PROVEEDOR));
+			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+				return BadRequest(resultadoEmpresa);
+
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
 		[HttpDelete]

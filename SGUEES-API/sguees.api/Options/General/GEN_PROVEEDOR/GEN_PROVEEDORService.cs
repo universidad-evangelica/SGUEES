@@ -34,6 +34,9 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
+		public Task<CResult> GetPersonasLookupAsync(GEN_PROVEEDORParam xWhere)
+			=> _repo.GetPersonasLookupAsync(xWhere.CORR_EMPRESA, xWhere.CORR_PERSONA);
+
 		public async Task<CResult> CreateAsync(GEN_PROVEEDORTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			ApplyCreateDefaults(Data);
@@ -46,28 +49,15 @@ namespace sguees.Services
 		public Task<CResult> DeleteAsync(GEN_PROVEEDORTable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 
+		public Task<CResult> ActivarInactivarAsync(GEN_PROVEEDORTable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
 		private static void ApplyCreateDefaults(GEN_PROVEEDORTable Data)
 		{
 			Data.CODIGO_PROVEEDOR ??= string.Empty;
-			Data.TIPO_PERSONERIA ??= string.Empty;
-			Data.NOMBRE_PROVEEDOR ??= string.Empty;
-			Data.PRIMER_NOMBRE ??= string.Empty;
-			Data.SEGUNDO_NOMBRE ??= string.Empty;
-			Data.PRIMER_APELLIDO ??= string.Empty;
-			Data.SEGUNDO_APELLIDO ??= string.Empty;
-			Data.NOMBRE_COMERCIAL ??= string.Empty;
-			Data.NUMERO_DIP ??= string.Empty;
-			Data.NUMERO_NRC ??= string.Empty;
-			Data.NUMERO_NIT ??= string.Empty;
-			Data.DIRECCION_PROVEEDOR ??= string.Empty;
-			Data.NOMBRE_CONTACTO ??= string.Empty;
-			Data.TELEFONO_FIJO ??= string.Empty;
-			Data.TELEFONO_MOVIL ??= string.Empty;
-			Data.CORREO_ELECTRONICO_1 ??= string.Empty;
-			Data.CORREO_ELECTRONICO_2 ??= string.Empty;
 			Data.CUENTA_BANCARIA ??= string.Empty;
-			Data.ESTADO_PROVEEDOR ??= "AC";
-			Data.ESTADO_PROVEEDOR_WEB ??= "AC";
+			Data.ESTADO_PROVEEDOR = string.IsNullOrWhiteSpace(Data.ESTADO_PROVEEDOR) ? "A" : Data.ESTADO_PROVEEDOR;
+			Data.ESTADO_PROVEEDOR_WEB = string.IsNullOrWhiteSpace(Data.ESTADO_PROVEEDOR_WEB) ? "D" : Data.ESTADO_PROVEEDOR_WEB;
 		}
 	}
 }
