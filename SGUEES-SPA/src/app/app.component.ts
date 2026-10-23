@@ -47,13 +47,23 @@ export class AppComponent implements OnInit, OnDestroy {
     this.authService.registrarActividad();
   }
 
-  isAuthenticated() {
-    if (this.authService.loggedIn) {
-      return true;
+  // Qué hace: el marco con menú solo sigue mientras hay sesión.
+  // Cómo lo hace: al cerrarla no deja la pantalla abierta dentro de la tarjeta del login.
+  mostrarMarco(): boolean {
+    return this.authService.loggedIn;
+  }
+
+  esRutaAcceso(): boolean {
+    return this.esRutaLogin();
+  }
+
+  // Qué hace: si la sesión ya no está y la ruta sigue siendo del sistema, abre el login.
+  // Cómo lo hace: el outlet queda oculto hasta que la ruta sea el login.
+  asegurarLogin(): boolean {
+    if (!this.authService.loggedIn && !this.esRutaLogin() && !this.isPublicPortal) {
+      this.authService.irAlLogin();
     }
-    // Qué hace: mantiene el marco de la aplicación hasta entrar al login.
-    // Cómo lo hace: evita la pantalla negra mientras la ruta anterior todavía está activa.
-    return this.authService.cerrandoSesion && !this.esRutaLogin();
+    return true;
   }
 
   ngOnDestroy(): void {

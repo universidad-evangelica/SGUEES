@@ -61,10 +61,11 @@ body.sguees-theme-dark .dx-drawer-panel-content {
 }
 
 // Qué hace: al vencer la sesión no deja a la vista el formulario que estaba abierto.
-// Cómo lo hace: oculta el marco y los popup hasta que el login ya está en pantalla.
+// Cómo lo hace: oculta el marco, los popup y el outlet de paso hasta que el login ya está en pantalla.
 body.sguees-sesion-cerrada app-side-nav-outer-toolbar,
 body.sguees-sesion-cerrada .dx-popup-wrapper,
-body.sguees-sesion-cerrada .dx-overlay-shader {
+body.sguees-sesion-cerrada .dx-overlay-shader,
+.sguees-salida-sesion {
   display: none !important;
 }
 
