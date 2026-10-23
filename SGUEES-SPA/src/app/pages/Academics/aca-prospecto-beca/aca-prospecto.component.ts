@@ -44,7 +44,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     barraFiltroCiclo: BarraMttoCombox | null = null;
     cicloLookupColumns = [
         { dataField: 'NOMBRE_CICLO', caption: 'Ciclo', width: 160 },
-        { dataField: 'CANTIDAD_PROSPECTOS', caption: 'Prospectos', width: 110 },
+        { dataField: 'CANTIDAD_PROSPECTOS', caption: 'Solicitudes', width: 110 },
     ];
 
     constructor(

@@ -10,14 +10,15 @@ using sguees.Models;
 namespace sguees.Repositories
 {
     // Qué hace: lectura del encabezado de la solicitud de beca.
-    // Cómo lo hace: V_ACA_PROSPECTO_BECA_CONSULTA. Insert, update y delete aún no escriben.
+        // Cómo lo hace: V_ACA_PROSPECTO_BECA_CONSULTA en SGUEES (defaultConnection).
+        //               Insert, update y delete aún no escriben.
     public class ACA_PROSPECTO_BECARepository : BaseRepository<ACA_PROSPECTO_BECATable>, IACA_PROSPECTO_BECARepository
     {
         private const string _TableName = "ACA_PROSPECTO_BECA";
         private const string _ViewName = "V_ACA_PROSPECTO_BECA_CONSULTA";
 
         public ACA_PROSPECTO_BECARepository(IConfiguration config) :
-                base(config.GetConnectionString("admisionConnection") ?? config.GetConnectionString("defaultConnection"),
+                base(config.GetConnectionString("defaultConnection"),
                      config.GetSection("DbProvider:defaultProvider").Value)
         {
         }

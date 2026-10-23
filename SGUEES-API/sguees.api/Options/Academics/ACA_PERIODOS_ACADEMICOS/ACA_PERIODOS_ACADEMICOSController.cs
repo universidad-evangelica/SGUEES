@@ -41,8 +41,8 @@ namespace sguees.Controllers
             return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
         }
 
-        // Qué hace: ciclos con solicitudes de beca, para el filtro de esa pantalla.
-        // Cómo lo hace: lee V_ACA_PROSPECTO_BECA_CICLO en SIS_ADMISION; el permiso es el de esa pantalla.
+        // Qué hace: ciclos del filtro de Solicitud beca.
+        // Cómo lo hace: lee los ciclos de SGUEES; el permiso es el de esa pantalla.
         [HttpGet("GetCICLO_ACA_PROSPECTO_BECA")]
         [Authorize(Policy = "/aca-prospecto-beca|R")]
         public async Task<CResult> GetCICLO_ACA_PROSPECTO_BECA([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)

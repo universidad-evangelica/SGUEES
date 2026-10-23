@@ -16,16 +16,12 @@ namespace sguees.Repositories
     {
         private const string _TableName = "ACA_PERIODOS_ACADEMICOS";
         private const string _ViewCiclo = "V_ACA_PROSPECTO_CICLO";
-        private const string _ViewCicloBeca = "V_ACA_PROSPECTO_BECA_CICLO";
-        private readonly string _admisionConnection;
-        private readonly string _provider;
+        private const string _ViewCicloBeca = "V_ACA_PROSPECTO_CICLO";
 
         public ACA_PERIODOS_ACADEMICOSRepository(IConfiguration config) :
                 base(config.GetConnectionString("defaultConnection"),
                      config.GetSection("DbProvider:defaultProvider").Value)
         {
-            _provider = config.GetSection("DbProvider:defaultProvider").Value;
-            _admisionConnection = config.GetConnectionString("admisionConnection") ?? config.GetConnectionString("defaultConnection");
         }
 
         // Qué hace: ciclos de pregrado para el combo de la consulta de prospectos.
@@ -68,21 +64,30 @@ namespace sguees.Repositories
             return objResultado;
         }
 
-        // Qué hace: ciclos que tienen solicitudes de beca.
-        // Cómo lo hace: lee V_ACA_PROSPECTO_BECA_CICLO en SIS_ADMISION, sin tocar
-        //               el combo de prospectos que sigue en SGUEES.
+        // Qué hace: ciclos del combo de Solicitud beca, con la cantidad de becas de cada uno.
+        // Cómo lo hace: los ciclos salen de V_ACA_PROSPECTO_CICLO en SGUEES. La cantidad se
+        //               reemplaza con las filas de V_ACA_PROSPECTO_BECA_CONSULTA, la misma
+        //               vista de la grilla (borrador o enviada). No cuenta prospectos de nuevo ingreso.
         public async Task<CResult> GetCICLO_ACA_PROSPECTO_BECAAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
-            CData data = new(_admisionConnection, _provider);
 
             try
             {
-                var reader = await data.GetDataReader(_ViewCicloBeca, xWhere, "CLAVE_CICLO DESC");
+                var reader = await objData.GetDataReader(_ViewCicloBeca, xWhere, "CLAVE_CICLO DESC");
                 var response = new List<ACA_PERIODOS_ACADEMICOS_CICLOView>().FromDataReader(reader).ToList();
 
                 reader.Close();
                 reader = null;
+
+                var readerBecas = await objData.GetDataReader("V_ACA_PROSPECTO_BECA_CONSULTA", xWhere, "CORR_PROSPECTO_BECA");
+                var becas = new List<ACA_PROSPECTO_BECAView>().FromDataReader(readerBecas).ToList();
+                readerBecas.Close();
+
+                foreach (var ciclo in response)
+                {
+                    ciclo.CANTIDAD_PROSPECTOS = becas.Count(b => b.ANIO == ciclo.ANIO && b.NUMERO_PERIODO == ciclo.NUMERO_PERIODO);
+                }
 
                 objResultado.Data = response;
                 objResultado.Result = true;
@@ -103,7 +108,7 @@ namespace sguees.Repositories
             }
             finally
             {
-                data.Dispose();
+                objData.objConnection.Close();
             }
 
             return objResultado;
