@@ -191,8 +191,10 @@
 </div>
 
 <!-- Qué hace: listado de flujos. La barra de arriba es la del ribbon; esta grilla no arma otra. -->
+<!-- Qué hace: el Excel se descarga con el título de la pantalla, no como Data. -->
 <app-data-grid-mtto
     [isBrowse]="isBrowse()"
+    [exportFileName]="tituloVentana"
     [models]="models"
     [columns]="columns"
     [summary]="summary"

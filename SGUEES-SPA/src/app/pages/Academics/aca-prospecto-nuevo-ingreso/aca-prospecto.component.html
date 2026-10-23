@@ -1038,8 +1038,10 @@
     </div>
 
     <!-- Listado de todos los ciclos. Buscar, exportar y recargar quedan en la barra. -->
+    <!-- Qué hace: el Excel se descarga como Solicitudes nuevo ingreso, no como Data. -->
     <app-data-grid-mtto
         [isBrowse]="isBrowse()"
+        [exportFileName]="'Solicitudes nuevo ingreso'"
         [models]="models"
         [columns]="columns"
         [summary]="summary"
