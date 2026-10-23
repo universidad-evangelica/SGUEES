@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -13,9 +13,12 @@ import { GenProveedorService } from './gen-proveedor.service';
 @Component({
 	selector: 'app-gen-proveedor',
 	templateUrl: './gen-proveedor.component.html',
+	styleUrls: ['./gen-proveedor.component.scss'],
 })
-export class GenProveedorComponent extends CBaseComponent implements OnInit {
+export class GenProveedorComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild('personaLookup') personaLookup?: DataLookupComponent;
+	@ViewChild('previewPanel') previewPanelRef?: ElementRef<HTMLElement>;
+	@ViewChild('previewBody') previewBodyRef?: ElementRef<HTMLDivElement>;
 
 	protected override etiquetaRegistro = 'el proveedor';
 	protected override requiereEmpresaSesion = true;
@@ -34,6 +37,13 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 		{ dataField: 'NOMBRE_PERSONA', caption: 'Nombre', width: 280 },
 		{ dataField: 'NOMBRE_TIPO_PERSONERIA', caption: 'Personería', width: 110 },
 	];
+
+	/** Panel lateral: datos de persona (solo consulta desde el grid). */
+	previewPanelVisible = false;
+	previewPanelAbierto = false;
+	previewProveedor: GenProveedor | null = null;
+	private previewPanelCloseTimer: ReturnType<typeof setTimeout> | null = null;
+	private previewWheelHandler: ((e: WheelEvent) => void) | null = null;
 	// #endregion
 
 	constructor(
@@ -55,11 +65,19 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 		this.consultar();
 	}
 
+	ngOnDestroy(): void {
+		this.clearPreviewPanelCloseTimer();
+		this.unbindPreviewWheel();
+	}
+
 	inicializaOpciones() {}
 	// #endregion
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
+		if (xEstado !== UpdateType.Browse) {
+			this.cerrarPreviewPanel(false);
+		}
 	}
 
 	//#region <Manejo de Combos>
@@ -192,14 +210,123 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
+		this.cerrarPreviewPanel(false);
 		this.getCORR_PERSONA(0);
 		super.nuevo();
 	}
 
 	override editarClick(e: any): void {
 		const row = e?.row?.data ?? e?.data ?? this.model;
+		this.cerrarPreviewPanel(false);
 		this.getCORR_PERSONA(row?.CORR_PERSONA ?? 0);
 		super.editarClick(e);
+	}
+
+	/** Clic en fila del browse → panel lateral con datos de persona (solo lectura). */
+	onGridRowClick(e: any): void {
+		if (!this.isBrowse() || e?.rowType !== 'data' || !e?.data) {
+			return;
+		}
+
+		const target = e?.event?.target as HTMLElement | null;
+		if (
+			target?.closest(
+				'.dx-command-edit, .dx-link, .dx-button, button, a, .dx-checkbox, .dx-dropdowneditor-button',
+			)
+		) {
+			return;
+		}
+
+		this.abrirPreviewPanel(e.data as GenProveedor);
+	}
+
+	abrirPreviewPanel(row: GenProveedor): void {
+		const corr = Number(row?.CORR_PROVEEDOR ?? 0);
+		if (corr <= 0) {
+			return;
+		}
+
+		this.clearPreviewPanelCloseTimer();
+		this.previewProveedor = { ...row };
+		this.previewPanelVisible = true;
+		requestAnimationFrame(() => {
+			this.previewPanelAbierto = true;
+			// *ngIf ya pintó el aside; el listener debe ir después del render.
+			setTimeout(() => this.bindPreviewWheel(), 0);
+		});
+	}
+
+	cerrarPreviewPanel(animar = true): void {
+		this.clearPreviewPanelCloseTimer();
+		this.unbindPreviewWheel();
+
+		if (!animar || !this.previewPanelVisible) {
+			this.previewPanelAbierto = false;
+			this.previewPanelVisible = false;
+			this.previewProveedor = null;
+			return;
+		}
+
+		this.previewPanelAbierto = false;
+		this.previewPanelCloseTimer = setTimeout(() => {
+			this.previewPanelVisible = false;
+			this.previewProveedor = null;
+			this.previewPanelCloseTimer = null;
+		}, 280);
+	}
+
+	/**
+	 * Contiene el scroll del mouse en el panel: evita que el wheel mueva el layout/grid.
+	 * Requiere listener no-pasivo para poder preventDefault.
+	 */
+	private bindPreviewWheel(): void {
+		this.unbindPreviewWheel();
+		const panel = this.previewPanelRef?.nativeElement;
+		if (!panel) {
+			return;
+		}
+
+		this.previewWheelHandler = (e: WheelEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const body = this.previewBodyRef?.nativeElement;
+			if (body) {
+				body.scrollTop += e.deltaY;
+			}
+		};
+		panel.addEventListener('wheel', this.previewWheelHandler, { passive: false });
+	}
+
+	private unbindPreviewWheel(): void {
+		const panel = this.previewPanelRef?.nativeElement;
+		if (panel && this.previewWheelHandler) {
+			panel.removeEventListener('wheel', this.previewWheelHandler);
+		}
+		this.previewWheelHandler = null;
+	}
+
+	abrirDetalleDesdePreview(): void {
+		if (!this.previewProveedor) {
+			return;
+		}
+		const data = this.previewProveedor;
+		this.cerrarPreviewPanel(false);
+		this.rowDblClick({ data, row: { data } });
+	}
+
+	textoLectura(valor: unknown): string {
+		if (valor === null || valor === undefined) {
+			return '—';
+		}
+		const text = String(valor).trim();
+		return text || '—';
+	}
+
+	private clearPreviewPanelCloseTimer(): void {
+		if (this.previewPanelCloseTimer) {
+			clearTimeout(this.previewPanelCloseTimer);
+			this.previewPanelCloseTimer = null;
+		}
 	}
 
 	guardar(): void {

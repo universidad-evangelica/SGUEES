@@ -23,8 +23,12 @@ namespace sguees.Models
 		public int CORR_ACTIVIDAD_ECONOMICA { get; set; }
 		public string DIRECCION_PROVEEDOR { get; set; }
 		public int CORR_PAIS { get; set; }
+		public string NOMBRE_PAIS { get; set; }
 		public int CORR_DEPTO { get; set; }
+		public string NOMBRE_DEPTO { get; set; }
 		public int CORR_MUNICIPIO { get; set; }
+		public string NOMBRE_MUNICIPIO { get; set; }
+		public string NOMBRE_ACTIVIDAD_ECONOMICA { get; set; }
 		public string NOMBRE_CONTACTO { get; set; }
 		public string TELEFONO_FIJO { get; set; }
 		public string TELEFONO_MOVIL { get; set; }

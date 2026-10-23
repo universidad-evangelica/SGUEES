@@ -1,4 +1,4 @@
-<div class="sguees-mtto-view">
+<div class="sguees-mtto-view" [class.sguees-mtto-view--browse]="isBrowse()">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[isBrowse]="isBrowse()"
@@ -101,12 +101,173 @@
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
 	[exportFileName]="'Proveedores'"
+	(rowClick)="onGridRowClick($event)"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
 	(editClick)="editarClick($event)"
 >
 </app-data-grid-mtto>
+
+<aside
+	#previewPanel
+	*ngIf="previewPanelVisible"
+	class="proveedor-preview-panel"
+	[class.proveedor-preview-panel--open]="previewPanelAbierto"
+	[attr.aria-hidden]="!previewPanelAbierto"
+	role="complementary"
+	aria-label="Datos de la persona del proveedor"
+>
+	<header class="proveedor-preview-panel__header">
+		<div class="proveedor-preview-panel__heading">
+			<h2 class="proveedor-preview-panel__name" [title]="textoLectura(previewProveedor?.NOMBRE_COMERCIAL || previewProveedor?.NOMBRE_PROVEEDOR)">
+				{{ textoLectura(previewProveedor?.NOMBRE_COMERCIAL || previewProveedor?.NOMBRE_PROVEEDOR) }}
+			</h2>
+			<div class="proveedor-preview-panel__meta">
+				<span class="proveedor-preview-panel__code">{{ textoLectura(previewProveedor?.CODIGO_PROVEEDOR) }}</span>
+				<span
+					class="proveedor-preview-panel__status"
+					[class.proveedor-preview-panel__status--off]="!previewProveedor?.ACTIVO_PROVEEDOR"
+				>
+					<span class="proveedor-preview-panel__status-dot" aria-hidden="true"></span>
+					{{ previewProveedor?.ACTIVO_PROVEEDOR ? 'Activo' : 'Inactivo' }}
+				</span>
+			</div>
+		</div>
+		<div class="proveedor-preview-panel__tools">
+			<button
+				type="button"
+				class="proveedor-preview-panel__icon-btn"
+				(click)="abrirDetalleDesdePreview()"
+				title="Abrir detalle"
+				aria-label="Abrir detalle del proveedor"
+			>
+				<i class="dx-icon dx-icon-expandform"></i>
+			</button>
+			<button
+				type="button"
+				class="proveedor-preview-panel__icon-btn"
+				(click)="cerrarPreviewPanel(true)"
+				title="Cerrar"
+				aria-label="Cerrar panel"
+			>
+				<i class="dx-icon dx-icon-close"></i>
+			</button>
+		</div>
+	</header>
+
+	<div #previewBody class="proveedor-preview-panel__body">
+		<p class="proveedor-preview-panel__empty" *ngIf="!previewProveedor?.CORR_PERSONA">
+			Este proveedor aún no tiene persona vinculada.
+		</p>
+
+		<ng-container *ngIf="previewProveedor?.CORR_PERSONA">
+			<section class="proveedor-preview-panel__section" aria-label="Persona">
+				<h3 class="proveedor-preview-panel__section-title">Persona</h3>
+				<dl class="proveedor-preview-panel__fields">
+					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
+						<dt>Nombre persona</dt>
+						<dd>{{ textoLectura(previewProveedor?.NOMBRE_PROVEEDOR) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>Personería</dt>
+						<dd>{{ textoLectura(previewProveedor?.NOMBRE_TIPO_PERSONERIA) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>Corr. persona</dt>
+						<dd>{{ previewProveedor?.CORR_PERSONA }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>Primer nombre</dt>
+						<dd>{{ textoLectura(previewProveedor?.PRIMER_NOMBRE) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>Segundo nombre</dt>
+						<dd>{{ textoLectura(previewProveedor?.SEGUNDO_NOMBRE) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>Primer apellido</dt>
+						<dd>{{ textoLectura(previewProveedor?.PRIMER_APELLIDO) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>Segundo apellido</dt>
+						<dd>{{ textoLectura(previewProveedor?.SEGUNDO_APELLIDO) }}</dd>
+					</div>
+				</dl>
+			</section>
+
+			<section class="proveedor-preview-panel__section" aria-label="Documentos">
+				<h3 class="proveedor-preview-panel__section-title">Documentos</h3>
+				<dl class="proveedor-preview-panel__fields">
+					<div class="proveedor-preview-panel__field">
+						<dt>DUI / DIP</dt>
+						<dd>{{ textoLectura(previewProveedor?.NUMERO_DIP) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>NIT</dt>
+						<dd>{{ textoLectura(previewProveedor?.NUMERO_NIT) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>NRC</dt>
+						<dd>{{ textoLectura(previewProveedor?.NUMERO_NRC) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
+						<dt>Actividad económica</dt>
+						<dd>{{ textoLectura(previewProveedor?.NOMBRE_ACTIVIDAD_ECONOMICA) }}</dd>
+					</div>
+				</dl>
+			</section>
+
+			<section class="proveedor-preview-panel__section" aria-label="Dirección">
+				<h3 class="proveedor-preview-panel__section-title">Dirección</h3>
+				<dl class="proveedor-preview-panel__fields">
+					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
+						<dt>Dirección</dt>
+						<dd>{{ textoLectura(previewProveedor?.DIRECCION_PROVEEDOR) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>País</dt>
+						<dd>{{ textoLectura(previewProveedor?.NOMBRE_PAIS) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>Departamento</dt>
+						<dd>{{ textoLectura(previewProveedor?.NOMBRE_DEPTO) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
+						<dt>Municipio</dt>
+						<dd>{{ textoLectura(previewProveedor?.NOMBRE_MUNICIPIO) }}</dd>
+					</div>
+				</dl>
+			</section>
+
+			<section class="proveedor-preview-panel__section" aria-label="Contacto">
+				<h3 class="proveedor-preview-panel__section-title">Contacto</h3>
+				<dl class="proveedor-preview-panel__fields">
+					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
+						<dt>Nombre contacto</dt>
+						<dd>{{ textoLectura(previewProveedor?.NOMBRE_CONTACTO) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>Teléfono fijo</dt>
+						<dd>{{ textoLectura(previewProveedor?.TELEFONO_FIJO) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field">
+						<dt>Teléfono móvil</dt>
+						<dd>{{ textoLectura(previewProveedor?.TELEFONO_MOVIL) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
+						<dt>Correo 1</dt>
+						<dd>{{ textoLectura(previewProveedor?.CORREO_ELECTRONICO_1) }}</dd>
+					</div>
+					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
+						<dt>Correo 2</dt>
+						<dd>{{ textoLectura(previewProveedor?.CORREO_ELECTRONICO_2) }}</dd>
+					</div>
+				</dl>
+			</section>
+		</ng-container>
+	</div>
+</aside>
 
 </div>
 
