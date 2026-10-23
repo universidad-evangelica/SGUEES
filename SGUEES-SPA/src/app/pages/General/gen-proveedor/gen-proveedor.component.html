@@ -10,7 +10,7 @@
 	[showEstadoToolbar]="true"
 	[campoEstado]="mttoCampoEstado"
 	[puedeCambiarEstado]="permiteEdit"
-	[focusedRow]="isBrowse() ? model : null"
+	[focusedRow]="estadoToolbarFocusedRow"
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"

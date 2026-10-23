@@ -46,6 +46,15 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	private previewWheelHandler: ((e: WheelEvent) => void) | null = null;
 	// #endregion
 
+	/** Activar/Desactivar solo si hay fila del grid con PK válida (no el model vacío del form). */
+	get estadoToolbarFocusedRow(): Record<string, unknown> | null {
+		if (!this.isBrowse()) {
+			return null;
+		}
+		const row = this.obtenerFilaSeleccionada();
+		return row ? (row as Record<string, unknown>) : null;
+	}
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
