@@ -13,8 +13,6 @@ namespace SGUEES.Services
 {
     public class SC_REQUISICION_PERSONALService : ISC_REQUISICION_PERSONALService
     {
-        private const string CodigoOpcionMenuRequisicion = "SC_REQUISICION_PERSONAL";
-
         private readonly ISC_REQUISICION_PERSONALRepository _repo;
         private readonly IGEN_NOTIFICACIONService _notificacion;
 
@@ -242,15 +240,6 @@ namespace SGUEES.Services
                 ? $"La requisición No.{corrReq} cambió a estado {nombreEstado}."
                 : dto.DESCRIPCION_ESTADO.Trim();
 
-            var urlDestino = await _notificacion.ResolverUrlDestinoAsync(
-                CodigoOpcionMenuRequisicion,
-                corrReq);
-            if (string.IsNullOrWhiteSpace(urlDestino) && corrReq > 0)
-            {
-                // Fallback si SEG_OPCION_SISTEMA no tiene URL_OPCION / CODIGO_OPCION.
-                urlDestino = $"/sc-requisicion-personal?corr={corrReq}";
-            }
-
             var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var creador = dto.LOGIN_CREADOR?.Trim();
 
@@ -288,8 +277,15 @@ namespace SGUEES.Services
                 return;
             }
 
+            // Acción de flujo → bandeja TH/Actores según unidad del receptor (+ corr/tipo para resaltar).
             foreach (var loginDestino in destinatarios)
             {
+                var urlDestino = await _notificacion.ResolverUrlBandejaTareaAsync(
+                    data.CORR_EMPRESA,
+                    loginDestino,
+                    corrReq,
+                    "REQUISICION");
+
                 await _notificacion.NotificarUsuarioAsync(
                     corrEmpresa: data.CORR_EMPRESA,
                     loginDestino: loginDestino,

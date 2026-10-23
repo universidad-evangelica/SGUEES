@@ -11,6 +11,9 @@ namespace sguees.Services
 {
 	public class GEN_NOTIFICACIONService : IGEN_NOTIFICACIONService
 	{
+		public const string CodigoOpcionBandejaTh = "SC_BANDEJA_TH";
+		public const string CodigoOpcionBandejaActores = "SC_BANDEJA_ACTORES";
+
 		private readonly IGEN_NOTIFICACIONRepository _repo;
 		private readonly INotificationSignalRService _signalR;
 		private readonly ISEG_OPCION_SISTEMAService _opcionSistema;
@@ -123,7 +126,18 @@ namespace sguees.Services
 
 		public async Task<string> ResolverUrlDestinoAsync(string codigoOpcion, int corr)
 		{
-			if (corr <= 0 || string.IsNullOrWhiteSpace(codigoOpcion))
+			if (corr <= 0)
+			{
+				return null;
+			}
+
+			var path = await ResolverUrlOpcionAsync(codigoOpcion);
+			return AppendCorrQuery(path, corr);
+		}
+
+		public async Task<string> ResolverUrlOpcionAsync(string codigoOpcion)
+		{
+			if (string.IsNullOrWhiteSpace(codigoOpcion))
 			{
 				return null;
 			}
@@ -143,7 +157,7 @@ namespace sguees.Services
 					return null;
 				}
 
-				return AppendCorrQuery(opcion.URL_OPCION, corr);
+				return NormalizePath(opcion.URL_OPCION);
 			}
 			catch (Exception ex)
 			{
@@ -154,12 +168,67 @@ namespace sguees.Services
 			}
 		}
 
-		/// <summary>
-		/// Convención deep link TH: {URL_OPCION}?corr={corr}.
-		/// </summary>
+		public async Task<string> ResolverUrlBandejaTareaAsync(
+			int corrEmpresa,
+			string loginDestino,
+			int? corrDocumento = null,
+			string tipoDocumento = null)
+		{
+			var esTh = await EsUsuarioThAsync(corrEmpresa, loginDestino);
+			var codigoOpcion = esTh ? CodigoOpcionBandejaTh : CodigoOpcionBandejaActores;
+
+			var path = await ResolverUrlOpcionAsync(codigoOpcion);
+			if (string.IsNullOrWhiteSpace(path))
+			{
+				path = esTh ? "/sc-bandeja-th" : "/sc-bandeja-actores";
+			}
+
+			return AppendBandejaQuery(path, corrDocumento, tipoDocumento);
+		}
+
+		public Task<bool> EsUsuarioThAsync(int corrEmpresa, string loginSistema)
+		{
+			return _repo.EsUsuarioThAsync(corrEmpresa, loginSistema);
+		}
+
+		/// <summary>Deep link documento: {URL_OPCION}?corr={corr}.</summary>
 		private static string AppendCorrQuery(string urlOpcion, int corr)
 		{
-			if (corr <= 0 || string.IsNullOrWhiteSpace(urlOpcion))
+			var path = NormalizePath(urlOpcion);
+			if (corr <= 0 || string.IsNullOrWhiteSpace(path))
+			{
+				return null;
+			}
+
+			return $"{path}?corr={corr}";
+		}
+
+		/// <summary>Deep link bandeja: {URL}?corr=&amp;tipo= (corr/tipo opcionales).</summary>
+		private static string AppendBandejaQuery(string urlOpcion, int? corrDocumento, string tipoDocumento)
+		{
+			var path = NormalizePath(urlOpcion);
+			if (string.IsNullOrWhiteSpace(path))
+			{
+				return null;
+			}
+
+			var parts = new List<string>();
+			if (corrDocumento.HasValue && corrDocumento.Value > 0)
+			{
+				parts.Add($"corr={corrDocumento.Value}");
+			}
+
+			if (!string.IsNullOrWhiteSpace(tipoDocumento))
+			{
+				parts.Add($"tipo={Uri.EscapeDataString(tipoDocumento.Trim())}");
+			}
+
+			return parts.Count == 0 ? path : $"{path}?{string.Join("&", parts)}";
+		}
+
+		private static string NormalizePath(string urlOpcion)
+		{
+			if (string.IsNullOrWhiteSpace(urlOpcion))
 			{
 				return null;
 			}
@@ -176,7 +245,7 @@ namespace sguees.Services
 				path = path.Substring(0, queryAt);
 			}
 
-			return $"{path}?corr={corr}";
+			return path;
 		}
 
 		private static CResult ValidarCreacion(GEN_NOTIFICACIONCreateParam data)

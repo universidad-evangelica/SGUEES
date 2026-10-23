@@ -684,14 +684,6 @@ namespace SGUEES.Services
 				? $"El movimiento No.{corrMov} cambió a estado {nombreEstado}."
 				: dto.DESCRIPCION_ESTADO.Trim();
 
-			var urlDestino = await _notificacion.ResolverUrlDestinoAsync(
-				CodigoOpcionMenuMovimiento,
-				corrMov);
-			if (string.IsNullOrWhiteSpace(urlDestino) && corrMov > 0)
-			{
-				urlDestino = $"/sc-movimiento-personal?corr={corrMov}";
-			}
-
 			var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			var creador = dto.LOGIN_CREADOR?.Trim();
 
@@ -724,8 +716,15 @@ namespace SGUEES.Services
 				return;
 			}
 
+			// Acción de flujo → bandeja según unidad del receptor.
 			foreach (var loginDestino in destinatarios)
 			{
+				var urlDestino = await _notificacion.ResolverUrlBandejaTareaAsync(
+					data.CORR_EMPRESA,
+					loginDestino,
+					corrMov,
+					"MOVIMIENTO");
+
 				await _notificacion.NotificarUsuarioAsync(
 					corrEmpresa: data.CORR_EMPRESA,
 					loginDestino: loginDestino,
