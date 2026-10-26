@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, Observable } from 'rxjs';
 import { finalize, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -26,6 +26,7 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
     private areas: CatalogoCarrera[] = [];
     private facultades: CatalogoCarrera[] = [];
     private grados: CatalogoCarrera[] = [];
+    private readonly contextoNavegacion: { carrera?: number; nueva?: boolean; facultad?: number; seccion?: string };
     private readonly catalogosVisibles = new Map<CatalogoCarrera[], { current: number | null; rows: CatalogoCarrera[] }>();
     tabSeleccionada = 0;
     actualizarDecano():void {this.model.NOMBRE_DECANO=this.facultades.find(f=>f.Key===this.model?.CORR_FACULTAD)?.NOMBRE_DECANO || 'Sin decano asignado';}
@@ -58,8 +59,9 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
 
     //#region <Inicializando Opciones>
     constructor(public override appInfoService: AppInfoService, public override router: ActivatedRoute,
-        private service: AcaCarrerasService, private sedesService: AcaCarrerasSedesService) {
+        private service: AcaCarrerasService, private sedesService: AcaCarrerasSedesService, navRouter: Router) {
         super(appInfoService, router);
+        this.contextoNavegacion = navRouter.getCurrentNavigation()?.extras.state ?? {};
         this.columns = service.getColumns();
         this.summary = service.getSummary();
         this.items = service.getItems();
@@ -115,19 +117,19 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
         };
     }
     consultar(): void {
-        const carrera = Number(this.router.snapshot.queryParamMap.get('carrera'));
+        const { carrera, nueva, facultad, seccion } = this.contextoNavegacion;
         this.consultarMtto({ load: () => this.service.getAll(), onData: (data: AcaCarrera[]) => {
-            if(!this.enlaceAtendido && this.router.snapshot.queryParamMap.get('nueva')==='1') {
+            if(!this.enlaceAtendido && nueva === true) {
                 this.enlaceAtendido=true;
-                if(this.permiteAdd){this.nuevo();this.model.CORR_FACULTAD=Number(this.router.snapshot.queryParamMap.get('facultad'))||null;this.actualizarDecano();}
+                if(this.permiteAdd){this.nuevo();this.model.CORR_FACULTAD=Number.isSafeInteger(facultad) && facultad > 0 ? facultad : null;this.actualizarDecano();}
                 return;
             }
-            if (!this.enlaceAtendido && Number.isInteger(carrera) && carrera > 0) {
+            if (!this.enlaceAtendido && Number.isSafeInteger(carrera) && carrera > 0) {
                 this.enlaceAtendido = true;
                 const row = data.find(c => c.CORR_CARRERA === carrera);
                 if (!row) { this.notifyFx('La carrera solicitada no está disponible en su empresa.', NotifyType.Warning); return; }
                 this.rowDblClick({ data: row });
-                this.tabSeleccionada = this.router.snapshot.queryParamMap.get('seccion') === 'planes' ? 2 : 0;
+                this.tabSeleccionada = seccion === 'planes' ? 2 : 0;
             }
         } });
     }

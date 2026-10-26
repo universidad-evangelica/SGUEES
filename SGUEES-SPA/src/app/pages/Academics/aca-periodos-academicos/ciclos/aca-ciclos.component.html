@@ -157,7 +157,7 @@
             </div>
         </details>
         <div class="corregir-plan">
-            <a [routerLink]="['/aca-carreras']" [queryParams]="{carrera: carreraId, seccion: 'planes'}" target="_blank" rel="noopener">Revisar planes ↗</a>
+            <a [routerLink]="['/aca-carreras']" [state]="{carrera: carreraId, seccion: 'planes'}">Revisar planes</a>
             <button *ngIf="row.DIAGNOSTICO === 'Sin plan y modalidad elegibles al inicio académico'" type="button" [disabled]="loadingVisible" (click)="irPaso(0)">Revisar calendario</button>
         </div>
     </div>

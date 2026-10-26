@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, forkJoin } from 'rxjs';
 import { finalize, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -21,6 +21,7 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
     tab = 0; oferta: any[] = []; ofertaConsultada = false; fechaConsulta = this.hoy();
     private inicial: any = {}; private secuencia = 0;
     private enlaceAtendido=false;
+    private readonly cicloInicial?: number;
     readonly areaColumns: any[] = [{ dataField: 'NOMBRE_AREA', caption: 'Área académica' },
         { dataField: 'CICLOS_DEFINIDOS', caption: 'Ciclos definidos', width: 150 }, { dataField: 'CICLOS_HABILITADOS', caption: 'Habilitados', width: 130 },
         { caption: 'Acción', cellTemplate: 'abrirArea', width: 150 }];
@@ -50,7 +51,11 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
             caption: ['Inicio académico', 'Fin académico', 'Apertura inscripción', 'Cierre inscripción'][i], dataType: 'date', format: 'dd/MM/yyyy', width: 165 }))];
     readonly ofertaColumns: any[] = [{ dataField: 'NOMBRE_CARRERA', caption: 'Carrera', width: 330 }, { dataField: 'NOMBRE_MODALIDAD', caption: 'Modalidad', width: 170 },
         { dataField: 'CODIGO_PLAN', caption: 'Plan', width: 220 }, { dataField: 'CORR_PERIODO_ACADEMICO', caption: 'Período aplicado', width: 150 }];
-    constructor(public override appInfoService: AppInfoService, public override router: ActivatedRoute, private service: AcaCiclosService) { super(appInfoService, router); }
+    constructor(public override appInfoService: AppInfoService, public override router: ActivatedRoute, private service: AcaCiclosService, navRouter: Router) {
+        super(appInfoService, router);
+        const id = navRouter.getCurrentNavigation()?.extras.state?.['ciclo'];
+        this.cicloInicial = Number.isSafeInteger(id) && id > 0 ? id : undefined;
+    }
     private nombrePeriodo(row: any, tipo: string, sinAsignacion: string): string {
         const nombre = row['NOMBRE_' + tipo]?.trim();
         return nombre || (row['CORR_' + tipo] == null ? sinAsignacion : `Referencia sin nombre (${row['CORR_' + tipo]})`);
@@ -141,7 +146,7 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         forkJoin([this.service.areas(), this.service.catalogos()]).pipe(take(1), finalize(() => this.loadingVisible = false)).subscribe({
             next: ([areas, cat]) => { if (!areas.Result || !cat.Result) { this.notifyApiResponse(!areas.Result ? areas : cat); return; }
                 this.areas = areas.Data; this.catalogos = cat.Data; this.sedesDisponibles = this.catalogos.filter(x => x.TIPO === 'SEDE' && x.ACTIVO);
-                const id=Number(this.router.snapshot.queryParamMap.get('ciclo'));
+                const id=this.cicloInicial;
                 if(!this.enlaceAtendido&&Number.isInteger(id)&&id>0){this.enlaceAtendido=true;setTimeout(()=>this.abrirCiclo({CORR_CICLO_ACADEMICO:id}));}
             }, error: e => this.notifyApiError(e),
         });

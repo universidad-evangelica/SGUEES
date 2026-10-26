@@ -11,7 +11,7 @@ namespace sguees.Repositories
 {
     // Qué hace: lectura del encabezado de la solicitud de beca.
     // Cómo lo hace: V_ACA_PROSPECTO_BECA_CONSULTA. Insert, update y delete aún no escriben.
-    public class ACA_PROSPECTO_BECARepository : BaseRepository<ACA_PROSPECTO_BECATable>, IACA_PROSPECTO_BECARepository
+    public partial class ACA_PROSPECTO_BECARepository : BaseRepository<ACA_PROSPECTO_BECATable>, IACA_PROSPECTO_BECARepository
     {
         private const string _TableName = "ACA_PROSPECTO_BECA";
         private const string _ViewName = "V_ACA_PROSPECTO_BECA_CONSULTA";
