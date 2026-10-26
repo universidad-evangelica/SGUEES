@@ -34,7 +34,8 @@ GO
 -- Cómo lo hace (espejo del descriptor PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA):
 --   1) Valida prospecto, login (SEG_USUARIO activo), comentario y unidad.
 --   2) Resuelve tipo 104 / flujo defecto / paso inicial (ORDEN 1 = 18).
---   3) Si ya hay instancia activa del tipo 104 → no vuelve a enviar.
+--   3) Si ya hay instancia activa del tipo 104 y OPERACION = 1, solo pone
+--      ACA_PROSPECTO.ESTADO = 'C' y termina. No crea otra instancia.
 --   4) Llama a EjecutarFlujoProceso con acción 1 (FASE 2A):
 --        crea SEG_FLUJO_INSTANCIA + bitácora y, según la config actual,
 --        AVANZA al paso 19 (Aprobación del analista) con estado 38 Ingresado.
@@ -65,7 +66,7 @@ GO
 --   -7 = no hay acción 1 en el paso inicial
 --   -8 = falta @CORR_UNIDAD_DOCUMENTO
 --  -10 = falló EjecutarFlujoProceso (detalle en @MENSAJE_ERROR)
---  -12 = la solicitud 104 ya tiene instancia activa (ya enviada)
+--  -12 = hay instancia activa y la operación no es el reenvío (OPERACION = 1)
 --  -13 = el login no es el ejecutor del paso
 --  -14 = el paso no tiene la acción pedida
 --  -15 = no hay instancia para la operación
@@ -366,6 +367,21 @@ BEGIN
 			SET @CORR_ACCION_USADA = @ID_ACCION;
 			SET @MODO = CASE WHEN @OPERACION = 4 THEN 'RECHAZAR' ELSE 'APROBAR' END;
 		END
+	END
+	ELSE IF @ID_INSTANCIA IS NOT NULL AND @OPERACION = 1
+	BEGIN
+		-- Qué hace: el ciclo dejó la postulación en P y el flujo 104 ya existe.
+		-- Cómo lo hace: solo vuelve a marcar ACA_PROSPECTO.ESTADO = 'C'. No mueve la instancia.
+		UPDATE dbo.ACA_PROSPECTO
+		SET ESTADO = 'C',
+			USUARIO_ACTU = LEFT(@LOGIN_SISTEMA, 50),
+			ESTACION_ACTU = LEFT(@V_ESTACION, 50),
+			FECHA_ACTU = GETDATE()
+		WHERE CORR_PROSPECTO = @CORR_PROSPECTO;
+
+		SET @MODO = 'REENVIAR';
+		SET @MENSAJE_ERROR = NULL;
+		RETURN 0;
 	END
 	ELSE IF @ID_INSTANCIA IS NOT NULL
 	BEGIN

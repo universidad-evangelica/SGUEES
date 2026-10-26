@@ -1012,8 +1012,8 @@
         itemTitleTemplate="tituloTabLista"
         (onSelectionChanged)="onTabListaChanged($event)"
     >
-        <dxi-item title="Solicitudes pendientes" icon="folder"></dxi-item>
-        <dxi-item title="Solicitudes borrador" icon="edit"></dxi-item>
+        <dxi-item title="Solicitudes recibidas" icon="folder"></dxi-item>
+        <dxi-item title="Solicitudes pendientes de recibir" icon="edit"></dxi-item>
         <!-- Qué hace: mismo ícono y texto del tab; el total va en un círculo a la derecha. -->
         <div *dxTemplate="let data of 'tituloTabLista'" class="aca-prospecto-tab-lista">
             <i class="dx-icon" [ngClass]="'dx-icon-' + data.icon"></i>
