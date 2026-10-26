@@ -21,7 +21,8 @@ GO
 -- Importante:
 --   Este procedimiento NO guarda datos personales ni archivos.
 --   Eso ya lo hizo el portal. Aquí solo mueve el flujo 104, sincroniza
---   ACA_PROSPECTO_ESTADO y bloquea el portal con ACA_PROSPECTO.ESTADO = 'C'.
+--   ACA_PROSPECTO_ESTADO y deja ACA_PROSPECTO.ESTADO en 'C'.
+--   OPERACION = 5 (reaperturar) deja ese campo en 'P' al final. El flujo no cambia.
 --
 -- Requisitos previos (script Scripts/ACA_PROSPECTO_NUEVO_INGRESO_FLUJO_PREPARAR.sql):
 --   1) CODIGO_OPCION por tipo (FK a SEG_OPCION_SISTEMA / menú ya existente):
@@ -497,11 +498,12 @@ BEGIN
 	END
 
 	-- =========================================================================
-	-- PASO 6 — Lock del portal (ACA_PROSPECTO.ESTADO = 'C')
-	-- Qué hace: el front de admisiones usa ESTADO='C' como flagCompleted.
+	-- PASO 6 — Estado del portal (ACA_PROSPECTO.ESTADO)
+	-- Qué hace: enviar, aprobar y rechazar dejan 'C'. Reaperturar deja 'P'.
+	-- Cómo lo hace: el flujo ya terminó arriba. Este UPDATE solo cambia la letra.
 	-- =========================================================================
 	UPDATE dbo.ACA_PROSPECTO
-	SET ESTADO = 'C',
+	SET ESTADO = CASE WHEN @OPERACION = 5 THEN 'P' ELSE 'C' END,
 		USUARIO_ACTU = LEFT(@LOGIN_SISTEMA, 50),
 		ESTACION_ACTU = LEFT(@V_ESTACION, 50),
 		FECHA_ACTU = GETDATE()
