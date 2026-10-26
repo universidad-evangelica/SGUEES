@@ -11,7 +11,6 @@ namespace SGUEES.Services
 {
 	public class SC_REQUISICION_CANDIDATOService : ISC_REQUISICION_CANDIDATOService
 	{
-		private const string CodigoOpcionBandejaTh = "SC_BANDEJA_TH";
 		private const string CodigoOpcionMovimiento = "SC_MOVIMIENTO_PERSONAL";
 
 		private readonly ISC_REQUISICION_CANDIDATORepository _repo;
@@ -91,26 +90,6 @@ namespace SGUEES.Services
 				mensaje += $" Observación: {dto.OBSERVACION_DECISION.Trim()}";
 			}
 
-			string urlDestino = null;
-			if (estado == "APLICA" && dto.CORR_MOVIMIENTO_PERSONAL > 0)
-			{
-				urlDestino = await _notificacion.ResolverUrlDestinoAsync(
-					CodigoOpcionMovimiento,
-					dto.CORR_MOVIMIENTO_PERSONAL);
-				if (string.IsNullOrWhiteSpace(urlDestino))
-				{
-					urlDestino = $"/sc-movimiento-personal?corr={dto.CORR_MOVIMIENTO_PERSONAL}";
-				}
-			}
-			else
-			{
-				urlDestino = await _notificacion.ResolverUrlDestinoAsync(CodigoOpcionBandejaTh, corrExp);
-				if (string.IsNullOrWhiteSpace(urlDestino))
-				{
-					urlDestino = "/sc-bandeja-th";
-				}
-			}
-
 			var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			foreach (var login in dto.LOGINS_DESTINO ?? Enumerable.Empty<string>())
 			{
@@ -128,6 +107,28 @@ namespace SGUEES.Services
 
 			foreach (var loginDestino in destinatarios)
 			{
+				string urlDestino;
+				if (estado == "APLICA" && dto.CORR_MOVIMIENTO_PERSONAL > 0)
+				{
+					// Seguimiento al movimiento generado (documento + corr).
+					urlDestino = await _notificacion.ResolverUrlDestinoAsync(
+						CodigoOpcionMovimiento,
+						dto.CORR_MOVIMIENTO_PERSONAL);
+					if (string.IsNullOrWhiteSpace(urlDestino))
+					{
+						urlDestino = $"/sc-movimiento-personal?corr={dto.CORR_MOVIMIENTO_PERSONAL}";
+					}
+				}
+				else
+				{
+					// Tarea → bandeja según unidad del receptor.
+					urlDestino = await _notificacion.ResolverUrlBandejaTareaAsync(
+						data.CORR_EMPRESA,
+						loginDestino,
+						corrExp,
+						"EXPEDIENTE");
+				}
+
 				await _notificacion.NotificarUsuarioAsync(
 					corrEmpresa: data.CORR_EMPRESA,
 					loginDestino: loginDestino,

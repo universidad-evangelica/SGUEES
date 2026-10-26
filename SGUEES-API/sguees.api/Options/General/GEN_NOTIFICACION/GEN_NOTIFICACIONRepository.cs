@@ -300,6 +300,66 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 			return objResultado;
 		}
 
+		public async Task<bool> EsUsuarioThAsync(int corrEmpresa, string loginSistema)
+		{
+			if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(loginSistema))
+			{
+				return false;
+			}
+
+			// Cadena: LOGIN → persona → empleado → puesto vigente → organigrama.
+			// TH = unidad con CODIGO 1010101 (Depto. Talento Humano) o hijas (CORR_UNIDAD_PADRE = TH).
+			const string sql = @"
+SELECT CAST(CASE WHEN EXISTS (
+	SELECT 1
+	FROM dbo.GEN_PERSONA_USUARIO AS PU
+	INNER JOIN dbo.GEN_EMPLEADO AS E
+		ON E.CORR_PERSONA = PU.CORR_PERSONA
+	   AND E.CORR_EMPRESA = @CORR_EMPRESA
+	CROSS APPLY (
+		SELECT TOP (1) EP.CORR_UNIDAD
+		FROM dbo.GEN_EMPLEADO_PUESTO AS EP
+		WHERE EP.CORR_EMPRESA = E.CORR_EMPRESA
+		  AND EP.CORR_EMPLEADO = E.CORR_EMPLEADO
+		ORDER BY EP.FECHA_INGRESO DESC, EP.CORR_UNIDAD DESC
+	) AS PUESTO
+	INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+		ON U.CORR_EMPRESA = @CORR_EMPRESA
+	   AND U.CORR_UNIDAD = PUESTO.CORR_UNIDAD
+	   AND U.ACTIVO = 1
+	INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS TH
+		ON TH.CORR_EMPRESA = @CORR_EMPRESA
+	   AND TH.ACTIVO = 1
+	   AND (
+			TH.CODIGO_UNIDAD = N'1010101'
+			OR TH.NOMBRE_UNIDAD LIKE N'%Departamento de Talento Humano%'
+	   )
+	WHERE PU.LOGIN_SISTEMA = @LOGIN_SISTEMA
+	  AND (U.CORR_UNIDAD = TH.CORR_UNIDAD OR U.CORR_UNIDAD_PADRE = TH.CORR_UNIDAD)
+) THEN 1 ELSE 0 END AS bit);";
+
+			try
+			{
+				await using var conn = new SqlConnection(_connectionString);
+				await conn.OpenAsync();
+				await using var cmd = new SqlCommand(sql, conn);
+				cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+				cmd.Parameters.Add(new SqlParameter("@LOGIN_SISTEMA", SqlDbType.VarChar, 30) { Value = loginSistema.Trim() });
+
+				var scalar = await cmd.ExecuteScalarAsync();
+				if (scalar == null || scalar == DBNull.Value)
+				{
+					return false;
+				}
+
+				return Convert.ToBoolean(scalar);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
 		private static GEN_NOTIFICACIONView MapView(SqlDataReader reader)
 		{
 			return new GEN_NOTIFICACIONView

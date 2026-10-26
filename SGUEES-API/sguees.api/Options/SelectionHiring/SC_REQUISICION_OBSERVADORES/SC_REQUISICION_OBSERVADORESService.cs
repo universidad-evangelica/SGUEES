@@ -66,10 +66,9 @@ namespace sguees.Services
 		}
 
 		/// <summary>
-		/// Referencia opción A — URL desde menú (SEG_OPCION_SISTEMA), no hardcodeada:
-		/// 1) Alta observador.
-		/// 2) ResolverUrlDestinoAsync("SC_REQUISICION_PERSONAL", corr) → lee URL_OPCION + ?corr=.
-		/// 3) NotificarUsuarioAsync(..., urlDestino).
+		/// Notificación INFORMATIVA / seguimiento (NO es tarea de bandeja):
+		/// URL = documento requisición + corr (ResolverUrlDestinoAsync).
+		/// Las acciones de flujo usan ResolverUrlBandejaTareaAsync (TH vs Actores).
 		/// </summary>
 		public async Task<CResult> CreateBy_CORR_REQUISICION_PERSONAL(SC_REQUISICION_OBSERVADORESTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
@@ -83,7 +82,6 @@ namespace sguees.Services
 
 			try
 			{
-				// CODIGO_OPCION del menú destino (no la ruta Angular).
 				var urlDestino = await _notificacion.ResolverUrlDestinoAsync(
 					"SC_REQUISICION_PERSONAL",
 					corrReq);
