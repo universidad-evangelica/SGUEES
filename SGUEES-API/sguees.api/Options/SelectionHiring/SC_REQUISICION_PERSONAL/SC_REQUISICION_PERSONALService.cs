@@ -369,9 +369,14 @@ namespace SGUEES.Services
                 return;
             }
 
+            // Documento (no bandeja): menú SC_REQUISICION_PERSONAL + ?corr=; fallback si menú no resuelve.
             var urlDocumento = await _notificacion.ResolverUrlDestinoAsync(
-                "SC_REQUISICION_PERSONAL",
+                GEN_NOTIFICACIONService.CodigoOpcionRequisicionPersonal,
                 corrReq);
+            if (string.IsNullOrWhiteSpace(urlDocumento) && corrReq > 0)
+            {
+                urlDocumento = $"/sc-requisicion-personal?corr={corrReq}";
+            }
 
             foreach (var loginDestino in observadores)
             {
