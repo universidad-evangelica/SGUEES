@@ -13,6 +13,7 @@ import { AcaProspectoComponent as AcaProspectoNuevoIngresoComponent } from './ac
 import { AcaProspectoComponent as AcaProspectoSocioeconomicoComponent } from './aca-prospecto-socioeconomico/aca-prospecto.component';
 import { AcaProspectoComponent as AcaProspectoBecaComponent } from './aca-prospecto-beca/aca-prospecto.component';
 import { AcaDocumentoAdmisionFlujoTipoDocumentoComponent } from './aca-documento-admision-flujo-tipo-documento/aca-documento-admision-flujo-tipo-documento.component';
+import { AcaDocumentoAdmisionComponent } from './aca-documento-admision/aca-documento-admision.component';
 import { AcaDocumentoAdmisionPeriodosAcademicosComponent } from './aca-documento-admision-periodos-academicos/aca-documento-admision-periodos-academicos.component';
 
 const routes: Routes = [
@@ -41,6 +42,16 @@ const routes: Routes = [
     canDeactivate: [AppCanDeactivateGuard],
     data: { titulo: 'Solicitud socioeconómica' },
     loadChildren: () => import('./aca-prospecto-socioeconomico/aca-prospecto-socioeconomico.module').then((m) => m.AcaProspectoSocioeconomicoModule),
+  },
+  // Qué hace: abre el catálogo Documentos de admisión.
+  // Cómo lo hace: la dirección del menú es /aca-documento-admision.
+  {
+    path: 'aca-documento-admision',
+    component: AcaDocumentoAdmisionComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Documentos de admisión' },
+    loadChildren: () => import('./aca-documento-admision/aca-documento-admision.module').then((m) => m.AcaDocumentoAdmisionModule),
   },
   // Qué hace: abre Documentos por solicitud.
   // Cómo lo hace: la dirección del menú es /aca-documento-admision-flujo-tipo-documento
