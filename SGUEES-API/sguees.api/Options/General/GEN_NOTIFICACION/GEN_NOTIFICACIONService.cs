@@ -13,6 +13,21 @@ namespace sguees.Services
 	{
 		public const string CodigoOpcionBandejaTh = "SC_BANDEJA_TH";
 		public const string CodigoOpcionBandejaActores = "SC_BANDEJA_ACTORES";
+		public const string CodigoOpcionRequisicionPersonal = "SC_REQUISICION_PERSONAL";
+		public const string CodigoOpcionMovimientoPersonal = "SC_MOVIMIENTO_PERSONAL";
+
+		/// <summary>
+		/// Si SEG_OPCION_SISTEMA no trae URL_OPCION (o Get falla), se usa esta ruta de routing SPA.
+		/// </summary>
+		private static readonly Dictionary<string, string> UrlOpcionFallback =
+			new(StringComparer.OrdinalIgnoreCase)
+			{
+				[CodigoOpcionBandejaTh] = "/sc-bandeja-th",
+				[CodigoOpcionBandejaActores] = "/sc-bandeja-actores",
+				[CodigoOpcionRequisicionPersonal] = "/sc-requisicion-personal",
+				[CodigoOpcionMovimientoPersonal] = "/sc-movimiento-personal",
+				["SC_EXPEDIENTE_CANDIDATO"] = "/sc-expediente-candidato",
+			};
 
 		private readonly IGEN_NOTIFICACIONRepository _repo;
 		private readonly INotificationSignalRService _signalR;
@@ -142,30 +157,58 @@ namespace sguees.Services
 				return null;
 			}
 
+			var codigo = codigoOpcion.Trim();
+			string path = null;
+
 			try
 			{
 				var resultado = await _opcionSistema.GetAsync(new SEG_OPCION_SISTEMAParam
 				{
-					CODIGO_OPCION = codigoOpcion.Trim()
+					CODIGO_OPCION = codigo
 				});
 
-				if (!resultado.Result || resultado.Data is not SEG_OPCION_SISTEMAView opcion)
+				if (resultado.Result && resultado.Data is SEG_OPCION_SISTEMAView opcion)
 				{
-					_logger.LogWarning(
-						"[GEN_NOTIFICACION] No se encontró SEG_OPCION_SISTEMA.CODIGO_OPCION={Codigo}",
-						codigoOpcion);
-					return null;
+					path = NormalizePath(opcion.URL_OPCION);
+				}
+				else if (resultado.Result && resultado.Data != null)
+				{
+					// GetAsync a veces no tipa Data como View; intenta URL_OPCION por reflexión/dynamic.
+					path = NormalizePath(TryReadUrlOpcion(resultado.Data));
 				}
 
-				return NormalizePath(opcion.URL_OPCION);
+				if (string.IsNullOrWhiteSpace(path))
+				{
+					_logger.LogWarning(
+						"[GEN_NOTIFICACION] URL_OPCION vacía o sin fila para CODIGO_OPCION={Codigo}; se usa fallback.",
+						codigo);
+				}
 			}
 			catch (Exception ex)
 			{
 				_logger.LogWarning(ex,
-					"[GEN_NOTIFICACION] Error resolviendo URL_OPCION para CODIGO_OPCION={Codigo}",
-					codigoOpcion);
+					"[GEN_NOTIFICACION] Error resolviendo URL_OPCION para CODIGO_OPCION={Codigo}; se usa fallback.",
+					codigo);
+			}
+
+			if (string.IsNullOrWhiteSpace(path)
+				&& UrlOpcionFallback.TryGetValue(codigo, out var fallback))
+			{
+				path = fallback;
+			}
+
+			return path;
+		}
+
+		private static string TryReadUrlOpcion(object data)
+		{
+			if (data == null)
+			{
 				return null;
 			}
+
+			var prop = data.GetType().GetProperty("URL_OPCION");
+			return prop?.GetValue(data)?.ToString();
 		}
 
 		public async Task<string> ResolverUrlBandejaTareaAsync(
