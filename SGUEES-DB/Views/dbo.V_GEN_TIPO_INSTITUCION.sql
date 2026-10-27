@@ -1,0 +1,21 @@
+-- Qué hace: vista de mantenimiento del catálogo GEN_TIPO_INSTITUCION.
+-- Cómo lo hace: proyecta todas las columnas; el usuario debe ejecutar este script en BD.
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE OR ALTER VIEW [dbo].[V_GEN_TIPO_INSTITUCION]
+AS
+SELECT
+	T.CORR_TIPO_INSTITUCION,
+	T.NOMBRE,
+	T.ACTIVO,
+	T.USUARIO_CREA,
+	T.ESTACION_CREA,
+	T.FECHA_CREA,
+	T.USUARIO_ACTU,
+	T.ESTACION_ACTU,
+	T.FECHA_ACTU
+FROM dbo.GEN_TIPO_INSTITUCION AS T;
+GO
