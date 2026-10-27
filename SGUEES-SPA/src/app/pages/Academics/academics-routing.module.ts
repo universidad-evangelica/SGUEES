@@ -15,6 +15,7 @@ import { AcaProspectoComponent as AcaProspectoBecaComponent } from './aca-prospe
 import { AcaDocumentoAdmisionFlujoTipoDocumentoComponent } from './aca-documento-admision-flujo-tipo-documento/aca-documento-admision-flujo-tipo-documento.component';
 import { AcaDocumentoAdmisionComponent } from './aca-documento-admision/aca-documento-admision.component';
 import { AcaDocumentoAdmisionPeriodosAcademicosComponent } from './aca-documento-admision-periodos-academicos/aca-documento-admision-periodos-academicos.component';
+import { AcaSeVersionComponent } from './aca-se-version/aca-se-version.component';
 
 const routes: Routes = [
   // Qué hace: abre Solicitud nuevo ingreso, Solicitud beca y Solicitud socioeconómica.
@@ -73,6 +74,16 @@ const routes: Routes = [
     canDeactivate: [AppCanDeactivateGuard],
     data: { titulo: 'Documentos por período' },
     loadChildren: () => import('./aca-documento-admision-periodos-academicos/aca-documento-admision-periodos-academicos.module').then((m) => m.AcaDocumentoAdmisionPeriodosAcademicosModule),
+  },
+  // Qué hace: abre Versiones socioeconómico.
+  // Cómo lo hace: la dirección del menú es /aca-se-version.
+  {
+    path: 'aca-se-version',
+    component: AcaSeVersionComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Versiones socioeconómico' },
+    loadChildren: () => import('./aca-se-version/aca-se-version.module').then((m) => m.AcaSeVersionModule),
   },
   {
     path: 'aca-bec-origen-beca',
