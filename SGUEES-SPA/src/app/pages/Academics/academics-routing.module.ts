@@ -16,6 +16,8 @@ import { AcaDocumentoAdmisionFlujoTipoDocumentoComponent } from './aca-documento
 import { AcaDocumentoAdmisionComponent } from './aca-documento-admision/aca-documento-admision.component';
 import { AcaDocumentoAdmisionPeriodosAcademicosComponent } from './aca-documento-admision-periodos-academicos/aca-documento-admision-periodos-academicos.component';
 import { AcaSeVersionComponent } from './aca-se-version/aca-se-version.component';
+import { AcaSePreguntaComponent } from './aca-se-pregunta/aca-se-pregunta.component';
+
 
 const routes: Routes = [
   // Qué hace: abre Solicitud nuevo ingreso, Solicitud beca y Solicitud socioeconómica.
@@ -84,6 +86,16 @@ const routes: Routes = [
     canDeactivate: [AppCanDeactivateGuard],
     data: { titulo: 'Versiones socioeconómico' },
     loadChildren: () => import('./aca-se-version/aca-se-version.module').then((m) => m.AcaSeVersionModule),
+  },
+  // Qué hace: abre Preguntas socioeconómico.
+  // Cómo lo hace: la dirección del menú es /aca-se-pregunta.
+  {
+    path: 'aca-se-pregunta',
+    component: AcaSePreguntaComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Preguntas socioeconómico' },
+    loadChildren: () => import('./aca-se-pregunta/aca-se-pregunta.module').then((m) => m.AcaSePreguntaModule),
   },
   {
     path: 'aca-bec-origen-beca',
