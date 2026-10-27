@@ -17,6 +17,7 @@ export interface AcaSePregunta {
 	FECHA_ACTU: Date | string;
 }
 
+// Qué hace: fila del GetLookUp GetCORR_TIPO_PREGUNTA (GEN_SE_TIPO_PREGUNTA).
 export interface AcaSeTipoPreguntaLookup {
 	CORR_TIPO_PREGUNTA: number;
 	CODIGO: string;

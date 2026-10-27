@@ -85,38 +85,6 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		public async Task<CResult> GetTiposPreguntaAsync()
-		{
-			CResult objResultado = new();
-			try
-			{
-				var reader = await objData.GetDataReader("GEN_SE_TIPO_PREGUNTA", new List<CParameter>());
-				var response = new List<ACA_SE_TIPO_PREGUNTALookup>().FromDataReader(reader)
-					.Where(x => x.ACTIVO == true)
-					.OrderBy(x => x.CORR_TIPO_PREGUNTA)
-					.ToList();
-				reader.Close();
-				objResultado.Data = response;
-				objResultado.Result = true;
-				objResultado.RowsAffected = response.Count;
-				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = 0;
-				objResultado.ErrorMessage = "";
-				objResultado.ErrorSource = "";
-			}
-			catch (Exception e)
-			{
-				objResultado.Data = null;
-				objResultado.Result = false;
-				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = -1;
-				objResultado.ErrorMessage = e.Message;
-				objResultado.ErrorSource += $"[{e.Source}]";
-			}
-			finally { objData.objConnection.Close(); }
-			return objResultado;
-		}
-
 		public async Task<CResult> CreateAsync(ACA_SE_PREGUNTATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();

@@ -1,12 +1,14 @@
 // Qué hace: servicio de negocio del catálogo preguntas socioeconómico.
-// Cómo lo hace: valida, ejecuta CRUD, arma columnas/formulario y lookup de tipos.
+// Cómo lo hace: valida, ejecuta CRUD, arma columnas/formulario y GetLookUp de tipos (patrón sc-descriptor).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
+import { environment } from 'src/environments/environment';
 import { AcaSePregunta, AcaSeTipoPreguntaLookup } from './models/aca-se-pregunta';
 import { AcaSePreguntaRepository } from './aca-se-pregunta.repository';
 
@@ -14,7 +16,10 @@ const ESTADO_FIELD = 'ACTIVO';
 
 @Injectable({ providedIn: 'root' })
 export class AcaSePreguntaService {
-	constructor(private repo: AcaSePreguntaRepository) {}
+	constructor(
+		private repo: AcaSePreguntaRepository,
+		private appInfoService: AppInfoService
+	) {}
 
 	// Qué hace: valida el formulario antes de guardar.
 	// Cómo lo hace: exige tipo, código (máx 50) y enunciado (máx 500); ayuda máx 500.
@@ -54,8 +59,16 @@ export class AcaSePreguntaService {
 		return this.repo.get([{ Parameter: 'CORR_PREGUNTA', Value: param.CORR_PREGUNTA }]);
 	}
 
-	getTiposPregunta(): Observable<IResult> {
-		return this.repo.getTiposPregunta();
+	// Qué hace: trae tipos de pregunta activos para el select.
+	// Cómo lo hace: getLookUp(ACA_SE_PREGUNTA, GEN_SE_TIPO_PREGUNTA, GetCORR_TIPO_PREGUNTA).
+	getCORR_TIPO_PREGUNTA(): Observable<IResult> {
+		return this.appInfoService.getLookUp(
+			'ACA_SE_PREGUNTA',
+			'GEN_SE_TIPO_PREGUNTA',
+			'GetCORR_TIPO_PREGUNTA',
+			undefined,
+			environment.UrlGENERALAPI
+		);
 	}
 
 	insert(model: any): Observable<IResult> {

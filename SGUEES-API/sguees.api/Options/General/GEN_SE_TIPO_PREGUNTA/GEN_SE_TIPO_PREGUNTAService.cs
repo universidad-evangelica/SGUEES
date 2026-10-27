@@ -43,5 +43,10 @@ namespace sguees.Services
 
 		public Task<CResult> ActivarInactivarAsync(GEN_SE_TIPO_PREGUNTATable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
+		// Qué hace: lookup de tipos activos para combos (GetLookUp).
+		// Cómo lo hace: delega a GetTiposActivosAsync del repositorio.
+		public Task<CResult> GetTiposActivosAsync()
+			=> _repo.GetTiposActivosAsync();
 	}
 }

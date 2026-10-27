@@ -35,6 +35,13 @@ namespace sguees.Controllers
 		public async Task<CResult> Get([FromQuery] GEN_SE_TIPO_PREGUNTAParam Data)
 			=> await _service.GetAsync(Data);
 
+		// Qué hace: lookup de tipos activos para el mantenimiento de preguntas SE.
+		// Cómo lo hace: GetLookUp arma GetCORR_TIPO_PREGUNTA_ACA_SE_PREGUNTA; permiso de esa pantalla.
+		[HttpGet("GetCORR_TIPO_PREGUNTA_ACA_SE_PREGUNTA")]
+		[Authorize(Policy = "/aca-se-pregunta|R")]
+		public async Task<CResult> GetCORR_TIPO_PREGUNTA_ACA_SE_PREGUNTA()
+			=> await _service.GetTiposActivosAsync();
+
 		[HttpPost]
 		[Authorize(Policy = "/gen-se-tipo-pregunta|C")]
 		public async Task<IActionResult> Post(GEN_SE_TIPO_PREGUNTATable Data)

@@ -1,5 +1,5 @@
 // Qué hace: servicio del catálogo preguntas socioeconómico.
-// Cómo lo hace: arma CParameter y delega al repositorio (incluye lookup de tipos).
+// Cómo lo hace: arma CParameter y delega al repositorio.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -43,8 +43,5 @@ namespace sguees.Services
 
 		public Task<CResult> ActivarInactivarAsync(ACA_SE_PREGUNTATable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
-
-		public Task<CResult> GetTiposPreguntaAsync()
-			=> _repo.GetTiposPreguntaAsync();
 	}
 }

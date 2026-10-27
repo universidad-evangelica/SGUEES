@@ -12,5 +12,6 @@ namespace sguees.Services
 		Task<CResult> UpdateAsync(GEN_SE_TIPO_PREGUNTATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(GEN_SE_TIPO_PREGUNTATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> ActivarInactivarAsync(GEN_SE_TIPO_PREGUNTATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetTiposActivosAsync();
 	}
 }

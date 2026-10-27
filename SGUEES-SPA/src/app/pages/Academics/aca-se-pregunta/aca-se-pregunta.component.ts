@@ -1,9 +1,9 @@
 // Qué hace: vista de mantenimiento de preguntas socioeconómico.
-// Cómo lo hace: administra el CRUD de ACA_SE_PREGUNTA con lookup de tipo (patrón aca-bec-tipo / aca-se-version).
+// Cómo lo hace: administra el CRUD de ACA_SE_PREGUNTA; tipo vía getLookUp (patrón sc-descriptor).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { catchError, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -32,7 +32,7 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 	protected override mttoRemoteOperations = false;
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de preguntas socioeconómico';
-	private tipos: AcaSeTipoPreguntaLookup[] = [];
+	mCORR_TIPO_PREGUNTA: AcaSeTipoPreguntaLookup[] = [];
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -51,7 +51,7 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.cargarCatalogos();
+		this.getCORR_TIPO_PREGUNTA();
 		this.consultar();
 	}
 
@@ -112,17 +112,30 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	private cargarCatalogos(): void {
-		this.loadingVisible = true;
+	// Qué hace: carga el catálogo de tipos de pregunta para el select.
+	// Cómo lo hace: getLookUp GetCORR_TIPO_PREGUNTA → mCORR_TIPO_PREGUNTA y refresca items del form.
+	getCORR_TIPO_PREGUNTA(): void {
 		this.service
-			.getTiposPregunta()
-			.pipe(
-				catchError(() => of({ Data: [] } as any)),
-				finalize(() => (this.loadingVisible = false))
-			)
-			.subscribe((result: any) => {
-				this.tipos = result?.Data ?? [];
-				this.items = this.service.getItems({ tipos: this.tipos });
+			.getCORR_TIPO_PREGUNTA()
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.mCORR_TIPO_PREGUNTA = response.Data.map((item: AcaSeTipoPreguntaLookup) => ({
+							CORR_TIPO_PREGUNTA: Number(item.CORR_TIPO_PREGUNTA),
+							CODIGO: (item.CODIGO ?? '').trim(),
+							NOMBRE: (item.NOMBRE ?? '').trim(),
+							ACTIVO: item.ACTIVO,
+						}));
+					} else {
+						this.mCORR_TIPO_PREGUNTA = [];
+					}
+					this.items = this.service.getItems({ tipos: this.mCORR_TIPO_PREGUNTA });
+				},
+				error: () => {
+					this.mCORR_TIPO_PREGUNTA = [];
+					this.items = this.service.getItems({ tipos: this.mCORR_TIPO_PREGUNTA });
+				},
 			});
 	}
 

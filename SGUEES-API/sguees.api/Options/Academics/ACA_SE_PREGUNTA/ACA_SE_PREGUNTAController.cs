@@ -1,5 +1,5 @@
 // Qué hace: endpoints REST del catálogo preguntas socioeconómico.
-// Cómo lo hace: CRUD + ActivarInactivar + lookup de tipos, con auditoría por claims (sin empresa).
+// Cómo lo hace: CRUD + ActivarInactivar con auditoría por claims (sin empresa). Lookup de tipo en GEN_SE_TIPO_PREGUNTA.
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -34,11 +34,6 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/aca-se-pregunta|R")]
 		public async Task<CResult> Get([FromQuery] ACA_SE_PREGUNTAParam Data)
 			=> await _service.GetAsync(Data);
-
-		[HttpGet("GetTiposPregunta")]
-		[Authorize(Policy = "/aca-se-pregunta|R")]
-		public async Task<CResult> GetTiposPregunta()
-			=> await _service.GetTiposPreguntaAsync();
 
 		[HttpPost]
 		[Authorize(Policy = "/aca-se-pregunta|C")]

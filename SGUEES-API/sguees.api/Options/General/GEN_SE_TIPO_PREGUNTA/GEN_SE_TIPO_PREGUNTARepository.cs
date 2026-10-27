@@ -261,6 +261,43 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Qué hace: lista tipos de pregunta activos para GetLookUp.
+		// Cómo lo hace: lee V_GEN_SE_TIPO_PREGUNTA filtrando ACTIVO = 1 y ordena por correlativo.
+		public async Task<CResult> GetTiposActivosAsync()
+		{
+			CResult objResultado = new();
+			try
+			{
+				var xWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "ACTIVO", Value = true, DbType = System.Data.DbType.Boolean },
+				};
+				var reader = await objData.GetDataReader(_ViewName, xWhere);
+				var response = new List<GEN_SE_TIPO_PREGUNTAView>().FromDataReader(reader)
+					.OrderBy(x => x.CORR_TIPO_PREGUNTA)
+					.ToList();
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
+
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
@@ -269,3 +306,4 @@ namespace sguees.Repositories
 		}
 	}
 }
+

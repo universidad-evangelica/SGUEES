@@ -21,10 +21,6 @@ export class AcaSePreguntaRepository {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlGENERALAPI);
 	}
 
-	getTiposPregunta(): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetTiposPregunta', [], environment.UrlGENERALAPI);
-	}
-
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
 	}
