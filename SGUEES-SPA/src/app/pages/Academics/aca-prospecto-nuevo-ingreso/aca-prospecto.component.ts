@@ -101,6 +101,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     mCORR_CARRERA: any[] = [];
     mCORR_PARENTESCO: any[] = [];
     mCORR_LIMITACION_FISICA: any[] = [];
+    // Listas fijas vía ACA_LISTA (Key/Value), mismo patrón que SC_LISTA en descriptor.
+    mFORMA_INGRESO: any[] = [];
+    mTIPO_EDUCACION: any[] = [];
+    mTIPO_CONTACTO: any[] = [];
     // Códigos telefónicos de país ("+503 El Salvador"), del mismo SP que usa el registro del portal.
     mCODIGO_PAIS: any[] = [];
     mCORR_MEDIO_ORIGEN: any[] = [];
@@ -254,7 +258,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         super(appInfoService, router);
         this.aplicarColumnasLista();
         this.summary = this.service.getSummary();
-        this.items = this.service.getItems();
+        this.items = this.service.getItems(this.mFORMA_INGRESO);
         this.prepararColumnasDocumento();
         this.columnsBitacoraFlujo = this.serviceBitacoraFlujo.getColumns();
         this.columnsBitacoraEdicion = this.serviceBitacora.getColumns();
@@ -263,7 +267,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.itemsPersona = this.servicePersona.getItems();
         this.columnsContacto = this.serviceContacto.getColumns();
         this.summaryContacto = this.serviceContacto.getSummary();
-        this.itemsContacto = this.serviceContacto.getItems();
+        this.itemsContacto = this.serviceContacto.getItems(false, true, this.mCODIGO_PAIS, this.mTIPO_CONTACTO);
         this.columnsFamiliar = this.serviceFamiliar.getColumns();
         this.summaryFamiliar = this.serviceFamiliar.getSummary();
         this.itemsFamiliar = this.serviceFamiliar.getItems();
@@ -277,7 +281,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.columnsMedio = this.serviceMedio.getColumns();
         this.summaryMedio = this.serviceMedio.getSummary();
         this.itemsMedio = this.serviceMedio.getItems();
-        this.itemsEstudioMedia = this.serviceEstudio.getItemsMedia();
+        this.itemsEstudioMedia = this.serviceEstudio.getItemsMedia(this.mTIPO_EDUCACION);
         this.itemsEstudioUniversidad = this.serviceEstudio.getItemsUniversidad();
         this.itemsEstudioUees = this.serviceEstudio.getItemsUees();
         this.itemsEmpleo = this.serviceEmpleo.getItems();
@@ -321,6 +325,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.getCORR_LIMITACION_FISICA();
         this.getCODIGO_PAIS();
         this.getCORR_MEDIO_ORIGEN();
+        this.getFORMA_INGRESO();
+        this.getTIPO_EDUCACION();
+        this.getTIPO_CONTACTO();
     }
 
     // Qué hace: llave seleccionada de cada lookup de edición (app-data-lookup exige la función).
@@ -435,6 +442,33 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             if (this.contactoModel) {
                 this.refrescarItemsContacto();
             }
+        });
+    }
+
+    // Qué hace: forma de ingreso desde ACA_LISTA (deja de usar la lista local del service).
+    // Cómo lo hace: getLookUp ACA_LISTA/GetFORMA_INGRESO y rearma el encabezado.
+    getFORMA_INGRESO() {
+        this.cargarLookup('ACA_LISTA', 'GetFORMA_INGRESO', (data) => {
+            this.mFORMA_INGRESO = data ?? [];
+            this.items = this.service.getItems(this.mFORMA_INGRESO);
+        });
+    }
+
+    // Qué hace: tipo de educación media desde ACA_LISTA.
+    // Cómo lo hace: getLookUp ACA_LISTA/GetTIPO_EDUCACION y rearma el formulario de media.
+    getTIPO_EDUCACION() {
+        this.cargarLookup('ACA_LISTA', 'GetTIPO_EDUCACION', (data) => {
+            this.mTIPO_EDUCACION = data ?? [];
+            this.itemsEstudioMedia = this.serviceEstudio.getItemsMedia(this.mTIPO_EDUCACION);
+        });
+    }
+
+    // Qué hace: tipo de contacto (Teléfono/Correo) desde ACA_LISTA.
+    // Cómo lo hace: getLookUp ACA_LISTA/GetTIPO_CONTACTO y, si hay ficha abierta, la rearma.
+    getTIPO_CONTACTO() {
+        this.cargarLookup('ACA_LISTA', 'GetTIPO_CONTACTO', (data) => {
+            this.mTIPO_CONTACTO = data ?? [];
+            this.refrescarItemsContacto();
         });
     }
 
@@ -2243,7 +2277,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Qué hace: arma el formulario del contacto según el tipo elegido y la marca de principal.
     private refrescarItemsContacto(): void {
         const esTelefono = this.contactoModel?.TIPO !== TIPO_CORREO;
-        this.itemsContacto = this.serviceContacto.getItems(this.contactoEditando?.ES_PRINCIPAL === true, esTelefono, this.mCODIGO_PAIS);
+        this.itemsContacto = this.serviceContacto.getItems(
+            this.contactoEditando?.ES_PRINCIPAL === true,
+            esTelefono,
+            this.mCODIGO_PAIS,
+            this.mTIPO_CONTACTO
+        );
     }
 
     // Qué hace: abre el formulario de un familiar nuevo (el formulario reemplaza a la grilla).

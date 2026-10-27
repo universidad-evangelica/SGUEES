@@ -69,7 +69,8 @@ export class AcaProspectoEstudioService {
     // Qué hace: formulario "Educación media (bachillerato)".
     // Cómo lo hace: mismos campos y obligatoriedades del portal; país y departamento son lookups
     //               (template), así que su obligatoriedad se revisa en validar().
-    getItemsMedia(): any {
+    //               tiposEducacion = ACA_LISTA GetTIPO_EDUCACION (Key/Value).
+    getItemsMedia(tiposEducacion: any[] = []): any {
         return [
             {
                 dataField: 'NOMBRE_INSTITUCION',
@@ -83,7 +84,12 @@ export class AcaProspectoEstudioService {
                 label: { text: 'Tipo de educación' },
                 colSpan: 2,
                 editorType: 'dxSelectBox',
-                editorOptions: { items: this.getTiposEducacion(), showClearButton: true },
+                editorOptions: {
+                    items: tiposEducacion,
+                    valueExpr: 'Key',
+                    displayExpr: 'Value',
+                    showClearButton: true,
+                },
                 validationRules: [{ type: 'required', message: 'Seleccione el tipo de educación' }],
             },
             { dataField: 'CORR_PAIS', label: { text: 'País' }, colSpan: 2, template: 'CORR_PAIS_ESTUDIOLookup', validationRules: [{ type: 'required', message: 'Seleccione el país' }] },
@@ -196,12 +202,6 @@ export class AcaProspectoEstudioService {
                 validationRules: [{ type: 'required', message: 'Indique la fecha de graduación' }],
             },
         ];
-    }
-
-    // Qué hace: valores de "Tipo de educación".
-    // Cómo lo hace: no es catálogo de base de datos; el portal los tiene fijos en su procedimiento.
-    getTiposEducacion(): string[] {
-        return ['Pública', 'Privada'];
     }
 
     // Qué hace: obligatoriedades que el dx-form no puede validar (los catálogos se pintan con template).

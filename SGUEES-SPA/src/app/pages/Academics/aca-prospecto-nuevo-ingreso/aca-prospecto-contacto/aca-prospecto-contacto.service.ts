@@ -163,7 +163,8 @@ export class AcaProspectoContactoService {
     // Cómo lo hace: el tipo siempre se puede corregir (un error de captura no debe dejar atrapado al
     //               usuario); el componente reacomoda al principal de cada tipo al aceptar. Un teléfono
     //               se captura como en el registro: código de país + número; un correo, en un solo campo.
-    getItems(esPrincipalActual = false, esTelefono = true, codigosPais: any[] = []): any {
+    //               tiposContacto = ACA_LISTA GetTIPO_CONTACTO (Key/Value = TELEFONO|CORREO).
+    getItems(esPrincipalActual = false, esTelefono = true, codigosPais: any[] = [], tiposContacto: any[] = []): any {
         return [
             {
                 dataField: 'TIPO',
@@ -171,12 +172,9 @@ export class AcaProspectoContactoService {
                 colSpan: 2,
                 editorType: 'dxSelectBox',
                 editorOptions: {
-                    items: [
-                        { valor: TIPO_TELEFONO, texto: 'Teléfono' },
-                        { valor: TIPO_CORREO, texto: 'Correo' },
-                    ],
-                    valueExpr: 'valor',
-                    displayExpr: 'texto',
+                    items: tiposContacto,
+                    valueExpr: 'Key',
+                    displayExpr: 'Value',
                 },
             },
             {
