@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using eFramework.Core;
+using sguees.Models;
 using sguees.Services;
 using SGUEES.Models;
 using SGUEES.Repositories;
@@ -13,17 +14,18 @@ namespace SGUEES.Services
 {
     public class SC_REQUISICION_PERSONALService : ISC_REQUISICION_PERSONALService
     {
-        private const string CodigoOpcionMenuRequisicion = "SC_REQUISICION_PERSONAL";
-
         private readonly ISC_REQUISICION_PERSONALRepository _repo;
         private readonly IGEN_NOTIFICACIONService _notificacion;
+        private readonly ISC_REQUISICION_OBSERVADORESService _observadores;
 
         public SC_REQUISICION_PERSONALService(
             ISC_REQUISICION_PERSONALRepository repo,
-            IGEN_NOTIFICACIONService notificacion)
+            IGEN_NOTIFICACIONService notificacion,
+            ISC_REQUISICION_OBSERVADORESService observadores)
         {
             _repo = repo;
             _notificacion = notificacion ?? throw new ArgumentNullException(nameof(notificacion));
+            _observadores = observadores ?? throw new ArgumentNullException(nameof(observadores));
         }
 
         public async Task<CResult> GetAllAsync(SC_REQUISICION_PERSONALParam xWhere)
@@ -215,6 +217,7 @@ namespace SGUEES.Services
         /// Mapea SEG_FLUJO → GEN_NOTIFICACION:
         /// título = Nombre tipo + #corr + Estado; mensaje = Descripción del estado.
         /// Destinos: Enviar/Aprobar → pendientes del paso actual; Devolver/Rechazar → solo creador.
+        /// Tras JU→GG: también observadores (documento + corr), excluyendo aprobadores GG.
         /// </summary>
         private async Task NotificarDesdeFlujoAsync(SC_REQUISICION_PERSONAL_AUTORIZAParam data, string loginActor)
         {
@@ -242,17 +245,9 @@ namespace SGUEES.Services
                 ? $"La requisición No.{corrReq} cambió a estado {nombreEstado}."
                 : dto.DESCRIPCION_ESTADO.Trim();
 
-            var urlDestino = await _notificacion.ResolverUrlDestinoAsync(
-                CodigoOpcionMenuRequisicion,
-                corrReq);
-            if (string.IsNullOrWhiteSpace(urlDestino) && corrReq > 0)
-            {
-                // Fallback si SEG_OPCION_SISTEMA no tiene URL_OPCION / CODIGO_OPCION.
-                urlDestino = $"/sc-requisicion-personal?corr={corrReq}";
-            }
-
             var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var creador = dto.LOGIN_CREADOR?.Trim();
+            var loginsPendientesGg = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (data.OPERACION == 4 || data.OPERACION == 5)
             {
@@ -269,7 +264,9 @@ namespace SGUEES.Services
                 {
                     if (!string.IsNullOrWhiteSpace(loginPendiente))
                     {
-                        destinatarios.Add(loginPendiente.Trim());
+                        var login = loginPendiente.Trim();
+                        destinatarios.Add(login);
+                        loginsPendientesGg.Add(login);
                     }
                 }
 
@@ -283,13 +280,15 @@ namespace SGUEES.Services
             // No notificar al mismo usuario que acaba de ejecutar la acción.
             destinatarios.Remove(loginActor);
 
-            if (destinatarios.Count == 0)
-            {
-                return;
-            }
-
+            // Acción de flujo → bandeja TH/Actores según unidad del receptor (+ corr/tipo para resaltar).
             foreach (var loginDestino in destinatarios)
             {
+                var urlDestino = await _notificacion.ResolverUrlBandejaTareaAsync(
+                    data.CORR_EMPRESA,
+                    loginDestino,
+                    corrReq,
+                    "REQUISICION");
+
                 await _notificacion.NotificarUsuarioAsync(
                     corrEmpresa: data.CORR_EMPRESA,
                     loginDestino: loginDestino,
@@ -299,6 +298,104 @@ namespace SGUEES.Services
                     usuarioCrea: loginActor,
                     estacionCrea: "API");
             }
+
+            // Solo JU → GG: aviso informativo a observadores (documento + corr).
+            if (data.OPERACION == 3 && EsEstadoAprobadoJu(nombreEstado))
+            {
+                await NotificarObservadoresJuAGgAsync(
+                    data.CORR_EMPRESA,
+                    corrReq,
+                    titulo,
+                    mensaje,
+                    loginActor,
+                    loginsPendientesGg);
+            }
+        }
+
+        /// <summary>
+        /// Observadores defecto + de la requisición. Excluye actor y aprobadores GG (ya notificados a bandeja).
+        /// </summary>
+        private async Task NotificarObservadoresJuAGgAsync(
+            int corrEmpresa,
+            int corrReq,
+            string titulo,
+            string mensaje,
+            string loginActor,
+            HashSet<string> loginsPendientesGg)
+        {
+            if (corrEmpresa <= 0 || corrReq <= 0)
+            {
+                return;
+            }
+
+            var obsResult = await _observadores.GetAllBy_CORR_REQUISICION_PERSONAL(
+                new SC_REQUISICION_OBSERVADORESParam
+                {
+                    CORR_EMPRESA = corrEmpresa,
+                    CORR_REQUISICION_PERSONAL = corrReq,
+                });
+
+            if (!obsResult.Result || obsResult.Data == null)
+            {
+                return;
+            }
+
+            IEnumerable<SC_REQUISICION_OBSERVADORESView> filas = obsResult.Data switch
+            {
+                IEnumerable<SC_REQUISICION_OBSERVADORESView> typed => typed,
+                System.Collections.IEnumerable raw => raw.OfType<SC_REQUISICION_OBSERVADORESView>(),
+                _ => Enumerable.Empty<SC_REQUISICION_OBSERVADORESView>(),
+            };
+
+            var observadores = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in filas)
+            {
+                if (row == null || !row.ACTIVO || string.IsNullOrWhiteSpace(row.LOGIN_SISTEMA))
+                {
+                    continue;
+                }
+
+                observadores.Add(row.LOGIN_SISTEMA.Trim());
+            }
+
+            observadores.Remove(loginActor);
+            foreach (var gg in loginsPendientesGg)
+            {
+                observadores.Remove(gg);
+            }
+
+            if (observadores.Count == 0)
+            {
+                return;
+            }
+
+            var urlDocumento = await _notificacion.ResolverUrlDestinoAsync(
+                "SC_REQUISICION_PERSONAL",
+                corrReq);
+
+            foreach (var loginDestino in observadores)
+            {
+                await _notificacion.NotificarUsuarioAsync(
+                    corrEmpresa: corrEmpresa,
+                    loginDestino: loginDestino,
+                    titulo: titulo,
+                    mensaje: mensaje,
+                    urlDestino: urlDocumento,
+                    usuarioCrea: loginActor,
+                    estacionCrea: "API");
+            }
+        }
+
+        private static bool EsEstadoAprobadoJu(string nombreEstado)
+        {
+            if (string.IsNullOrWhiteSpace(nombreEstado))
+            {
+                return false;
+            }
+
+            var n = nombreEstado.Trim();
+            return n.Equals("Aprobado JU", StringComparison.OrdinalIgnoreCase)
+                || n.Equals("Aprobada JU", StringComparison.OrdinalIgnoreCase);
         }
 
         private static CResult ValidationError(string message)
