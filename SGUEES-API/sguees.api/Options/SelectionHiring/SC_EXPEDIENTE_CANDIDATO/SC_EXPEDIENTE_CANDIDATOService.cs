@@ -185,6 +185,23 @@ namespace SGUEES.Services
 		/// Acción sin flujo: avisa al creador de la REQ y jefes activos de la unidad
 		/// (misma audiencia que bandeja actores · Candidatos).
 		/// </summary>
+		// Qué hace: Valida la sesión empresarial y delega la actualización de datos de persona al repositorio.
+		// Cómo lo hace: Comprueba CORR_EMPRESA y llama a _repo.ActualizarPersonaDatosAsync.
+		public async Task<CResult> ActualizarPersonaDatosAsync(
+			int corrEmpresa,
+			string usuario,
+			string estacion,
+			sguees.Models.SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data)
+		{
+			var empresaError = ValidateEmpresaSesion(corrEmpresa);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
+			return await _repo.ActualizarPersonaDatosAsync(corrEmpresa, usuario, estacion, data);
+		}
+
 		private async Task NotificarDesdeActivarAsync(SC_EXPEDIENTE_CANDIDATOTable data, string loginActor)
 		{
 			var dto = await _repo.GetContextoNotificacionActivarAsync(
