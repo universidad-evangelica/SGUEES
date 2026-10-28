@@ -1,5 +1,6 @@
-<!-- Contenedor principal: browse + formulario empleado (diseño mejorado tipo expediente). -->
-<div class="sguees-mtto-view empleado-mtto" [class.empleado-mtto--browse]="isBrowse()">
+<!-- Contenedor principal: browse + formulario empleado (diseño mejorado tipo expediente).
+     id=LoadPanel: ancla del dx-load-panel (sombreado al generar PDF/RPT; sin esto el cuadro negro queda mal posicionado). -->
+<div class="sguees-mtto-view empleado-mtto" id="LoadPanel" [class.empleado-mtto--browse]="isBrowse()">
 	<!-- Toolbar: Nuevo / Guardar / Cancelar / Activar-Desactivar / Refrescar. -->
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
