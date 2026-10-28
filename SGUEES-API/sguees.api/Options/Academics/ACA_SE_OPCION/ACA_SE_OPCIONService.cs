@@ -37,6 +37,17 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
+		// Qué hace: opciones activas del banco para GetLookUp del socioeconómico.
+		// Cómo lo hace: filtra V_ACA_SE_OPCION con ACTIVO = 1 (mismo orden que GetAll).
+		public async Task<CResult> GetOpcionesActivasAsync()
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "ACTIVO", Value = true, DbType = System.Data.DbType.Boolean },
+			};
+			return await _repo.GetAllAsync(p);
+		}
+
 		public Task<CResult> CreateAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 

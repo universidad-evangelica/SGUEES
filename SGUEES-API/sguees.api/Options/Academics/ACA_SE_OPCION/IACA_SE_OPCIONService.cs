@@ -8,6 +8,8 @@ namespace sguees.Services
 	{
 		Task<CResult> GetAllAsync(ACA_SE_OPCIONParam xWhere);
 		Task<CResult> GetAsync(ACA_SE_OPCIONParam xWhere);
+		// Qué hace: opciones activas para combos del estudio socioeconómico.
+		Task<CResult> GetOpcionesActivasAsync();
 		Task<CResult> CreateAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION);

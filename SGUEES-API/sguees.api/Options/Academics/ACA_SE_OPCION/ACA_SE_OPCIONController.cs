@@ -35,6 +35,13 @@ namespace sguees.Controllers
 		public async Task<CResult> Get([FromQuery] ACA_SE_OPCIONParam Data)
 			=> await _service.GetAsync(Data);
 
+		// Qué hace: lookup de opciones activas para el cuestionario socioeconómico.
+		// Cómo lo hace: GetLookUp arma GetCORR_OPCION_ACA_PROSPECTO_ECONOMICO; permiso de esa pantalla.
+		[HttpGet("GetCORR_OPCION_ACA_PROSPECTO_ECONOMICO")]
+		[Authorize(Policy = "/aca-prospecto-socioeconomico|R")]
+		public async Task<CResult> GetCORR_OPCION_ACA_PROSPECTO_ECONOMICO()
+			=> await _service.GetOpcionesActivasAsync();
+
 		[HttpPost]
 		[Authorize(Policy = "/aca-se-opcion|C")]
 		public async Task<IActionResult> Post(ACA_SE_OPCIONTable Data)
