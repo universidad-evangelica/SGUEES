@@ -251,15 +251,12 @@
 	margin-left: -15px;
 }
 
-:host ::ng-deep .requisicion-grid-estado-col {
+// Qué hace: alineación de la celda de estado sin alterar el modelo de celda de tabla de la grilla.
+// Cómo lo hace: mantiene text-align y vertical-align evitando display: flex en el <td> para no quebrar las líneas de borde.
+:host ::ng-deep .requisicion-grid-estado-col,
+:host ::ng-deep .requisicion-grid-estado-cell {
 	text-align: center;
 	vertical-align: middle;
-}
-
-:host ::ng-deep .requisicion-grid-estado-cell {
-	display: flex;
-	align-items: center;
-	justify-content: center;
 }
 
 // Qué hace: estilo visual compacto tipo pill/badge para el estado de la requisición en la grilla y formulario.
@@ -268,6 +265,7 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	vertical-align: middle;
 	min-height: 28px;
 	min-width: 90px;
 	padding: 4px 14px;

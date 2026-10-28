@@ -7,7 +7,8 @@ import {
 	Output,
 	SimpleChanges,
 } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
+import { IResult } from 'src/app/FxAPI/IResult';
 import { MessageService } from 'primeng/api';
 import {
 	ScPersonaCompetencia,
@@ -63,6 +64,9 @@ export class ScSolicitudEmpleoEditarPersonaComponent implements OnChanges, OnDes
 	@Input() competencias: ScPersonaCompetencia[] = [];
 	@Input() experiencias: ScPersonaExperiencia[] = [];
 	@Input() familiaresUees: ScPersonaFamiliarUees[] = [];
+	// Qué hace: Permite al componente invocador inyectar una función de guardado personalizada.
+	// Cómo lo hace: Si se provee, el método guardar() delega el envío a este observable.
+	@Input() saveFn?: (payload: any) => Observable<IResult>;
 	@Output() saved = new EventEmitter<void>();
 
 	draft: ScPersonaDatos | null = null;
@@ -377,7 +381,12 @@ export class ScSolicitudEmpleoEditarPersonaComponent implements OnChanges, OnDes
 		const payload = this.construirPayload();
 		this.guardando = true;
 		try {
-			const response: any = await firstValueFrom(this.service.actualizarPersonaDatos(payload));
+			// Qué hace: Ejecuta la actualización de datos usando saveFn si se proveyó, o el servicio por defecto.
+			// Cómo lo hace: Evalúa la presencia de saveFn para disparar la petición observable correspondiente.
+			const request$ = this.saveFn
+				? this.saveFn(payload)
+				: this.service.actualizarPersonaDatos(payload);
+			const response: any = await firstValueFrom(request$);
 			if (!response?.Result) {
 				this.toastError(response?.ErrorMessage || 'No fue posible guardar los cambios.');
 				return;

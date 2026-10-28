@@ -147,25 +147,25 @@
 			// Qué hace: estilos para tablas de formato institucional.
 			// Cómo lo hace: asegura que no muestren bordes de cuadrícula ni líneas divisorias internas y mantengan separación vertical compacta.
 			table.plantilla-uees-table,
-			table[data-tipo],
-			table[style*="max-width: 650px"],
-			table[style*="max-width:650px"] {
+			table[data-tipo] {
 				border: none !important;
-				margin: 2px auto !important;
+				margin: 2px 0 !important;
+				width: 100% !important;
+				max-width: 100% !important;
 
 				td, th {
 					border: none !important;
 				}
 			}
 
-			// Qué hace: renderiza la línea divisoria horizontal institucional idéntica a sc-solicitud-empleo (primer párrafo después de tabla).
-			// Cómo lo hace: aplica border-top de 1px sólido color #cccccc, margen vertical de 16px y altura de 1px.
+			// Qué hace: renderiza la línea divisoria institucional superior entre el encabezado amarillo y el cuerpo gris.
+			// Cómo lo hace: establece border-top de 1px sólido #cccccc al 100% del ancho con margen vertical de 16px.
 			table:first-of-type + p {
 				border: none !important;
 				border-top: 1px solid #cccccc !important;
-				margin: 16px auto !important;
-				max-width: 650px !important;
+				margin: 16px 0 !important;
 				width: 100% !important;
+				max-width: 100% !important;
 				height: 1px !important;
 				min-height: 1px !important;
 				max-height: 1px !important;

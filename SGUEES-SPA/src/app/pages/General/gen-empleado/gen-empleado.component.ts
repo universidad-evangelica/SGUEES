@@ -65,6 +65,12 @@ type SubmodalFormacionTipo = 'estudio' | 'idioma' | 'competencia';
 })
 export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
+	// Qué hace: referencia al popup de descriptores de puesto asignables al empleado.
+	// Cómo lo hace: captura el componente DxPopupComponent mediante la variable de plantilla #popupDescriptoresEmpleado.
+	@ViewChild('popupDescriptoresEmpleado') popupDescriptoresEmpleado?: any;
+	// Qué hace: referencia a la grilla de descriptores de puesto dentro del modal.
+	// Cómo lo hace: captura el componente DxDataGridComponent mediante la variable de plantilla #gridDescriptoresEmpleado.
+	@ViewChild('gridDescriptoresEmpleado') gridDescriptoresEmpleado?: any;
 
 	protected override etiquetaRegistro = 'el empleado';
 	protected override requiereEmpresaSesion = true;
@@ -179,6 +185,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	submodalParentescoContactoVisible = false;
 	submodalParentescoContactoEditIndex: number | null = null;
 	submodalParentescoContactoDraft: any = {};
+	// Qué hace: tipos visibles en el selector de tipos de contacto (lista estable, no un getter).
+	// Cómo lo hace: se rearma solo al abrir el submodal, al cargar el lookup o al cambiar Es extranjero.
+	tiposParentescoContactoVisibles: any[] = [];
 
 	// Qué hace: colecciones del tab Puestos (unidad + puesto del empleado).
 	puestos: GenEmpleadoPuesto[] = [];
@@ -239,8 +248,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	popupDescriptorEmpleadoVisible = false;
 	cargandoDescriptores = false;
 	descriptorModalPageSize = 50;
-	@ViewChild('popupDescriptoresEmpleado') popupDescriptoresEmpleado?: any;
-	@ViewChild('gridDescriptoresEmpleado') gridDescriptoresEmpleado?: any;
 
 	/** Preview blob de la foto (panel + modal). */
 	fotoPersonaUrl: string | null = null;
@@ -1545,9 +1552,19 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.model.TELEFONO_INSTITUCIONAL = formatTelefonoNacional(`${this.model.TELEFONO_INSTITUCIONAL ?? ''}`);
 	}
 
-	// Qué hace: exige formato de correo y de teléfono nacional en Datos de empleado.
-	// Cómo: vacío es válido; si hay texto, correo con @ y dominio, teléfono con 8 dígitos.
+	// Qué hace: valida obligatoriedad de primer nombre, primer apellido y formatos de correo y teléfono institucional.
+	// Cómo lo hace: primer nombre y primer apellido no pueden estar vacíos; correo con @ y dominio; teléfono con 8 dígitos.
 	private mensajeDatosEmpleadoInvalido(): string | null {
+		const primerNombre = `${this.modelPersonaNatural?.PRIMER_NOMBRE ?? ''}`.trim();
+		if (!primerNombre) {
+			return 'El primer nombre es obligatorio.';
+		}
+
+		const primerApellido = `${this.modelPersonaNatural?.PRIMER_APELLIDO ?? ''}`.trim();
+		if (!primerApellido) {
+			return 'El primer apellido es obligatorio.';
+		}
+
 		this.aplicarFormatoDatosEmpleado();
 		const correo = `${this.model?.CORREO_INSTITUCIONAL ?? ''}`.trim();
 		const telefono = `${this.model?.TELEFONO_INSTITUCIONAL ?? ''}`.trim();
@@ -3593,10 +3610,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		].filter((x) => !!x);
 		return marcas.length ? `${base} · ${marcas.join(' · ')}` : base;
 	}
-
-	// Qué hace: tipos visibles en el selector (lista estable, no un getter).
-	// Cómo: se rearma solo al abrir el submodal, al cargar el lookup o al cambiar Es extranjero.
-	tiposParentescoContactoVisibles: any[] = [];
 
 	get tituloSubmodalParentescoContacto(): string {
 		return this.submodalParentescoContactoEditIndex != null

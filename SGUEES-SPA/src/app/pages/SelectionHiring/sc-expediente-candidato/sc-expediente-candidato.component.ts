@@ -1813,6 +1813,12 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			});
 	}
 
+	// Qué hace: Delega la actualización de datos personales al endpoint propio de expediente de candidato.
+	// Cómo lo hace: Pasa el payload al método actualizarPersonaDatos de ScExpedienteCandidatoService.
+	guardarPersonaDatos = (payload: any) => {
+		return this.service.actualizarPersonaDatos(payload);
+	};
+
 	abrirEditarPersona(): void {
 		if (!this.permiteEdit || this.cargandoPersonaDatos || (this.personaDatos?.CORR_PERSONA_DATOS ?? 0) <= 0) {
 			return;

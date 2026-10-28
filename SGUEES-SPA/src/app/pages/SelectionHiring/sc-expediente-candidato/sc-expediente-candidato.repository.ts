@@ -42,4 +42,16 @@ export class ScExpedienteCandidatoRepository {
 	activarProcesoSeleccion(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put({}, this.xController, 'ActivarProcesoSeleccion', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	// Qué hace: Envía los datos actualizados de persona al endpoint específico de expediente de candidato.
+	// Cómo lo hace: Ejecuta una llamada HTTP PUT hacia SC_EXPEDIENTE_CANDIDATO/ActualizarPersonaDatos.
+	actualizarPersonaDatos(model: any): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'ActualizarPersonaDatos',
+			[],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }
