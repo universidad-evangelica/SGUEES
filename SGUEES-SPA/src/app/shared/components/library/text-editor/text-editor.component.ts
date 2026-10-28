@@ -466,14 +466,10 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		return 0;
 	}
 
-	// Qué hace: genera la configuración estable del botón desplegable de parámetros para la barra de herramientas del editor.
-	// Cómo lo hace: construye un único objeto con clase CSS base para permitir que el tema claro/oscuro se controle fluidamente por CSS según la clase del body.
+	// Qué hace: genera la configuración del botón desplegable de parámetros para la barra de herramientas del editor.
+	// Cómo lo hace: construye el botón permanentemente visible y lo inhabilita cuando el editor está en modo de solo lectura.
 	private actualizarOpcionesBotonParametros(): void {
 		this.parametrosFiltrados = [...(this.parametros || [])];
-		if (!this.parametros || this.parametros.length === 0) {
-			this.opcionesBotonParametros = null;
-			return;
-		}
 
 		this.opcionesBotonParametros = {
 			text: 'Parámetros',
@@ -995,52 +991,48 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		}
 	}
 
-	// Qué hace: identifica con precisión si una tabla institucional es encabezado, cuerpo o pie de página.
-	// Cómo lo hace: evalúa data-tipo, presencia de logo (encabezado), textos legales/conmutador/enlaces (pie), y por descarte o posición relativa (encabezado -> cuerpo -> pie).
+	// Qué hace: determina el rol institucional (encabezado, cuerpo o pie) de una tabla.
+	// Cómo lo hace: evalúa la posición estructural dentro de la plantilla institucional dando prioridad al orden (primera = encabezado, última = pie con texto de contacto, e intermedias = cuerpo gris) evitando falsos positivos por estilos heredados.
 	private resolverTipoTablaInstitucional(
 		tbl: HTMLTableElement,
 		index: number,
 		institucionales: HTMLTableElement[]
 	): 'encabezado' | 'cuerpo' | 'pie' {
-		const tipo = (tbl.getAttribute('data-tipo') || '').toLowerCase();
-		if (tipo === 'encabezado' || tipo === 'cuerpo' || tipo === 'pie') {
-			return tipo;
-		}
-		if (tbl.classList.contains('plantilla-uees-pie')) {
-			return 'pie';
-		}
-		if (tbl.querySelector('img')) {
+		const pos = institucionales.indexOf(tbl) >= 0 ? institucionales.indexOf(tbl) : index;
+		const total = institucionales.length;
+
+		// 1. Si es la primera tabla de la secuencia o contiene imagen de logo, siempre es encabezado
+		if (pos === 0 || tbl.querySelector('img')) {
 			return 'encabezado';
 		}
 
+		// 2. Si hay 3 o más tablas y estamos en una posición intermedia, es obligatoriamente cuerpo
+		if (total >= 3 && pos > 0 && pos < total - 1) {
+			return 'cuerpo';
+		}
+
+		// 3. Evaluar si contiene datos institucionales de pie (contacto / derechos reservados)
 		const text = (tbl.innerText || tbl.textContent || '').toLowerCase();
-		if (
+		const esContenidoPie =
 			text.includes('universidad evang') ||
 			text.includes('uees.edu.sv') ||
 			text.includes('2275-4000') ||
 			text.includes('prolongación alameda') ||
-			text.includes('prolongacion alameda')
-		) {
+			text.includes('prolongacion alameda') ||
+			tbl.classList.contains('plantilla-uees-pie');
+
+		// 4. Si es la última tabla de la secuencia institucional
+		if (pos === total - 1) {
+			if (total >= 2) {
+				return 'pie';
+			}
+			return esContenidoPie ? 'pie' : 'cuerpo';
+		}
+
+		if (esContenidoPie) {
 			return 'pie';
 		}
 
-		if (tbl.querySelector('td[style*="#ffdc00"], td[style*="rgb(255, 220, 0)"]')) {
-			return 'encabezado';
-		}
-		if (tbl.querySelector('td[style*="#034ea2"], td[style*="rgb(3, 78, 162)"]')) {
-			return 'pie';
-		}
-		if (tbl.querySelector('td[style*="#cccccc"], td[style*="rgb(204, 204, 204)"]')) {
-			return 'cuerpo';
-		}
-
-		const pos = institucionales.indexOf(tbl);
-		if (pos === 0 || index === 0) {
-			return 'encabezado';
-		}
-		if (institucionales.length >= 2 && (pos === institucionales.length - 1 || index === institucionales.length - 1)) {
-			return 'pie';
-		}
 		return 'cuerpo';
 	}
 
@@ -1115,45 +1107,47 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 				tbl.classList.add('plantilla-uees-table');
 				tbl.setAttribute('data-tipo', tipo);
 				tbl.setAttribute('align', 'center');
-				tbl.setAttribute('width', '650');
+				tbl.setAttribute('width', '100%');
 				tbl.style.border = 'none';
 				tbl.style.borderCollapse = 'collapse';
-				tbl.style.maxWidth = '650px';
-				tbl.style.margin = '2px auto';
+				tbl.style.maxWidth = '100%';
+				tbl.style.width = '100%';
+				tbl.style.margin = '2px 0';
 				if (tipo === 'pie') {
 					tbl.classList.add('plantilla-uees-pie');
+				} else {
+					tbl.classList.remove('plantilla-uees-pie');
 				}
 
 				this.aplicarEstiloCeldasInstitucionales(tbl, tipo);
 			});
 
-			// Configurar párrafos separadores entre tablas en el DOM: el primer separador es la línea divisoria
+			// Configurar párrafos separadores entre tablas en el DOM con ancho 100% y línea divisora entre amarillo y gris
 			const separatorParagraphs = Array.from(quill.root.querySelectorAll('table + p')) as HTMLElement[];
-			separatorParagraphs.forEach((p, idx) => {
-				if (idx === 0) {
-					p.style.border = 'none';
+			separatorParagraphs.forEach((p, index) => {
+				p.style.border = 'none';
+				p.style.width = '100%';
+				p.style.maxWidth = '100%';
+				if (index === 0) {
 					p.style.borderTop = '1px solid #cccccc';
-					p.style.margin = '16px auto';
-					p.style.maxWidth = '650px';
-					p.style.width = '100%';
+					p.style.margin = '16px 0';
 					p.style.height = '1px';
 					p.style.minHeight = '1px';
 					p.style.maxHeight = '1px';
 					p.style.lineHeight = '1px';
 					p.style.fontSize = '1px';
-					p.style.padding = '0';
 					p.style.overflow = 'visible';
 				} else {
 					p.style.borderTop = 'none';
-					p.style.margin = '3px 0';
-					p.style.lineHeight = '4px';
-					p.style.fontSize = '4px';
+					p.style.margin = '4px 0';
 					p.style.height = '4px';
 					p.style.minHeight = '4px';
 					p.style.maxHeight = '4px';
-					p.style.padding = '0';
+					p.style.lineHeight = '4px';
+					p.style.fontSize = '4px';
 					p.style.overflow = 'hidden';
 				}
+				p.style.padding = '0';
 			});
 		} catch (err) {
 			console.warn('Error al sincronizar diseño institucional en editor:', err);

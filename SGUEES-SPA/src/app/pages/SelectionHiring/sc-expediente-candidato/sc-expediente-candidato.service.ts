@@ -612,7 +612,7 @@ export class ScExpedienteCandidatoService {
 			{
 				dataField: 'CORR_ESTADO_EXPEDIENTE',
 				caption: 'Estado expediente',
-				width: 190,
+				width: 210,
 				alignment: 'center',
 				cssClass: 'expediente-grid-estado-col',
 				allowFiltering: false,

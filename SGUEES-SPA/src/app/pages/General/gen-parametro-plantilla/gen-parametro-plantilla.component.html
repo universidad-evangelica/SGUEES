@@ -30,7 +30,7 @@
 			</div>
 
 			<dx-button
-				*ngIf="tienePrimeraVersionGuardada()"
+				*ngIf="tienePrimeraVersionGuardada() && !esSoloLectura()"
 				text="Nueva Versión"
 				icon="add"
 				type="default"
@@ -38,7 +38,7 @@
 			></dx-button>
 
 			<dx-button
-				*ngIf="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
+				*ngIf="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada() && !esSoloLectura()"
 				text="Establecer como Activa"
 				icon="check"
 				type="warning"
@@ -85,7 +85,7 @@
 						[showClearButton]="true"
 						[dropDownOptions]="smtpDropDownOptions"
 						(onOpened)="onSmtpOpened($event)"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
+						[readOnly]="esSoloLectura() || (tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada())"
 						placeholder="Seleccione o escriba para buscar cuenta SMTP..."
 					></dx-select-box>
 				</div>
@@ -95,7 +95,7 @@
 					<dx-text-box
 						[(value)]="model.CODIGO_PLANTILLA"
 						[maxLength]="50"
-						[readOnly]="tieneModuloYProcesoFijado()"
+						[readOnly]="esSoloLectura() || esCabeceraBloqueada()"
 						placeholder="Ej. BIENVENIDA_DOCENTE"
 					></dx-text-box>
 				</div>
@@ -105,7 +105,7 @@
 					<dx-text-box
 						[(value)]="model.NOMBRE_PLANTILLA"
 						[maxLength]="150"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
+						[readOnly]="esSoloLectura() || (tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada())"
 						placeholder="Ej. Plantilla de Bienvenida a Nuevos Docentes"
 					></dx-text-box>
 				</div>
@@ -113,7 +113,7 @@
 				<div class="form-col form-col-activo">
 					<dx-check-box
 						[(value)]="model.ACTIVO_PLANTILLA"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
+						[readOnly]="esSoloLectura() || (tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada())"
 						text="Plantilla Activa"
 					></dx-check-box>
 				</div>
@@ -123,7 +123,7 @@
 					<dx-text-box
 						[(value)]="model.ASUNTO_PLANTILLA"
 						[maxLength]="255"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
+						[readOnly]="esSoloLectura() || (tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada())"
 						placeholder="Ej. Bienvenido a la Universidad Evangélica de El Salvador"
 					></dx-text-box>
 				</div>
@@ -133,7 +133,7 @@
 					<dx-text-box
 						[(value)]="model.CORREO_CC"
 						[maxLength]="255"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
+						[readOnly]="esSoloLectura() || (tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada())"
 						placeholder="correo1@uees.edu.sv, correo2@uees.edu.sv"
 					></dx-text-box>
 				</div>
@@ -143,36 +143,40 @@
 					<dx-text-box
 						[(value)]="model.CORREO_CCO"
 						[maxLength]="255"
-						[readOnly]="tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada()"
+						[readOnly]="esSoloLectura() || (tienePrimeraVersionGuardada() && !esVersionActivaSeleccionada())"
 						placeholder="auditoria@uees.edu.sv"
 					></dx-text-box>
 				</div>
 
+				<!-- motivo: selector de módulo con soporte para plantillas genéricas sin módulo asignado -->
 				<div class="form-col form-col-medio">
-					<label class="form-label">Módulo *</label>
+					<label class="form-label">Módulo (Opcional)</label>
 					<dx-select-box
 						[(value)]="model.CODIGO_SISTEMA"
 						[items]="mSISTEMAS"
 						valueExpr="Key"
 						displayExpr="Value"
 						[searchEnabled]="true"
-						[readOnly]="tieneModuloYProcesoFijado()"
-						placeholder="Seleccione el módulo..."
+						[showClearButton]="!esSoloLectura() && !esCabeceraBloqueada()"
+						[readOnly]="esSoloLectura() || esCabeceraBloqueada()"
+						placeholder="Seleccione módulo o deje vacío para plantilla genérica..."
 						(onValueChanged)="onModuloChange($event)"
 					></dx-select-box>
 				</div>
 
+				<!-- motivo: selector de menú o proceso específico inhabilitado si es genérica o tras guardar -->
 				<div class="form-col form-col-medio">
-					<label class="form-label">Menú / Proceso *</label>
+					<label class="form-label">Menú / Proceso (Opcional)</label>
 					<dx-select-box
 						[(value)]="model.CODIGO_OPCION"
 						[items]="mOPCIONES"
 						valueExpr="Key"
 						displayExpr="Value"
 						[searchEnabled]="true"
-						[readOnly]="tieneModuloYProcesoFijado()"
-						[disabled]="!model.CODIGO_SISTEMA"
-						placeholder="Seleccione el menú o proceso..."
+						[showClearButton]="!esSoloLectura() && !esCabeceraBloqueada()"
+						[readOnly]="esSoloLectura() || esCabeceraBloqueada()"
+						[disabled]="(!model.CODIGO_SISTEMA && !esCabeceraBloqueada()) || esSoloLectura()"
+						placeholder="Seleccione menú o deje vacío para plantilla genérica..."
 						(onValueChanged)="onOpcionChange($event)"
 					></dx-select-box>
 				</div>
@@ -181,7 +185,7 @@
 				<div class="form-col form-col-full form-col-editor">
 					<div class="plantilla-editor-header">
 						<label class="form-label" style="font-weight: 600; font-size: 13px; color: #475569; margin: 0;">
-							Correo *
+							Correo
 						</label>
 						<div class="plantilla-editor-actions">
 							<dx-button
@@ -210,7 +214,7 @@
 							[parametros]="parametrosDisponibles"
 							[height]="500"
 							[readOnly]="!esEditorHabilitado()"
-							[placeholder]="tieneModuloYProcesoFijado() ? 'Escriba el contenido del correo...' : 'Guarde la información principal para habilitar la redacción del correo...'"
+							[placeholder]="esCabeceraBloqueada() ? 'Escriba el contenido del correo...' : 'Guarde la información principal para habilitar la redacción del correo...'"
 						></app-text-editor>
 					</div>
 				</div>

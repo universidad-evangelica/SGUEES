@@ -3,7 +3,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
-import { confirm } from 'devextreme/ui/dialog';
+import { confirm, custom } from 'devextreme/ui/dialog';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -29,12 +29,21 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 	parametrosDisponibles: Array<{ key: string; label: string; descripcion?: string; tipo?: string }> = [];
 
 	// Qué hace: opciones de configuración para la ventana desplegable de cuentas SMTP.
-	// Cómo lo hace: sincroniza el ancho del popup con el ancho real del control selector al momento de mostrarse.
+	// Cómo lo hace: asigna clase smtp-select-popup-wrapper y fuerza el ancho del popup al tamaño del selector con prioridad important.
 	smtpDropDownOptions = {
+		wrapperAttr: { class: 'smtp-select-popup-wrapper' },
 		onShowing: (e: any) => {
-			const target = e.component.option('target');
-			if (target?.offsetWidth) {
-				e.component.option('width', target.offsetWidth);
+			const ofEl = e.component.option('position')?.of ?? e.component.option('position.of');
+			const domEl = ofEl?.[0] ?? ofEl ?? document.querySelector('.form-col-medio dx-select-box');
+			const width = domEl?.offsetWidth ?? domEl?.getBoundingClientRect?.()?.width;
+			if (width) {
+				const overlayContent =
+					e.component?.$overlayContent?.()?.[0] ??
+					(e.element as HTMLElement)?.querySelector?.('.dx-overlay-content');
+				if (overlayContent?.style) {
+					overlayContent.style.setProperty('width', `${width}px`, 'important');
+					overlayContent.style.setProperty('min-width', `${width}px`, 'important');
+				}
 			}
 		},
 	};
@@ -46,6 +55,7 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 	motivoNuevaVersion = '';
 	guardandoNuevaVersion = false;
 	activandoVersion = false;
+	readOnly = false;
 
 	protected override etiquetaRegistro = 'la plantilla de correo';
 	protected override requiereEmpresaSesion = true;
@@ -78,6 +88,7 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.cargarCuentasSmtp();
 		this.cargarModulos();
+		this.cargarParametrosDisponibles();
 		this.consultar();
 	}
 
@@ -85,6 +96,12 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
 			this.subTituloVentana = this.maintenanceSubtitulo;
+		} else if (xEstado === UpdateType.Not_Defined) {
+			this.subTituloVentana = 'Consulta de Plantilla';
+		} else if (xEstado === UpdateType.Update) {
+			this.subTituloVentana = 'Edición de Plantilla';
+		} else if (xEstado === UpdateType.Add) {
+			this.subTituloVentana = 'Nueva Plantilla';
 		}
 	}
 
@@ -188,14 +205,20 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: ajusta dinámicamente el ancho del menú desplegable al abrirse.
-	// Cómo lo hace: obtiene el offsetWidth del elemento selector y fuerza el ancho del contenedor flotante dx-overlay-content.
+	// Cómo lo hace: obtiene el offsetWidth del selector dx-select-box y sobreescribe con important el width: auto del editor de texto.
 	onSmtpOpened(e: any): void {
 		const width = e.element?.offsetWidth;
 		if (width) {
-			const overlayContent = e.component?.content()?.closest('.dx-overlay-content');
-			if (overlayContent) {
-				overlayContent.style.width = `${width}px`;
-				overlayContent.style.minWidth = `${width}px`;
+			if (e.component?._popup) {
+				e.component._popup.option('width', width);
+			}
+			const overlayContent =
+				e.component?._popup?.$overlayContent?.()?.[0] ??
+				(document.querySelector('.smtp-select-popup-wrapper .dx-overlay-content') as HTMLElement) ??
+				(document.querySelector('.dx-selectbox-popup-wrapper .dx-overlay-content') as HTMLElement);
+			if (overlayContent?.style) {
+				overlayContent.style.setProperty('width', `${width}px`, 'important');
+				overlayContent.style.setProperty('min-width', `${width}px`, 'important');
 			}
 		}
 	}
@@ -221,15 +244,17 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: reacciona al cambio de módulo cargando sus opciones de menú permitidas.
-	// Cómo lo hace: invoca getOpcionesPorModulo filtrando opciones de configuración de plantillas y limpia parámetros previos.
+	// Cómo lo hace: invoca getOpcionesPorModulo filtrando opciones de configuración de plantillas y mantiene actualizados los parámetros disponibles.
 	onModuloChange(e: any): void {
 		const codigoSistema = e?.value;
 		this.mOPCIONES = [];
-		this.parametrosDisponibles = [];
 		if (!codigoSistema) {
 			this.model.CODIGO_OPCION = null;
+			this.cargarParametrosDisponibles();
 			return;
 		}
+
+		this.cargarParametrosDisponibles('', codigoSistema);
 
 		this.service.getOpcionesPorModulo(codigoSistema).subscribe({
 			next: (res) => {
@@ -248,22 +273,22 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		});
 	}
 
+	// Qué hace: actualiza los parámetros disponibles del proceso cuando el usuario cambia la opción seleccionada.
+	// Cómo lo hace: si se limpia la opción recarga los parámetros institucionales, y si se selecciona carga las columnas de BD de esa opción.
 	onOpcionChange(e: any): void {
 		const codigoOpcion = e?.value;
 		if (!codigoOpcion) {
-			this.parametrosDisponibles = [];
+			this.cargarParametrosDisponibles('', this.model.CODIGO_SISTEMA ?? undefined);
 			return;
 		}
 		this.cargarParametrosDisponibles(codigoOpcion, this.model.CODIGO_SISTEMA ?? undefined);
 	}
 
+	// Qué hace: consulta los parámetros disponibles (institucionales fijos y columnas de la opción seleccionada).
+	// Cómo lo hace: invoca el endpoint GetParametrosDisponibles de la API enviando opción y módulo opcionales para recibir variables institucionales y de BD.
 	private cargarParametrosDisponibles(codigoOpcion?: string, codigoSistema?: string): void {
 		const opcion = codigoOpcion ?? this.model?.CODIGO_OPCION ?? '';
 		const sistema = codigoSistema ?? this.model?.CODIGO_SISTEMA ?? '';
-		if (!opcion && !sistema) {
-			this.parametrosDisponibles = [];
-			return;
-		}
 
 		this.service.getParametrosDisponibles(opcion || undefined, sistema || undefined).subscribe({
 			next: (res) => {
@@ -287,16 +312,18 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 	}
 
 	override nuevo(): void {
+		this.readOnly = false;
 		this.model = this.fillData();
 		this.versiones = [];
 		this.versionSeleccionada = null;
-		this.parametrosDisponibles = [];
 		this.mOPCIONES = [];
+		this.cargarParametrosDisponibles();
 		this.AsignaStatus(UpdateType.Add);
 	}
 
 	editar(data: any): void {
 		if (!data?.CORR_PARAMETRO_PLANTILLA) return;
+		this.readOnly = false;
 		this.model = this.fillData(data);
 		this.AsignaStatus(UpdateType.Update);
 		if (this.model.CODIGO_SISTEMA) {
@@ -317,21 +344,108 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 
 	onEditClick(e: any): void {
 		const row = e?.row?.data ?? e?.data;
+		this.readOnly = false;
 		this.editar(row);
 	}
 
+	// Qué hace: abre la plantilla seleccionada en modo solo lectura al hacer doble clic en el grid.
+	// Cómo lo hace: activa el estado de consulta (Not_Defined) mediante super.rowDblClick, marca readOnly en true, carga el modelo, sus catálogos dependientes y versiones bloqueando edición.
 	override rowDblClick(e: any): void {
 		const row = e?.row?.data ?? e?.data;
-		this.editar(row);
+		if (!row?.CORR_PARAMETRO_PLANTILLA) return;
+		this.readOnly = true;
+		this.model = this.fillData(row);
+		this.modelUpdate = this.fillData(row);
+		super.rowDblClick(e);
+		if (this.model.CODIGO_SISTEMA) {
+			this.service.getOpcionesPorModulo(this.model.CODIGO_SISTEMA).subscribe({
+				next: (res) => {
+					if (res?.Result && Array.isArray(res.Data)) {
+						this.mOPCIONES = res.Data.map((x: any) => ({
+							Key: x.Key ?? x.CODIGO_OPCION,
+							Value: x.Value ?? x.NOMBRE_OPCION ?? x.CODIGO_OPCION,
+						}));
+					}
+				}
+			});
+		}
+		this.cargarParametrosDisponibles();
+		this.cargarVersiones(this.model.CORR_PARAMETRO_PLANTILLA);
 	}
 
-	// Qué hace: guarda la plantilla y mantiene el parche en memoria.
-	// Cómo lo hace: valida modelo, inserta o actualiza según CORR_PARAMETRO_PLANTILLA y refresca el arreglo local sin invocar GetAll.
+	// Qué hace: valida las condiciones previas y confirma si se registrará como plantilla genérica.
+	// Cómo lo hace: si no tiene módulo ni menú alerta al usuario mediante confirm modal antes de persistir, bloqueando modificaciones posteriores.
 	guardar(): void {
 		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) return;
 
 		const esNuevo = !this.model?.CORR_PARAMETRO_PLANTILLA || this.model.CORR_PARAMETRO_PLANTILLA === 0;
+		const esGenerica = (!this.model?.CODIGO_SISTEMA || this.model.CODIGO_SISTEMA.trim() === '') &&
+			(!this.model?.CODIGO_OPCION || this.model.CODIGO_OPCION.trim() === '');
 
+		if (esNuevo && esGenerica) {
+			const dialog = custom({
+				showTitle: false,
+				messageHtml: `
+					<div class="confirm-generica-modal-content" style="font-family: inherit; color: inherit; padding: 4px 2px;">
+						<!-- Cabecera con indicador dorado y título -->
+						<div style="display: flex; align-items: center; margin-bottom: 14px;">
+							<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #f59e0b; margin-right: 10px; flex-shrink: 0; box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);"></span>
+							<h3 style="margin: 0; font-size: 17px; font-weight: 700; color: inherit; letter-spacing: -0.2px;">Confirmación de Guardado</h3>
+						</div>
+
+						<!-- Caja destacada en Modo Genérico -->
+						<div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 13.5px; line-height: 1.5;">
+							<span style="font-weight: 700; color: #f59e0b;">Modo Genérico:</span>
+							<span> Al no indicar módulo, el sistema registrará la plantilla con parámetros globales para uso general.</span>
+						</div>
+
+						<!-- Texto descriptivo intermedio -->
+						<p style="margin: 0 0 14px 0; font-size: 13.5px; line-height: 1.5; opacity: 0.85;">
+							Tenga en cuenta que esta configuración inicial no podrá asociarse a un módulo más adelante.
+						</p>
+
+						<!-- Pregunta final -->
+						<p style="margin: 0; font-size: 14px; font-weight: 700; color: inherit;">
+							¿Desea guardar la plantilla ahora?
+						</p>
+					</div>
+				`,
+				popupOptions: {
+					width: 580,
+					maxWidth: '92vw',
+					position: { my: 'center', at: 'center' },
+					wrapperAttr: { class: 'confirm-generica-dialog-wrapper' },
+				},
+				buttons: [
+					{
+						text: 'Cancelar',
+						stylingMode: 'text',
+						type: 'normal',
+						onClick: () => false,
+					},
+					{
+						text: 'Sí, Guardar',
+						stylingMode: 'contained',
+						type: 'default',
+						onClick: () => true,
+					},
+				],
+			} as any);
+
+			dialog.show().then((aceptado: boolean) => {
+				if (aceptado) {
+					this.ejecutarGuardado(esNuevo);
+				}
+			});
+			return;
+		}
+
+		this.ejecutarGuardado(esNuevo);
+	}
+
+	// Qué hace: ejecuta la persistencia de la plantilla (insert o update) y mantiene el parche en memoria.
+	// Cómo lo hace: inserta o actualiza según esNuevo, crea automáticamente la versión 1 inicial y refresca la lista local sin GetAll.
+	private ejecutarGuardado(esNuevo: boolean): void {
 		if (esNuevo) {
 			this.service.insert(this.model).subscribe({
 				next: (response) => {
@@ -398,6 +512,7 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 	}
 
 	override cancelar(): void {
+		this.readOnly = false;
 		this.AsignaStatus(UpdateType.Browse);
 	}
 
@@ -436,15 +551,29 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		return !!this.versionSeleccionada?.ES_VERSION_ACTIVA;
 	}
 
-	tieneModuloYProcesoFijado(): boolean {
-		return !!this.model?.CORR_PARAMETRO_PLANTILLA &&
-			this.model.CORR_PARAMETRO_PLANTILLA > 0 &&
-			!!this.model?.CODIGO_SISTEMA &&
-			!!this.model?.CODIGO_OPCION;
+	// Qué hace: determina si los campos de cabecera (código, módulo, menú) deben quedar bloqueados.
+	// Cómo lo hace: evalúa si el registro ya fue guardado en la base de datos (CORR_PARAMETRO_PLANTILLA > 0).
+	esCabeceraBloqueada(): boolean {
+		return !!this.model?.CORR_PARAMETRO_PLANTILLA && this.model.CORR_PARAMETRO_PLANTILLA > 0;
 	}
 
+	// Qué hace: determina si la cabecera ya se encuentra fijada en la base de datos.
+	// Cómo lo hace: delega la verificación al método esCabeceraBloqueada para conservar retrocompatibilidad.
+	tieneModuloYProcesoFijado(): boolean {
+		return this.esCabeceraBloqueada();
+	}
+
+	// Qué hace: determina si la vista se encuentra en modo solo lectura.
+	// Cómo lo hace: verifica si la bandera local readOnly está activa o si el mantenimiento está en modo consulta (isConsulta).
+	esSoloLectura(): boolean {
+		return this.readOnly || this.isConsulta();
+	}
+
+	// Qué hace: determina si el editor HTML está habilitado para edición.
+	// Cómo lo hace: requiere que no esté en modo solo lectura, que la cabecera esté fijada y que la versión seleccionada sea la activa.
 	esEditorHabilitado(): boolean {
-		if (!this.tieneModuloYProcesoFijado()) return false;
+		if (this.esSoloLectura()) return false;
+		if (!this.esCabeceraBloqueada()) return false;
 		if (this.tienePrimeraVersionGuardada() && !this.esVersionActivaSeleccionada()) return false;
 		return true;
 	}
@@ -557,6 +686,7 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 				}
 			});
 		});
+
 	}
 
 	cargarFormatoBaseUEES(): void {

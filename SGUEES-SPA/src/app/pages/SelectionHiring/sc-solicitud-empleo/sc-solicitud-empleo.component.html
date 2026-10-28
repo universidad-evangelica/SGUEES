@@ -214,8 +214,12 @@
           <dxo-paging [pageSize]="5"></dxo-paging>
 
           <dxo-pager
+            [visible]="true"
             [showPageSizeSelector]="true"
             [allowedPageSizes]="[5, 10, 20]"
+            [showInfo]="true"
+            [infoText]="'Página {0} de {1} ({2} ítems)'"
+            [showNavigationButtons]="true"
           ></dxo-pager>
 
           <dxo-editing
@@ -997,13 +1001,6 @@
       ></dx-select-box>
     </div>
 
-    <!-- motivo: asunto en modo solo lectura de la plantilla para revisión -->
-    <div *ngIf="plantillaSeleccionadaCorr">
-      <label style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">
-        Asunto
-      </label>
-      <dx-text-box [(value)]="correoAsunto" [readOnly]="true"></dx-text-box>
-    </div>
 
     <!-- motivo: vista previa interactiva en modo solo lectura del cuerpo con formato institucional respetando estilos y colores -->
     <div *ngIf="plantillaSeleccionadaCorr" class="email-preview-container">
