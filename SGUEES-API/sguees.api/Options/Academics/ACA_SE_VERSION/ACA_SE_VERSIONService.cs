@@ -43,5 +43,9 @@ namespace sguees.Services
 
 		public Task<CResult> ActivarInactivarAsync(ACA_SE_VERSIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
+		// Qué hace: lookup de versiones activas para GetLookUp.
+		public Task<CResult> GetVersionesActivasAsync()
+			=> _repo.GetVersionesActivasAsync();
 	}
 }

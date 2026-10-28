@@ -17,6 +17,8 @@ import { AcaDocumentoAdmisionComponent } from './aca-documento-admision/aca-docu
 import { AcaDocumentoAdmisionPeriodosAcademicosComponent } from './aca-documento-admision-periodos-academicos/aca-documento-admision-periodos-academicos.component';
 import { AcaSeVersionComponent } from './aca-se-version/aca-se-version.component';
 import { AcaSePreguntaComponent } from './aca-se-pregunta/aca-se-pregunta.component';
+import { AcaSeVersionPreguntaComponent } from './aca-se-version-pregunta/aca-se-version-pregunta.component';
+
 
 
 const routes: Routes = [
@@ -96,6 +98,16 @@ const routes: Routes = [
     canDeactivate: [AppCanDeactivateGuard],
     data: { titulo: 'Preguntas socioeconómico' },
     loadChildren: () => import('./aca-se-pregunta/aca-se-pregunta.module').then((m) => m.AcaSePreguntaModule),
+  },
+  // Qué hace: abre Preguntas por versión SE.
+  // Cómo lo hace: la dirección del menú es /aca-se-version-pregunta.
+  {
+    path: 'aca-se-version-pregunta',
+    component: AcaSeVersionPreguntaComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Preguntas por versión SE' },
+    loadChildren: () => import('./aca-se-version-pregunta/aca-se-version-pregunta.module').then((m) => m.AcaSeVersionPreguntaModule),
   },
   {
     path: 'aca-bec-origen-beca',

@@ -35,6 +35,13 @@ namespace sguees.Controllers
 		public async Task<CResult> Get([FromQuery] ACA_SE_VERSIONParam Data)
 			=> await _service.GetAsync(Data);
 
+		// Qué hace: lookup de versiones para el mantenimiento preguntas por versión.
+		// Cómo lo hace: GetLookUp arma GetCORR_VERSION_ACA_SE_VERSION_PREGUNTA; permiso de esa pantalla.
+		[HttpGet("GetCORR_VERSION_ACA_SE_VERSION_PREGUNTA")]
+		[Authorize(Policy = "/aca-se-version-pregunta|R")]
+		public async Task<CResult> GetCORR_VERSION_ACA_SE_VERSION_PREGUNTA()
+			=> await _service.GetVersionesActivasAsync();
+
 		[HttpPost]
 		[Authorize(Policy = "/aca-se-version|C")]
 		public async Task<IActionResult> Post(ACA_SE_VERSIONTable Data)

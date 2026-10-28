@@ -267,6 +267,43 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Qué hace: lista preguntas activas para GetLookUp de preguntas por versión.
+		// Cómo lo hace: lee V_ACA_SE_PREGUNTA filtrando ACTIVO = 1 y ordena por correlativo.
+		public async Task<CResult> GetPreguntasActivasAsync()
+		{
+			CResult objResultado = new();
+			try
+			{
+				var xWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "ACTIVO", Value = true, DbType = System.Data.DbType.Boolean },
+				};
+				var reader = await objData.GetDataReader(_ViewName, xWhere);
+				var response = new List<ACA_SE_PREGUNTAView>().FromDataReader(reader)
+					.OrderBy(x => x.CORR_PREGUNTA)
+					.ToList();
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
+
 		private async Task<ACA_SE_PREGUNTAView> LeerVistaPorPkAsync(int corrPregunta)
 		{
 			var xWhere = new List<CParameter>
