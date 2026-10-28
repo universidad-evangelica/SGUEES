@@ -42,6 +42,13 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_PREGUNTA_ACA_SE_VERSION_PREGUNTA()
 			=> await _service.GetPreguntasActivasAsync();
 
+		// Qué hace: lookup de preguntas activas para el mantenimiento de opciones SE.
+		// Cómo lo hace: GetLookUp arma GetCORR_PREGUNTA_ACA_SE_OPCION; permiso de esa pantalla.
+		[HttpGet("GetCORR_PREGUNTA_ACA_SE_OPCION")]
+		[Authorize(Policy = "/aca-se-opcion|R")]
+		public async Task<CResult> GetCORR_PREGUNTA_ACA_SE_OPCION()
+			=> await _service.GetPreguntasActivasAsync();
+
 		[HttpPost]
 		[Authorize(Policy = "/aca-se-pregunta|C")]
 		public async Task<IActionResult> Post(ACA_SE_PREGUNTATable Data)
