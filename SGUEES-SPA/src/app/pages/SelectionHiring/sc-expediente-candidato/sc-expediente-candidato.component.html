@@ -1,4 +1,4 @@
-<div
+﻿<div
   class="sguees-mtto-view expediente-mtto"
   [class.expediente-mtto--workspace-open]="workspaceSolicitudVisible"
 >
@@ -682,6 +682,7 @@
   />
 </div>
 
+<!-- motivo: modal para editar datos personales del candidato delegando la actualización al endpoint específico de expediente -->
 <app-sc-solicitud-empleo-editar-persona
   [(visible)]="editarPersonaVisible"
   [corrSolicitudEmpleo]="corrSolicitudEmpleoParaEdicion"
@@ -694,6 +695,7 @@
   [competencias]="competencias"
   [experiencias]="experiencias"
   [familiaresUees]="familiaresUees"
+  [saveFn]="guardarPersonaDatos"
   (saved)="onPersonaDatosGuardados()"
 ></app-sc-solicitud-empleo-editar-persona>
 

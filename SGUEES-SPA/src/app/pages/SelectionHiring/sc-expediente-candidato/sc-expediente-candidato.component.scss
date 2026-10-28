@@ -935,24 +935,23 @@
    3. Definir color abajo (texto, background, border)
    ============================================================================= */
 
-:host ::ng-deep .expediente-grid-estado-col {
+// Qué hace: alineación de la celda de estado sin alterar el modelo de celda de tabla de la grilla.
+// Cómo lo hace: mantiene text-align y vertical-align con text-overflow clip para evitar puntos suspensivos residuales.
+:host ::ng-deep .expediente-grid-estado-col,
+:host ::ng-deep .expediente-grid-estado-cell {
   text-align: center;
   vertical-align: middle;
-}
-
-:host ::ng-deep .expediente-grid-estado-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-overflow: clip !important;
 }
 
 :host ::ng-deep .estado-exp-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  vertical-align: middle;
   min-height: 28px;
-  min-width: 110px;
-  padding: 6px 20px;
+  min-width: 90px;
+  padding: 4px 14px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;

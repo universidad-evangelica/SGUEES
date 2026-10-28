@@ -254,6 +254,9 @@ namespace sguees.Services
 			var resultado = Regex.Replace(html, @"padding:\s*32px\s+24px;?", "padding: 8px 16px;", RegexOptions.IgnoreCase);
 			resultado = Regex.Replace(resultado, @"padding:\s*22px\s+20px;?", "padding: 12px 16px;", RegexOptions.IgnoreCase);
 
+			// Eliminar párrafos vacíos redundantes <p><br></p> entre tablas que generan espaciado vertical excesivo
+			resultado = Regex.Replace(resultado, @"(</table>\s*(?:<p[^>]*>\s*<span[^>]*>(?:&nbsp;|\s*)</span>\s*</p>)?)\s*<p[^>]*>\s*(?:<br\s*/?>|&nbsp;|\s*)\s*</p>\s*(<table)", "$1$2", RegexOptions.IgnoreCase);
+
 			// Asegurar align="center" y width="650" en tablas para que Outlook Desktop no las estire al 100%
 			resultado = Regex.Replace(resultado, @"<table(\s+[^>]*)?>", match =>
 			{

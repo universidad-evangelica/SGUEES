@@ -1066,7 +1066,7 @@
 										<dx-text-box
 											stylingMode="outlined"
 											[value]="doc.VALOR_DOCUMENTO"
-											[maxLength]="maxLengthDocumento(doc) ?? undefined"
+											[maxLength]="maxLengthDocumento(doc) ?? ''"
 											[showClearButton]="true"
 											(onKeyDown)="onDocumentoValorKeyDown(doc, $event)"
 											(onInput)="onDocumentoValorInput(doc, $event)"
@@ -1092,7 +1092,7 @@
 										<dx-text-box
 											stylingMode="outlined"
 											[value]="item.VALOR_CONTACTO"
-											[maxLength]="maxLengthContacto(item) ?? undefined"
+											[maxLength]="maxLengthContacto(item) ?? ''"
 											[showClearButton]="true"
 											(onKeyDown)="onContactoValorKeyDown(item, $event)"
 											(onInput)="onContactoValorInput(item, $event)"
@@ -2188,7 +2188,7 @@
 							stylingMode="outlined"
 							[(value)]="submodalParentescoContactoDraft.VALOR_CONTACTO"
 							[disabled]="!tipoParentescoContactoSeleccionado()"
-							[maxLength]="maxLengthParentescoContacto() ?? undefined"
+							[maxLength]="maxLengthParentescoContacto() ?? ''"
 							(onKeyDown)="onParentescoContactoValorKeyDown($event)"
 							(onInput)="onParentescoContactoValorInput($event)"
 							(onValueChanged)="onParentescoContactoValorChanged($event)"
@@ -2406,21 +2406,23 @@
 							[disabled]="!submodalPuestoDraft.CORR_UNIDAD"
 						></dx-select-box>
 					</div>
+					<!-- motivo: binding con $any para permitir valor null/undefined en dx-date-box bajo strictTemplates -->
 					<div class="ep-field">
 						<label class="ep-label">Fecha de ingreso <span class="req">*</span></label>
 						<dx-date-box
 							stylingMode="outlined"
 							type="date"
 							displayFormat="dd/MM/yyyy"
-							[(value)]="submodalPuestoDraft.FECHA_INGRESO"
+							[(value)]="$any(submodalPuestoDraft).FECHA_INGRESO"
 							[showClearButton]="false"
 						></dx-date-box>
 					</div>
+					<!-- motivo: binding con $any para permitir valor null/undefined en dx-number-box bajo strictTemplates -->
 					<div class="ep-field">
 						<label class="ep-label">Sueldo <span class="req">*</span></label>
 						<dx-number-box
 							stylingMode="outlined"
-							[(value)]="submodalPuestoDraft.SUELDO"
+							[(value)]="$any(submodalPuestoDraft).SUELDO"
 							format="$#,##0.00"
 							[min]="0"
 							[showClearButton]="false"
@@ -2528,13 +2530,14 @@
 						stylingMode="outlined"
 						type="date"
 						displayFormat="dd/MM/yyyy"
-						[(value)]="modelPersonaNatural.FECHA_NACIMIENTO"
+						[(value)]="$any(modelPersonaNatural).FECHA_NACIMIENTO"
 						(onValueChanged)="onFechaNacimientoChanged($event)"
 					></dx-date-box>
 				</div>
+				<!-- motivo: binding con $any para permitir valor null en dx-number-box bajo strictTemplates -->
 				<div class="ep-field">
 					<label class="ep-label">Edad</label>
-					<dx-number-box stylingMode="outlined" [(value)]="modelPersonaNatural.EDAD" [min]="0" [readOnly]="true"></dx-number-box>
+					<dx-number-box stylingMode="outlined" [(value)]="$any(modelPersonaNatural).EDAD" [min]="0" [readOnly]="true"></dx-number-box>
 				</div>
 			</div>
 		</section>

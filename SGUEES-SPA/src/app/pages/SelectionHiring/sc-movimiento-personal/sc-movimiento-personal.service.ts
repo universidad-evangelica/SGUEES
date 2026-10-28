@@ -6,12 +6,12 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { ScMovimientoPersonalRepository } from './sc-movimiento-personal.repository';
 import { ScMovimientoPersonal } from './models/sc-movimiento-personal';
 
+// Qué hace: Servicio para la gestión y validación de movimientos de personal.
+// Cómo lo hace: Centraliza catálogos de estado/tipo, valida reglas de negocio y delega operaciones al repositorio.
 @Injectable({
 	providedIn: 'root',
 })
 export class ScMovimientoPersonalService {
-	constructor(private repo: ScMovimientoPersonalRepository) {}
-
 	/** Catálogo de estados de negocio (chip / grid). */
 	readonly estadosMovimiento: { CODIGO: string; NOMBRE: string }[] = [
 		{ CODIGO: 'DI', NOMBRE: 'Borrador' },
@@ -28,6 +28,8 @@ export class ScMovimientoPersonalService {
 		{ CODIGO: 'ASCENSO', NOMBRE: 'Ascenso' },
 		{ CODIGO: 'TRASLADO', NOMBRE: 'Traslado' },
 	];
+
+	constructor(private repo: ScMovimientoPersonalRepository) {}
 
 	//#region Validadores
 	esValido(model: ScMovimientoPersonal, msg: Function): boolean {
@@ -286,13 +288,13 @@ export class ScMovimientoPersonalService {
 					container.appendChild(chip);
 				},
 			},
-			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo', width: 160 },
+			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo', width: 220 },
 			{ dataField: 'NOMBRE_COMPLETO', caption: 'Nombre', width: 250 },
 			{ dataField: 'NUMERO_ID', caption: 'Documento', width: 130 },
-			{ dataField: 'NOMBRE_UNIDAD_PROPUESTA', caption: 'Unidad propuesta', width: 200 },
-			{ dataField: 'NOMBRE_PUESTO_PROPUESTO', caption: 'Puesto propuesto', width: 200 },
+			{ dataField: 'NOMBRE_UNIDAD_PROPUESTA', caption: 'Unidad propuesta', width: 300 },
+			{ dataField: 'NOMBRE_PUESTO_PROPUESTO', caption: 'Puesto propuesto', width: 225 },
 			{ dataField: 'SALARIO_PROPUESTO', caption: 'Salario prop.', width: 140, format: '#,##0.00' },
-			{ dataField: 'NOMBRE_ORIGEN_MOVIMIENTO', caption: 'Origen', width: 140 },
+			{ dataField: 'NOMBRE_ORIGEN_MOVIMIENTO', caption: 'Origen', width: 200 },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario crea', width: 140 },
 			{ dataField: 'FECHA_CREA', caption: 'Fecha crea', width: 140, dataType: 'date', format: 'dd/MM/yyyy' },
 		];

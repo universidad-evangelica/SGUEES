@@ -32,6 +32,13 @@ import { ScExpedienteCandidatoService } from '../sc-expediente-candidato/sc-expe
 	styleUrls: ['./sc-solicitud-empleo.component.scss'],
 })
 export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit, OnDestroy {
+	@HostListener('document:keydown.escape')
+	cerrarFotoPreviewConEscape(): void {
+		if (this.fotoPreviewVisible) {
+			this.cerrarFotoPreview();
+		}
+	}
+
 	//#region <Declarando Variales>
 	//this para insertar otros iconos en options de la tabla
 	customButtons: any[] = [];
@@ -79,6 +86,22 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	correoCuerpoPreviewSafe: SafeHtml = '';
 	enviandoCorreo = false;
 
+	constructor(
+		public override appInfoService: AppInfoService,
+		public override router: ActivatedRoute,
+		private service: ScSolicitudEmpleoService,
+		private expedienteService: ScExpedienteCandidatoService,
+		private messageService: MessageService,
+		private sanitizer: DomSanitizer
+	) {
+		super(appInfoService, router);
+		this.columns = this.service.getColumns();
+		this.summary = this.service.getSummary();
+		this.items = this.service.getItems();
+		this.tokenColumns = this.service.getTokenColumns();
+		this.requisicionPickerColumns = this.service.getRequisicionPickerColumns();
+	}
+
 	/**
 	 * Visible en formulario editable. Oculto en browse, consulta o ya asociada (congelada).
 	 */
@@ -113,22 +136,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		return this.asociacionExpedienteBloqueada || this.isConsulta();
 	}
 	// #endregion
-
-	constructor(
-		public override appInfoService: AppInfoService,
-		public override router: ActivatedRoute,
-		private service: ScSolicitudEmpleoService,
-		private expedienteService: ScExpedienteCandidatoService,
-		private messageService: MessageService,
-		private sanitizer: DomSanitizer
-	) {
-		super(appInfoService, router);
-		this.columns = this.service.getColumns();
-		this.summary = this.service.getSummary();
-		this.items = this.service.getItems();
-		this.tokenColumns = this.service.getTokenColumns();
-		this.requisicionPickerColumns = this.service.getRequisicionPickerColumns();
-	}
 
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
@@ -629,13 +636,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	cerrarFotoPreview(): void {
 		this.fotoPreviewVisible = false;
-	}
-
-	@HostListener('document:keydown.escape')
-	cerrarFotoPreviewConEscape(): void {
-		if (this.fotoPreviewVisible) {
-			this.cerrarFotoPreview();
-		}
 	}
 
 	private revocarFotoPersona(): void {
@@ -1511,8 +1511,10 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			return;
 		}
 
-		this.correoAsunto = this.sustituirParametrosCorreo(plantilla.ASUNTO_PLANTILLA || '');
-		this.correoCuerpoPreview = this.sustituirParametrosCorreo(plantilla.CUERPO_PLANTILLA || '');
+		let cuerpo = this.sustituirParametrosCorreo(plantilla.CUERPO_PLANTILLA || '');
+		// Limpiar párrafos vacíos redundantes <p><br></p> entre tablas para evitar separación excesiva en la vista previa
+		cuerpo = cuerpo.replace(/(<\/table>\s*(?:<p[^>]*>\s*<span[^>]*>(?:&nbsp;|\s*)<\/span>\s*<\/p>)?)\s*<p[^>]*>\s*(?:<br\s*\/?>|&nbsp;|\s*)\s*<\/p>\s*(<table)/gi, '$1$2');
+		this.correoCuerpoPreview = cuerpo;
 		this.correoCuerpoPreviewSafe = this.sanitizer.bypassSecurityTrustHtml(this.correoCuerpoPreview);
 	}
 
