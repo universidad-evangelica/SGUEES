@@ -155,6 +155,12 @@ function buildPaso1(form: FormularioEmpleoData): { requeridos: ProgressBucket; o
 	add(requeridos, isFilledText(form.PLAZA_SOLICITADA));
 	add(requeridos, isFilledText(form.DISPONIBILIDAD));
 
+	// Qué hace: Registra los campos obligatorios y opcionales de contacto de emergencia trasladados al Paso 1.
+	// Cómo lo hace: Suma al bucket de requeridos el nombre y teléfono de emergencia, y al de opcionales el parentesco.
+	add(requeridos, isFilledText(form.EMERGENCIA_NOMBRE));
+	add(requeridos, isFilledText(form.EMERGENCIA_TELEFONO));
+	add(opcionales, isFilledText(form.EMERGENCIA_PARENTESCO));
+
 	add(opcionales, isFilledText(form.NOMBRE2));
 	add(opcionales, isFilledText(form.APELLIDO2));
 	add(opcionales, isFilledText(form.AFP));
@@ -181,6 +187,8 @@ function buildPaso1(form: FormularioEmpleoData): { requeridos: ProgressBucket; o
 	return { requeridos, opcionales };
 }
 
+// Qué hace: Evalúa el progreso del Paso 2 (Información familiar).
+// Cómo lo hace: Excluye el contacto de emergencia (que ahora está en el Paso 1) y evalúa familiares directos e hijos opcionales.
 function buildPaso2(
 	form: FormularioEmpleoData,
 	familiaresDirectos: FamiliarDirecto[],
@@ -189,10 +197,6 @@ function buildPaso2(
 	const requeridos = emptyBucket();
 	const opcionales = emptyBucket();
 
-	add(requeridos, isFilledText(form.EMERGENCIA_NOMBRE));
-	add(requeridos, isFilledText(form.EMERGENCIA_TELEFONO));
-
-	add(opcionales, isFilledText(form.EMERGENCIA_PARENTESCO));
 	const familiaresBucket = countFamiliarDirectoFields(familiaresDirectos);
 	opcionales.llenos += familiaresBucket.llenos;
 	opcionales.total += familiaresBucket.total;

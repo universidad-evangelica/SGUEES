@@ -175,5 +175,15 @@ namespace sguees.Controllers
 			var resultado = await _service.EnviarCorreoPlantillaAsync(corrEmpresa, usuario, estacion, data);
 			return resultado.Result ? Ok(resultado) : BadRequest(resultado);
 		}
+
+		// Qué hace: busca y retorna la información básica del candidato y su expediente si ya existe registrado con el DUI provisto.
+		// Cómo lo hace: obtiene CORR_EMPRESA del token de sesión y llama a _service.BuscarCandidatoPorDuiAsync bajo la policy /sc-solicitud-empleo|R.
+		[HttpGet("BuscarCandidatoPorDui")]
+		[Authorize(Policy = "/sc-solicitud-empleo|R")]
+		public async Task<CResult> BuscarCandidatoPorDui([FromQuery] string dui)
+		{
+			int corrEmpresa = int.Parse(User.Claims.Single(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.BuscarCandidatoPorDuiAsync(corrEmpresa, dui);
+		}
 	}
 }

@@ -57,7 +57,21 @@
         [items]="items"
       >
         <div *dxTemplate="let cellInfo of 'CORR_UNIDADLookup'">
+          <!-- motivo: En modo lectura, usa el catálogo mCORR_UNIDAD_LECTURA obtenido del endpoint de lectura -->
           <app-data-lookup
+            *ngIf="readOnly"
+            [model]="mCORR_UNIDAD_LECTURA"
+            [(value)]="model.CORR_UNIDAD"
+            [selectedRowKeys]="selectedLookUpCORR_UNIDAD"
+            [readOnly]="true"
+            [valueExpr]="'CORR_UNIDAD'"
+            [displayExpr]="'NOMBRE_UNIDAD'"
+            [lookupColumns]="unidadLookupColumns"
+          >
+          </app-data-lookup>
+          <!-- motivo: En modo nuevo/edición, usa el catálogo mCORR_UNIDAD con las unidades asignadas al usuario -->
+          <app-data-lookup
+            *ngIf="!readOnly"
             [model]="mCORR_UNIDAD"
             [(value)]="model.CORR_UNIDAD"
             [selectedRowKeys]="selectedLookUpCORR_UNIDAD"
@@ -1014,6 +1028,7 @@
 </dx-popup>
 
 <!-- Modal: agregar observador a la requisición (lookup LOGIN_SISTEMA) -->
+<!-- motivo: Modal para agregar observador a la requisición; se recrea limpio al abrir (*ngIf) -->
 <dx-popup
   [(visible)]="popupObservadorVisible"
   title="Agregar observador"
@@ -1023,49 +1038,53 @@
   [showCloseButton]="true"
   [dragEnabled]="true"
   [hideOnOutsideClick]="false"
+  (onHiding)="cerrarModalObservador()"
 >
   <div *dxTemplate="let data of 'content'">
-    <dx-form
-      #fObservador
-      [formData]="modelObservador"
-      [labelLocation]="'top'"
-      [colCount]="2"
-      [items]="itemsObservadorModal"
-    >
-      <div *dxTemplate="let cellInfo of 'LOGIN_SISTEMALookup'">
-        <app-data-lookup
-          [model]="mLOGIN_SISTEMA"
-          [(value)]="modelObservador.LOGIN_SISTEMA"
-          [selectedRowKeys]="selectedLookUpLOGIN_SISTEMA"
-          [readOnly]="false"
-          [valueExpr]="'LOGIN_SISTEMA'"
-          [displayExpr]="'NOMBRE_USUARIO'"
-          [lookupColumns]="loginSistemaLookupColumns"
-        >
-        </app-data-lookup>
+    <!-- motivo: Destruye el formulario y el lookup al cerrar el modal para no retener filtros previos de búsqueda -->
+    <ng-container *ngIf="popupObservadorVisible">
+      <dx-form
+        #fObservador
+        [formData]="modelObservador"
+        [labelLocation]="'top'"
+        [colCount]="2"
+        [items]="itemsObservadorModal"
+      >
+        <div *dxTemplate="let cellInfo of 'LOGIN_SISTEMALookup'">
+          <app-data-lookup
+            [model]="mLOGIN_SISTEMA"
+            [(value)]="modelObservador.LOGIN_SISTEMA"
+            [selectedRowKeys]="selectedLookUpLOGIN_SISTEMA"
+            [readOnly]="false"
+            [valueExpr]="'LOGIN_SISTEMA'"
+            [displayExpr]="'NOMBRE_USUARIO'"
+            [lookupColumns]="loginSistemaLookupColumns"
+          >
+          </app-data-lookup>
+        </div>
+      </dx-form>
+      <div
+        class="d-flex justify-content-end gap-2 mt-3"
+        style="
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-top: 16px;
+        "
+      >
+        <dx-button
+          text="Cancelar"
+          stylingMode="outlined"
+          (onClick)="cerrarModalObservador()"
+        ></dx-button>
+        <dx-button
+          text="Guardar"
+          type="default"
+          stylingMode="contained"
+          (onClick)="guardarObservadorRequisicion()"
+        ></dx-button>
       </div>
-    </dx-form>
-    <div
-      class="d-flex justify-content-end gap-2 mt-3"
-      style="
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 16px;
-      "
-    >
-      <dx-button
-        text="Cancelar"
-        stylingMode="outlined"
-        (onClick)="cerrarModalObservador()"
-      ></dx-button>
-      <dx-button
-        text="Guardar"
-        type="default"
-        stylingMode="contained"
-        (onClick)="guardarObservadorRequisicion()"
-      ></dx-button>
-    </div>
+    </ng-container>
   </div>
 </dx-popup>
 

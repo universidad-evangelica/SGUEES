@@ -1,4 +1,4 @@
-<p-toast position="bottom-right"></p-toast>
+﻿<p-toast position="bottom-right"></p-toast>
 
 <div id="page-formulario-empleo" class="portal" [class.portal--wizard]="enWizard">
 	<div class="portal__media" aria-hidden="true"></div>
@@ -276,16 +276,20 @@
 						<div class="wizard-section">
 							<h3 class="wizard-section__title">Información laboral</h3>
 							<div class="wizard-grid wizard-grid--2">
+								<!-- motivo: la plaza solicitada proviene de la requisición vinculada y se mantiene de solo lectura para el candidato -->
 								<div class="wizard-field wizard-field--span2">
 									<label class="wizard-label">Plaza solicitada <span class="campo-required">*</span></label>
-									<dx-text-box stylingMode="outlined" [(value)]="formData.PLAZA_SOLICITADA"></dx-text-box>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.PLAZA_SOLICITADA" [readOnly]="true"></dx-text-box>
 								</div>
 								<div class="wizard-field">
 									<label class="wizard-label">Pretensión salarial <span class="campo-required">*</span></label>
+									<!-- motivo: Pretensión salarial con step 0 para desactivar scroll de ratón y flechas que alteren el valor accidentalmente -->
 									<dx-number-box stylingMode="outlined"
 										[(value)]="formData.PRETENSION_SALARIAL"
 										[format]="'$#,##0.00'"
 										[min]="0"
+										[step]="0"
+										[showSpinButtons]="false"
 									></dx-number-box>
 								</div>
 								<div class="wizard-field">
@@ -335,6 +339,25 @@
 							<div class="wizard-field mt-14" *ngIf="formData.POSEE_DISCAPACIDAD">
 								<label class="wizard-label">Tipo de discapacidad</label>
 								<dx-text-box stylingMode="outlined" [(value)]="formData.TIPO_DISCAPACIDAD"></dx-text-box>
+							</div>
+						</div>
+					
+						<!-- motivo: Se traslada el contacto de emergencia al Paso 1 por ser campos obligatorios requeridos para el guardado inicial -->
+<div class="wizard-section">
+							<h3 class="wizard-section__title">Contacto de emergencia</h3>
+							<div class="wizard-grid wizard-grid--2">
+								<div class="wizard-field">
+									<label class="wizard-label">Nombre <span class="campo-required">*</span></label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_NOMBRE"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Parentesco</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_PARENTESCO"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Teléfono <span class="campo-required">*</span></label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_TELEFONO"></dx-text-box>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -410,24 +433,6 @@
 									<dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('hijo', cell.data)"></dx-button>
 								</div>
 							</dx-data-grid>
-						</div>
-
-						<div class="wizard-section">
-							<h3 class="wizard-section__title">Contacto de emergencia</h3>
-							<div class="wizard-grid wizard-grid--2">
-								<div class="wizard-field">
-									<label class="wizard-label">Nombre <span class="campo-required">*</span></label>
-									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_NOMBRE"></dx-text-box>
-								</div>
-								<div class="wizard-field">
-									<label class="wizard-label">Parentesco</label>
-									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_PARENTESCO"></dx-text-box>
-								</div>
-								<div class="wizard-field">
-									<label class="wizard-label">Teléfono <span class="campo-required">*</span></label>
-									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_TELEFONO"></dx-text-box>
-								</div>
-							</div>
 						</div>
 					</div>
 
@@ -747,12 +752,12 @@
 					(onClick)="siguiente()"
 				></dx-button>
 
+				<!-- motivo: Boton guardar disponible en cada pestana; validacion de declaraciones aplica solo en el paso final -->
 				<dx-button
-					*ngIf="pasoActual === 6"
 					text="Guardar solicitud"
 					type="success"
 					icon="save"
-					[disabled]="enviando || fotoSubiendo || !formData.DECLARA_VERDAD || !formData.AUTORIZA_VERIFICACION"
+					[disabled]="enviando || fotoSubiendo || (pasoActual === 6 && (!formData.DECLARA_VERDAD || !formData.AUTORIZA_VERIFICACION))"
 					(onClick)="onSubmit()"
 					[elementAttr]="{ class: 'wizard-nav__submit' }"
 				>
@@ -926,18 +931,26 @@
 					</div>
 					<div class="wizard-field">
 						<label class="wizard-label">Salario inicial</label>
+						<!-- motivo: Salario inicial de experiencia laboral con step 0 para evitar alteración por scroll -->
 						<dx-number-box
 							stylingMode="outlined"
 							[(value)]="modalDraft.SALARIO_INICIAL"
 							format="$#,##0.00"
+							[min]="0"
+							[step]="0"
+							[showSpinButtons]="false"
 						></dx-number-box>
 					</div>
 					<div class="wizard-field">
 						<label class="wizard-label">Salario final</label>
+						<!-- motivo: Salario final de experiencia laboral con step 0 para evitar alteración por scroll -->
 						<dx-number-box
 							stylingMode="outlined"
 							[(value)]="modalDraft.SALARIO_FINAL"
 							format="$#,##0.00"
+							[min]="0"
+							[step]="0"
+							[showSpinButtons]="false"
 						></dx-number-box>
 					</div>
 					<div class="wizard-field wizard-field--span2">
@@ -974,4 +987,3 @@
 			</div>
 		</div>
 	</dx-popup>
-</div>
