@@ -18,6 +18,9 @@ namespace SGUEES.Models
         public string NOMBRE_PUESTO { get; set; }
         public bool ES_POR_PUESTO { get; set; }
         public bool ES_JEFE_UNIDAD { get; set; }
+        // Qué hace: true si la unidad es hija/descendiente de una donde el usuario es jefe activo.
+        // Cómo: lo llena PRAL_DATA_SC_UNIDADES_USUARIO (no la vista de mantenimiento).
+        public bool ES_HIJA_A_CARGO { get; set; }
         public bool ES_CONFIGURADA { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

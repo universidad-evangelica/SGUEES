@@ -134,6 +134,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	unidadLookupColumns = [
 		//{ dataField: 'CORR_UNIDAD', caption: 'Codigo', width: 90 },
 		{ dataField: 'NOMBRE_UNIDAD_CATALOGO', caption: 'Unidad', width: 280 },
+		{ dataField: 'ORIGEN_UNIDAD', caption: 'Origen', width: 140 },
 	];
 	// Qué hace: catálogo de estados del flujo para filtrar el listado (SC_LISTA GetESTADO_DESCRIPTOR).
 	mESTADO_DESCRIPTOR: Array<{ Key: number; Value: string }> = [];
@@ -533,12 +534,25 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.mCORR_UNIDAD = response.Data
 						.map((item: any) => {
 							const nombre = (item.NOMBRE_UNIDAD ?? '').trim();
+							const esHijaACargo = item.ES_HIJA_A_CARGO === true || item.ES_HIJA_A_CARGO === 1;
+							const esJefe = item.ES_JEFE_UNIDAD === true || item.ES_JEFE_UNIDAD === 1;
+							const esPuesto = item.ES_POR_PUESTO === true || item.ES_POR_PUESTO === 1;
+							let origen = 'Configurada';
+							if (esHijaACargo) {
+								origen = 'A cargo (hija)';
+							} else if (esJefe) {
+								origen = 'Jefe de unidad';
+							} else if (esPuesto) {
+								origen = 'Por puesto';
+							}
 							return {
 								CORR_UNIDAD: Number(item.CORR_UNIDAD),
 								CODIGO_UNIDAD: (item.CODIGO_UNIDAD ?? '').trim(),
 								NOMBRE_UNIDAD: nombre,
 								NOMBRE_UNIDAD_CATALOGO: nombre,
 								ACTIVO: item.ACTIVO !== false,
+								ES_HIJA_A_CARGO: esHijaACargo,
+								ORIGEN_UNIDAD: origen,
 							};
 						})
 						.filter((item: ScDescriptorUnidadLookup) => {
