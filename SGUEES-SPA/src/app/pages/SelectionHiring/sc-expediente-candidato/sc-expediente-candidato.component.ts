@@ -21,7 +21,10 @@ import {
 	ScPersonaIdioma,
 } from '../sc-solicitud-empleo/models/sc-persona-datos';
 import { ScSolicitudEmpleoService } from '../sc-solicitud-empleo/sc-solicitud-empleo.service';
-import { ScExpedienteCandidato } from './models/sc-expediente-candidato';
+import {
+	ScExpedienteCandidato,
+	ESTADO_EXPEDIENTE_ID,
+} from './models/sc-expediente-candidato';
 import { ScExpedienteEntrevista } from './sc-expediente-entrevista/models/sc-expediente-entrevista';
 import { ScExpedienteEntrevistaDocumento } from './sc-expediente-entrevista/sc-expediente-entrevista-documento/models/sc-expediente-entrevista-documento';
 import { ScExpedienteDocumento } from './sc-expediente-documento/models/sc-expediente-documento';
@@ -595,7 +598,35 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.limpiarPersonaDatos();
 	}
 
+	// Qué hace: Determina si el botón de edición debe mostrarse para una fila específica del expediente.
+	// Cómo lo hace: Retorna el permiso general de edición del usuario para asegurar que la acción esté siempre disponible.
+	override getPermiteEditar = (e: any): boolean => {
+		return this.permiteEdit;
+	};
+
+	// Qué hace: Determina si el botón de eliminación debe mostrarse para una fila específica del expediente.
+	// Cómo lo hace: Comprueba los permisos generales del rol y solo permite eliminar si el expediente se encuentra en estado Borrador (CORR_ESTADO_EXPEDIENTE === 1).
+	override getPermiteDele = (e: any): boolean => {
+		if (!this.permiteDele) {
+			return false;
+		}
+		const rowData = e?.row?.data ?? e?.data ?? e;
+		if (!rowData) {
+			return this.permiteDele;
+		}
+		const corrEstado = Number(rowData?.CORR_ESTADO_EXPEDIENTE ?? 0);
+		return corrEstado === ESTADO_EXPEDIENTE_ID.BORRADOR;
+	};
+
+	// Qué hace: Controla la eliminación de un expediente desde la grilla principal.
+	// Cómo lo hace: Valida que el expediente se encuentre en estado Borrador antes de proceder; si no lo está, cancela la acción y notifica una advertencia.
 	rowRemoving(e: any): void {
+		const corrEstado = Number(e?.data?.CORR_ESTADO_EXPEDIENTE ?? 0);
+		if (corrEstado !== ESTADO_EXPEDIENTE_ID.BORRADOR) {
+			e.cancel = true;
+			this.notifyFx('Solo se pueden eliminar expedientes en estado Borrador.', NotifyType.Warning);
+			return;
+		}
 		this.cerrarPreviewPanel(false);
 		this.rowRemovingMtto(e, {
 			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_EXPEDIENTE_CANDIDATO)),

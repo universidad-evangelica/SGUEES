@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -85,6 +85,8 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	correoCuerpoPreview = '';
 	correoCuerpoPreviewSafe: SafeHtml = '';
 	enviandoCorreo = false;
+	/** Indica si los datos de la persona fueron precargados desde un expediente existente por DUI. */
+	datosRetornadosPorDui = false;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -318,24 +320,39 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			return 'Guarde el tipo de contratación antes de generar el enlace del formulario.';
 		}
 
-		if ((this.model?.CORR_PERSONA_DATOS ?? 0) > 0) {
-			return 'La solicitud ya tiene datos de persona; no es necesario generar otro enlace.';
+		// Qué hace: valida que la solicitud no haya sido completada antes de generar un nuevo enlace.
+		// Cómo lo hace: verifica si existe algún token en estado COMPLETADO; solo en ese caso bloquea el envío. Si los datos provienen de DUI precargado o no hay token completado, permite continuar.
+		const tieneTokenCompletado = (this.tokens ?? []).some(
+			(t) => (t.ESTADO_TOKEN || '').toUpperCase() === 'COMPLETADO'
+		);
+		if (tieneTokenCompletado) {
+			return 'La solicitud ya fue completada; no es necesario generar otro enlace.';
 		}
 
 		return null;
 	}
 
-	/** Soft-disable del botón Enviar: bloqueos duros (permiso / proceso / consulta / congelada / ya con persona). */
+	// Qué hace: determina si el botón 'Enviar solicitud' debe estar habilitado en la bitácora.
+	// Cómo lo hace: valida permisos y estado de consulta; permite el envío siempre que no exista ya un token en estado COMPLETADO para esta postulación.
 	puedeIntentarEnviarSolicitud(): boolean {
-		return (
-			this.permiteEdit &&
-			!this.generandoToken &&
-			!this.isConsulta() &&
-			!this.asociacionExpedienteBloqueada &&
-			(this.model?.CORR_PERSONA_DATOS ?? 0) <= 0
-		);
-	}
+		if (
+			!this.permiteEdit ||
+			this.generandoToken ||
+			this.isConsulta() ||
+			this.asociacionExpedienteBloqueada
+		) {
+			return false;
+		}
 
+		const tieneTokenCompletado = (this.tokens ?? []).some(
+			(t) => (t.ESTADO_TOKEN || '').toUpperCase() === 'COMPLETADO'
+		);
+		if (tieneTokenCompletado) {
+			return false;
+		}
+
+		return true;
+	}
 	private async ejecutarAsociarExpediente(corrSolicitud: number, crearExpediente: boolean): Promise<void> {
 		const resp: any = await this.expedienteService.asociarSolicitud(corrSolicitud, crearExpediente).pipe(take(1)).toPromise();
 		const codigo = resp?.ErrorCode ?? -1;
@@ -814,11 +831,50 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.requisicionesSolicitud = [];
 		this.limpiarPersonaDatos();
 		this.resetAsociacionExpediente();
+		this.datosRetornadosPorDui = false;
 	}
+
+	// Qué hace: Determina si el botón de edición debe mostrarse para una fila específica de la grilla.
+	// Cómo lo hace: Comprueba los permisos generales del rol y oculta la acción si la solicitud ya tiene un expediente asociado.
+	override getPermiteEditar = (e: any): boolean => {
+		if (!this.permiteEdit) {
+			return false;
+		}
+		const rowData = e?.row?.data ?? e?.data;
+		if (!rowData) {
+			return this.permiteEdit;
+		}
+		return !rowData.TIENE_EXPEDIENTE && !(Number(rowData.CORR_EXPEDIENTE_CANDIDATO) > 0);
+	};
+
+	// Qué hace: Determina si el botón de eliminación debe mostrarse para una fila específica de la grilla.
+	// Cómo lo hace: Comprueba los permisos generales del rol y oculta la acción si la solicitud ya tiene expediente o ya tiene token generado/enviado.
+	override getPermiteDele = (e: any): boolean => {
+		if (!this.permiteDele) {
+			return false;
+		}
+		const rowData = e?.row?.data ?? e?.data;
+		if (!rowData) {
+			return this.permiteDele;
+		}
+		const tieneExpediente = !!rowData.TIENE_EXPEDIENTE || Number(rowData.CORR_EXPEDIENTE_CANDIDATO) > 0;
+		const tieneTokenEnviado = !!rowData.TIENE_TOKEN || !!rowData.FECHA_GENERACION;
+		return !tieneExpediente && !tieneTokenEnviado;
+	};
 
 	override editarClick(e: any): void {
 		e?.event?.preventDefault?.();
 		const rowData = e?.row?.data ?? e?.data;
+		// Qué hace: Bloquea la edición si la solicitud ya cuenta con un expediente asociado.
+		// Cómo lo hace: Valida la bandera TIENE_EXPEDIENTE y muestra un mensaje de advertencia.
+		if (rowData?.TIENE_EXPEDIENTE || Number(rowData?.CORR_EXPEDIENTE_CANDIDATO) > 0) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Solicitud con expediente',
+				detail: 'Esta solicitud ya está asociada a un expediente de candidato (solo lectura).',
+			});
+			return;
+		}
 		if (rowData) {
 			this.modelUpdate = { ...rowData };
 			this.model = this.fillData(rowData);
@@ -1238,7 +1294,9 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			});
 	}
 
-	guardar(): void {
+	// Qué hace: valida y procesa el guardado de la solicitud de empleo.
+	// Cómo lo hace: en creación (Add), valida si el DUI digitado cuenta con expediente previo; de ser así, solicita confirmación al usuario antes de registrarlo en base de datos.
+	async guardar(): Promise<void> {
 		if (this.asociacionExpedienteBloqueada || this.isConsulta()) {
 			this.messageService.add({
 				severity: 'warn',
@@ -1252,65 +1310,103 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			return;
 		}
 
-		this.loadingVisible = true;
 		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							// Alta: se queda en el formulario (Update) con el correlativo ya asignado
-							// para continuar token y demás procesos sin volver al grid.
-							const registro = this.fillData(response.Data);
-							this.models.push(registro);
-							this.model = registro;
-							this.modelUpdate = this.fillData(registro);
-							this.AsignaStatus(UpdateType.Update);
-							this.habilitar();
-							this.consultarToken();
-							this.consultarRequisicionesSolicitud();
+			const dui = `${this.model?.DUI ?? ''}`.trim();
+			const duiLimpio = dui.replace(/[^0-9kK]/g, '');
 
-							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro creado con exito!' });
-						} else {
-							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
-							this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
+			if ((this.model?.CORR_PERSONA_DATOS ?? 0) <= 0 && duiLimpio.length >= 8) {
+				this.loadingVisible = true;
+				try {
+					const response: any = await this.service.buscarCandidatoPorDui(dui).pipe(take(1)).toPromise();
+					this.loadingVisible = false;
+
+					if (response?.Result && response?.Data) {
+						const candidato = response.Data;
+						const nombreCandidato = candidato.NOMBRE_COMPLETO || 'el candidato';
+						const aceptar = await confirm(
+							`Se encontró un expediente para ${nombreCandidato} con el DUI ${dui}. ¿Desea cargar sus datos personales y asociarlo a esta solicitud?`,
+							'Candidato Existente'
+						);
+						if (aceptar) {
+							this.model.NOMBRE = candidato.NOMBRE_COMPLETO ?? this.model.NOMBRE;
+							this.model.CORREO_INVITACION = candidato.CORREO ?? this.model.CORREO_INVITACION;
+							this.model.CORR_PERSONA_DATOS = candidato.CORR_PERSONA_DATOS;
+							this.datosRetornadosPorDui = true;
 						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						//this.notifyFx(error, NotifyType.Error);
-						this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+					}
+				} catch {
+					this.loadingVisible = false;
+				}
+			}
 
-						this.loadingVisible = false;
-					},
-				});
+			this.ejecutarInsert();
 		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_SOLICITUD_EMPLEO === response.Data.CORR_SOLICITUD_EMPLEO);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							//this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro modificado con exito!' });
-						} else {
-							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
-							this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						//this.notifyFx(error, NotifyType.Error);
-						this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
-						this.loadingVisible = false;
-					},
-				});
+			this.ejecutarUpdate();
 		}
+	}
+
+	// Qué hace: ejecuta la inserción de una nueva solicitud de empleo en base de datos.
+	// Cómo lo hace: llama a service.insert(), actualiza el modelo en memoria con la respuesta y consulta tokens, requisiciones y datos de persona.
+	private ejecutarInsert(): void {
+		this.loadingVisible = true;
+		this.service
+			.insert(this.model)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						// Alta: se queda en el formulario (Update) con el correlativo ya asignado
+						// para continuar token y demás procesos sin volver al grid.
+						const registro = this.fillData(response.Data);
+						this.models.push(registro);
+						this.model = registro;
+						this.modelUpdate = this.fillData(registro);
+						this.AsignaStatus(UpdateType.Update);
+						this.habilitar();
+						this.consultarToken();
+						this.consultarRequisicionesSolicitud();
+						this.consultarPersonaDatos();
+
+						this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro creado con exito!' });
+					} else {
+						this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+					this.loadingVisible = false;
+				},
+			});
+	}
+
+	// Qué hace: ejecuta la actualización de una solicitud de empleo existente.
+	// Cómo lo hace: llama a service.update() y refresca la fila correspondiente en la grilla sin recargar todo el listado.
+	private ejecutarUpdate(): void {
+		this.loadingVisible = true;
+		this.service
+			.update(this.model)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.model = response.Data;
+						const vIndex = this.models.findIndex((item: any) => item.CORR_SOLICITUD_EMPLEO === response.Data.CORR_SOLICITUD_EMPLEO);
+						if (vIndex >= 0) {
+							this.models[vIndex] = response.Data;
+						}
+						this.AsignaStatus(UpdateType.Browse);
+						this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro modificado con exito!' });
+					} else {
+						this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+					this.loadingVisible = false;
+				},
+			});
 	}
 
 	override cancelar(): void {
@@ -1319,6 +1415,30 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	}
 
 	rowRemoving(e: any) {
+		// Qué hace: Impide eliminar solicitudes que ya formen parte de un expediente.
+		// Cómo lo hace: Cancela la operación mediante e.cancel = true y notifica al usuario.
+		if (e.data?.TIENE_EXPEDIENTE || Number(e.data?.CORR_EXPEDIENTE_CANDIDATO) > 0) {
+			e.cancel = true;
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Solicitud con expediente',
+				detail: 'No se puede eliminar la solicitud porque ya está vinculada a un expediente de candidato.',
+			});
+			return;
+		}
+
+		// Qué hace: Impide eliminar solicitudes a las que ya se les haya generado/enviado el token de invitación.
+		// Cómo lo hace: Cancela la operación mediante e.cancel = true y notifica al usuario con un mensaje de advertencia.
+		if (e.data?.TIENE_TOKEN || e.data?.FECHA_GENERACION) {
+			e.cancel = true;
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Solicitud enviada',
+				detail: 'No se puede eliminar la solicitud porque ya fue enviada al candidato (tiene token generado).',
+			});
+			return;
+		}
+
 		this.service
 			.delete(this.fillParam(e.data.CORR_SOLICITUD_EMPLEO))
 			.pipe(take(1))

@@ -17,5 +17,9 @@ namespace sguees.Repositories
 		Task<CResult> GetPlantillasDisponiblesAsync(int corrEmpresa);
 
 		Task<dynamic> ObtenerConfiguracionEnvioAsync(int corrEmpresa, int corrSolicitudEmpleo, int corrParametroPlantilla);
+
+		// Qué hace: busca si existe un candidato con expediente o datos personales registrados con el DUI especificado.
+		// Cómo lo hace: consulta en SC_PERSONA_DATOS y SC_EXPEDIENTE_CANDIDATO normalizando el documento de identidad.
+		Task<CResult> BuscarCandidatoPorDuiAsync(int corrEmpresa, string dui);
 	}
 }

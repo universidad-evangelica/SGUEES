@@ -131,6 +131,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	mCORR_TIPO_VACANTE: any[] = [];
 	mLOGIN_SISTEMA: any[] = [];
 	mCORR_UNIDAD: any[] = [];
+	// Qué hace: Catálogo exclusivo para visualización en modo lectura/consulta.
+	// Cómo lo hace: Se alimenta del endpoint GetCORR_UNIDAD_LECTURA_SC_REQUISICION_PERSONAL sin afectar las unidades del usuario en sesión.
+	mCORR_UNIDAD_LECTURA: any[] = [];
 	mCORR_PUESTO: any[] = [];
 	mCORR_DESCRIPTOR_PUESTO: any[] = [];
 	mCORR_EMPLEADO_SUSTITUTO: any[] = [];
@@ -947,6 +950,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		return of({ Result: true, Data: [] } as any);
 	}
 
+	// Qué hace: Abre el modal para agregar observadores inicializando el estado limpio.
+	// Cómo lo hace: Valida que la requisición exista en BD, resetea el modelo y activa la visibilidad del popup.
 	abrirModalObservador(): void {
 		if (!this.model?.CORR_REQUISICION_PERSONAL || this.model.CORR_REQUISICION_PERSONAL <= 0) {
 			this.notifyFx('Debe guardar la requisición antes de agregar observadores.', NotifyType.Warning);
@@ -959,6 +964,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.popupObservadorVisible = true;
 	}
 
+	// Qué hace: Cierra el modal de observador y limpia el modelo en memoria.
+	// Cómo lo hace: Pone popupObservadorVisible en false y resetea LOGIN_SISTEMA.
 	cerrarModalObservador(): void {
 		this.popupObservadorVisible = false;
 		this.modelObservador = { LOGIN_SISTEMA: '' };
@@ -1025,6 +1032,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	override nuevo(): void {
 		super.nuevo();
 		this.readOnly = false;
+			this.mCORR_UNIDAD_LECTURA = [];
 		this.limpiarDatosTabs();
 		this.cerrarModalObservador();
 		this.mCORR_PUESTO = [];
@@ -1050,6 +1058,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}
 
 		super.editarClick(e);
+			this.mCORR_UNIDAD_LECTURA = [];
 		this.readOnly = false;
 		this.cargarDatosTabs();
 		setTimeout(() => {
@@ -1060,6 +1069,24 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	/** Al consultar (doble clic): formulario sin Guardar (isForm=false). */
+	// Qué hace: Al seleccionar o enfocar un registro en la grilla del catálogo, pre-carga la unidad organizativa.
+	// Cómo lo hace: Si la fila tiene CORR_UNIDAD y NOMBRE_UNIDAD, pre-puebla mCORR_UNIDAD_LECTURA síncronamente y llama al endpoint en segundo plano para que al entrar ya esté listo sin parpadeos.
+	override focusedRowChanged(e: any): void {
+		super.focusedRowChanged(e);
+		const row = e?.row?.data;
+		if (row?.CORR_UNIDAD) {
+			if (row.NOMBRE_UNIDAD) {
+				this.mCORR_UNIDAD_LECTURA = [
+					{
+						CORR_UNIDAD: Number(row.CORR_UNIDAD),
+						NOMBRE_UNIDAD: row.NOMBRE_UNIDAD,
+					},
+				];
+			}
+			this.getCORR_UNIDAD_LECTURA(row.CORR_UNIDAD);
+		}
+	}
+
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		this.abrirEnConsulta(rowData);
@@ -1070,8 +1097,19 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		if (rowData) {
 			this.modelUpdate = { ...rowData };
 			this.model = this.fillData(rowData);
+			// Qué hace: Siembra síncronamente la unidad para que aparezca pintada al instante en que abre el formulario.
+			// Cómo lo hace: Construye el objeto con CORR_UNIDAD y NOMBRE_UNIDAD y lo asigna directamente a mCORR_UNIDAD_LECTURA.
+			if (rowData.CORR_UNIDAD && rowData.NOMBRE_UNIDAD) {
+				this.mCORR_UNIDAD_LECTURA = [
+					{
+						CORR_UNIDAD: Number(rowData.CORR_UNIDAD),
+						NOMBRE_UNIDAD: rowData.NOMBRE_UNIDAD,
+					},
+				];
+			}
 		}
 		this.AsignaStatus(UpdateType.Not_Defined);
+		this.getCORR_UNIDAD_LECTURA(rowData?.CORR_UNIDAD);
 		this.readOnly = true;
 		this.cargarDatosTabs();
 		setTimeout(() => {
@@ -1085,10 +1123,18 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}, 0);
 	}
 
-	/** Ícono Editar del grid: solo Borrador (1) y Devuelta (3). */
+	// Qué hace: Controla la visibilidad del ícono Editar en la grilla principal.
+	// Cómo lo hace: Solo permite editar si el usuario tiene permiso U y la requisición está en Borrador (1) o Devuelta (3).
 	override getPermiteEditar(e: any): boolean {
 		const data = e?.row?.data ?? e?.data;
 		return this.permiteEdit && this.service.esEstadoRequisicionEditable(data?.CORR_ESTADO_REQUISICION);
+	}
+
+	// Qué hace: Controla la visibilidad del ícono Eliminar en la grilla principal.
+	// Cómo lo hace: Solo permite eliminar si el usuario tiene permiso D y la requisición está en Borrador (1) o Devuelta (3).
+	override getPermiteDele(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
+		return this.permiteDele && this.service.esEstadoRequisicionEditable(data?.CORR_ESTADO_REQUISICION);
 	}
 
 	//#endregion
@@ -1177,14 +1223,41 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		});
 	}
 
-	getCORR_UNIDAD(){
+	// Qué hace: Consulta la unidad organizativa desde el endpoint de lectura para modo consulta.
+	// Cómo lo hace: Llama a SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES/GetCORR_UNIDAD_LECTURA pasando el CORR_UNIDAD de la requisición.
+	getCORR_UNIDAD_LECTURA(corrUnidad?: number): void {
+		if (!corrUnidad || corrUnidad <= 0) {
+			this.mCORR_UNIDAD_LECTURA = [];
+			return;
+		}
+		this.appInfoService
+			.getLookUp(
+				'SC_REQUISICION_PERSONAL',
+				'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
+				'GetCORR_UNIDAD_LECTURA',
+				[{ Parameter: 'CORR_UNIDAD', Value: corrUnidad }],
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_UNIDAD_LECTURA = response?.Result ? (response.Data ?? []) : [];
+				},
+				error: (error: any) => {
+					this.mCORR_UNIDAD_LECTURA = [];
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	getCORR_UNIDAD() {
 		this.appInfoService
 		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_UNIDADES_USUARIO', 'GetCORR_UNIDAD', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
 		.pipe(take(1))
 		.subscribe({
 			next: (response: any) => {
 				if (response.Result) {
-					this.mCORR_UNIDAD = response.Data;
+					this.mCORR_UNIDAD = response.Data ?? [];
 				}
 			},
 			error: (error: any) => {
@@ -1214,7 +1287,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				next: (response: any) => {
 					if (response.Result) {
 						const puestos = response.Data ?? [];
-						const unidadActual = this.mCORR_UNIDAD.find(
+						const unidadActual = (this.mCORR_UNIDAD_LECTURA?.length ? this.mCORR_UNIDAD_LECTURA : this.mCORR_UNIDAD).find(
 							(u: any) => u.CORR_UNIDAD === unidad
 						);
 						// Qué hace: Excluye el puesto que el usuario desempeña en la unidad (puesto de jefatura/coordinación).
@@ -1337,6 +1410,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				CORR_REQUISICION_PERSONAL: xModel.CORR_REQUISICION_PERSONAL,
 				CORR_DESCRIPTOR_PUESTO: xModel.CORR_DESCRIPTOR_PUESTO,
 				CORR_UNIDAD: xModel.CORR_UNIDAD,
+				NOMBRE_UNIDAD: xModel.NOMBRE_UNIDAD,
 				CORR_PUESTO: xModel.CORR_PUESTO,
 				CORR_TIPO_MODALIDAD: xModel.CORR_TIPO_MODALIDAD,
 				CORR_TIPO_CONTRATACION: xModel.CORR_TIPO_CONTRATACION,
@@ -1461,7 +1535,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: guarda la requisición en la base de datos (creación o actualización) y permanece en el formulario en modo edición.
-	// Cómo lo hace: valida el formulario, ejecuta insert o update en el servicio y al recibir respuesta exitosa sincroniza en memoria (model, modelUpdate y models), cambia el estado a UpdateType.Update y carga los observadores sin salir a la grilla.
+	// Cómo lo hace: valida el formulario, ejecuta insert o update en el servicio y al recibir respuesta exitosa normaliza los datos con fillData (convirtiendo CORR_EMPLEADO_SUSTITUTO a número y preservando flags UI), cambia el estado a UpdateType.Update y refresca observadores y sustitutos.
 	guardar(): void {
 		// Solo Borrador/Observada (o alta nueva). En consulta / estados cerrados no hay Guardar.
 		if (this.banderaMtto !== UpdateType.Add
@@ -1489,11 +1563,23 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
+							const esPermanente = this.model?.ES_PERMANENTE;
+							const requiereSustitucion = this.model?.REQUIERE_SUSTITUCION;
 							this.models.push(response.Data);
-							this.model = response.Data;
-							this.modelUpdate = { ...response.Data };
+							const formattedModel = this.fillData(response.Data);
+							formattedModel.ES_PERMANENTE = esPermanente !== undefined ? esPermanente : true;
+							formattedModel.REQUIERE_SUSTITUCION = requiereSustitucion !== undefined ? requiereSustitucion : false;
+							this.model = formattedModel;
+							this.modelUpdate = { ...this.model };
 							this.AsignaStatus(UpdateType.Update);
 							this.cargarObservadores();
+							if (this.model.REQUIERE_SUSTITUCION && this.model.CORR_UNIDAD && this.model.CORR_PUESTO && !this.mCORR_EMPLEADO_SUSTITUTO?.length) {
+								this.getCORR_EMPLEADO_SUSTITUTO(this.model.CORR_UNIDAD, this.model.CORR_PUESTO);
+							}
+							setTimeout(() => {
+								this.sincronizarVisibilidadTiempoContrato();
+								this.sincronizarVisibilidadEmpleadoSustituto();
+							}, 0);
 							this.notifyFx('Registro creado con exito!', NotifyType.Success);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1512,13 +1598,25 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
-							this.model = response.Data;
-							this.modelUpdate = { ...response.Data };
+							const esPermanente = this.model?.ES_PERMANENTE;
+							const requiereSustitucion = this.model?.REQUIERE_SUSTITUCION;
+							const formattedModel = this.fillData(response.Data);
+							formattedModel.ES_PERMANENTE = esPermanente !== undefined ? esPermanente : true;
+							formattedModel.REQUIERE_SUSTITUCION = requiereSustitucion !== undefined ? requiereSustitucion : false;
+							this.model = formattedModel;
+							this.modelUpdate = { ...this.model };
 							const vIndex = this.models.findIndex((item: any) => item.CORR_REQUISICION_PERSONAL === response.Data.CORR_REQUISICION_PERSONAL);
 							if (vIndex >= 0) {
 								this.models[vIndex] = response.Data;
 							}
 							this.AsignaStatus(UpdateType.Update);
+							if (this.model.REQUIERE_SUSTITUCION && this.model.CORR_UNIDAD && this.model.CORR_PUESTO && !this.mCORR_EMPLEADO_SUSTITUTO?.length) {
+								this.getCORR_EMPLEADO_SUSTITUTO(this.model.CORR_UNIDAD, this.model.CORR_PUESTO);
+							}
+							setTimeout(() => {
+								this.sincronizarVisibilidadTiempoContrato();
+								this.sincronizarVisibilidadEmpleadoSustituto();
+							}, 0);
 							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1534,10 +1632,22 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	override cancelar(): void {
+			this.mCORR_UNIDAD_LECTURA = [];
 		super.cancelar((item: any) => item.CORR_REQUISICION_PERSONAL === this.modelUpdate.CORR_REQUISICION_PERSONAL);
 	}
 
+	// Qué hace: Elimina una requisición de la base de datos y actualiza la lista local.
+	// Cómo lo hace: Valida que esté en Borrador o Devuelta antes de enviar la petición de eliminación al servicio.
 	rowRemoving(e: any) {
+		if (!this.service.esEstadoRequisicionEditable(e?.data?.CORR_ESTADO_REQUISICION)) {
+			e.cancel = true;
+			this.notifyFx(
+				'Solo se puede eliminar una requisición en estado Borrador o Devuelta.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
 		this.service
 			.delete(this.fillParam(e.data.CORR_REQUISICION_PERSONAL))
 			.pipe(take(1))

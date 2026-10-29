@@ -88,8 +88,10 @@ export class ScRequisicionPersonalService {
             return false;
         }
 
-        // Solo aplica si la contratación NO es permanente (flag UI desde lookup).
-        if (model.ES_PERMANENTE !== true) {
+        // Qué hace: Valida tiempo de contrato solo para contrataciones no permanentes.
+        // Cómo lo hace: Considera permanente si ES_PERMANENTE es true o si CORR_TIPO_CONTRATACION es 1 (Permanente).
+        const esPermanente = model.ES_PERMANENTE === true || (model.ES_PERMANENTE == null && Number(model.CORR_TIPO_CONTRATACION) === 1);
+        if (!esPermanente) {
             if (model.TIEMPO_CONTRATO == null || model.TIEMPO_CONTRATO <= 0) {
                 msg('Debe digitar el tiempo de contrato (meses)', NotifyType.Warning);
                 return false;

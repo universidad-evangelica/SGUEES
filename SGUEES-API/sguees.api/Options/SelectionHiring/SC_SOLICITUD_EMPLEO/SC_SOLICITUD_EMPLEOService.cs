@@ -366,5 +366,16 @@ namespace sguees.Services
 
 			return resultado;
 		}
+
+		// Qué hace: consulta si existe un candidato con expediente previo a partir de su documento de identidad (DUI).
+		// Cómo lo hace: valida el DUI recibido y delega la consulta a _repo.BuscarCandidatoPorDuiAsync.
+		public async Task<CResult> BuscarCandidatoPorDuiAsync(int corrEmpresa, string dui)
+		{
+			if (string.IsNullOrWhiteSpace(dui))
+			{
+				return new CResult { Result = true, Data = null, ErrorCode = 0 };
+			}
+			return await _repo.BuscarCandidatoPorDuiAsync(corrEmpresa, dui);
+		}
 	}
 }

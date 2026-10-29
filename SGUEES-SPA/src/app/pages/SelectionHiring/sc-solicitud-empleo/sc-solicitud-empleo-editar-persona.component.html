@@ -201,11 +201,14 @@
                 </div>
                 <div class="ep-field">
                   <label class="ep-label">Pretensión salarial</label>
+                  <!-- motivo: Pretensión salarial con step 0 para desactivar scroll de ratón y flechas en edición administrativa -->
                   <dx-number-box
                     stylingMode="outlined"
                     [(value)]="draft.PRETENSION_SALARIAL"
                     format="$#,##0.00"
                     [min]="0"
+                    [step]="0"
+                    [showSpinButtons]="false"
                   ></dx-number-box>
                 </div>
                 <div class="ep-field">
