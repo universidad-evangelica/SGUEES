@@ -1407,7 +1407,11 @@ BEGIN
                 ) VALUES (
                     @EmpresaEjecucion, @NextCorrBitacora, @IdInstancia, @IdPasoNuevo,
                     @AutoActorPaso, @i_login,
-                    N'[AUTO] Paso ejecutado automaticamente: el ejecutor satisface el actor del paso',
+                    CASE
+                        WHEN @i_CODIGO_OPCION = 'SC_REQUISICION' OR @idTipoDocumento = 101
+                        THEN N'La solicitud fue aprobada automáticamente, ya que el responsable cuenta con la autoridad necesaria para aprobarla.'
+                        ELSE N'[AUTO] Paso ejecutado automaticamente: el ejecutor satisface el actor del paso'
+                    END,
                     @AutoEstadoAnterior, @AutoEstadoDestino2,
                     @i_idUnidadDocumento, @i_login, 'SP_EjecutarFlujo'
                 );
@@ -2441,7 +2445,11 @@ BEGIN
             ) VALUES (
                 @EmpresaEjecucion, @NextCorrBitacora, @IdInstancia, @IdPasoNuevo,
                 @AutoActorPaso, @i_login,
-                N'[AUTO] Paso ejecutado automaticamente: el ejecutor satisface el actor del paso',
+                CASE
+                    WHEN @i_CODIGO_OPCION = 'SC_REQUISICION' OR @idTipoDocumento = 101
+                    THEN N'La solicitud fue aprobada automáticamente, ya que el responsable cuenta con la autoridad necesaria para aprobarla.'
+                    ELSE N'[AUTO] Paso ejecutado automaticamente: el ejecutor satisface el actor del paso'
+                END,
                 @AutoEstadoAnterior, @AutoEstadoDestino2,
                 @i_idUnidadDocumento, @i_login, 'SP_EjecutarFlujo'
             );

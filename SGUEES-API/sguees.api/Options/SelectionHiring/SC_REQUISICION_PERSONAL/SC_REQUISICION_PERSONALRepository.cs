@@ -16,6 +16,7 @@ namespace SGUEES.Repositories
     {
         private const string _TableName = "SC_REQUISICION_PERSONAL";
         private const string _TableNameBitacora = "SEG_FLUJO_BITACORA";
+        private const string _SpDataListadoVisible = "PRAL_DATA_SC_REQUISICION_PERSONAL";
 
         private static object ToSqlDateTime(DateTime? fecha)
         {
@@ -40,6 +41,50 @@ namespace SGUEES.Repositories
             try
             {
                 var reader = await objData.GetDataReader("V_" + _TableName, xWhere);
+                var response = new List<SC_REQUISICION_PERSONALView>().FromDataReader(reader).ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response.Count;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (System.Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        /// <summary>
+        /// Listado filtrado por unidades del login + observadores DEFECTO/REQUISICION.
+        /// Cómo: PRAL_DATA_SC_REQUISICION_PERSONAL (@CORR_EMPRESA, @LOGIN_SISTEMA).
+        /// </summary>
+        public async Task<CResult> GetAllVisibleAsync(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var reader = await objData.GetDataReader(
+                    CommandType.StoredProcedure,
+                    _SpDataListadoVisible,
+                    xWhere);
                 var response = new List<SC_REQUISICION_PERSONALView>().FromDataReader(reader).ToList();
 
                 reader.Close();

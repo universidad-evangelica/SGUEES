@@ -28,16 +28,34 @@ namespace SGUEES.Services
             _observadores = observadores ?? throw new ArgumentNullException(nameof(observadores));
         }
 
+        /// <summary>
+        /// Listado de sc-requisicion-personal: solo lo visible para el login
+        /// (unidades + observadores DEFECTO/REQUISICION vía PRAL_DATA_SC_REQUISICION_PERSONAL).
+        /// </summary>
         public async Task<CResult> GetAllAsync(SC_REQUISICION_PERSONALParam xWhere)
         {
+            var login = (xWhere?.LOGIN_SISTEMA ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(login))
+            {
+                return new CResult
+                {
+                    Data = new List<SC_REQUISICION_PERSONALView>(),
+                    Result = true,
+                    RowsAffected = 0,
+                    CodeHelper = 0,
+                    ErrorCode = 0,
+                    ErrorMessage = "",
+                    ErrorSource = "",
+                };
+            }
+
             var p = new List<CParameter>
             {
-                new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-				//Quiero filtrar por ACTIVOs nada mas
-				//new CParameter() {ParameterName="ACTIVO",Value=true,DbType=System.Data.DbType.Int32},
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = login, DbType = System.Data.DbType.String },
             };
 
-            return await _repo.GetAllAsync(p);
+            return await _repo.GetAllVisibleAsync(p);
         }
 
         // Qué hace: Retorna únicamente las requisiciones aprobadas (estado final / Aprobado GG = 5) para el selector de solicitud de empleo, ordenadas de la más reciente a la más antigua.
