@@ -30,11 +30,16 @@ namespace SGUEES.Controllers
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
 
+        // Qué hace: lista requisiciones visibles para el usuario de sesión.
+        // Cómo: fija CORR_EMPRESA + LOGIN_SISTEMA; el service usa PRAL_DATA_SC_REQUISICION_PERSONAL
+        //       (unidades del login + observadores DEFECTO/REQUISICION).
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-requisicion-personal|R")]
         public async Task<CResult> GetAll([FromQuery] SC_REQUISICION_PERSONALParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            Data.LOGIN_SISTEMA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value
+                ?? string.Empty;
             return await _service.GetAllAsync(Data);
         }
 

@@ -1,8 +1,9 @@
+USE [SGUEES]
+GO
 SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-
 /* =============================================================================
    Procedimiento: dbo.PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA
    Pantalla:      SC_REQUISICION_PERSONAL / sc-requisicion-personal
@@ -15,12 +16,15 @@ GO
      - Requiere tipo de documento activo con CODIGO_OPCION = SC_REQUISICION
        y un flujo defecto (misma estructura de niveles que SC_MOVIMIENTO_PERSONAL).
      - Unidad del circuito = puesto del creador (USUARIO_CREA), no CORR_UNIDAD del documento.
+     - Bitácora ruta DIRECTO (ENVIAR): firmas auto JI/JU usan FECHA_ACCION
+       = MAX(bitácora instancia) + 1s / +2s (nunca DATEADD negativo). Así
+       ORDER BY FECHA_ACCION DESC deja: … → JU → JI → En Aprobación → Borrador.
 
    @OPERACION:
      1 = GUARDAR   Queda en Borrador (1). Si es la primera vez, crea instancia.
      2 = ENVIAR    Borrador/Devuelto → En Aprobación (2).
      3 = APROBAR   N1 pasa a N2, N2 pasa a N3, N3 cierra en Aprobada (5 = Aprobado GG).
-     4 = DEVOLVER  Retorna a Devuelta (3) en el nivel que actúa.
+     4 = OBSERVAR  Retorna a Devuelta (3) en el nivel que actúa.
      5 = RECHAZAR  Finaliza en Rechazada JI/JU/GG (4).
      FECHA_APROBACION se setea al cerrar con Aprobado GG.
 
@@ -29,7 +33,7 @@ GO
    Ejecutar:
      sqlcmd -S <servidor> -d SGUEES -U <user> -P <pass> -f 65001 -i PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA.sql
    ============================================================================= */
-CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA]
+ALTER PROCEDURE [dbo].[PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA]
 (
 	@CORR_EMPRESA INT = 1,
 	@CORR_REQUISICION_PERSONAL INT,
@@ -133,7 +137,7 @@ BEGIN
 			WHEN 1 THEN N'Se guardó la requisición en borrador.'
 			WHEN 2 THEN N'Se envió la requisición de personal a aprobación.'
 			WHEN 3 THEN N'Se aprobó la requisición.'
-			WHEN 4 THEN N'Se devolvió la requisición.'
+			WHEN 4 THEN N'Se se observó la requisición.'
 			WHEN 5 THEN N'Se rechazó la requisición.'
 			ELSE N'Se registró una acción en el flujo de la requisición.'
 		END
@@ -580,6 +584,16 @@ BEGIN
 
 		IF @V_OPERACION = 2 AND @RUTA = 'DIRECTO' AND @ID_INSTANCIA IS NOT NULL
 		BEGIN
+			/* Ancla temporal: último evento del motor (Borrador / En Aprobación / JI auto).
+			   Firmas SP DESPUÉS (+1s JI, +2s JU). Evita DATEADD(-1/-2) que dejaba
+			   Aprobado JU debajo de Borrador en historial FECHA_ACCION DESC. */
+			SELECT @FECHA_FIRMA = MAX(FECHA_ACCION)
+			FROM dbo.SEG_FLUJO_BITACORA
+			WHERE CORR_EMPRESA = @EMPRESA
+			  AND CORR_INSTANCIA = @ID_INSTANCIA
+
+			SET @FECHA_FIRMA = ISNULL(@FECHA_FIRMA, GETDATE())
+
 			IF NOT EXISTS (
 				SELECT 1 FROM dbo.SEG_FLUJO_BITACORA
 				WHERE CORR_EMPRESA = @EMPRESA AND CORR_INSTANCIA = @ID_INSTANCIA
@@ -595,9 +609,10 @@ BEGIN
 				) VALUES (
 					@EMPRESA, @NEXT_BIT, @ID_INSTANCIA, @PASO_N1, 2,
 					@LOGIN_SISTEMA,
-					N'[AUTO] Nivel 1 aprobado: el puesto está en la unidad del departamento. ' + @OBSERVACION,
+					--N'[AUTO] Nivel 1 aprobado: el puesto está en la unidad del departamento. ' + @OBSERVACION,
+					N'La solicitud fue aprobada automáticamente, ya que corresponde a la unidad del departamento. ' + @OBSERVACION,
 					@ID_ESTADO_ACTUAL, @EST_JI,
-					ISNULL(@D, @U), DATEADD(SECOND, -2, GETDATE()), @LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
+					ISNULL(@D, @U), DATEADD(SECOND, 1, @FECHA_FIRMA), @LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
 				)
 			END
 
@@ -616,9 +631,11 @@ BEGIN
 				) VALUES (
 					@EMPRESA, @NEXT_BIT, @ID_INSTANCIA, @PASO_N2, 2,
 					@LOGIN_SISTEMA,
-					N'[AUTO] Nivel 2 aprobado: el puesto está en la unidad del departamento. ' + @OBSERVACION,
+					--N'[AUTO] Nivel 2 aprobado: el puesto está en la unidad del departamento. ' + @OBSERVACION,
+					N'La solicitud fue aprobada automáticamente, ya que corresponde a la unidad del departamento. 
+					La requisición de personal continua el nivel de aprobación. ' + @OBSERVACION,
 					@EST_JI, @EST_JU,
-					ISNULL(@D, @U), DATEADD(SECOND, -1, GETDATE()), @LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
+					ISNULL(@D, @U), DATEADD(SECOND, 2, @FECHA_FIRMA), @LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
 				)
 			END
 
@@ -800,7 +817,3 @@ BEGIN
 
 	RETURN 0
 END
-
-GO
-PRINT N'OK: PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA.';
-GO
