@@ -11,6 +11,7 @@ import { GenDivision } from './models/gen-division';
 import { GenDivisionService } from './gen-division.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-division',
 	templateUrl: './gen-division.component.html',
 })

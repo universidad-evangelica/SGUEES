@@ -3,6 +3,7 @@ import { DxButtonModule, DxButtonTypes } from 'devextreme-angular/ui/button';
 import { ThemeService } from 'src/app/shared/services/theme.service';
 
 @Component({
+  standalone: false,
   selector: 'app-login-oauth',
   templateUrl: './login-oauth.component.html',
   styleUrls: ['./login-oauth.component.scss']

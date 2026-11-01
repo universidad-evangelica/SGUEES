@@ -1,4 +1,4 @@
-﻿// Qué hace: vista de mantenimiento de Tipo Contacto.
+// Qué hace: vista de mantenimiento de Tipo Contacto.
 // Cómo: administra el CRUD del catálogo GEN_TIPO_CONTACTO (sin empresa).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
@@ -16,6 +16,7 @@ import { GenTipoContactoService } from './gen-tipo-contacto.service';
 const ESTADO_FIELD = 'ACTIVO_TIPO_CONTACTO';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-tipo-contacto',
 	templateUrl: './gen-tipo-contacto.component.html',
 	styleUrls: ['./gen-tipo-contacto.component.scss'],

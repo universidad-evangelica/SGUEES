@@ -11,6 +11,7 @@ import { ComTipoSoliCotiza } from './models/com-tipo-soli-cotiza';
 import { ComTipoSoliCotizaService } from './com-tipo-soli-cotiza.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-tipo-soli-cotiza',
 	templateUrl: './com-tipo-soli-cotiza.component.html',
 	styleUrls: ['./com-tipo-soli-cotiza.component.scss'],

@@ -14,6 +14,7 @@ import { AcaDocumentoAdmisionService } from './aca-documento-admision.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-documento-admision',
 	templateUrl: './aca-documento-admision.component.html',
 	styleUrls: ['./aca-documento-admision.component.scss'],

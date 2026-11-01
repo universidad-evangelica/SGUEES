@@ -22,6 +22,7 @@ import { DxButtonTypes } from 'devextreme-angular/ui/button';
 import { ToolbarFormModule } from 'src/app/shared/components/utils/toolbar-form/toolbar-form.component';
 
 @Component({
+  standalone: false,
   selector: 'task-form',
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss'],

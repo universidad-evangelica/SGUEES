@@ -33,6 +33,8 @@
       [btn2Type]="'default'"
       [btn2Width]="120"
       (btn2Click)="imprimirRequisicion()"
+      [combox1]="barraFiltroUnidad"
+      (combox1Change)="onFiltroUnidadChanged($event)"
     >
     </app-barra-data-mtto>
     <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">

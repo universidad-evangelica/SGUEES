@@ -7,6 +7,7 @@ import { AuthService, IUser } from 'src/app/shared/services/auth.service';
 
 
 @Component({
+  standalone: false,
   selector: 'user-panel',
   templateUrl: 'user-panel.component.html',
   styleUrls: ['./user-panel.component.scss'],

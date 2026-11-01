@@ -8,6 +8,7 @@ import { ConAreaFuncional } from './models/con-area-funcional';
 import { ConAreaFuncionalService } from './con-area-funcional.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-area-funcional',
 	templateUrl: './con-area-funcional.component.html',
 })

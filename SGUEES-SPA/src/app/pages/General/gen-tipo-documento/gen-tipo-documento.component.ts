@@ -25,6 +25,7 @@ import { GenTipoDocumentoService } from './gen-tipo-documento.service';
 import { IParam } from 'src/app/FxAPI/IParam';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-tipo-documento',
 	templateUrl: './gen-tipo-documento.component.html',
 })

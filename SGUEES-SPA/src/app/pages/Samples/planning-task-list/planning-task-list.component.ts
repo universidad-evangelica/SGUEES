@@ -21,6 +21,7 @@ import { TaskListGanttComponent, TaskListGanttModule } from 'src/app/shared/comp
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 
 @Component({
+  standalone: false,
   templateUrl: './planning-task-list.component.html',
   styleUrls: ['./planning-task-list.component.scss'],
   providers: [DataService],

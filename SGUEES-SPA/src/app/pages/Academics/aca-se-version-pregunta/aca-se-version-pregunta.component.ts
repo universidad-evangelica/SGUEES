@@ -18,6 +18,7 @@ import { AcaSeVersionPreguntaService } from './aca-se-version-pregunta.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-se-version-pregunta',
 	templateUrl: './aca-se-version-pregunta.component.html',
 	styleUrls: ['./aca-se-version-pregunta.component.scss'],

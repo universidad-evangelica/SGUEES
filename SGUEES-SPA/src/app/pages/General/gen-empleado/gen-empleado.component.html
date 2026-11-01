@@ -1007,12 +1007,12 @@
 		(onHidden)="alOcultarPopupPersonales()"
 	>
 		<!-- motivo: acciones Cancelar / Guardar en toolbar inferior del popup -->
-		<dxi-toolbar-item toolbar="bottom" location="after">
+		<dxi-popup-toolbar-item toolbar="bottom" location="after">
 			<div class="editar-persona__footer-actions">
 				<dx-button text="Cancelar" stylingMode="outlined" type="normal" [disabled]="fotoSubiendo" (onClick)="cerrarPopupPersonales(true)"></dx-button>
 				<dx-button text="Guardar cambios" type="success" icon="save" [disabled]="fotoSubiendo" (onClick)="guardarPersonalesDesdeModal()"></dx-button>
 			</div>
-		</dxi-toolbar-item>
+		</dxi-popup-toolbar-item>
 
 		<div *dxTemplate="let data of 'content'" class="editar-persona">
 			<dx-scroll-view class="editar-persona__scroll" width="100%" height="100%" [scrollByContent]="true" [scrollByThumb]="true" [showScrollbar]="'onScroll'">

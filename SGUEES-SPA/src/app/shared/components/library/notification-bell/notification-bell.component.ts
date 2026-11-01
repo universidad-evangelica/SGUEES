@@ -13,6 +13,7 @@ import {
 } from 'src/app/services/notification-signalr.service';
 
 @Component({
+  standalone: false,
   selector: 'app-notification-bell',
   templateUrl: './notification-bell.component.html',
   styleUrls: ['./notification-bell.component.scss'],

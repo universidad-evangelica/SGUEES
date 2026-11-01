@@ -11,6 +11,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 
 /** Pantalla propia (tabla CON_CATALOGO_CUENTA_CENTRO_COSTO). Mtto especial de asignación — no es catálogo CRUD clásico. */
 @Component({
+  standalone: false,
 	selector: 'app-con-catalogo-cuenta-centro-costo',
 	templateUrl: './con-catalogo-cuenta-centro-costo.component.html',
 	styleUrls: ['./con-catalogo-cuenta-centro-costo.component.scss'],

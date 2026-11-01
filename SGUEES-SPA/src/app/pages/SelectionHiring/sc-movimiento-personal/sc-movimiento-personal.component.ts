@@ -24,6 +24,7 @@ import {
 import { ScMovimientoPersonalService } from './sc-movimiento-personal.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-movimiento-personal',
 	templateUrl: './sc-movimiento-personal.component.html',
 	styleUrls: ['./sc-movimiento-personal.component.scss'],

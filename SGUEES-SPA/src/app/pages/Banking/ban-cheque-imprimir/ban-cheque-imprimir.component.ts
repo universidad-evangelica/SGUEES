@@ -11,6 +11,7 @@ import { BanDocumentoService } from '../ban-documento/ban-documento.service';
 import { CData } from 'src/app/FxAPI/CData';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-cheque-imprimir',
 	templateUrl: './ban-cheque-imprimir.component.html',
 	styleUrls: ['./ban-cheque-imprimir.component.scss'],

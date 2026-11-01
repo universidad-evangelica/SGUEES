@@ -619,13 +619,13 @@
     [shading]="false"
     [(visible)]="popupVisible"
   >
-    <dxi-toolbar-item
+    <dxi-popup-toolbar-item
       location="after"
       widget="dxButton"
       [options]="{ icon: 'refresh', onClick: RefrescarSolicitud }"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="after"
       widget="dxDateBox"
       Onval
@@ -639,8 +639,8 @@
 
       }"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="after"
       widget="dxDateBox"
       [options]="{
@@ -652,8 +652,8 @@
         onValueChanged: OnValueChangeFECHA_FINAL_MODAL
       }"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="before"
       toolbar= "bottom"
       widget="dxButton"
@@ -665,8 +665,8 @@
       onClick: guardarPopup,
     }"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="before"
       toolbar= "bottom"
       widget="dxButton"
@@ -678,7 +678,7 @@
       onClick: hidePopup,
       routerLinkActive: 'router-link-active'
     }"
-    ></dxi-toolbar-item>
+    ></dxi-popup-toolbar-item>
     <div *dxTemplate="let data of 'content'">
       <dx-data-grid
         #dataSolicitudDisponible

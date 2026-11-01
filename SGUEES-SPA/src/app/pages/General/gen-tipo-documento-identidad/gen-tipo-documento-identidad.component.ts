@@ -16,6 +16,7 @@ import { GenTipoDocumentoIdentidadService } from './gen-tipo-documento-identidad
 const ESTADO_FIELD = 'ACTIVO_TIPO_DOCUMENTO_IDENTIDAD';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-tipo-documento-identidad',
 	templateUrl: './gen-tipo-documento-identidad.component.html',
 	styleUrls: ['./gen-tipo-documento-identidad.component.scss'],

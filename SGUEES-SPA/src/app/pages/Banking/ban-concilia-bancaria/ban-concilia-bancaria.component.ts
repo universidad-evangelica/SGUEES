@@ -22,6 +22,7 @@ import { BanConciliaBancariaDetaService } from './ban-concilia-bancaria-deta/ban
 import { parseBanConciliaImportFile } from './ban-concilia-excel.parser';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-concilia-bancaria',
 	templateUrl: './ban-concilia-bancaria.component.html',
 	styleUrls: ['./ban-concilia-bancaria.component.scss'],

@@ -15,6 +15,7 @@ import { Message, Messages } from 'src/app/types/messages';
 import { UserAvatarModule } from 'src/app/shared/components/library/user-avatar/user-avatar.component';
 
 @Component({
+  standalone: false,
   selector: 'card-messages',
   templateUrl: './card-messages.component.html',
   styleUrls: ['./card-messages.component.scss'],

@@ -15,6 +15,7 @@ import { BanReporteService } from '../ban-reporte.service';
 import { BanReporteDefinicion, BanReporteFiltro } from '../models/ban-reporte-filtro';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-reporte-shell',
 	templateUrl: './ban-reporte-shell.component.html',
 	styleUrls: ['./ban-reporte-shell.component.scss'],

@@ -4,6 +4,7 @@ import { Component, NgModule } from '@angular/core';
 import { CardAuthModule, ResetPasswordFormModule } from 'src/app/shared/components';
 
 @Component({
+  standalone: false,
   selector: 'app-reset-password-form',
   templateUrl: './reset-password-form.component.html',
   styleUrls: ['./reset-password-form.component.scss']

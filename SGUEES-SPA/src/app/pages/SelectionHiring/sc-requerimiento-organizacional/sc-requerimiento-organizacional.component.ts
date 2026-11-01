@@ -13,6 +13,7 @@ import { ScRequerimientoOrganizacionalService } from './sc-requerimiento-organiz
 const ESTADO_FIELD = 'ESTADO_REQUERIMIENTO_ORGANIZACIONAL';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-requerimiento-organizacional',
 	templateUrl: './sc-requerimiento-organizacional.component.html',
 	styleUrls: ['./sc-requerimiento-organizacional.component.scss'],

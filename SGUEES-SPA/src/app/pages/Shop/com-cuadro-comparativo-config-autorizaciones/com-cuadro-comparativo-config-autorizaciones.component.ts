@@ -11,6 +11,7 @@ import { ComCuadroComparativoConfigAutorizaciones } from './models/com-cuadro-co
 import { ComCuadroComparativoConfigAutorizacionesService } from './com-cuadro-comparativo-config-autorizaciones.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-cuadro-comparativo-config-autorizaciones',
 	templateUrl: './com-cuadro-comparativo-config-autorizaciones.component.html',
 	styleUrls: ['./com-cuadro-comparativo-config-autorizaciones.component.scss'],

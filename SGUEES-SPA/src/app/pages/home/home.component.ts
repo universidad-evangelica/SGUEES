@@ -6,6 +6,7 @@ import { MessageService } from 'primeng/api';
 import { take } from 'rxjs/operators';
 
 @Component({
+  standalone: false,
   templateUrl: 'home.component.html',
   styleUrls: [ './home.component.scss' ]
 })

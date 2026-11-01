@@ -1,4 +1,4 @@
-﻿import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -10,6 +10,7 @@ import { BanLineaTrabajoConciliacion } from './models/ban-linea-trabajo-concilia
 import { BanLineaTrabajoConciliacionService } from './ban-linea-trabajo-conciliacion.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-linea-trabajo-conciliacion',
 	templateUrl: './ban-linea-trabajo-conciliacion.component.html',
 })

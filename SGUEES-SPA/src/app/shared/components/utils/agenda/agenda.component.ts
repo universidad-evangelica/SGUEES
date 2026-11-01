@@ -9,6 +9,7 @@ import { AgendaListItemModule } from "./agenda-list-item.component";
 export type AgendaItem = { startDate: Date };
 
 @Component({
+  standalone: false,
   selector: 'agenda',
   template: `
   <dx-list

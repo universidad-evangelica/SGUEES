@@ -90,22 +90,21 @@ namespace SGUEES.Controllers
             return result.ErrorCode == 0 ? Ok(result) : BadRequest(result);
         }
 
-        // Qué hace: entrega las unidades efectivas del usuario de sesión para el lookup del descriptor.
-        // Cómo: fija CORR_EMPRESA y LOGIN_SISTEMA del token y ejecuta PRAL_DATA_SC_UNIDADES_USUARIO.
+        // SPA descriptor: getLookUp('SC_DESCRIPTOR_PUESTO', 'SC_UNIDADES_USUARIO', 'GetCORR_UNIDAD', …).
         [HttpGet("GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
-        public async Task<CResult> GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO([FromQuery] SC_UNIDADES_USUARIOParam Data)
-        {
-            Data.CORR_EMPRESA = GetCorrEmpresa();
-            Data.LOGIN_SISTEMA = GetUsuario();
-            return await _service.GetUnidadesUsuarioAsync(Data);
-        }
+        public Task<CResult> GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO([FromQuery] SC_UNIDADES_USUARIOParam Data) =>
+            GetUnidadesUsuarioSesionAsync(Data);
 
-        // Qué hace: unidades del usuario de sesión para sc-requisicion-personal (cascada unidad→puesto→descriptor).
-        // Cómo: reutiliza PRAL_DATA_SC_UNIDADES_USUARIO; endpoint nuevo con permiso de la pantalla consumidora.
+        // SPA requisición: getLookUp('SC_REQUISICION_PERSONAL', 'SC_UNIDADES_USUARIO', 'GetCORR_UNIDAD', …).
         [HttpGet("GetCORR_UNIDAD_SC_REQUISICION_PERSONAL")]
         [Authorize(Policy = "/sc-requisicion-personal|R")]
-        public async Task<CResult> GetCORR_UNIDAD_SC_REQUISICION_PERSONAL([FromQuery] SC_UNIDADES_USUARIOParam Data)
+        public Task<CResult> GetCORR_UNIDAD_SC_REQUISICION_PERSONAL([FromQuery] SC_UNIDADES_USUARIOParam Data) =>
+            GetUnidadesUsuarioSesionAsync(Data);
+
+        // Qué hace: unidades efectivas del usuario (PRAL_DATA_SC_UNIDADES_USUARIO).
+        // Cómo: empresa y login desde el token; la lógica es la misma; el permiso lo define cada acción HTTP anterior.
+        private async Task<CResult> GetUnidadesUsuarioSesionAsync(SC_UNIDADES_USUARIOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             Data.LOGIN_SISTEMA = GetUsuario();

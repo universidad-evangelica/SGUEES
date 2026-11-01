@@ -15,6 +15,7 @@ import { ConReporteService } from '../con-reporte.service';
 import { ConReporteDefinicion, ConReporteFiltro } from '../models/con-reporte-filtro';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-reporte-shell',
 	templateUrl: './con-reporte-shell.component.html',
 	styleUrls: ['./con-reporte-shell.component.scss'],

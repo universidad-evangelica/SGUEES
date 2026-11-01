@@ -9,6 +9,7 @@ import { DxBulletModule } from 'devextreme-angular/ui/bullet';
 import { SalesByStateAndCity } from 'src/app/types/analytics';
 
 @Component({
+  standalone: false,
   selector: 'revenue-analysis-by-states-card',
   templateUrl: './revenue-analysis-by-states-card.component.html',
   styleUrls: ['./revenue-analysis-by-states-card.component.scss'],

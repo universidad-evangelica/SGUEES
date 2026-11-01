@@ -15,6 +15,7 @@ import {
  * La edición se dispara vía (editar) hacia el padre, que abre app-sc-solicitud-empleo-editar-persona.
  */
 @Component({
+  standalone: false,
 	selector: 'app-sc-persona-datos-vista',
 	templateUrl: './sc-persona-datos-vista.component.html',
 	styleUrls: ['./sc-persona-datos-vista.component.scss'],

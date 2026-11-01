@@ -13,6 +13,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver-es';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-cotizacion-consulta',
 	templateUrl: './com-cotizacion-consulta.component.html',
 	styleUrls: ['./com-cotizacion-consulta.component.scss'],

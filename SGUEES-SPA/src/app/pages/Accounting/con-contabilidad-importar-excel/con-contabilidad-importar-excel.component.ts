@@ -13,6 +13,7 @@ import { ConContabilidadImportarExcelService } from './con-contabilidad-importar
 import { parseClassWebWorkbook } from './class-web-excel.parser';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-contabilidad-importar-excel',
 	templateUrl: './con-contabilidad-importar-excel.component.html',
 	styleUrls: ['./con-contabilidad-importar-excel.component.scss'],
@@ -59,7 +60,7 @@ export class ConContabilidadImportarExcelComponent extends CBaseComponent implem
 
 		try {
 			const buffer = await file.arrayBuffer();
-			const parsed = parseClassWebWorkbook(buffer);
+			const parsed = await parseClassWebWorkbook(buffer);
 			this.cuentaRows = parsed.cuentaRows.map((row) => ({ ...row, _rowId: this.nextRowId++ }));
 			this.centroRows = parsed.centroRows.map((row) => ({ ...row, _rowId: this.nextRowId++ }));
 

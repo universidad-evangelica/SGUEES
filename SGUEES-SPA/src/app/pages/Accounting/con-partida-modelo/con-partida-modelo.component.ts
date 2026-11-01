@@ -14,6 +14,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { environment } from 'src/environments/environment';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-partida-modelo',
 	templateUrl: './con-partida-modelo.component.html',
 	styleUrls: ['./con-partida-modelo.component.scss'],

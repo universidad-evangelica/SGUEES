@@ -14,6 +14,7 @@ import { SegFlujoActorAsignacion } from './seg-flujo-actor-asignacion/models/seg
 import { confirm } from 'devextreme/ui/dialog';
 
 @Component({
+  standalone: false,
     selector: 'app-seg-flujo-actor',
     templateUrl: './seg-flujo-actor.component.html',
     styleUrls: ['./seg-flujo-actor.component.scss'],

@@ -12,6 +12,7 @@ import { DxCalendarTypes } from 'devextreme-angular/ui/calendar';
 import { CommonModule } from '@angular/common';
 
 @Component({
+  standalone: false,
   selector: 'form-item-date',
   template: `
     <dx-date-box

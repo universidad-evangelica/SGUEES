@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { AIService, AICompleteResponse } from '../../services/ai.service';
 
 @Component({
+  standalone: false,
   selector: 'app-ai-demo',
   templateUrl: './ai-demo.component.html',
   styleUrls: ['./ai-demo.component.css']

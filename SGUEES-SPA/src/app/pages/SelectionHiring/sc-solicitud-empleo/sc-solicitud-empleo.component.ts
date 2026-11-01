@@ -1,4 +1,4 @@
-﻿import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -27,6 +27,7 @@ import { confirm } from 'devextreme/ui/dialog';
 import { ScExpedienteCandidatoService } from '../sc-expediente-candidato/sc-expediente-candidato.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-solicitud-empleo',
 	templateUrl: './sc-solicitud-empleo.component.html',
 	styleUrls: ['./sc-solicitud-empleo.component.scss'],

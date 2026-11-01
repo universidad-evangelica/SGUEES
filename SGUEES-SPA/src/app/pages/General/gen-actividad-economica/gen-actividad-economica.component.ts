@@ -14,6 +14,7 @@ import { GenActividadEconomicaService } from './gen-actividad-economica.service'
 const ESTADO_FIELD = 'ACTIVO_ACTIVIDAD_ECONOMICA';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-actividad-economica',
 	templateUrl: './gen-actividad-economica.component.html',
 	styleUrls: ['./gen-actividad-economica.component.scss'],

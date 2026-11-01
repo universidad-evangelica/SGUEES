@@ -28,6 +28,7 @@ import {
 import { DataService, ScreenService } from 'src/app/shared/services';
 
 @Component({
+  standalone: false,
   templateUrl: './user-profile.component.html',
   styleUrls: ['./user-profile.component.scss'],
   providers: [DataService],

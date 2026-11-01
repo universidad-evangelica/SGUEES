@@ -449,7 +449,7 @@
     type="file" (change)="onFileChangedPDF($event)"
     accept=".pdf"
     #fileInputPDF>
-  <dxi-toolbar-item
+  <dxi-popup-toolbar-item
     location="before"
     toolbar= "bottom"
     widget="dxButton"
@@ -461,8 +461,8 @@
       onClick: guardarDocPopup,
     }"
   >
-  </dxi-toolbar-item>
-  <dxi-toolbar-item
+  </dxi-popup-toolbar-item>
+  <dxi-popup-toolbar-item
     location="before"
     toolbar= "bottom"
     widget="dxButton"
@@ -475,7 +475,7 @@
       routerLinkActive: 'router-link-active'
     }"
   >
-  </dxi-toolbar-item>
+  </dxi-popup-toolbar-item>
 <div *dxTemplate="let data of 'content'">
   <div>
     <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
@@ -610,7 +610,7 @@
   class="popout"
 >
 
-  <dxi-toolbar-item
+  <dxi-popup-toolbar-item
     location="before"
     toolbar= "bottom"
     widget="dxButton"
@@ -622,8 +622,8 @@
       onClick: guardarDetaDocPopup,
     }"
   >
-  </dxi-toolbar-item>
-  <dxi-toolbar-item
+  </dxi-popup-toolbar-item>
+  <dxi-popup-toolbar-item
     location="before"
     toolbar= "bottom"
     widget="dxButton"
@@ -636,8 +636,8 @@
       routerLinkActive: 'router-link-active'
     }"
   >
-  </dxi-toolbar-item>
-  <dxi-toolbar-item
+  </dxi-popup-toolbar-item>
+  <dxi-popup-toolbar-item
     location="before"
     toolbar= "top"
     widget="dxButton"
@@ -649,8 +649,8 @@
       onClick: selectTodos,
     }"
   >
-  </dxi-toolbar-item>
-  <dxi-toolbar-item
+  </dxi-popup-toolbar-item>
+  <dxi-popup-toolbar-item
     location="before"
     toolbar= "top"
     widget="dxButton"
@@ -663,8 +663,8 @@
       routerLinkActive: 'router-link-active'
     }"
   >
-  </dxi-toolbar-item>
-  <dxi-toolbar-item
+  </dxi-popup-toolbar-item>
+  <dxi-popup-toolbar-item
     location="after"
     toolbar= "top"
     widget="dxButton"
@@ -673,8 +673,8 @@
       onClick: consultarCOM_DOCUMENTO_DETA_DOC_DISPONIBLES,
     }"
   >
-  </dxi-toolbar-item>
-  <dxi-toolbar-item
+  </dxi-popup-toolbar-item>
+  <dxi-popup-toolbar-item
     location="after"
     toolbar= "top"
     widget="dxDateBox"
@@ -688,8 +688,8 @@
       onValueChanged: OnValueChangeFECHA_INICIAL_MODAL
     }"
   >
-  </dxi-toolbar-item>
-  <dxi-toolbar-item
+  </dxi-popup-toolbar-item>
+  <dxi-popup-toolbar-item
     location="after"
     toolbar= "top"
     widget="dxDateBox"
@@ -702,7 +702,7 @@
       onValueChanged: OnValueChangeFECHA_FINAL_MODAL
     }"
   >
-  </dxi-toolbar-item>
+  </dxi-popup-toolbar-item>
   <div *dxTemplate="let data of 'content'">
     <dx-data-grid
       #dataComDocumentoDetaDoc

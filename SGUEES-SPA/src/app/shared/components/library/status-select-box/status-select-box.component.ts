@@ -9,6 +9,7 @@ import { ContactStatusModule } from 'src/app/shared/components/utils/contact-sta
 import { ThemeService } from 'src/app/shared/services/theme.service';
 
 @Component({
+  standalone: false,
   selector: 'status-select-box',
   templateUrl: 'status-select-box.component.html',
   styleUrls: ['./status-select-box.component.scss'],

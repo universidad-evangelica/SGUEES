@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
@@ -12,6 +12,7 @@ import { AcaBecDocumentoRequeridoService } from './aca-bec-documento-requerido.s
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-bec-documento-requerido',
 	templateUrl: './aca-bec-documento-requerido.component.html',
 	styleUrls: ['./aca-bec-documento-requerido.component.scss'],

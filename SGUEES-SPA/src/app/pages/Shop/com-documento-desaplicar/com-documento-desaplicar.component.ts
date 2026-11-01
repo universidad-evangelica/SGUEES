@@ -14,6 +14,7 @@ import { saveAs } from 'file-saver-es';
 import { custom } from 'devextreme/ui/dialog';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-documento-desaplicar',
 	templateUrl: './com-documento-desaplicar.component.html',
 	styleUrls: ['./com-documento-desaplicar.component.scss'],

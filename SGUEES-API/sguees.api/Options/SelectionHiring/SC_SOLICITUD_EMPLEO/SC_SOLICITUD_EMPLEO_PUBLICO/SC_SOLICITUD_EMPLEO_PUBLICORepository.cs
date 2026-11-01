@@ -181,12 +181,16 @@ namespace sguees.Repositories
 
                 // Qué hace: enriquece la validación del token con el DUI de la solicitud y el puesto de la requisición vinculada.
                 // Cómo lo hace: consulta V_SC_SOLICITUD_EMPLEO y V_SC_SOLICITUD_REQUISICION por TOKEN_HASH para obtener el DUI y NOMBRE_PUESTO asignado.
+                // Si la requisición no trae CORR_PUESTO (nombre vacío), usa el nombre del puesto del descriptor vinculado a la requisición.
                 if (response.VALIDO)
                 {
                     const string sqlInfo = @"
                         SELECT TOP 1
                             s.DUI,
-                            ISNULL(sr.NOMBRE_PUESTO, '') AS PLAZA_SOLICITADA
+                            COALESCE(
+                                NULLIF(LTRIM(RTRIM(sr.NOMBRE_PUESTO)), ''),
+                                NULLIF(LTRIM(RTRIM(dp.NOMBRE_PUESTO)), ''),
+                                '') AS PLAZA_SOLICITADA
                         FROM dbo.SC_SOLICITUD_EMPLEO_TOKEN t
                         INNER JOIN dbo.SC_SOLICITUD_EMPLEO s
                             ON s.CORR_EMPRESA = t.CORR_EMPRESA
@@ -194,6 +198,12 @@ namespace sguees.Repositories
                         LEFT JOIN dbo.V_SC_SOLICITUD_REQUISICION sr
                             ON sr.CORR_EMPRESA = s.CORR_EMPRESA
                            AND sr.CORR_SOLICITUD_EMPLEO = s.CORR_SOLICITUD_EMPLEO
+                        LEFT JOIN dbo.V_SC_REQUISICION_PERSONAL rp
+                            ON rp.CORR_EMPRESA = sr.CORR_EMPRESA
+                           AND rp.CORR_REQUISICION_PERSONAL = sr.CORR_REQUISICION_PERSONAL
+                        LEFT JOIN dbo.V_SC_DESCRIPTOR_PUESTO dp
+                            ON dp.CORR_EMPRESA = rp.CORR_EMPRESA
+                           AND dp.CORR_DESCRIPTOR_PUESTO = rp.CORR_DESCRIPTOR_PUESTO
                         WHERE t.TOKEN_HASH = @TOKEN_HASH
                         ORDER BY sr.CORR_SOLICITUD_REQUISICION ASC;";
 

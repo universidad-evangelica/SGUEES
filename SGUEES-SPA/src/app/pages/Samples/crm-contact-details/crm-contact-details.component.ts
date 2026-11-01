@@ -21,6 +21,7 @@ import { ContactCardsModule } from 'src/app/shared/components/utils/contact-card
 import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 
 @Component({
+  standalone: false,
   templateUrl: './crm-contact-details.component.html',
   styleUrls: ['./crm-contact-details.component.scss'],
   providers: [DataService],

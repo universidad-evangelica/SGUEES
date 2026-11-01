@@ -9,6 +9,7 @@ import { PartidaIaPromptService } from './partida-ia-prompt.service';
 import { puedeIrARuta, resolvePartidaGuia, PartidaGuiaResuelta } from './partida-ia-playbooks';
 
 @Component({
+  standalone: false,
 	selector: 'app-partida-ia-asistente',
 	templateUrl: './partida-ia-asistente.component.html',
 	styleUrls: ['./partida-ia-asistente.component.scss'],

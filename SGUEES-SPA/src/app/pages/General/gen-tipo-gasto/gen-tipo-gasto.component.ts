@@ -25,6 +25,7 @@ import { GenTipoGastoService } from './gen-tipo-gasto.service';
 import { IParam } from 'src/app/FxAPI/IParam';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-tipo-gasto',
 	templateUrl: './gen-tipo-gasto.component.html',
 })

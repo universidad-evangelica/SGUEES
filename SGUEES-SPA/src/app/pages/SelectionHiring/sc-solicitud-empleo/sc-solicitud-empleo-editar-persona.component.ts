@@ -46,6 +46,7 @@ interface RowDraft {
 }
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-solicitud-empleo-editar-persona',
 	templateUrl: './sc-solicitud-empleo-editar-persona.component.html',
 	styleUrls: ['./sc-solicitud-empleo-editar-persona.component.scss'],

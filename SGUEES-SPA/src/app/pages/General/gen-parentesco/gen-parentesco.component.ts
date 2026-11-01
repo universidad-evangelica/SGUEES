@@ -14,6 +14,7 @@ import { GenParentescoService } from './gen-parentesco.service';
 const ESTADO_FIELD = 'ACTIVO_PARENTESCO';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-parentesco',
 	templateUrl: './gen-parentesco.component.html',
 	styleUrls: ['./gen-parentesco.component.scss'],

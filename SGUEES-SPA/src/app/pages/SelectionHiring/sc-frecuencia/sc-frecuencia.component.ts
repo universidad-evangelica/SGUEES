@@ -14,6 +14,7 @@ import { ScFrecuenciaService } from './sc-frecuencia.service';
 const ESTADO_FIELD = 'ESTADO_FRECUENCIA';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-frecuencia',
 	templateUrl: './sc-frecuencia.component.html',
 	styleUrls: ['./sc-frecuencia.component.scss'],

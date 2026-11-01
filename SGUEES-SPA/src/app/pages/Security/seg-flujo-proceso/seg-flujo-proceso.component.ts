@@ -20,6 +20,7 @@ import { SegFlujoPasoActorDestinoService } from './seg-flujo-paso-actor-destino/
 import { SegFlujoPasoActorDestino } from './seg-flujo-paso-actor-destino/models/seg-flujo-paso-actor-destino';
 import { confirm } from 'devextreme/ui/dialog';
 @Component({
+  standalone: false,
     selector: 'app-seg-flujo-proceso',
     templateUrl: './seg-flujo-proceso.component.html',
     styleUrls: ['./seg-flujo-proceso.component.scss'],

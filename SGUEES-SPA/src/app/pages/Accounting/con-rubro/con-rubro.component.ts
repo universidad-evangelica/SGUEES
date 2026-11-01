@@ -29,6 +29,7 @@ import { environment } from 'src/environments/environment';
 
 
 @Component({
+  standalone: false,
 
 	selector: 'app-con-rubro',
 

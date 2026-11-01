@@ -18,6 +18,7 @@ import { ComDocumentoCr } from './models/com-documento-cr';
 import { ComDocumentoAnularCr } from './models/com-documento-anular-cr';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-documento',
 	templateUrl: './com-documento.component.html',
 	styleUrls: ['./com-documento.component.scss'],

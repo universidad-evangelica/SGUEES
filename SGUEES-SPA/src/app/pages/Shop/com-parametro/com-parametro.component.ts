@@ -11,6 +11,7 @@ import { ComParametro } from './models/com-parametro';
 import { ComParametroService } from './com-parametro.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-parametro',
 	templateUrl: './com-parametro.component.html',
 	styleUrls: ['./com-parametro.component.scss'],

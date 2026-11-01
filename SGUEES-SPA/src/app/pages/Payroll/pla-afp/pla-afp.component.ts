@@ -14,6 +14,7 @@ import { PlaAfpService } from './pla-afp.service';
 const ESTADO_FIELD = 'ACTIVO_AFP';
 
 @Component({
+  standalone: false,
 	selector: 'app-pla-afp',
 	templateUrl: './pla-afp.component.html',
 	styleUrls: ['./pla-afp.component.scss'],

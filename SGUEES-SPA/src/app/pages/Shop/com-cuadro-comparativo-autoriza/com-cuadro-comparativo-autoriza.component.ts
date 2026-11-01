@@ -20,6 +20,7 @@ import { ComCuadroComparativoDoc } from './com-cuadro-comparativo-doc/models/com
 
 
 @Component({
+  standalone: false,
 	selector: 'app-com-cuadro-comparativo-autoriza',
 	templateUrl: './com-cuadro-comparativo-autoriza.component.html',
 	styleUrls: ['./com-cuadro-comparativo-autoriza.component.scss'],

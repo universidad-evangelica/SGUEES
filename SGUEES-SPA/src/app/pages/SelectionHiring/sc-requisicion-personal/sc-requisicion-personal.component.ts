@@ -7,6 +7,7 @@ import { MessageService } from 'primeng/api'; //Import para usar PrimeNG Toast
 import { confirm } from 'devextreme/ui/dialog';
 import { DxFormComponent } from 'devextreme-angular';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { BarraMttoCombox } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
@@ -41,6 +42,7 @@ import {
 } from '../shared/selection-hiring-rpt';
 
 @Component({
+  standalone: false,
   selector: 'app-sc-requisicion-personal',
   templateUrl: './sc-requisicion-personal.component.html',
   styleUrls: ['./sc-requisicion-personal.component.scss']
@@ -88,9 +90,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	];
 
 	unidadLookupColumns: any[] = [
-		{ dataField: 'CORR_UNIDAD', caption: 'Unidad', width: 120 },
-		{ dataField: 'NOMBRE_UNIDAD', caption: 'Nombre Unidad', width: 250 },
+		{ dataField: 'NOMBRE_UNIDAD_CATALOGO', caption: 'Unidad', width: 280 },
+		{ dataField: 'ORIGEN_UNIDAD', caption: 'Origen', width: 140 },
 	];
+
+	/** Filtro de unidad en el listado (0 = Todas). */
+	filtroCorrUnidad: number = 0;
+	private modelsListadoCompleto: ScRequisicionPersonal[] = [];
+	barraFiltroUnidad: BarraMttoCombox | null = null;
 
 	puestoLookupColumns: any[] = [
 		{ dataField: 'CORR_PUESTO', caption: 'Puesto', width: 100 },
@@ -1142,6 +1149,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	inicializaOpciones() {}
 
 	llenaComboBox() {
+		this.syncBarraFiltros();
 		//this.getAllDepartamento();
 		this.getCORR_TIPO_MODALIDAD();
 		this.getCORR_TIPO_CONTRATACION();
@@ -1252,19 +1260,86 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 
 	getCORR_UNIDAD() {
 		this.appInfoService
-		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_UNIDADES_USUARIO', 'GetCORR_UNIDAD', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
-		.pipe(take(1))
-		.subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.mCORR_UNIDAD = response.Data ?? [];
+			.getLookUp(
+				'SC_REQUISICION_PERSONAL',
+				'SC_UNIDADES_USUARIO',
+				'GetCORR_UNIDAD',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_UNIDAD = [];
+						this.syncBarraFiltros();
+						if (response?.Result === false && response?.ErrorMessage) {
+							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+						}
+						return;
+					}
+					this.mCORR_UNIDAD = this.mapUnidadesUsuarioLookup(response.Data);
+					this.syncBarraFiltros();
+				},
+				error: (error: any) => {
+					this.mCORR_UNIDAD = [];
+					this.syncBarraFiltros();
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	private mapUnidadesUsuarioLookup(data: any[]): any[] {
+		const vistos = new Set<number>();
+		return data
+			.map((item: any) => {
+				const nombre = (item.NOMBRE_UNIDAD ?? '').trim();
+				const esHijaACargo = item.ES_HIJA_A_CARGO === true || item.ES_HIJA_A_CARGO === 1;
+				const esJefe = item.ES_JEFE_UNIDAD === true || item.ES_JEFE_UNIDAD === 1;
+				const esPuesto = item.ES_POR_PUESTO === true || item.ES_POR_PUESTO === 1;
+				let origen = 'Configurada';
+				if (esHijaACargo) {
+					origen = 'A cargo (hija)';
+				} else if (esJefe) {
+					origen = 'Jefe de unidad';
+				} else if (esPuesto) {
+					origen = 'Por puesto';
 				}
-			},
-			error: (error: any) => {
-				this.notifyFx(error, NotifyType.Error);
-				//this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
-			},
-		});
+				return {
+					CORR_UNIDAD: Number(item.CORR_UNIDAD),
+					CODIGO_UNIDAD: (item.CODIGO_UNIDAD ?? '').trim(),
+					NOMBRE_UNIDAD: nombre,
+					NOMBRE_UNIDAD_CATALOGO: nombre,
+					ORIGEN_UNIDAD: origen,
+					ES_POR_PUESTO: esPuesto,
+					CORR_PUESTO: item.CORR_PUESTO,
+				};
+			})
+			.filter((item: any) => {
+				const corr = Number(item.CORR_UNIDAD);
+				if (!corr || corr <= 0 || vistos.has(corr)) {
+					return false;
+				}
+				vistos.add(corr);
+				return true;
+			});
+	}
+
+	private syncBarraFiltros(): void {
+		this.barraFiltroUnidad = {
+			label: 'Unidad',
+			model: this.mCORR_UNIDAD ?? [],
+			value: this.filtroCorrUnidad ?? 0,
+			valueExpr: 'CORR_UNIDAD',
+			displayExpr: 'NOMBRE_UNIDAD',
+			lookupColumns: this.unidadLookupColumns,
+			selectedRowKeys: this.selectedLookUpUnidadFiltro,
+			showClearButton: true,
+			dropDownWidth: 420,
+			width: 350,
+			todosOption: { CORR_UNIDAD: 0, NOMBRE_UNIDAD: 'Todos', NOMBRE_UNIDAD_CATALOGO: 'Todos' },
+			clearResetsTo: 0,
+		};
 	}
 
 	getCORR_PUESTO(corrUnidad?: number): void {
@@ -1478,23 +1553,45 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data ?? [];
-						this.abrirDesdeQueryCorr();
-					} else {
-						//this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
-					}
-				},
-				error: (error: any) => {
-					//this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.message ?? error });
-				},
-			});
+	consultar(resetPage = false): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+			onData: () => {
+				this.modelsListadoCompleto = Array.isArray(this.models) ? [...this.models] : [];
+				this.aplicarFiltrosListado(resetPage);
+				this.abrirDesdeQueryCorr();
+			},
+		});
+	}
+
+	private aplicarFiltrosListado(_resetPage = false): void {
+		let rows = Array.isArray(this.modelsListadoCompleto) ? [...this.modelsListadoCompleto] : [];
+		const corrUnidad = Number(this.filtroCorrUnidad);
+		if (corrUnidad > 0) {
+			rows = rows.filter((row) => Number(row.CORR_UNIDAD) === corrUnidad);
+		}
+		this.models = rows;
+	}
+
+	onFiltroUnidadChanged(value: any): void {
+		const corr = Number(value);
+		this.filtroCorrUnidad = corr > 0 ? corr : 0;
+		this.syncBarraFiltros();
+		if (this.isBrowse()) {
+			this.aplicarFiltrosListado(true);
+		}
+	}
+
+	selectedLookUpUnidadFiltro(vRow: any): number {
+		return Number(vRow?.[0]?.CORR_UNIDAD ?? 0);
+	}
+
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.syncBarraFiltros();
+			this.aplicarFiltrosListado(false);
+		}
 	}
 
 	/**
@@ -1654,8 +1751,12 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
+						const key = e.data.CORR_REQUISICION_PERSONAL;
+						this.modelsListadoCompleto = (this.modelsListadoCompleto ?? []).filter(
+							(item: any) => item.CORR_REQUISICION_PERSONAL !== key
+						);
 						this.models = this.models.filter(
-							(item: any) => item.CORR_REQUISICION_PERSONAL !== e.data.CORR_REQUISICION_PERSONAL
+							(item: any) => item.CORR_REQUISICION_PERSONAL !== key
 						);
 						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
 					} else {

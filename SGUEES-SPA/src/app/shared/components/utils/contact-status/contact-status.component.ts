@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { ContactStatus } from 'src/app/types/contact';
 
 @Component({
+  standalone: false,
   selector: 'contact-status',
   template: `
   <span class="status status-{{ value | lowercase }}">{{ showText ? value : '' }}</span>

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { CardAuthModule, LoginFormModule } from 'src/app/shared/components';
 
 @Component({
+  standalone: false,
   selector: 'app-sign-in-form',
   templateUrl: './sign-in-form.component.html',
   styleUrls: ['./sign-in-form.component.scss']

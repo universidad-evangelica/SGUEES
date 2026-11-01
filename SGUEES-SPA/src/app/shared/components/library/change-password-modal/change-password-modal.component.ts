@@ -17,6 +17,7 @@ interface PasswordStrength {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-change-password-modal',
   templateUrl: './change-password-modal.component.html',
   styleUrls: ['./change-password-modal.component.scss']

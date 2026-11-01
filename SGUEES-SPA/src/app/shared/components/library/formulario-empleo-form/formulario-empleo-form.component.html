@@ -202,7 +202,12 @@
 								</div>
 								<div class="wizard-field">
 									<label class="wizard-label">Edad</label>
-									<dx-number-box stylingMode="outlined" [value]="formData.EDAD" [showSpinButtons]="false"></dx-number-box>
+									<dx-number-box
+										stylingMode="outlined"
+										[value]="formData.EDAD"
+										[showSpinButtons]="false"
+										[readOnly]="true"
+									></dx-number-box>
 								</div>
 								<div class="wizard-field">
 									<label class="wizard-label">Estado civil <span class="campo-required">*</span></label>
@@ -276,10 +281,10 @@
 						<div class="wizard-section">
 							<h3 class="wizard-section__title">Información laboral</h3>
 							<div class="wizard-grid wizard-grid--2">
-								<!-- motivo: la plaza solicitada proviene de la requisición vinculada y se mantiene de solo lectura para el candidato -->
+								<!-- motivo: la plaza solicitada proviene de la requisición vinculada y queda de solo lectura; si el enlace no la trae, se habilita para que el candidato pueda escribirla y continuar -->
 								<div class="wizard-field wizard-field--span2">
 									<label class="wizard-label">Plaza solicitada <span class="campo-required">*</span></label>
-									<dx-text-box stylingMode="outlined" [(value)]="formData.PLAZA_SOLICITADA" [readOnly]="true"></dx-text-box>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.PLAZA_SOLICITADA" [readOnly]="!!plazaSolicitadaRequisicion"></dx-text-box>
 								</div>
 								<div class="wizard-field">
 									<label class="wizard-label">Pretensión salarial <span class="campo-required">*</span></label>
@@ -414,7 +419,13 @@
 								[noDataText]="'Sin hijos registrados. Use Agregar hijo.'"
 							>
 								<dxi-column dataField="NOMBRE" caption="Nombre"></dxi-column>
-								<dxi-column dataField="EDAD" caption="Edad" dataType="number" width="80"></dxi-column>
+								<dxi-column
+									dataField="EDAD"
+									caption="Edad"
+									dataType="number"
+									width="80"
+									[allowEditing]="false"
+								></dxi-column>
 								<dxi-column
 									dataField="SEXO"
 									caption="Sexo"

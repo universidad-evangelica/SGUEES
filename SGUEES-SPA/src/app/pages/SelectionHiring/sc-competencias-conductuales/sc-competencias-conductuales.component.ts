@@ -16,6 +16,7 @@ import { ScCompetenciasConductualesService } from './sc-competencias-conductuale
 const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_CONDUCTUALES';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-competencias-conductuales',
 	templateUrl: './sc-competencias-conductuales.component.html',
 	styleUrls: ['./sc-competencias-conductuales.component.scss'],

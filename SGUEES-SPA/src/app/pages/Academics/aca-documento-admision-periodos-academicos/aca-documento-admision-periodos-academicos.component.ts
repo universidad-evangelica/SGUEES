@@ -15,6 +15,7 @@ import { AcaDocumentoPeriodo, AcaDocumentoPeriodoAsignacion } from './models/aca
 import { AcaPeriodoDocumento, AcaPeriodoDocumentoSeleccion } from './aca-periodos-academicos/models/aca-periodo-academico';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-documento-admision-periodos-academicos',
 	templateUrl: './aca-documento-admision-periodos-academicos.component.html',
 	styleUrls: ['./aca-documento-admision-periodos-academicos.component.scss'],

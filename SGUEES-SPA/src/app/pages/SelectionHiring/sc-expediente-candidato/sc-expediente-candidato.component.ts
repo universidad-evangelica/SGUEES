@@ -35,6 +35,7 @@ import { environment } from 'src/environments/environment';
 import { ScExpedienteCandidatoPostulacion } from '../sc-requisicion-personal/sc-requisicion-candidato/models/sc-requisicion-candidato';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-expediente-candidato',
 	templateUrl: './sc-expediente-candidato.component.html',
 	styleUrls: ['./sc-expediente-candidato.component.scss'],

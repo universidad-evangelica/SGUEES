@@ -25,6 +25,7 @@ import { BanSoliChequeService } from '../ban-soli-cheque/ban-soli-cheque.service
 
 
 @Component({
+  standalone: false,
 
 	selector: 'app-ban-soli-cheque-autoriza',
 

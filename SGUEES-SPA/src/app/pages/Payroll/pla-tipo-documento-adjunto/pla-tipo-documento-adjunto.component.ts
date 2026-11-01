@@ -10,6 +10,7 @@ import { PlaTipoDocumentoAdjunto } from './models/pla-tipo-documento-adjunto';
 import { PlaTipoDocumentoAdjuntoService } from './pla-tipo-documento-adjunto.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-pla-tipo-documento-adjunto',
 	templateUrl: './pla-tipo-documento-adjunto.component.html',
 	styleUrls: ['./pla-tipo-documento-adjunto.component.scss'],

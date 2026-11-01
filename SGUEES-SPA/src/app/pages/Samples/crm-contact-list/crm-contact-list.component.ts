@@ -31,6 +31,7 @@ import { ContactNewFormComponent, ContactNewFormModule } from 'src/app/shared/co
 type FilterContactStatus = ContactStatus | 'All';
 
 @Component({
+  standalone: false,
   templateUrl: './crm-contact-list.component.html',
   styleUrls: ['./crm-contact-list.component.scss'],
   providers: [DataService],

@@ -11,6 +11,7 @@ import { ComCondicionPago } from './models/com-condicion-pago';
 import { ComCondicionPagoService } from './com-condicion-pago.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-condicion-pago',
 	templateUrl: './com-condicion-pago.component.html',
 	styleUrls: ['./com-condicion-pago.component.scss'],

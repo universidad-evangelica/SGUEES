@@ -12,7 +12,7 @@
   [shading]="true"
 >
   <!-- Footer nativo del dx-popup: permanece fuera del área desplazable. -->
-  <dxi-toolbar-item toolbar="bottom" location="after">
+  <dxi-popup-toolbar-item toolbar="bottom" location="after">
     <div class="editar-persona__footer-actions">
       <dx-button
         text="Cancelar"
@@ -29,7 +29,7 @@
         (onClick)="guardar()"
       ></dx-button>
     </div>
-  </dxi-toolbar-item>
+  </dxi-popup-toolbar-item>
 
   <div *dxTemplate="let data of 'content'" class="editar-persona">
     <!-- Único scroll, conforme al patrón documentado de DevExtreme 24.1. -->

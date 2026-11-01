@@ -1,4 +1,5 @@
 import { Injectable, NgZone } from '@angular/core';
+import { Location } from '@angular/common';
 import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
@@ -68,7 +69,12 @@ export class AuthService {
 		this._lastAuthenticatedPath = value;
 	}
 
-	constructor(private router: Router, private http: HttpClient, private zone: NgZone) {
+	constructor(
+		private router: Router,
+		private http: HttpClient,
+		private zone: NgZone,
+		private location: Location
+	) {
 		this.loadSessionContext();
 		this.adoptExistingSession();
 		this.listenForOtherTabs();
@@ -398,7 +404,7 @@ export class AuthService {
 			return;
 		}
 		if (this.intentosLogin >= 3) {
-			window.location.assign('/login-form');
+			window.location.assign(this.location.prepareExternalUrl('/login-form'));
 			return;
 		}
 

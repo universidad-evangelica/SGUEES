@@ -15,6 +15,7 @@ import { ScInduccionService } from './sc-induccion.service';
 const ESTADO_FIELD = 'ESTADO_INDUCCION';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-induccion',
 	templateUrl: './sc-induccion.component.html',
 	styleUrls: ['./sc-induccion.component.scss'],

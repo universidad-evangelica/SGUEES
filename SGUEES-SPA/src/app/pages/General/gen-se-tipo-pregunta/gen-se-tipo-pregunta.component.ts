@@ -14,6 +14,7 @@ import { GenSeTipoPreguntaService } from './gen-se-tipo-pregunta.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-se-tipo-pregunta',
 	templateUrl: './gen-se-tipo-pregunta.component.html',
 	styleUrls: ['./gen-se-tipo-pregunta.component.scss'],

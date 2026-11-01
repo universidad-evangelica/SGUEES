@@ -11,6 +11,7 @@ import { resolveScreenHint } from './asistente-screen-hints';
 type AsistenteTab = 'recorrido' | 'pantalla' | 'pregunta';
 
 @Component({
+  standalone: false,
 	selector: 'app-sguees-asistente',
 	templateUrl: './sguees-asistente.component.html',
 	styleUrls: ['./sguees-asistente.component.scss'],

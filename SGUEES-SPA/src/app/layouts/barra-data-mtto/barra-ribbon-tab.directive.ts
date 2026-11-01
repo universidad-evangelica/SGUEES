@@ -2,6 +2,7 @@ import { Directive, Input, TemplateRef } from '@angular/core';
 
 /** Pestaña extra del ribbon de `app-barra-data-mtto` (opt-in desde el hijo). */
 @Directive({
+  standalone: false,
   selector: '[barraRibbonTabTitle]',
 })
 export class BarraRibbonTabDirective {

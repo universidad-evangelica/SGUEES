@@ -6,6 +6,7 @@ import { Sales } from 'src/app/types/analytics';
 import { TickerCardModule } from 'src/app/shared/components/library/ticker-card/ticker-card.component';
 
 @Component({
+  standalone: false,
   selector: 'revenue-total-ticker',
   templateUrl: 'revenue-total-ticker.component.html',
 })

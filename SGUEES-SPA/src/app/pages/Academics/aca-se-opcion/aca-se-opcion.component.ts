@@ -14,6 +14,7 @@ import { AcaSeOpcionService } from './aca-se-opcion.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-se-opcion',
 	templateUrl: './aca-se-opcion.component.html',
 	styleUrls: ['./aca-se-opcion.component.scss'],

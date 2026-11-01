@@ -20,6 +20,7 @@ import {
 import { GenUnidadesPuestoService } from './gen-unidades-puesto.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-unidades-puesto',
 	templateUrl: './gen-unidades-puesto.component.html',
 	styleUrls: ['./gen-unidades-puesto.component.scss'],

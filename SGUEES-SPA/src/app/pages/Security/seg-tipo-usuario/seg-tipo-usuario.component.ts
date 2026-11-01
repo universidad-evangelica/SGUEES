@@ -10,6 +10,7 @@ import { SegTipoUsuario } from './models/seg-tipo-usuario';
 import { SegTipoUsuarioService } from './seg-tipo-usuario.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-seg-tipo-usuario',
 	templateUrl: './seg-tipo-usuario.component.html',
 })

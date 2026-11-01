@@ -5,6 +5,7 @@ import {
 import { DxFileUploaderModule } from 'devextreme-angular/ui/file-uploader';
 
 @Component({
+  standalone: false,
   selector: 'form-photo-uploader',
   template: `
     <div 

@@ -12,6 +12,7 @@ import { GenEmpresa } from './models/gen-empresa';
 import { GenEmpresaService } from './gen-empresa.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-empresa',
 	templateUrl: './gen-empresa.component.html',
 })

@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { ThemeService } from 'src/app/shared/services';
 
 @Component({
+  standalone: false,
   selector: 'theme-switcher',
   templateUrl: './theme-switcher.component.html',
   styleUrls: ['./theme-switcher.component.scss'],

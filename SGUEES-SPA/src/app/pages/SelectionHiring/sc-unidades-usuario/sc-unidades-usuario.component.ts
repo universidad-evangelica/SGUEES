@@ -20,6 +20,7 @@ import {
 import { ScUnidadesUsuarioService } from './sc-unidades-usuario.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-unidades-usuario',
 	templateUrl: './sc-unidades-usuario.component.html',
 	styleUrls: ['./sc-unidades-usuario.component.scss'],

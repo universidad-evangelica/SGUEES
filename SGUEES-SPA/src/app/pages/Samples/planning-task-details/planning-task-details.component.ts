@@ -19,6 +19,7 @@ import { TaskFormModule } from 'src/app/shared/components/library/task-form/task
 import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 
 @Component({
+  standalone: false,
   templateUrl: './planning-task-details.component.html',
   styleUrls: ['./planning-task-details.component.scss'],
   providers: [DataService],

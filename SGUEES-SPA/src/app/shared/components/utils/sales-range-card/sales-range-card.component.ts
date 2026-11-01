@@ -10,6 +10,7 @@ import { DxRangeSelectorModule } from 'devextreme-angular/ui/range-selector';
 import { Sale } from 'src/app/types/analytics';
 
 @Component({
+  standalone: false,
   selector: 'sales-range-card',
   templateUrl: './sales-range-card.component.html',
   styleUrls: ['./sales-range-card.component.scss'],

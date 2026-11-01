@@ -7,6 +7,7 @@ import { SegOpcionSistema } from './models/seg-opcion-sistema';
 import { SegOpcionSistemaService } from './seg-opcion-sistema.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-seg-opcion-sistema',
 	templateUrl: './seg-opcion-sistema.component.html',
 })

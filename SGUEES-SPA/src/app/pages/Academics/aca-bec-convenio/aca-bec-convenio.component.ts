@@ -12,6 +12,7 @@ import { AcaBecConvenioService } from './aca-bec-convenio.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-bec-convenio',
 	templateUrl: './aca-bec-convenio.component.html',
 	styleUrls: ['./aca-bec-convenio.component.scss'],

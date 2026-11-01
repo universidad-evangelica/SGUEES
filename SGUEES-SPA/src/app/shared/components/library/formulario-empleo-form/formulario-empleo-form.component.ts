@@ -1,4 +1,4 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, NgModule, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -51,6 +51,7 @@ type ModalTabla =
 	| 'familiarUees';
 
 @Component({
+  standalone: false,
 	selector: 'formulario-empleo-form',
 	templateUrl: './formulario-empleo-form.component.html',
 	styleUrls: ['./formulario-empleo-form.component.scss'],

@@ -13,6 +13,7 @@ import {
 import { Notes, Note } from 'src/app/types/notes';
 
 @Component({
+  standalone: false,
   selector: 'card-notes',
   templateUrl: './card-notes.component.html',
   styleUrls: ['./card-notes.component.scss'],
