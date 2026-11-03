@@ -1,4 +1,4 @@
-/* Chips de estado del movimiento (formulario y grid). */
+﻿/* Chips de estado del movimiento (formulario y grid). */
 :host ::ng-deep .estado-mov-chip {
 	display: inline-block;
 	padding: 4px 10px;
@@ -182,5 +182,19 @@
 	.req-asociada-titulo,
 	.req-asociada-ancho {
 		grid-column: 1;
+	}
+}
+
+/* Qué hace: Configura cursor grab en las filas para indicar desplazamiento horizontal por arrastre (drag-to-scroll) */
+/* Cómo lo hace: Aplica cursor grab a las celdas y filas de la grilla de movimientos de personal, respetando cursor pointer en botones y enlaces */
+::ng-deep app-sc-movimiento-personal .sguees-data-grid-mtto .dx-datagrid-rowsview .dx-data-row {
+	cursor: grab;
+
+	& a,
+	& button,
+	& .dx-link,
+	& .dx-button,
+	& [role="button"] {
+		cursor: pointer !important;
 	}
 }

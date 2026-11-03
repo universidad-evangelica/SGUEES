@@ -1,4 +1,4 @@
-/* ===========================
+﻿/* ===========================
    Margin - Todas las direcciones
 =========================== */
 
@@ -839,4 +839,18 @@
 	height: 100%;
 	min-height: 70vh;
 	display: block;
+}
+
+/* Qué hace: Configura cursor grab en las filas para indicar desplazamiento horizontal por arrastre (drag-to-scroll) */
+/* Cómo lo hace: Aplica cursor grab a las celdas y filas de la grilla de requisiciones, respetando cursor pointer en botones y enlaces */
+::ng-deep .requisicion-mtto .sguees-data-grid-mtto .dx-datagrid-rowsview .dx-data-row {
+	cursor: grab;
+
+	& a,
+	& button,
+	& .dx-link,
+	& .dx-button,
+	& [role="button"] {
+		cursor: pointer !important;
+	}
 }

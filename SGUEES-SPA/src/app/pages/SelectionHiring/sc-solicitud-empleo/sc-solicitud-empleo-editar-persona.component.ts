@@ -121,6 +121,14 @@ export class ScSolicitudEmpleoEditarPersonaComponent implements OnChanges, OnDes
 		'Doctorado',
 	];
 	readonly nivelIdiomaOptions = ['Básico', 'Intermedio', 'Avanzado', 'Nativo'];
+
+	// Qué hace: Define la fecha máxima permitida (hace 18 años) como propiedad estable para el selector.
+	// Cómo lo hace: Instancia fija en memoria para evitar regenerar el objeto Date en cada ciclo de detección de cambios.
+	readonly fechaMaximaMayorEdad: Date = (() => {
+		const d = new Date();
+		d.setFullYear(d.getFullYear() - 18);
+		return d;
+	})();
 	readonly nivelCompetenciaOptions = ['Básico', 'Intermedio', 'Avanzado', 'Experto'];
 
 	constructor(
@@ -308,12 +316,30 @@ export class ScSolicitudEmpleoEditarPersonaComponent implements OnChanges, OnDes
 		}));
 	}
 
+	// Qué hace: Actualiza la fecha de nacimiento y recalcula la edad en el borrador de la persona.
+	// Cómo lo hace: Asigna el valor, valida que el año sea completo (>= 1920) y alerta si es menor de 18 años sin interrumpir la escritura.
 	onFechaNacimientoChanged(value: Date | null): void {
 		if (!this.draft) {
 			return;
 		}
 		this.draft.FECHA_NACIMIENTO = value;
-		this.draft.EDAD = this.calcularEdad(value);
+		if (!value) {
+			this.draft.EDAD = 0;
+			return;
+		}
+		const dateVal = this.parseFecha(value);
+		if (!dateVal || dateVal.getFullYear() < 1920) {
+			return;
+		}
+		const edad = this.calcularEdad(dateVal);
+		this.draft.EDAD = edad;
+		if (edad < 18) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Advertencia',
+				detail: 'Debe ser mayor de edad (mínimo 18 años).',
+			});
+		}
 	}
 
 	/** Selección de archivo → sube de inmediato y actualiza preview local. */
@@ -641,6 +667,12 @@ export class ScSolicitudEmpleoEditarPersonaComponent implements OnChanges, OnDes
 		if (!d.FECHA_NACIMIENTO) {
 			return 'Debe indicar la fecha de nacimiento.';
 		}
+
+		// Qué hace: Valida que el candidato sea mayor de edad antes de guardar sus datos.
+		// Cómo lo hace: Verifica con calcularEdad que la edad sea mayor o igual a 18 años.
+		if (this.calcularEdad(d.FECHA_NACIMIENTO) < 18) {
+			return 'La persona debe ser mayor de edad (mínimo 18 años).';
+		}
 		if (!`${d.CORREO ?? ''}`.trim()) {
 			return 'El correo es requerido.';
 		}
@@ -816,11 +848,14 @@ export class ScSolicitudEmpleoEditarPersonaComponent implements OnChanges, OnDes
 		return `${year}-${month}-${day}`;
 	}
 
-	private calcularEdad(fecha: Date | null): number {
-		if (!fecha) {
+	// Qué hace: Calcula la edad en años cumplidos a partir de una fecha de nacimiento (Date, string u objeto fecha).
+	// Cómo lo hace: Convierte a Date con parseFecha y compara el año, mes y día respecto a la fecha de hoy.
+	private calcularEdad(fecha: Date | string | null | undefined): number {
+		const dateVal = this.parseFecha(fecha);
+		if (!dateVal) {
 			return 0;
 		}
-		const birth = new Date(fecha);
+		const birth = new Date(dateVal);
 		if (Number.isNaN(birth.getTime())) {
 			return 0;
 		}

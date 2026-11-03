@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+﻿import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -32,13 +32,16 @@ import { ScExpedienteCandidatoService } from '../sc-expediente-candidato/sc-expe
 	templateUrl: './sc-solicitud-empleo.component.html',
 	styleUrls: ['./sc-solicitud-empleo.component.scss'],
 })
-export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit, OnDestroy {
+export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit, AfterViewInit, OnDestroy {
 	@HostListener('document:keydown.escape')
 	cerrarFotoPreviewConEscape(): void {
 		if (this.fotoPreviewVisible) {
 			this.cerrarFotoPreview();
 		}
 	}
+
+	// Qué hace: Función de limpieza de listeners de arrastre horizontal (drag-to-scroll).
+	private cleanupDragToScroll?: () => void;
 
 	//#region <Declarando Variales>
 	//this para insertar otros iconos en options de la tabla
@@ -95,7 +98,8 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		private service: ScSolicitudEmpleoService,
 		private expedienteService: ScExpedienteCandidatoService,
 		private messageService: MessageService,
-		private sanitizer: DomSanitizer
+		private sanitizer: DomSanitizer,
+		private elRef: ElementRef,
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -147,8 +151,82 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.consultar();
 	}
 
+	// Qué hace: Inicializa listeners del DOM una vez renderizada la vista.
+	// Cómo lo hace: Invoca el método initDragToScroll para habilitar arrastre horizontal en la grilla.
+	ngAfterViewInit(): void {
+		this.initDragToScroll();
+	}
+
 	ngOnDestroy(): void {
 		this.revocarFotoPersona();
+		if (this.cleanupDragToScroll) {
+			this.cleanupDragToScroll();
+		}
+	}
+
+	// Qué hace: Permite hacer scroll horizontal en la grilla mediante clic y arrastre desde cualquier fila.
+	// Cómo lo hace: Captura mousedown, mousemove y mouseup en .dx-datagrid-rowsview y actualiza scrollLeft según el desplazamiento del ratón.
+	private initDragToScroll(): void {
+		const host = this.elRef.nativeElement;
+		let isDown = false;
+		let startX = 0;
+		let scrollLeft = 0;
+		let hasDragged = false;
+		let scrollContainer: HTMLElement | null = null;
+
+		const onMouseDown = (e: MouseEvent) => {
+			if (e.button !== 0) return;
+			const target = e.target as HTMLElement;
+			if (target.closest('button, .dx-button, a, input, select, textarea, .dx-checkbox, .dx-link, [role="button"]')) {
+				return;
+			}
+			const rowsView = target.closest('.dx-datagrid-rowsview');
+			if (!rowsView) return;
+
+			scrollContainer = host.querySelector('.sguees-data-grid-mtto .dx-datagrid-rowsview .dx-scrollable-container');
+			if (!scrollContainer) return;
+
+			isDown = true;
+			hasDragged = false;
+			startX = e.pageX;
+			scrollLeft = scrollContainer.scrollLeft;
+		};
+
+		const onMouseMove = (e: MouseEvent) => {
+			if (!isDown || !scrollContainer) return;
+			const walk = e.pageX - startX;
+			if (Math.abs(walk) > 4) {
+				hasDragged = true;
+				scrollContainer.scrollLeft = scrollLeft - walk;
+				document.body.style.cursor = 'grabbing';
+				document.body.style.userSelect = 'none';
+			}
+		};
+
+		const onMouseUp = () => {
+			if (!isDown) return;
+			isDown = false;
+			document.body.style.cursor = '';
+			document.body.style.removeProperty('user-select');
+			if (hasDragged) {
+				const suppressClick = (ev: MouseEvent) => {
+					ev.stopPropagation();
+					ev.preventDefault();
+					window.removeEventListener('click', suppressClick, true);
+				};
+				window.addEventListener('click', suppressClick, true);
+			}
+		};
+
+		host.addEventListener('mousedown', onMouseDown);
+		window.addEventListener('mousemove', onMouseMove);
+		window.addEventListener('mouseup', onMouseUp);
+
+		this.cleanupDragToScroll = () => {
+			host.removeEventListener('mousedown', onMouseDown);
+			window.removeEventListener('mousemove', onMouseMove);
+			window.removeEventListener('mouseup', onMouseUp);
+		};
 	}
 
 	inicializaOpciones() {}

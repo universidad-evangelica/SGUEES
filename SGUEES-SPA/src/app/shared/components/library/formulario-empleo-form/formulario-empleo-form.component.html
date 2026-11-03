@@ -190,13 +190,15 @@
 							</div>
 
 							<div class="wizard-grid wizard-grid--2">
+								<!-- motivo: Campo de fecha de nacimiento editable con máscara dd/MM/yyyy y validación de mayoría de edad -->
 								<div class="wizard-field">
 									<label class="wizard-label">Fecha de nacimiento <span class="campo-required">*</span></label>
 									<dx-date-box stylingMode="outlined"
-										[value]="formData.FECHA_NACIMIENTO"
+										[(value)]="formData.FECHA_NACIMIENTO"
 										type="date"
 										displayFormat="dd/MM/yyyy"
-										[max]="hoy"
+										[useMaskBehavior]="true"
+										[max]="fechaMaximaMayorEdad"
 										(onValueChanged)="onFechaNacimientoChanged($event.value)"
 									></dx-date-box>
 								</div>

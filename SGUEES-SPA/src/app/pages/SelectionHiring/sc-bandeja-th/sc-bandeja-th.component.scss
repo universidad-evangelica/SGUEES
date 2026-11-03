@@ -134,7 +134,7 @@
 
 .bandeja-filtros {
 	display: grid;
-	grid-template-columns: repeat(3, minmax(140px, 1fr)) repeat(2, minmax(120px, 150px)) minmax(240px, 1.3fr);
+	grid-template-columns: minmax(160px, 1.2fr) minmax(150px, 1.1fr) minmax(150px, 1.1fr) minmax(130px, 0.9fr) minmax(130px, 0.9fr) minmax(180px, 1.3fr);
 	gap: 8px 10px;
 	align-items: end;
 }
@@ -147,29 +147,12 @@
 	line-height: 1.2;
 }
 
-.bandeja-search-row {
+.bandeja-filtros-actions {
 	display: flex;
+	justify-content: flex-end;
 	align-items: center;
-	gap: 6px;
-	min-width: 0;
-}
-
-.bandeja-search-row > dx-text-box {
-	flex: 1;
-	min-width: 0;
-}
-
-.bandeja-limpiar {
-	font-size: 11px;
-	color: var(--accent-color, #1976d2);
-	cursor: pointer;
-	white-space: nowrap;
-	user-select: none;
-	padding: 0 2px;
-}
-
-.bandeja-limpiar:hover {
-	text-decoration: underline;
+	gap: 8px;
+	margin-top: 10px;
 }
 
 .bandeja-body {

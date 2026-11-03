@@ -80,6 +80,14 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	readonly totalPasos = 6;
 	readonly hoy = new Date();
 
+	// Qué hace: Define la fecha límite superior para la fecha de nacimiento como propiedad fija.
+	// Cómo lo hace: Calcula 'hoy - 18 años' en una propiedad de solo lectura para estabilizar el componente de fecha.
+	readonly fechaMaximaMayorEdad: Date = (() => {
+		const d = new Date();
+		d.setFullYear(d.getFullYear() - 18);
+		return d;
+	})();
+
 	formData: FormularioEmpleoData = createEmptyFormData();
 	familiaresDirectos: FamiliarDirecto[] = createFamiliaresDirectos();
 	hijos: HijoRow[] = [];
@@ -335,9 +343,27 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		return 0;
 	}
 
+	// Qué hace: Actualiza la fecha de nacimiento y recalcula la edad del candidato.
+	// Cómo lo hace: Asigna el valor, espera a que el año sea completo (>= 1920) antes de calcular edad y alertar si es menor de 18.
 	onFechaNacimientoChanged(value: Date | null): void {
 		this.formData.FECHA_NACIMIENTO = value;
-		this.formData.EDAD = this.calcularEdad(value);
+		if (!value) {
+			this.formData.EDAD = 0;
+			return;
+		}
+		const birth = new Date(value);
+		if (Number.isNaN(birth.getTime()) || birth.getFullYear() < 1920) {
+			return;
+		}
+		const edad = this.calcularEdad(value);
+		this.formData.EDAD = edad;
+		if (edad < 18) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Advertencia',
+				detail: 'El aspirante debe ser mayor de edad (mínimo 18 años).',
+			});
+		}
 	}
 
 	async onFotoFileChange(event: Event): Promise<void> {
@@ -978,6 +1004,12 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 
 		if (!this.formData.FECHA_NACIMIENTO) {
 			return { mensaje: 'Debes indicar la fecha de nacimiento.', paso: 1 };
+		}
+
+		// Qué hace: Valida que el aspirante cumpla con la edad mínima de 18 años antes de permitir continuar.
+		// Cómo lo hace: Evalúa la edad calculada a partir de la fecha de nacimiento ingresada.
+		if (this.calcularEdad(this.formData.FECHA_NACIMIENTO) < 18) {
+			return { mensaje: 'Debes ser mayor de edad (mínimo 18 años) para postularte.', paso: 1 };
 		}
 
 		if	 (!`${this.formData.ESTADO_CIVIL ?? ''}`.trim()) {
