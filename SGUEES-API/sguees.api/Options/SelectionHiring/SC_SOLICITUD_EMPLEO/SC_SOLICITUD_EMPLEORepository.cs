@@ -113,7 +113,9 @@ namespace sguees.Repositories
                     new CParameter() {ParameterName="NOMBRE",Value=Data.NOMBRE,DbType=System.Data.DbType.String},
                     // Solo el correlativo: ES_PERMANENTE se resuelve en la vista con JOIN al catálogo.
                     new CParameter() {ParameterName="CORR_TIPO_CONTRATACION",Value=Data.CORR_TIPO_CONTRATACION,DbType=System.Data.DbType.Int32},
-                    new CParameter() {ParameterName="CORR_PERSONA_DATOS",Value=null,DbType=System.Data.DbType.Int32},
+                    // Qué hace: vincula el CORR_PERSONA_DATOS si se detectó un candidato existente o asigna null si es candidato nuevo.
+                    // Cómo lo hace: evalúa si Data.CORR_PERSONA_DATOS tiene un valor positivo; si no, envía DBNull.Value.
+                    new CParameter() {ParameterName="CORR_PERSONA_DATOS",Value=(Data.CORR_PERSONA_DATOS.HasValue && Data.CORR_PERSONA_DATOS.Value > 0) ? (object)Data.CORR_PERSONA_DATOS.Value : DBNull.Value, DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
                     new CParameter() {ParameterName="USUARIO_CREA",Value=Data.USUARIO_CREA,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="ESTACION_CREA",Value=Data.ESTACION_CREA,DbType=System.Data.DbType.String},
@@ -130,6 +132,12 @@ namespace sguees.Repositories
 				
 				var reader = await objData.Insert(_TableName,p,"CORR_SOLICITUD_EMPLEO",pWhere);
 				var response = new List<SC_SOLICITUD_EMPLEOView>().FromDataReader(reader).FirstOrDefault();
+				if (response != null && (Data.CORR_PERSONA_DATOS ?? 0) > 0)
+				{
+					// Qué hace: asocia automáticamente la nueva solicitud al expediente existente de la persona en SC_EXPEDIENTE_SOLICITUD.
+					// Cómo lo hace: verifica si la persona posee expediente y añade el detalle si aún no está vinculado.
+					await AsociarExpedienteExistenteSiAplicaAsync(Data.CORR_EMPRESA, response.CORR_SOLICITUD_EMPLEO, Data.CORR_PERSONA_DATOS.Value, vLOGIN_SISTEMA, vESTACION);
+				}
 				
 				objResultado.Data = response;
 				objResultado.Result = true;
@@ -789,6 +797,108 @@ namespace sguees.Repositories
 				}
 				reader.Close();
 				return config;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+		}
+
+		// Qué hace: busca si existe un candidato con expediente previo por su documento de identidad (DUI).
+		// Cómo lo hace: normaliza el DUI retirando guiones y espacios y consulta SC_PERSONA_DATOS junto a SC_EXPEDIENTE_CANDIDATO.
+		public async Task<CResult> BuscarCandidatoPorDuiAsync(int corrEmpresa, string dui)
+		{
+			CResult objResultado = new();
+			try
+			{
+				string duiNorm = (dui ?? "").Trim().Replace("-", "").Replace(" ", "").ToUpperInvariant();
+				string sql = @"
+					SELECT TOP 1
+						P.CORR_PERSONA_DATOS,
+						E.CORR_EXPEDIENTE_CANDIDATO,
+						P.DUI,
+						LTRIM(RTRIM(CONCAT(P.NOMBRE1, ' ', ISNULL(P.NOMBRE2, ''), ' ', P.APELLIDO1, ' ', ISNULL(P.APELLIDO2, '')))) AS NOMBRE_COMPLETO,
+						P.CORREO,
+						P.CELULAR,
+						P.TELEFONO,
+						E.CORR_ESTADO_EXPEDIENTE
+					FROM dbo.SC_PERSONA_DATOS P
+					LEFT JOIN dbo.SC_EXPEDIENTE_CANDIDATO E 
+						ON P.CORR_EMPRESA = E.CORR_EMPRESA AND P.CORR_PERSONA_DATOS = E.CORR_PERSONA_DATOS
+					WHERE P.CORR_EMPRESA = @CORR_EMPRESA
+					  AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(P.DUI)), '-', ''), ' ', '')) = @DUI_NORM
+					ORDER BY ISNULL(E.CORR_EXPEDIENTE_CANDIDATO, 0) DESC, P.CORR_PERSONA_DATOS DESC;";
+
+				var p = new List<CParameter>
+				{
+					new CParameter { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new CParameter { ParameterName = "DUI_NORM", Value = duiNorm, DbType = DbType.String }
+				};
+
+				var reader = await objData.GetDataReader(CommandType.Text, sql, p);
+				if (reader.Read())
+				{
+					objResultado.Data = new
+					{
+						CORR_PERSONA_DATOS = reader.GetInt32(reader.GetOrdinal("CORR_PERSONA_DATOS")),
+						CORR_EXPEDIENTE_CANDIDATO = !reader.IsDBNull(reader.GetOrdinal("CORR_EXPEDIENTE_CANDIDATO")) ? reader.GetInt32(reader.GetOrdinal("CORR_EXPEDIENTE_CANDIDATO")) : (int?)null,
+						DUI = reader.GetString(reader.GetOrdinal("DUI")),
+						NOMBRE_COMPLETO = reader.GetString(reader.GetOrdinal("NOMBRE_COMPLETO")),
+						CORREO = reader.GetString(reader.GetOrdinal("CORREO")),
+						CELULAR = !reader.IsDBNull(reader.GetOrdinal("CELULAR")) ? reader.GetString(reader.GetOrdinal("CELULAR")) : null,
+						TELEFONO = !reader.IsDBNull(reader.GetOrdinal("TELEFONO")) ? reader.GetString(reader.GetOrdinal("TELEFONO")) : null
+					};
+					objResultado.RowsAffected = 1;
+				}
+				else
+				{
+					objResultado.Data = null;
+					objResultado.RowsAffected = 0;
+				}
+				reader.Close();
+
+				objResultado.Result = true;
+				objResultado.ErrorCode = 0;
+			}
+			catch (Exception ex)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = ex.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+			return objResultado;
+		}
+
+		// Qué hace: asocia la solicitud de empleo recién creada al expediente existente del candidato en SC_EXPEDIENTE_SOLICITUD.
+		// Cómo lo hace: ejecuta el procedimiento almacenado PRAL_MTTO_SC_EXPEDIENTE_ASOCIAR_SOLICITUD si la persona ya posee expediente.
+		private async Task AsociarExpedienteExistenteSiAplicaAsync(int corrEmpresa, int corrSolicitudEmpleo, int corrPersonaDatos, string usuario, string estacion)
+		{
+			try
+			{
+				var pAsociar = new List<CParameter>
+				{
+					new CParameter { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new CParameter { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = corrSolicitudEmpleo, DbType = DbType.Int32 },
+					new CParameter { ParameterName = "CREAR_EXPEDIENTE", Value = false, DbType = DbType.Boolean },
+					new CParameter { ParameterName = "SOLO_CONSULTA", Value = false, DbType = DbType.Boolean },
+					new CParameter { ParameterName = "SYS_LOGIN_USUARIO", Value = usuario ?? "e-CoffeeTech", DbType = DbType.String },
+					new CParameter { ParameterName = "SYS_ESTACION", Value = estacion ?? "e-CoffeeTech", DbType = DbType.String },
+					new CParameter { ParameterName = "CORR_EXPEDIENTE_CANDIDATO", Value = null, DbType = DbType.Int32, Direction = ParameterDirection.Output },
+					new CParameter { ParameterName = "ESTADO", Value = null, DbType = DbType.String, Size = 30, Direction = ParameterDirection.Output },
+					new CParameter { ParameterName = "SYS_FILAS_AFECTADAS", Value = 0, DbType = DbType.Int32, Direction = ParameterDirection.Output },
+					new CParameter { ParameterName = "SYS_NUMERO_ERROR", Value = 0, DbType = DbType.Int32, Direction = ParameterDirection.Output },
+					new CParameter { ParameterName = "SYS_MENSAJE_ERROR", Value = "", DbType = DbType.String, Size = 4000, Direction = ParameterDirection.Output }
+				};
+
+				await objData.ExecCmd(CommandType.StoredProcedure, "PRAL_MTTO_SC_EXPEDIENTE_ASOCIAR_SOLICITUD", true, pAsociar);
+			}
+			catch
+			{
+				// La asociación automática no interrumpe el éxito de la inserción de la solicitud
 			}
 			finally
 			{

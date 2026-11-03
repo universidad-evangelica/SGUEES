@@ -11,6 +11,7 @@ import { Opportunity } from 'src/app/types/opportunities';
 import { OpportunityTileModule } from 'src/app/shared/components/utils/opportunity-tile/opportunity-tile.component';
 
 @Component({
+  standalone: false,
   selector: 'card-opportunities',
   templateUrl: './card-opportunities.component.html',
   styleUrls: ['./card-opportunities.component.scss'],

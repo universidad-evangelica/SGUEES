@@ -14,6 +14,7 @@ import { PlaSeguroSocialService } from './pla-seguro-social.service';
 const ESTADO_FIELD = 'ACTIVO_SEGURO_SOCIAL';
 
 @Component({
+  standalone: false,
 	selector: 'app-pla-seguro-social',
 	templateUrl: './pla-seguro-social.component.html',
 	styleUrls: ['./pla-seguro-social.component.scss'],

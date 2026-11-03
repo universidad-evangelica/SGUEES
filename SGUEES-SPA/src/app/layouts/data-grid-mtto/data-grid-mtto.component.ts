@@ -37,6 +37,7 @@ import { saveAs } from 'file-saver-es';
 import { PagerPageSize } from 'devextreme/common/grids';
 
 @Component({
+  standalone: false,
   selector: 'app-data-grid-mtto',
   templateUrl: './data-grid-mtto.component.html',
   styleUrls: ['./data-grid-mtto.component.scss'],

@@ -11,6 +11,7 @@ import { Task } from 'src/app/types/task';
 import 'jspdf-autotable';
 
 @Component({
+  standalone: false,
   selector: 'task-list-gantt',
   templateUrl: './task-list-gantt.component.html',
   styleUrls: ['./task-list-gantt.component.scss'],

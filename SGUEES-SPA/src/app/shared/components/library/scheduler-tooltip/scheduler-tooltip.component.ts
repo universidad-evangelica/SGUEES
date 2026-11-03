@@ -6,6 +6,7 @@ import { DxButtonModule } from 'devextreme-angular';
 import { ApplyPipeModule } from 'src/app/pipes/apply.pipe';
 
 @Component({
+  standalone: false,
   selector: 'scheduler-tooltip',
   templateUrl: './scheduler-tooltip.component.html',
   styleUrls: ['./scheduler-tooltip.component.scss'],

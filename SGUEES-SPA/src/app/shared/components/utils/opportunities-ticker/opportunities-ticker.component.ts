@@ -6,6 +6,7 @@ import { SalesOrOpportunitiesByCategory } from 'src/app/types/analytics';
 import { TickerCardModule } from 'src/app/shared/components/library/ticker-card/ticker-card.component';
 
 @Component({
+  standalone: false,
   selector: 'opportunities-ticker',
   templateUrl: 'opportunities-ticker.component.html',
 })

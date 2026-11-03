@@ -8,6 +8,7 @@ import { ConCatalogoPresupuestoService } from './con-catalogo-presupuesto.servic
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-catalogo-presupuesto',
 	templateUrl: './con-catalogo-presupuesto.component.html',
 })

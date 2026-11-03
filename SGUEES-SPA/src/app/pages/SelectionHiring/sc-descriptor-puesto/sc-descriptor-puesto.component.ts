@@ -84,6 +84,7 @@ import { ScDescriptorPuestoService } from './sc-descriptor-puesto.service';
 import { FirmasDocumentoComponent } from 'src/app/shared/components/firmas-documento/firmas-documento.component';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-descriptor-puesto',
 	templateUrl: './sc-descriptor-puesto.component.html',
 	styleUrls: ['./sc-descriptor-puesto.component.scss'],
@@ -591,7 +592,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				next: (response: any) => {
 					if (!response?.Result || !Array.isArray(response.Data)) {
 						this.mESTADO_DESCRIPTOR = [];
-						this.syncBarraFiltros();
 						return;
 					}
 					this.mESTADO_DESCRIPTOR = response.Data

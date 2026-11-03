@@ -14,6 +14,7 @@ import { BanCuentaBancariaChequeraService } from './ban-cuenta-bancaria-chequera
 import { BanCuentaBancariaChequera } from './ban-cuenta-bancaria-chequera/models/ban-cuenta-bancaria-chequera';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-cuenta-bancaria',
 	templateUrl: './ban-cuenta-bancaria.component.html',
 	styleUrls: ['./ban-cuenta-bancaria.component.scss'],

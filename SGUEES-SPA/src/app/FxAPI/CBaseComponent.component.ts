@@ -35,6 +35,7 @@ import {
 } from 'src/app/shared/mtto/mtto-api-messages';
 
 @Component({
+  standalone: false,
 	selector: 'app-base-component',
 	template: '',
 })

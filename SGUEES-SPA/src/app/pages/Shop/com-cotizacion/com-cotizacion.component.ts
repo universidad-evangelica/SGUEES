@@ -19,6 +19,7 @@ import { TabConfig } from './com-cotizacion-comentario/models/tab-config';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-cotizacion',
 	templateUrl: './com-cotizacion.component.html',
 	styleUrls: ['./com-cotizacion.component.scss'],

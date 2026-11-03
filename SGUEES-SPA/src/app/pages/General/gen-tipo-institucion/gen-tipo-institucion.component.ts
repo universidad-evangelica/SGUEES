@@ -14,6 +14,7 @@ import { GenTipoInstitucionService } from './gen-tipo-institucion.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-tipo-institucion',
 	templateUrl: './gen-tipo-institucion.component.html',
 	styleUrls: ['./gen-tipo-institucion.component.scss'],

@@ -17,6 +17,7 @@ import {saveAs} from 'file-saver-es';
 import { ComBitacoraLookUp } from './models/com-bitacora-lookup';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-bitacora',
 	templateUrl: './com-bitacora.component.html',
 	styleUrls: ['./com-bitacora.component.scss'],

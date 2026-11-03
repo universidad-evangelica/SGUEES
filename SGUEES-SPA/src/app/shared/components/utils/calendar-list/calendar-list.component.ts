@@ -8,6 +8,7 @@ import { DxListModule } from 'devextreme-angular/ui/list';
 import { DxButtonTypes } from 'devextreme-angular/ui/button';
 
 @Component({
+  standalone: false,
   selector: 'calendar-list',
   templateUrl: './calendar-list.component.html',
   styleUrls: ['./calendar-list.component.scss'],

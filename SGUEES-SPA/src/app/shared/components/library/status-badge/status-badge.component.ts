@@ -4,6 +4,7 @@ import { Component, Input, NgModule } from '@angular/core';
 export type SgueesStatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
 @Component({
+  standalone: false,
   selector: 'app-status-badge',
   templateUrl: './status-badge.component.html',
   styleUrls: ['./status-badge.component.scss'],

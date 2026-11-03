@@ -10,6 +10,7 @@ import { ConPartidaModeloGeneracion } from './models/con-partida-modelo-seleccio
 import { ConPartidaModeloSeleccionService } from './con-partida-modelo-seleccion.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-partida-modelo-seleccion',
 	templateUrl: './con-partida-modelo-seleccion.component.html',
 	styleUrls: ['./con-partida-modelo-seleccion.component.scss'],

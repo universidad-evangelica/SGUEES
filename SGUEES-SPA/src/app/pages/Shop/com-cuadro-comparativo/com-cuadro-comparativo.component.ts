@@ -17,6 +17,7 @@ import { ComCuadroComparativoDoc } from './com-cuadro-comparativo-doc/models/com
 import { DxFormComponent } from 'devextreme-angular/ui/form';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-cuadro-comparativo',
 	templateUrl: './com-cuadro-comparativo.component.html',
 	styleUrls: ['./com-cuadro-comparativo.component.scss'],

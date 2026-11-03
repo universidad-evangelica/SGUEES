@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -16,6 +16,7 @@ namespace SGUEES.Repositories
     {
         private const string _TableName = "SC_REQUISICION_PERSONAL";
         private const string _TableNameBitacora = "SEG_FLUJO_BITACORA";
+        private const string _SpDataListadoVisible = "PRAL_DATA_SC_REQUISICION_PERSONAL";
 
         private static object ToSqlDateTime(DateTime? fecha)
         {
@@ -40,6 +41,50 @@ namespace SGUEES.Repositories
             try
             {
                 var reader = await objData.GetDataReader("V_" + _TableName, xWhere);
+                var response = new List<SC_REQUISICION_PERSONALView>().FromDataReader(reader).ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response.Count;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (System.Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        /// <summary>
+        /// Listado filtrado por unidades del login + observadores DEFECTO/REQUISICION.
+        /// Cómo: PRAL_DATA_SC_REQUISICION_PERSONAL (@CORR_EMPRESA, @LOGIN_SISTEMA).
+        /// </summary>
+        public async Task<CResult> GetAllVisibleAsync(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var reader = await objData.GetDataReader(
+                    CommandType.StoredProcedure,
+                    _SpDataListadoVisible,
+                    xWhere);
                 var response = new List<SC_REQUISICION_PERSONALView>().FromDataReader(reader).ToList();
 
                 reader.Close();
@@ -150,10 +195,33 @@ namespace SGUEES.Repositories
                 var reader = await objData.Insert(_TableName, p, "CORR_REQUISICION_PERSONAL", pWhere);
                 var response = new List<SC_REQUISICION_PERSONALView>().FromDataReader(reader).FirstOrDefault();
 
+                reader.Close();
+                reader = null;
+
+                if (response != null)
+                {
+                    // Qué hace: Relee la fila recién insertada directamente desde la vista V_SC_REQUISICION_PERSONAL.
+                    // Cómo lo hace: Consulta por CORR_EMPRESA y CORR_REQUISICION_PERSONAL para devolver la entidad completa con los nombres (puesto, modalidad, contratación, unidad) requeridos por la grilla en el SPA sin llamar a GetAll.
+                    var pReRead = new List<CParameter>
+                    {
+                        new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                        new CParameter() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = response.CORR_REQUISICION_PERSONAL, DbType = System.Data.DbType.Int32 }
+                    };
+                    reader = await objData.GetDataReader("V_" + _TableName, pReRead);
+                    var viewResponse = new List<SC_REQUISICION_PERSONALView>().FromDataReader(reader).FirstOrDefault();
+                    reader.Close();
+                    reader = null;
+
+                    if (viewResponse != null)
+                    {
+                        response = viewResponse;
+                    }
+                }
+
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
-                objResultado.CodeHelper = response.CORR_REQUISICION_PERSONAL;
+                objResultado.CodeHelper = response?.CORR_REQUISICION_PERSONAL ?? 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";
@@ -217,10 +285,30 @@ namespace SGUEES.Repositories
                 reader.Close();
                 reader = null;
 
+                if (response != null)
+                {
+                    // Qué hace: Relee la fila actualizada directamente desde la vista V_SC_REQUISICION_PERSONAL.
+                    // Cómo lo hace: Consulta por CORR_EMPRESA y CORR_REQUISICION_PERSONAL para sincronizar la fila de la grilla con todos los nombres actualizados.
+                    var pReRead = new List<CParameter>
+                    {
+                        new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                        new CParameter() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = Data.CORR_REQUISICION_PERSONAL, DbType = System.Data.DbType.Int32 }
+                    };
+                    reader = await objData.GetDataReader("V_" + _TableName, pReRead);
+                    var viewResponse = new List<SC_REQUISICION_PERSONALView>().FromDataReader(reader).FirstOrDefault();
+                    reader.Close();
+                    reader = null;
+
+                    if (viewResponse != null)
+                    {
+                        response = viewResponse;
+                    }
+                }
+
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
-                objResultado.CodeHelper = response.CORR_REQUISICION_PERSONAL;
+                objResultado.CodeHelper = response?.CORR_REQUISICION_PERSONAL ?? 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";

@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { TickerCardModule } from 'src/app/shared/components/library/ticker-card/ticker-card.component';
 
 @Component({
+  standalone: false,
   selector: 'leads-ticker',
   templateUrl: 'leads-ticker.component.html',
 })

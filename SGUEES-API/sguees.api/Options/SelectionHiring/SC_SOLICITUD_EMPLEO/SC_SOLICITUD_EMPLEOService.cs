@@ -104,6 +104,18 @@ namespace sguees.Services
 				};
 			}
 
+			// Qué hace: Valida que la persona sea mayor de edad (mínimo 18 años).
+			// Cómo lo hace: Compara DateOnly de nacimiento con DateOnly de hace 18 años.
+			if (data.FECHA_NACIMIENTO > DateOnly.FromDateTime(DateTime.Today).AddYears(-18))
+			{
+				return new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = "La persona debe ser mayor de edad (mínimo 18 años).",
+				};
+			}
+
 			if (data.POSEE_DISCAPACIDAD && string.IsNullOrWhiteSpace(data.TIPO_DISCAPACIDAD))
 			{
 				return new CResult
@@ -365,6 +377,17 @@ namespace sguees.Services
 			}
 
 			return resultado;
+		}
+
+		// Qué hace: consulta si existe un candidato con expediente previo a partir de su documento de identidad (DUI).
+		// Cómo lo hace: valida el DUI recibido y delega la consulta a _repo.BuscarCandidatoPorDuiAsync.
+		public async Task<CResult> BuscarCandidatoPorDuiAsync(int corrEmpresa, string dui)
+		{
+			if (string.IsNullOrWhiteSpace(dui))
+			{
+				return new CResult { Result = true, Data = null, ErrorCode = 0 };
+			}
+			return await _repo.BuscarCandidatoPorDuiAsync(corrEmpresa, dui);
 		}
 	}
 }

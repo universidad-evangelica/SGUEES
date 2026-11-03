@@ -17,6 +17,7 @@ import { BanChequeDetaService } from './ban-cheque-deta/ban-cheque-deta.service'
 import { ConCatalogoCuentaCentroCostoService } from '../../Accounting/con-catalogo-cuenta-centro-costo/con-catalogo-cuenta-centro-costo.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-cheque',
 	templateUrl: './ban-cheque.component.html',
 	styleUrls: ['./ban-cheque.component.scss'],

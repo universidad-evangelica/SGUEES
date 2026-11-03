@@ -9,6 +9,7 @@ import { DxPopoverModule } from 'devextreme-angular/ui/popover';
 import { ThemeService } from 'src/app/shared/services/theme.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-text-editor',
 	templateUrl: './text-editor.component.html',
 	styleUrls: ['./text-editor.component.scss'],

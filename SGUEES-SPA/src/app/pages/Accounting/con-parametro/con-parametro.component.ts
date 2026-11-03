@@ -8,6 +8,7 @@ import { ConParametroService } from './con-parametro.service';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-parametro',
 	templateUrl: './con-parametro.component.html',
 })

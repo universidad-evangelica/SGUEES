@@ -17,6 +17,7 @@ import { RecorridoGuiaService } from 'src/app/shared/recorrido-guia/recorrido-gu
 import { Subscription } from 'rxjs';
 
 @Component({
+  standalone: false,
   selector: 'side-navigation-menu',
   templateUrl: './side-navigation-menu.component.html',
   styleUrls: ['./side-navigation-menu.component.scss'],

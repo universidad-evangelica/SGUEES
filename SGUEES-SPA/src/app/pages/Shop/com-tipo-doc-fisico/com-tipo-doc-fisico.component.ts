@@ -11,6 +11,7 @@ import { ComTipoDocFisico } from './models/com-tipo-doc-fisico';
 import { ComTipoDocFisicoService } from './com-tipo-doc-fisico.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-tipo-doc-fisico',
 	templateUrl: './com-tipo-doc-fisico.component.html',
 	styleUrls: ['./com-tipo-doc-fisico.component.scss'],

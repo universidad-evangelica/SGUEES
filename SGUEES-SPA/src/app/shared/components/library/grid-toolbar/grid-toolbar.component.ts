@@ -3,6 +3,7 @@ import { Component, NgModule } from '@angular/core';
 
 /** Contenedor visual para acciones de grid/toolbar (proyección de contenido). */
 @Component({
+  standalone: false,
   selector: 'app-grid-toolbar',
   templateUrl: './grid-toolbar.component.html',
   styleUrls: ['./grid-toolbar.component.scss'],

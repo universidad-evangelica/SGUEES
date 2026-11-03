@@ -61,8 +61,6 @@
               "src/web.config"
             ],
             "styles": [
-              "node_modules/primeng/resources/themes/lara-light-blue/theme.css",
-              "node_modules/primeng/resources/primeng.min.css",
               "node_modules/primeicons/primeicons.css",
 
               "src/styles.scss",
@@ -99,8 +97,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "12mb",
-                  "maximumError": "15mb"
+                  "maximumWarning": "13mb",
+                  "maximumError": "16mb"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -138,12 +136,15 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "angular:build:development"
+          },
           "configurations": {
             "production": {
-              "browserTarget": "angular:build:production"
+              "buildTarget": "angular:build:production"
             },
             "development": {
-              "browserTarget": "angular:build:development",
+              "buildTarget": "angular:build:development",
               "proxyConfig": "proxy.conf.json"
             }
           },
@@ -152,7 +153,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "angular:build"
+            "buildTarget": "angular:build"
           }
         },
         "test": {

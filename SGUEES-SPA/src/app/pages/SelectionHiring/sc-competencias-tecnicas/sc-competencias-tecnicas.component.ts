@@ -20,6 +20,7 @@ import { ScCompetenciasTecnicasService } from './sc-competencias-tecnicas.servic
 const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-competencias-tecnicas',
 	templateUrl: './sc-competencias-tecnicas.component.html',
 	styleUrls: ['./sc-competencias-tecnicas.component.scss'],

@@ -11,6 +11,7 @@ import { ComUnidadMedida } from './models/com-unidad-medida';
 import { ComUnidadMedidaService } from './com-unidad-medida.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-unidad-medida',
 	templateUrl: './com-unidad-medida.component.html',
 	styleUrls: ['./com-unidad-medida.component.scss'],

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService, IUser } from 'src/app/shared/services/auth.service';
 
 @Component({
+  standalone: false,
   selector: 'user-menu-section',
   templateUrl: 'user-menu-section.component.html',
   styleUrls: ['./user-menu-section.component.scss'],

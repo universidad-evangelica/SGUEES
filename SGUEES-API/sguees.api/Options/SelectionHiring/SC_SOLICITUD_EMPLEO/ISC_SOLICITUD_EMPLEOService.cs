@@ -20,5 +20,9 @@ namespace sguees.Services
 		Task<CResult> GetPlantillasDisponiblesAsync(int corrEmpresa);
 
 		Task<CResult> EnviarCorreoPlantillaAsync(int corrEmpresa, string usuario, string estacion, SC_SOLICITUD_EMPLEO_ENVIAR_CORREOParam data);
+
+		// Qué hace: consulta al repositorio si existe un candidato registrado con el DUI recibido.
+		// Cómo lo hace: delega la búsqueda normalizada a _repo.BuscarCandidatoPorDuiAsync.
+		Task<CResult> BuscarCandidatoPorDuiAsync(int corrEmpresa, string dui);
 	}
 }

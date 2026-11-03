@@ -51,6 +51,7 @@ type ModalTabla =
 	| 'familiarUees';
 
 @Component({
+  standalone: false,
 	selector: 'formulario-empleo-form',
 	templateUrl: './formulario-empleo-form.component.html',
 	styleUrls: ['./formulario-empleo-form.component.scss'],
@@ -68,6 +69,8 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	fechaExpiracionToken: Date | null = null;
 	/** Ya había datos guardados al abrir el enlace. */
 	yaTieneDatos = false;
+	/** Puesto de la requisición vinculada a la solicitud. */
+	plazaSolicitadaRequisicion = '';
 
 	/** 0 = bienvenida; 1–6 = pasos del wizard */
 	pasoActual: PortalPaso = 0;
@@ -76,6 +79,14 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	readonly steps: PortalStepMeta[] = PORTAL_STEPS;
 	readonly totalPasos = 6;
 	readonly hoy = new Date();
+
+	// Qué hace: Define la fecha límite superior para la fecha de nacimiento como propiedad fija.
+	// Cómo lo hace: Calcula 'hoy - 18 años' en una propiedad de solo lectura para estabilizar el componente de fecha.
+	readonly fechaMaximaMayorEdad: Date = (() => {
+		const d = new Date();
+		d.setFullYear(d.getFullYear() - 18);
+		return d;
+	})();
 
 	formData: FormularioEmpleoData = createEmptyFormData();
 	familiaresDirectos: FamiliarDirecto[] = createFamiliaresDirectos();
@@ -332,9 +343,27 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		return 0;
 	}
 
+	// Qué hace: Actualiza la fecha de nacimiento y recalcula la edad del candidato.
+	// Cómo lo hace: Asigna el valor, espera a que el año sea completo (>= 1920) antes de calcular edad y alertar si es menor de 18.
 	onFechaNacimientoChanged(value: Date | null): void {
 		this.formData.FECHA_NACIMIENTO = value;
-		this.formData.EDAD = this.calcularEdad(value);
+		if (!value) {
+			this.formData.EDAD = 0;
+			return;
+		}
+		const birth = new Date(value);
+		if (Number.isNaN(birth.getTime()) || birth.getFullYear() < 1920) {
+			return;
+		}
+		const edad = this.calcularEdad(value);
+		this.formData.EDAD = edad;
+		if (edad < 18) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Advertencia',
+				detail: 'El aspirante debe ser mayor de edad (mínimo 18 años).',
+			});
+		}
 	}
 
 	async onFotoFileChange(event: Event): Promise<void> {
@@ -490,7 +519,8 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			this.esFormularioCompleto = this.resolverFormularioCompleto(response.Data);
 			this.fechaExpiracionToken = this.parseFechaApi(response.Data?.FECHA_EXPIRACION);
 			this.yaTieneDatos = response.Data?.YA_TIENE_DATOS === true;
-			this.aplicarCorreoInvitacion(response.Data);
+			this.plazaSolicitadaRequisicion = `${response.Data?.PLAZA_SOLICITADA ?? ''}`.trim();
+			this.aplicarDatosInicialesSolicitud(response.Data);
 			this.mensajeToken = this.tokenValido
 				? ''
 				: 'El enlace es inválido, expiró o ya no está vigente.';
@@ -506,18 +536,25 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	/** Precarga el correo de la solicitud para que el candidato solo lo verifique. */
-	private aplicarCorreoInvitacion(data: any): void {
+	// Qué hace: precarga el correo, DUI y plaza solicitada registrados en la solicitud y su requisición vinculada.
+	// Cómo lo hace: lee CORREO_INVITACION, DUI y PLAZA_SOLICITADA retornados por ValidarToken y los asigna al formulario si aún no han sido modificados.
+	private aplicarDatosInicialesSolicitud(data: any): void {
 		if (!this.tokenValido) {
 			return;
 		}
-		// No pisa una corrección del candidato si ValidarToken se vuelve a llamar.
-		if (`${this.formData.CORREO ?? ''}`.trim()) {
-			return;
-		}
 		const correo = `${data?.CORREO_INVITACION ?? ''}`.trim();
-		if (correo) {
+		if (correo && !`${this.formData.CORREO ?? ''}`.trim()) {
 			this.formData.CORREO = correo;
+		}
+
+		const dui = `${data?.DUI ?? ''}`.trim();
+		if (dui && !`${this.formData.DUI ?? ''}`.trim()) {
+			this.formData.DUI = dui;
+		}
+
+		const plaza = `${data?.PLAZA_SOLICITADA ?? ''}`.trim();
+		if (plaza && !`${this.formData.PLAZA_SOLICITADA ?? ''}`.trim()) {
+			this.formData.PLAZA_SOLICITADA = plaza;
 		}
 	}
 
@@ -558,13 +595,13 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			CELULAR: `${p.CELULAR ?? ''}`.trim(),
 			TELEFONO: `${p.TELEFONO ?? ''}`.trim(),
 			DIRECCION: `${p.DIRECCION ?? ''}`.trim(),
-			DUI: `${p.DUI ?? ''}`.trim(),
+			DUI: `${p.DUI ?? ''}`.trim() || `${this.formData.DUI ?? ''}`.trim(),
 			PASAPORTE: `${p.PASAPORTE ?? ''}`.trim(),
 			ISSS: `${p.ISSS ?? ''}`.trim(),
 			AFP: `${p.AFP ?? ''}`.trim(),
 			NOMBRE_AFP: `${p.NOMBRE_AFP ?? ''}`.trim(),
 			LICENCIA: `${p.LICENCIA ?? ''}`.trim(),
-			PLAZA_SOLICITADA: `${p.PLAZA_SOLICITADA ?? ''}`.trim(),
+			PLAZA_SOLICITADA: this.plazaSolicitadaRequisicion || `${p.PLAZA_SOLICITADA ?? ''}`.trim(),
 			PRETENSION_SALARIAL: Number(p.PRETENSION_SALARIAL ?? 0) || 0,
 			DISPONIBILIDAD: `${p.DISPONIBILIDAD ?? ''}`.trim(),
 			RELIGION: `${p.RELIGION ?? ''}`.trim(),
@@ -702,7 +739,9 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			return;
 		}
 
-		if (!this.formData.DECLARA_VERDAD || !this.formData.AUTORIZA_VERIFICACION) {
+		// Qué hace: Valida declaraciones de veracidad y autorización sólo al finalizar en el Paso 6
+		// Cómo lo hace: En pasos 1 a 5 permite guardar el avance parcial; en el Paso 6 exige ambas declaraciones
+		if (this.pasoActual === 6 && (!this.formData.DECLARA_VERDAD || !this.formData.AUTORIZA_VERIFICACION)) {
 			this.mostrarError('Debes aceptar las declaraciones para guardar la solicitud.');
 			return;
 		}
@@ -967,6 +1006,12 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			return { mensaje: 'Debes indicar la fecha de nacimiento.', paso: 1 };
 		}
 
+		// Qué hace: Valida que el aspirante cumpla con la edad mínima de 18 años antes de permitir continuar.
+		// Cómo lo hace: Evalúa la edad calculada a partir de la fecha de nacimiento ingresada.
+		if (this.calcularEdad(this.formData.FECHA_NACIMIENTO) < 18) {
+			return { mensaje: 'Debes ser mayor de edad (mínimo 18 años) para postularte.', paso: 1 };
+		}
+
 		if	 (!`${this.formData.ESTADO_CIVIL ?? ''}`.trim()) {
 			return { mensaje: 'El estado civil es requerido.', paso: 1 };
 		}
@@ -1000,19 +1045,23 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			return { mensaje: 'La disponibilidad es requerida.', paso: 1 };
 		}
 
+		// Qué hace: Valida los campos obligatorios de contacto de emergencia trasladados al Paso 1
+		// Cómo lo hace: Comprueba que el nombre y teléfono de emergencia no estén vacíos
+		if (!`${this.formData.EMERGENCIA_NOMBRE ?? ''}`.trim()) {
+			return { mensaje: 'El contacto de emergencia es requerido.', paso: 1 };
+		}
+		if (!`${this.formData.EMERGENCIA_TELEFONO ?? ''}`.trim()) {
+			return { mensaje: 'El teléfono de emergencia es requerido.', paso: 1 };
+		}
+
 
 
 		return null;
 	}
 
+	// Qué hace: Valida el paso 2 (información familiar)
+	// Cómo lo hace: Retorna null ya que los datos de familiares e hijos son opcionales y el contacto de emergencia pasó al Paso 1
 	private validarPasoFamiliar(): { mensaje: string; paso: PortalPaso } | null {
-		
-		if (!`${this.formData.EMERGENCIA_NOMBRE ?? ''}`.trim()) {
-			return { mensaje: 'El contacto de emergencia es requerido.', paso: 2 };
-		}
-		if (!`${this.formData.EMERGENCIA_TELEFONO ?? ''}`.trim()) {
-			return { mensaje: 'El teléfono de emergencia es requerido.', paso: 2 };
-		}
 		return null;
 	}
 

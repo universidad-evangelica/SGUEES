@@ -27,6 +27,7 @@ import { ApplyPipeModule } from 'src/app/pipes/apply.pipe';
 import { Sale, SalesOrOpportunitiesByCategory } from 'src/app/types/analytics';
 
 @Component({
+  standalone: false,
   templateUrl: './analytics-sales-report.component.html',
   styleUrls: ['./analytics-sales-report.component.scss'],
   providers: [DataService],

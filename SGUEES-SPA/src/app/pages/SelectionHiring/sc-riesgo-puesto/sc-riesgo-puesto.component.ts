@@ -13,6 +13,7 @@ import { ScRiesgoPuestoService } from './sc-riesgo-puesto.service';
 const ESTADO_FIELD = 'ESTADO_RIESGO_PUESTO';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-riesgo-puesto',
 	templateUrl: './sc-riesgo-puesto.component.html',
 	styleUrls: ['./sc-riesgo-puesto.component.scss'],

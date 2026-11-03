@@ -8,6 +8,7 @@ import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 import { PositionConfig } from 'devextreme/animation/position';
 import { CardMenuModule } from '../card-menu/card-menu.component';
 @Component({
+  standalone: false,
   selector: 'card-analytics',
   templateUrl: './card-analytics.component.html',
   styleUrls: ['./card-analytics.component.scss'],

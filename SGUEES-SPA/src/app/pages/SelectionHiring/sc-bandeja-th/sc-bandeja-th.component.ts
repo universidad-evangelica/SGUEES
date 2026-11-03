@@ -18,6 +18,7 @@ import {
 import { BANDEJA_ESTADOS_REQUISICION, ScBandejaThService } from './sc-bandeja-th.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-bandeja-th',
 	templateUrl: './sc-bandeja-th.component.html',
 	styleUrls: ['./sc-bandeja-th.component.scss'],

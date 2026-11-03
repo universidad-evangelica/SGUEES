@@ -11,6 +11,7 @@ import { DxDropDownButtonModule } from 'devextreme-angular/ui/drop-down-button';
 import { Sale } from 'src/app/types/analytics';
 
 @Component({
+  standalone: false,
   selector: 'sales-performance-card',
   templateUrl: './sales-performance-card.component.html',
   styleUrls: ['./sales-performance-card.component.scss'],

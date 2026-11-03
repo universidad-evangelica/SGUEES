@@ -40,6 +40,7 @@ import { AcaProspectoEmpleoService } from './aca-prospecto-empleo/aca-prospecto-
 //               (persona → empleo → socioeconómico → respuestas → prospecto), como el resto del ERP
 //               (eFramework no maneja transacciones). Las grillas hijas siguen de solo lectura (fase 2).
 @Component({
+  standalone: false,
     selector: 'app-aca-prospecto-nuevo-ingreso',
     templateUrl: './aca-prospecto.component.html',
     styleUrls: ['./aca-prospecto.component.scss'],

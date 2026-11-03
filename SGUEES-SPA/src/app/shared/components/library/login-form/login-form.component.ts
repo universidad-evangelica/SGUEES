@@ -16,6 +16,7 @@ import { ChangePasswordModalModule } from '../change-password-modal/change-passw
 import { NotificationSignalRService } from 'src/app/services/notification-signalr.service';
 
 @Component({
+  standalone: false,
   selector: 'app-login-form',
   templateUrl: './login-form.component.html',
   styleUrls: ['./login-form.component.scss'],

@@ -48,6 +48,8 @@ import { ThemeService } from './shared/services';
 import { ToastModule } from 'primeng/toast';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MessageService } from 'primeng/api';
+import { providePrimeNG } from 'primeng/config';
+import Lara from '@primeuix/themes/lara';
 
 registerLocaleData(localeEs, 'es');
 
@@ -115,6 +117,14 @@ export function tokenGetterLocal(): string {
     ThemeService,
     //primeng
     MessageService,
+    providePrimeNG({
+      theme: {
+        preset: Lara,
+        options: {
+          darkModeSelector: false,
+        },
+      },
+    }),
     { provide: LOCALE_ID, useValue: 'es' },
   ],
   bootstrap: [AppComponent],

@@ -15,6 +15,7 @@ import { custom } from 'devextreme/ui/dialog';
 import { ComDocumentoAnularCr } from './models/com-documento-anular-cr';
 
 @Component({
+  standalone: false,
   selector: 'app-com-documento-Anular',
   templateUrl: './com-documento-Anular.component.html',
   styleUrls: ['./com-documento-Anular.component.scss'],

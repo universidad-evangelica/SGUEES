@@ -10,6 +10,7 @@ import { ComBanco } from './models/com-banco';
 import { ComBancoService } from './com-banco.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-banco',
 	templateUrl: './com-banco.component.html',
 })

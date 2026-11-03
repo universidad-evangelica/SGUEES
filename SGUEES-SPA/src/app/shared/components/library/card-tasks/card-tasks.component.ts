@@ -10,6 +10,7 @@ import {
 import { DxDataGridTypes } from 'devextreme-angular/ui/data-grid';
 
 @Component({
+  standalone: false,
   selector: 'card-tasks',
   templateUrl: './card-tasks.component.html',
   styleUrls: ['./card-tasks.component.scss'],

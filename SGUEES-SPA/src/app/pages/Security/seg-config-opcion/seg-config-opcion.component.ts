@@ -10,6 +10,7 @@ import { SegConfigOpcion } from './models/seg-config-opcion';
 import { SegConfigOpcionService } from './seg-config-opcion.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-seg-config-opcion',
 	templateUrl: './seg-config-opcion.component.html',
 })

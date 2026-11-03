@@ -2,6 +2,7 @@ import { Component, Input, NgModule } from '@angular/core';
 import { DxDropDownButtonModule } from 'devextreme-angular/ui/drop-down-button';
 
 @Component({
+  standalone: false,
   selector: 'card-menu',
   templateUrl: './card-menu.component.html',
   styleUrls: ['./card-menu.component.scss']

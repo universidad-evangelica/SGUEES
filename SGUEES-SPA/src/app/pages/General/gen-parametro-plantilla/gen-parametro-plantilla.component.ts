@@ -16,6 +16,7 @@ import { GenParametroPlantillaVersion } from './gen-parametro-plantilla-version/
 import { GenParametroPlantillaVersionService } from './gen-parametro-plantilla-version/gen-parametro-plantilla-version.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-parametro-plantilla',
 	templateUrl: './gen-parametro-plantilla.component.html',
 	styleUrls: ['./gen-parametro-plantilla.component.scss'],

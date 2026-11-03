@@ -12,6 +12,7 @@ import { AcaBecFinanciadorService } from './aca-bec-financiador.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-bec-financiador',
 	templateUrl: './aca-bec-financiador.component.html',
 	styleUrls: ['./aca-bec-financiador.component.scss'],

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, NgModule, Output } from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'app-empty-state',
   templateUrl: './empty-state.component.html',
   styleUrls: ['./empty-state.component.scss'],

@@ -59,6 +59,7 @@ type SubmodalFamiliarTipo = 'familiar' | 'hijo';
 type SubmodalFormacionTipo = 'estudio' | 'idioma' | 'competencia';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-empleado',
 	templateUrl: './gen-empleado.component.html',
 	styleUrls: ['./gen-empleado.component.scss'],

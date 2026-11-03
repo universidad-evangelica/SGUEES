@@ -33,6 +33,7 @@ import { distinctUntilChanged, Subject, Subscription} from 'rxjs';
 import { Contact } from 'src/app/types/contact';
 
 @Component({
+  standalone: false,
   selector: 'contact-panel',
   templateUrl: './contact-panel.component.html',
   styleUrls: ['./contact-panel.component.scss'],

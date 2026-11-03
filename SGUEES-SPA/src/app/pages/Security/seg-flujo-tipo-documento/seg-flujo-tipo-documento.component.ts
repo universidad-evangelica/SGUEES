@@ -13,6 +13,7 @@ import { SegFlujoEstado } from './seg-flujo-estado/models/seg-flujo-estado';
 import { confirm } from 'devextreme/ui/dialog';
 
 @Component({
+  standalone: false,
     selector: 'app-seg-flujo-tipo-documento',
     templateUrl: './seg-flujo-tipo-documento.component.html',
     styleUrls: ['./seg-flujo-tipo-documento.component.scss'],

@@ -1,4 +1,4 @@
-/* ===========================
+﻿/* ===========================
    Margin - Todas las direcciones
 =========================== */
 
@@ -669,3 +669,17 @@
 	}
 }
 
+
+/* Qué hace: Configura cursor grab en las filas para indicar desplazamiento horizontal por arrastre (drag-to-scroll) */
+/* Cómo lo hace: Aplica cursor grab a las celdas y filas de la grilla de solicitudes de empleo, respetando cursor pointer en botones y enlaces */
+::ng-deep app-sc-solicitud-empleo .sguees-data-grid-mtto .dx-datagrid-rowsview .dx-data-row {
+	cursor: grab;
+
+	& a,
+	& button,
+	& .dx-link,
+	& .dx-button,
+	& [role="button"] {
+		cursor: pointer !important;
+	}
+}

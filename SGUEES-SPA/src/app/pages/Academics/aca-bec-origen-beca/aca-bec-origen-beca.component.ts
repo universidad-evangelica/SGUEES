@@ -12,6 +12,7 @@ import { AcaBecOrigenBecaService } from './aca-bec-origen-beca.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-bec-origen-beca',
 	templateUrl: './aca-bec-origen-beca.component.html',
 	styleUrls: ['./aca-bec-origen-beca.component.scss'],

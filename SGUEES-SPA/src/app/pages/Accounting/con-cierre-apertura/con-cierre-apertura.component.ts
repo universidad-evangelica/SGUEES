@@ -10,6 +10,7 @@ import { ConCierreAperturaModulo } from './models/con-cierre-apertura';
 import { ConCierreAperturaService } from './con-cierre-apertura.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-cierre-apertura',
 	templateUrl: './con-cierre-apertura.component.html',
 	styleUrls: ['./con-cierre-apertura.component.scss'],

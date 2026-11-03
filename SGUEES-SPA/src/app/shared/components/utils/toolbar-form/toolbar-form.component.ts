@@ -6,6 +6,7 @@ import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 
 @Component({
+  standalone: false,
   selector: 'toolbar-form',
   templateUrl: './toolbar-form.component.html',
   styleUrls: ['./toolbar-form.component.scss'],

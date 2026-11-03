@@ -12,6 +12,7 @@ import { AcaBecEntidadFinanciadoraService } from './aca-bec-entidad-financiadora
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-bec-entidad-financiadora',
 	templateUrl: './aca-bec-entidad-financiadora.component.html',
 	styleUrls: ['./aca-bec-entidad-financiadora.component.scss'],

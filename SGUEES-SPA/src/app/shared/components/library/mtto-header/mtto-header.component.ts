@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, NgModule } from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'app-mtto-header',
   templateUrl: './mtto-header.component.html',
   styleUrls: ['./mtto-header.component.scss'],

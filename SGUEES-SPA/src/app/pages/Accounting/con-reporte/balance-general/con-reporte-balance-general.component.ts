@@ -12,6 +12,7 @@ import { ConReporteColumnaService } from '../services/con-reporte-columna.servic
 import { columna } from '../shared/columnas-comunes';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-reporte-balance-general',
 	templateUrl: '../con-reporte.component.html',
 })

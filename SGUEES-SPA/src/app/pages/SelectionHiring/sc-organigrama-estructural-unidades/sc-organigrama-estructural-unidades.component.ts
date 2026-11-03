@@ -17,6 +17,7 @@ import { SC_OrganigramaEstructuralJefesService } from './sc-organigrama-estructu
 import { SC_OrganigramaEstructuralJefe } from './sc-organigrama-estructural-jefes/models/sc-organigrama-estructural-jefe';
 
 @Component({
+  standalone: false,
     selector: 'app-sc-organigrama-estructural-unidades',
     templateUrl: './sc-organigrama-estructural-unidades.component.html',
     styleUrls: ['./sc-organigrama-estructural-unidades.component.scss'],

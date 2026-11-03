@@ -199,6 +199,18 @@ namespace SGUEES.Services
 				return empresaError;
 			}
 
+			// Qué hace: Valida que el candidato sea mayor de edad (mínimo 18 años).
+			// Cómo lo hace: Compara DateOnly de nacimiento con DateOnly de hace 18 años.
+			if (data.FECHA_NACIMIENTO > DateOnly.FromDateTime(DateTime.Today).AddYears(-18))
+			{
+				return new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = "La persona debe ser mayor de edad (mínimo 18 años).",
+				};
+			}
+
 			return await _repo.ActualizarPersonaDatosAsync(corrEmpresa, usuario, estacion, data);
 		}
 

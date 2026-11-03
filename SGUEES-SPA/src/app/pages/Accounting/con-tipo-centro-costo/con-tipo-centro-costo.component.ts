@@ -10,6 +10,7 @@ import { ConTipoCentroCosto } from './models/con-tipo-centro-costo';
 import { ConTipoCentroCostoService } from './con-tipo-centro-costo.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-tipo-centro-costo',
 	templateUrl: './con-tipo-centro-costo.component.html',
 })

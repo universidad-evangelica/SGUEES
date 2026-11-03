@@ -10,6 +10,7 @@ import { GenBanco } from './models/gen-banco';
 import { GenBancoService } from './gen-banco.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-banco',
 	templateUrl: './gen-banco.component.html',
 })

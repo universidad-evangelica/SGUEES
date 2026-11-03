@@ -7,6 +7,7 @@ import { GenSectorEconomico } from './models/gen-sector-economico';
 import { GenSectorEconomicoService } from './gen-sector-economico.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-sector-economico',
 	templateUrl: './gen-sector-economico.component.html',
 })

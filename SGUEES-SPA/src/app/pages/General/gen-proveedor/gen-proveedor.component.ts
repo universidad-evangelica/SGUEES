@@ -11,6 +11,7 @@ import { GenProveedor } from './models/gen-proveedor';
 import { GenProveedorService } from './gen-proveedor.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-proveedor',
 	templateUrl: './gen-proveedor.component.html',
 	styleUrls: ['./gen-proveedor.component.scss'],

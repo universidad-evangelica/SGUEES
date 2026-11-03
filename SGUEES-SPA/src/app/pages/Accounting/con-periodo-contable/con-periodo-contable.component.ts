@@ -19,6 +19,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 
 
 @Component({
+  standalone: false,
 
 	selector: 'app-con-periodo-contable',
 

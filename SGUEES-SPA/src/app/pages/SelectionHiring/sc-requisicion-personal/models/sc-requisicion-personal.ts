@@ -3,7 +3,9 @@ export interface ScRequisicionPersonal {
     CORR_REQUISICION_PERSONAL: number;
     CORR_DESCRIPTOR_PUESTO: number;
     CORR_UNIDAD: number;
+    NOMBRE_UNIDAD?: string;
     CORR_PUESTO: number;
+    NOMBRE_PUESTO?: string;
     CORR_TIPO_MODALIDAD: number;
     CORR_TIPO_CONTRATACION: number;
     CORR_TIPO_VACANTE: number;

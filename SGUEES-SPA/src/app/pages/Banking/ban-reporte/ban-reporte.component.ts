@@ -18,7 +18,8 @@ import { BanReporteColumnaService } from './services/ban-reporte-columna.service
 import { BanReporteShellComponent } from './shell/ban-reporte-shell.component';
 
 /** Base BAN_REPO — filtros compartidos como e-Admin BAN_REPO.vb */
-@Component({ template: '' })
+@Component({
+  standalone: false, template: '' })
 export abstract class BanReporteComponent extends CBaseComponent implements OnInit {
 	@ViewChild(BanReporteShellComponent) shell?: BanReporteShellComponent;
 

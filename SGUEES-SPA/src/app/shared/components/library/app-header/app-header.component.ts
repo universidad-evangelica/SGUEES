@@ -15,6 +15,7 @@ import { RecorridoGuiaModule } from 'src/app/shared/recorrido-guia/recorrido-gui
 import { RecorridoGuiaService } from 'src/app/shared/recorrido-guia/recorrido-guia.service';
 
 @Component({
+  standalone: false,
   selector: 'app-header',
   templateUrl: 'app-header.component.html',
   styleUrls: ['./app-header.component.scss'],

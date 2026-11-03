@@ -17,6 +17,7 @@ import { ConPartidaOperacionModo, ConPartidaOperacionService } from './con-parti
 import { PartidaIaContexto } from 'src/app/shared/partida-ia-asistente/partida-ia.models';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-partida-operacion',
 	templateUrl: './con-partida-operacion.component.html',
 	styleUrls: ['./con-partida-operacion.component.scss'],

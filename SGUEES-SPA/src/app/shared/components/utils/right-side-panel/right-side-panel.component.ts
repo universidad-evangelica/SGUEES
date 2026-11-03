@@ -13,6 +13,7 @@ import { DxButtonTypes } from 'devextreme-angular/ui/button';
 import {DataService, ScreenService} from 'src/app/shared/services';
 
 @Component({
+  standalone: false,
   selector: 'right-side-panel',
   templateUrl: './right-side-panel.component.html',
   styleUrls: ['./right-side-panel.component.scss'],

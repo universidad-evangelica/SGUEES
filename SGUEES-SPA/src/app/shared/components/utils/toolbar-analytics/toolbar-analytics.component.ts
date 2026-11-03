@@ -12,6 +12,7 @@ import { DxTabsTypes } from 'devextreme-angular/ui/tabs';
 import { Dates, PanelItem } from 'src/app/types/resource';
 
 @Component({
+  standalone: false,
   selector: 'toolbar-analytics',
   templateUrl: './toolbar-analytics.component.html',
   styleUrls: ['./toolbar-analytics.component.scss']

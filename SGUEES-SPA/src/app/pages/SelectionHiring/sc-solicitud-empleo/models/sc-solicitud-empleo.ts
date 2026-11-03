@@ -12,6 +12,12 @@ export interface ScSolicitudEmpleo {
 	/** Bit del catálogo (fija = true). Lo trae la vista; no se guarda. */
 	ES_PERMANENTE?: boolean;
 	CORR_PERSONA_DATOS: number;
+	/** Qué hace: Indica si la solicitud ya está vinculada a un expediente de candidato. */
+	TIENE_EXPEDIENTE?: boolean;
+	/** Qué hace: Número de correlativo del expediente de candidato vinculado. */
+	CORR_EXPEDIENTE_CANDIDATO?: number | null;
+	/** Qué hace: Indica si la solicitud ya tiene tokens generados o enviados al candidato. */
+	TIENE_TOKEN?: boolean;
 	ACTIVO: boolean;
 	USUARIO_CREA: string;
 	ESTACION_CREA: string;

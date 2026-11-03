@@ -4,6 +4,7 @@ import { FirmasDocumentoService } from './firmas-documento.service';
 import { FirmaDocumento } from './models/firma-documento';
 
 @Component({
+  standalone: false,
     selector: 'app-firmas-documento',
     templateUrl: './firmas-documento.component.html',
     styleUrls: ['./firmas-documento.component.scss'],

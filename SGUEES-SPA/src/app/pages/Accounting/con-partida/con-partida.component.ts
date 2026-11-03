@@ -22,6 +22,7 @@ import { environment } from 'src/environments/environment';
 import { PartidaIaContexto } from 'src/app/shared/partida-ia-asistente/partida-ia.models';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-partida',
 	templateUrl: './con-partida.component.html',
 	styleUrls: ['./con-partida.component.scss'],

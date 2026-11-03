@@ -1,6 +1,7 @@
 import { NgModule, Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
+  standalone: false,
   name: 'apply',
 })
 export class ApplyPipe implements PipeTransform {

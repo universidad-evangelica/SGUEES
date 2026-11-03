@@ -12,6 +12,7 @@ import { AcaBecTipoService } from './aca-bec-tipo.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-bec-tipo',
 	templateUrl: './aca-bec-tipo.component.html',
 	styleUrls: ['./aca-bec-tipo.component.scss'],

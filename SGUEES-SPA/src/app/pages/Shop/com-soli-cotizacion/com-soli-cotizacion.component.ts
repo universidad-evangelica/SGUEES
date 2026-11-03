@@ -19,6 +19,7 @@ import { DxFormComponent } from 'devextreme-angular/ui/form';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 @Component({
+  standalone: false,
   selector: 'app-com-soli-cotizacion',
   templateUrl: './com-soli-cotizacion.component.html',
   styleUrls: ['./com-soli-cotizacion.component.scss'],

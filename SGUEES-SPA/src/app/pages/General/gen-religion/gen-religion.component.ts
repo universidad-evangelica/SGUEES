@@ -14,6 +14,7 @@ import { GenReligionService } from './gen-religion.service';
 const ESTADO_FIELD = 'ACTIVO_RELIGION';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-religion',
 	templateUrl: './gen-religion.component.html',
 	styleUrls: ['./gen-religion.component.scss'],

@@ -8,6 +8,7 @@ import { BanParametro } from './models/ban-parametro';
 import { BanParametroService } from './ban-parametro.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-parametro',
 	templateUrl: './ban-parametro.component.html',
 })

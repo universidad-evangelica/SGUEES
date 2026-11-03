@@ -256,11 +256,6 @@ export class ScSolicitudEmpleoService {
 				colSpan: 2,
 				template: 'CORR_TIPO_CONTRATACIONLookup',
 			},
-			// {
-			// 	dataField: 'CORR_PERSONA_DATOS',
-			// 	label: { text: 'Corr. Persona datos' },
-			// 	colSpan: 2,
-			// },
 		];
 	}
 
@@ -286,6 +281,12 @@ export class ScSolicitudEmpleoService {
 	// Cómo lo hace: delega la petición a repo.enviarCorreoPlantilla(payload).
 	enviarCorreoPlantilla(payload: any): Observable<IResult> {
 		return this.repo.enviarCorreoPlantilla(payload);
+	}
+
+	// Qué hace: solicita la búsqueda de candidato por DUI para validar su expediente.
+	// Cómo lo hace: delega la consulta a repo.buscarCandidatoPorDui(dui).
+	buscarCandidatoPorDui(dui: string): Observable<IResult> {
+		return this.repo.buscarCandidatoPorDui(dui);
 	}
 }
 

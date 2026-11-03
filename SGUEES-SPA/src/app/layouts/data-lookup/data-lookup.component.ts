@@ -14,6 +14,7 @@ import {
 import { DxDropDownBoxComponent, DxDropDownBoxModule } from 'devextreme-angular/ui/drop-down-box';
 
 @Component({
+  standalone: false,
 	selector: 'app-data-lookup',
 	templateUrl: './data-lookup.component.html',
 	styleUrls: ['./data-lookup.component.scss'],

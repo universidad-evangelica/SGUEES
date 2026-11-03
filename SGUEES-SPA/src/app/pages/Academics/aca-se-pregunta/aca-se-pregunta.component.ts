@@ -14,6 +14,7 @@ import { AcaSePreguntaService } from './aca-se-pregunta.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-se-pregunta',
 	templateUrl: './aca-se-pregunta.component.html',
 	styleUrls: ['./aca-se-pregunta.component.scss'],

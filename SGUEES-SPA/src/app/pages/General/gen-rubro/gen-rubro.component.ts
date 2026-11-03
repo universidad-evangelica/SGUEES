@@ -25,6 +25,7 @@ import { GenRubroService } from './gen-rubro.service';
 import { IParam } from 'src/app/FxAPI/IParam';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-rubro',
 	templateUrl: './gen-rubro.component.html',
 })

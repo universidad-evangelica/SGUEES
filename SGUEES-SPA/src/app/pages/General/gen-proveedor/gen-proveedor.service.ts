@@ -65,12 +65,12 @@ export class GenProveedorService {
 		return [
 			{ dataField: 'CORR_PROVEEDOR', caption: 'Corr.', width: 85 },
 			{ dataField: 'CODIGO_PROVEEDOR', caption: 'Código', width: 120 },
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'NOMBRE_COMERCIAL', caption: 'Nombre / Razón social', width: 320 },
 			{ dataField: 'NOMBRE_PROVEEDOR', caption: 'Nombre persona', width: 280 },
 			{ dataField: 'NOMBRE_TIPO_PERSONERIA', caption: 'Personería', width: 110 },
 			{ dataField: 'NOMBRE_BANCO', caption: 'Banco', width: 180 },
 			{ dataField: 'CUENTA_BANCARIA', caption: 'Cuenta', width: 140 },
-			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			...buildAuditGridColumns(),
 		];
 	}

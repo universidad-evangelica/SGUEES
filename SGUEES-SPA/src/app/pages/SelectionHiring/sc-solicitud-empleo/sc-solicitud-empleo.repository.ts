@@ -159,5 +159,16 @@ export class ScSolicitudEmpleoRepository {
 	enviarCorreoPlantilla(payload: any): Observable<IResult> {
 		return this.objData.Post(payload, this.xController, 'EnviarCorreoPlantilla', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	// Qué hace: consulta al API si existe un candidato con expediente registrado para el DUI ingresado.
+	// Cómo lo hace: ejecuta una petición GET a BuscarCandidatoPorDui en SELECCIONCONTRATACIONAPI.
+	buscarCandidatoPorDui(dui: string): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'BuscarCandidatoPorDui',
+			[{ Parameter: 'dui', Value: dui }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }
 

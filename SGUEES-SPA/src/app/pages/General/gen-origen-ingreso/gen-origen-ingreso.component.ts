@@ -14,6 +14,7 @@ import { GenOrigenIngresoService } from './gen-origen-ingreso.service';
 const ESTADO_FIELD = 'ACTIVO_ORIGEN_INGRESO';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-origen-ingreso',
 	templateUrl: './gen-origen-ingreso.component.html',
 	styleUrls: ['./gen-origen-ingreso.component.scss'],
