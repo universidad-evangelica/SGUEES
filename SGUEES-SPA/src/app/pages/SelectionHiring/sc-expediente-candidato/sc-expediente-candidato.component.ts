@@ -41,9 +41,6 @@ import { ScExpedienteCandidatoPostulacion } from '../sc-requisicion-personal/sc-
 	styleUrls: ['./sc-expediente-candidato.component.scss'],
 })
 export class ScExpedienteCandidatoComponent extends CBaseComponent implements OnInit, AfterViewInit, OnDestroy {
-	// Qué hace: Función de limpieza de listeners de arrastre horizontal (drag-to-scroll).
-	private cleanupDragToScroll?: () => void;
-
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('entrevistaForm', { static: false }) entrevistaForm?: DxFormComponent;
 	@ViewChild('documentoForm', { static: false }) documentoForm?: DxFormComponent;
@@ -51,6 +48,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	@ViewChild('entrevistaDocumentoForm', { static: false }) entrevistaDocumentoForm?: DxFormComponent;
 	@ViewChild('entrevistaDocumentoFileInput', { static: false })
 	entrevistaDocumentoFileInput?: ElementRef<HTMLInputElement>;
+
+	// Qué hace: Función de limpieza de listeners de arrastre horizontal (drag-to-scroll).
+	private cleanupDragToScroll?: () => void;
 
 	protected override etiquetaRegistro = 'el expediente de candidato';
 	protected override requiereEmpresaSesion = true;
@@ -386,14 +386,26 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		let hasDragged = false;
 		let scrollContainer: HTMLElement | null = null;
 
+		// Qué hace: Inicia el arrastre horizontal sobre registros sin interferir con la barra de scroll inferior.
+		// Cómo lo hace: Ignora clics en la barra de scroll y controles interactivos, asegurando que el clic provenga de filas de la grilla.
 		const onMouseDown = (e: MouseEvent) => {
-			if (e.button !== 0) return;
+			if (e.button !== 0) return; // Solo botón izquierdo
 			const target = e.target as HTMLElement;
+
+			// Ignorar clics sobre la barra de desplazamiento inferior y sus deslizadores
+			if (target.closest('.dx-scrollable-scrollbar, .dx-scrollable-scroll, .dx-scrollbar-horizontal, .dx-scrollbar-vertical')) {
+				return;
+			}
+
+			// No activar arrastre sobre botones, inputs, links o iconos de acción
 			if (target.closest('button, .dx-button, a, input, select, textarea, .dx-checkbox, .dx-link, [role="button"]')) {
 				return;
 			}
+
+			// Verificar que el clic provenga de las filas/contenido de la tabla
 			const rowsView = target.closest('.dx-datagrid-rowsview');
-			if (!rowsView) return;
+			const isTableContent = !!target.closest('.dx-data-row, .dx-datagrid-content');
+			if (!rowsView || !isTableContent) return;
 
 			scrollContainer = host.querySelector('.sguees-data-grid-mtto .dx-datagrid-rowsview .dx-scrollable-container');
 			if (!scrollContainer) return;
