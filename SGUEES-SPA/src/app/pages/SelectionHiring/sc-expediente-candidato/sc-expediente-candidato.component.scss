@@ -1,4 +1,4 @@
-:host {
+﻿:host {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -306,6 +306,12 @@
     .expediente-badge__dot {
       background: var(--sguees-text-muted, #94a3b8);
     }
+  }
+
+  &--menor {
+    background: color-mix(in srgb, #f59e0b 16%, transparent);
+    color: #d97706;
+    border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
   }
 
   &__dot {
@@ -1314,4 +1320,31 @@
   .expediente-preview-panel {
     --preview-width: min(360px, 46vw);
   }
+}
+
+.expediente-alerta-menor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--sguees-radius-md, 8px);
+  background: color-mix(in srgb, #f59e0b 14%, transparent);
+  color: #b45309;
+  border: 1px solid color-mix(in srgb, #f59e0b 32%, transparent);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Qué hace: Configura cursor grab en las filas para indicar desplazamiento horizontal por arrastre (drag-to-scroll) */
+/* Cómo lo hace: Aplica cursor grab a las celdas y filas de la grilla de expedientes de candidatos, respetando cursor pointer en botones y enlaces */
+::ng-deep app-sc-expediente-candidato .sguees-data-grid-mtto .dx-datagrid-rowsview .dx-data-row {
+	cursor: grab;
+
+	& a,
+	& button,
+	& .dx-link,
+	& .dx-button,
+	& [role="button"] {
+		cursor: pointer !important;
+	}
 }

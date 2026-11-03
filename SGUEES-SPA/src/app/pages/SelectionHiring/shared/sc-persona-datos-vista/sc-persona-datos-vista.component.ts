@@ -59,6 +59,19 @@ export class ScPersonaDatosVistaComponent {
 		return (this.personaDatos?.CORR_PERSONA_DATOS ?? 0) > 0;
 	}
 
+	// Qué hace: Evalúa si el candidato mostrado es menor de 18 años.
+	// Cómo lo hace: Comprueba la edad calculada o registrada en personaDatos.
+	get esMenorDeEdad(): boolean {
+		if (!this.personaDatos) {
+			return false;
+		}
+		const edad = Number(this.personaDatos.EDAD);
+		if (!Number.isNaN(edad) && edad > 0) {
+			return edad < 18;
+		}
+		return false;
+	}
+
 	get mostrarDocumentos(): boolean {
 		return !!this.documentosTabTemplate;
 	}

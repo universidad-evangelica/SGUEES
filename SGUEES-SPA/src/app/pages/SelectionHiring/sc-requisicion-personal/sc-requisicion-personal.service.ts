@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+﻿import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
@@ -887,10 +887,12 @@ export class ScRequisicionPersonalService {
                                     editorType: 'dxNumberBox',
                                     editorOptions: { placeholder: 'Ej. 6 meses', showClearButton: true, maxLength: 50 },
                                 },
+                                // Qué hace: Configura el campo de horario laboral en la fila de salario.
+                                // Cómo lo hace: Establece colSpan: 7 por defecto para completar la fila de 8 columnas junto a Salario (1) y evitar desbordes visuales al cargar.
                                 {
                                     dataField: 'HORARIO',
                                     label: { text: 'Horario laboral' },
-                                    colSpan: 4,
+                                    colSpan: 7,
                                     editorType: 'dxTextArea',
                                     editorOptions: { placeholder: 'Detalle horario laboral...', showClearButton: true, maxLength: 100 },
                                 },

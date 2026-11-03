@@ -86,11 +86,12 @@
                       fechaLectura(personaDatos?.FECHA_NACIMIENTO)
                     }}</span>
                   </div>
+                  <!-- motivo: Indicador visual de alerta si el aspirante es menor de edad -->
                   <div class="rd-field">
                     <span class="rd-label">Edad</span
                     ><span class="rd-value">{{
                       textoLectura(personaDatos?.EDAD)
-                    }}</span>
+                    }} <span *ngIf="esMenorDeEdad" class="rd-badge-menor" title="Candidato menor de 18 años">⚠️ Menor de edad</span></span>
                   </div>
                   <div class="rd-field">
                     <span class="rd-label">Estado civil</span

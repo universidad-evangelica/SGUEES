@@ -368,6 +368,13 @@ namespace sguees.Services
                 return Error("Debe indicar el tipo de discapacidad.");
             }
 
+            // Qué hace: Valida que el aspirante sea mayor de edad (mínimo 18 años).
+            // Cómo lo hace: Compara DateOnly de nacimiento con DateOnly de hace 18 años.
+            if (data.FECHA_NACIMIENTO > DateOnly.FromDateTime(DateTime.Today).AddYears(-18))
+            {
+                return Error("El aspirante debe ser mayor de edad (mínimo 18 años).");
+            }
+
             var tokenHash = CalcularTokenHash(token);
             var resultado = await _repo.CompletarAsync(tokenHash, data);
             if (!resultado.Result || resultado.Data is not SC_SOLICITUD_EMPLEO_COMPLETARView completado || !completado.COMPLETADO)
