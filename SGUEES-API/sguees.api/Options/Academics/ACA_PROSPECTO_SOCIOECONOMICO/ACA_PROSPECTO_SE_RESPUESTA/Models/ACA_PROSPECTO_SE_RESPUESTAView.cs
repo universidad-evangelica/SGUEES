@@ -14,6 +14,8 @@ namespace sguees.Models
         public int CORR_VERSION_PREGUNTA { get; set; }
         public int ORDEN { get; set; }
         public bool ES_REQUERIDO { get; set; }
+        public int? CORR_SECCION_SE { get; set; }
+        public string NOMBRE_SECCION { get; set; }
         public int CORR_PREGUNTA { get; set; }
         public string CODIGO_PREGUNTA { get; set; }
         public int CORR_TIPO_PREGUNTA { get; set; }
@@ -30,5 +32,7 @@ namespace sguees.Models
         public string TEXTO_OPCIONES_MULTIPLES { get; set; }
         public bool? TIENE_RESPUESTA { get; set; }
         public DateTime? FECHA_RESPUESTA { get; set; }
+        public decimal PUNTAJE_OBTENIDO { get; set; }
+        public decimal PORCENTAJE_APLICADO { get; set; }
     }
 }

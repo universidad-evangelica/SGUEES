@@ -10,6 +10,7 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import {
 	AcaSePreguntaLookup,
+	AcaSeSeccionLookup,
 	AcaSeVersionLookup,
 	AcaSeVersionPregunta,
 } from './models/aca-se-version-pregunta';
@@ -39,6 +40,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 	private readonly maintenanceSubtitulo = 'Mantenimiento de preguntas por versión SE';
 	mCORR_VERSION: AcaSeVersionLookup[] = [];
 	mCORR_PREGUNTA: AcaSePreguntaLookup[] = [];
+	mCORR_SECCION_SE: AcaSeSeccionLookup[] = [];
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -82,6 +84,9 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 				CORR_PREGUNTA: xModel.CORR_PREGUNTA,
 				CODIGO_PREGUNTA: xModel.CODIGO_PREGUNTA,
 				ENUNCIADO_PREGUNTA: xModel.ENUNCIADO_PREGUNTA,
+				CORR_SECCION_SE: xModel.CORR_SECCION_SE ?? null,
+				NOMBRE_SECCION: xModel.NOMBRE_SECCION,
+				ORDEN_SECCION: xModel.ORDEN_SECCION ?? null,
 				ORDEN: xModel.ORDEN,
 				ES_REQUERIDO: !!xModel.ES_REQUERIDO,
 				ACTIVO: xModel.ACTIVO,
@@ -98,6 +103,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			CORR_VERSION_PREGUNTA: 0,
 			CORR_VERSION: 0,
 			CORR_PREGUNTA: 0,
+			CORR_SECCION_SE: null,
 			ORDEN: 0,
 			ES_REQUERIDO: false,
 			ACTIVO: true,
@@ -120,12 +126,13 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		});
 	}
 
-	// Qué hace: carga lookups de versión y pregunta.
-	// Cómo lo hace: forkJoin de getLookUp GetCORR_VERSION y GetCORR_PREGUNTA.
+	// Qué hace: carga lookups de versión, pregunta y sección.
+	// Cómo lo hace: forkJoin de GetCORR_VERSION, GetCORR_PREGUNTA y GetSeccionesLookup.
 	private cargarLookUps(): void {
 		forkJoin({
 			versiones: this.service.getCORR_VERSION().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 			preguntas: this.service.getCORR_PREGUNTA().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
+			secciones: this.service.getCORR_SECCION_SE().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 		})
 			.pipe(take(1))
 			.subscribe({
@@ -146,12 +153,45 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 								ACTIVO: item.ACTIVO,
 						  }))
 						: [];
-					this.items = this.service.getItems({
-						versiones: this.mCORR_VERSION,
-						preguntas: this.mCORR_PREGUNTA,
-					});
+					this.mCORR_SECCION_SE = Array.isArray(result?.secciones?.Data)
+						? result.secciones.Data.map((item: AcaSeSeccionLookup) => ({
+								CORR_SECCION_SE: Number(item.CORR_SECCION_SE),
+								CORR_VERSION: Number(item.CORR_VERSION),
+								NOMBRE_SECCION: (item.NOMBRE_SECCION ?? '').trim(),
+								ORDEN: Number(item.ORDEN ?? 0),
+								ACTIVO: item.ACTIVO,
+						  }))
+						: [];
+					this.refrescarItemsForm();
 				},
 			});
+	}
+
+	// Qué hace: reconstruye el formulario filtrando secciones por la versión elegida.
+	private refrescarItemsForm(): void {
+		this.items = this.service.getItems({
+			versiones: this.mCORR_VERSION,
+			preguntas: this.mCORR_PREGUNTA,
+			secciones: this.mCORR_SECCION_SE,
+			corrVersion: Number(this.model?.CORR_VERSION ?? 0),
+		});
+	}
+
+	// Qué hace: al cambiar versión, limpia sección si no pertenece y refresca el combo.
+	onFieldDataChanged(e: any): void {
+		if (e?.dataField !== 'CORR_VERSION') {
+			return;
+		}
+		const corrVersion = Number(e.value ?? 0);
+		const seccionActual = Number(this.model?.CORR_SECCION_SE ?? 0);
+		const pertenece = this.mCORR_SECCION_SE.some(
+			(s) => Number(s.CORR_SECCION_SE) === seccionActual && Number(s.CORR_VERSION) === corrVersion
+		);
+		if (!pertenece && this.model) {
+			this.model.CORR_SECCION_SE = null;
+			this.dataForm?.instance?.updateData('CORR_SECCION_SE', null);
+		}
+		this.refrescarItemsForm();
 	}
 
 	private ordenarModels(): void {
@@ -214,6 +254,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.model = this.fillData(rowData);
 			this.modelUpdate = this.fillData(rowData);
 		}
+		this.refrescarItemsForm();
 		super.rowDblClick(e);
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
@@ -227,6 +268,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		}
 
 		this.model = this.fillData(e.row.data);
+		this.refrescarItemsForm();
 		this.editarClick(e);
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
@@ -236,6 +278,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 
 	override nuevo(): void {
 		super.nuevo();
+		this.refrescarItemsForm();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 		});
@@ -311,6 +354,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		this.dataForm.instance.getEditor('CORR_VERSION_PREGUNTA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_VERSION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_PREGUNTA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_SECCION_SE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ES_REQUERIDO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ACTIVO')?.option('readOnly', true);
@@ -322,6 +366,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.dataForm.instance.getEditor('CORR_VERSION_PREGUNTA')?.option('readOnly', true);
 			this.dataForm.instance.getEditor('CORR_VERSION')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('CORR_PREGUNTA')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('CORR_SECCION_SE')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ES_REQUERIDO')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ACTIVO')?.option('readOnly', estadoSoloLectura);

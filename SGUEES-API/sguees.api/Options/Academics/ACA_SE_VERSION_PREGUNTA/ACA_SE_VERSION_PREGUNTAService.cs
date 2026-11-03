@@ -48,5 +48,8 @@ namespace sguees.Services
 
 		public Task<CResult> ActivarInactivarAsync(ACA_SE_VERSION_PREGUNTATable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
+		public Task<CResult> GetSeccionesLookupAsync()
+			=> _repo.GetSeccionesLookupAsync();
 	}
 }

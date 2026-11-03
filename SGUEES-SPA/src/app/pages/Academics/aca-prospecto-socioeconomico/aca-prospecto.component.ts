@@ -198,6 +198,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     respuestasSE: AcaProspectoSeRespuesta[] = [];
     itemsRespuestasSE: any[] = [];
     respuestasSEModel: any = {};
+    // Qué hace: cuestionario SE agrupado por sección con puntaje (mismo patrón visual que becas).
+    seccionesCuestionarioSE: {
+        nombre: string;
+        puntaje: number;
+        preguntas: { orden: number; texto: string; respuesta: string; puntaje: number; codigo: string }[];
+    }[] = [];
     // #endregion
 
     // Qué hace: esta pantalla es solo la solicitud socioeconómica.
@@ -1526,6 +1532,53 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Qué hace: rearma las preguntas del cuestionario respetando las dependencias del formData actual.
     private refrescarItemsRespuestasSE(): void {
         this.itemsRespuestasSE = this.serviceRespuestaSE.getItems(this.respuestasSE, this.mOPCIONES_SE, this.respuestasSEModel);
+        this.armarSeccionesCuestionarioSE();
+    }
+
+    // Qué hace: arma secciones + chips de puntaje del SE (mismo patrón que armarSecciones de becas).
+    // Cómo lo hace: agrupa respuestas por CORR_SECCION_SE / NOMBRE_SECCION y suma PUNTAJE_OBTENIDO.
+    private armarSeccionesCuestionarioSE(): void {
+        const secciones = new Map<
+            number,
+            {
+                orden: number;
+                nombre: string;
+                preguntas: { orden: number; texto: string; respuesta: string; puntaje: number; codigo: string }[];
+            }
+        >();
+
+        for (const fila of this.respuestasSE ?? []) {
+            const corrSeccion = Number(fila.CORR_SECCION_SE ?? 0);
+            let seccion = secciones.get(corrSeccion);
+            if (!seccion) {
+                seccion = {
+                    orden: Number(fila.ORDEN) || 0,
+                    nombre: (fila.NOMBRE_SECCION || '').trim() || 'Sin sección',
+                    preguntas: [],
+                };
+                secciones.set(corrSeccion, seccion);
+            }
+            seccion.orden = Math.min(seccion.orden, Number(fila.ORDEN) || 0);
+            seccion.preguntas.push({
+                orden: Number(fila.ORDEN) || 0,
+                texto: fila.ENUNCIADO || fila.CODIGO_PREGUNTA,
+                respuesta: this.serviceRespuestaSE.textoRespuestaPublico(fila),
+                puntaje: Number(fila.PUNTAJE_OBTENIDO) || 0,
+                codigo: fila.CODIGO_PREGUNTA,
+            });
+        }
+
+        this.seccionesCuestionarioSE = [...secciones.values()]
+            .sort((a, b) => a.orden - b.orden)
+            .map((seccion) => {
+                const preguntas = [...seccion.preguntas].sort((a, b) => a.orden - b.orden);
+                return {
+                    nombre: seccion.nombre,
+                    puntaje: preguntas.reduce((total, p) => total + p.puntaje, 0),
+                    preguntas,
+                };
+            })
+            .filter((seccion) => seccion.preguntas.length > 0);
     }
 
     private prepararEmpleoNuevo(): void {
@@ -1985,6 +2038,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.respuestasSE = [];
         this.itemsRespuestasSE = [];
         this.respuestasSEModel = {};
+        this.seccionesCuestionarioSE = [];
         this.mCORR_DEPTO_RESIDENCIA = [];
         this.mCORR_MUNICIPIO_RESIDENCIA = [];
         this.mCORR_DEPTO_EMPLEO = [];
@@ -2175,6 +2229,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.respuestasSEModel = this.serviceRespuestaSE.getFormData(data);
             this.refrescarItemsRespuestasSE();
         });
+    }
+
+    trackPreguntaSE(_indice: number, pregunta: { codigo: string }): string {
+        return pregunta.codigo;
     }
     // #endregion
 }

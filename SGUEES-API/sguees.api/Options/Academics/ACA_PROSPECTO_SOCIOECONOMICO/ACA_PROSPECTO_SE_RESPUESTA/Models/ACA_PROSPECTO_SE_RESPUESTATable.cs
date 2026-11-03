@@ -17,6 +17,8 @@ namespace sguees.Models
         public string TEXTO_PREGUNTA_HISTORICO { get; set; }
         public string TEXTO_OPCION_HISTORICO { get; set; }
         public DateTime FECHA_RESPUESTA { get; set; }
+        public decimal PUNTAJE_OBTENIDO { get; set; }
+        public decimal PORCENTAJE_APLICADO { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime FECHA_CREA { get; set; }

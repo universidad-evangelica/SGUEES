@@ -1,27 +1,12 @@
--- Qué hace: script de documentación de la vista V_ACA_PROSPECTO_SE_RESPUESTA (ya existente en BD).
--- Cómo lo hace: definición leída desde SQL Server, sin cambiar columnas ni filtros.
+-- Qué hace: preguntas de la versión del SE del prospecto con respuesta y puntaje aplicado.
+-- Cómo lo hace: misma lógica previa + PUNTAJE_OBTENIDO / PORCENTAJE_APLICADO / sección.
+-- Ejecutar tú en BD (CREATE OR ALTER).
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
-/* --------------------------------------------------------------------------
-   BLOQUE 4.2 — V_ACA_PROSPECTO_SE_RESPUESTA
-   Qué hace: todas las preguntas de la versión del cuestionario con la que
-             el prospecto llenó su estudio socioeconómico, con su respuesta
-             si la tiene. Las preguntas sin contestar también aparecen.
-   Cómo lo hace: parte de ACA_SE_VERSION_PREGUNTA de la versión congelada en
-             la ficha (no de las respuestas), así una versión nueva no
-             requiere cambios. Incluye preguntas activas en la versión y las
-             ya respondidas aunque luego se desactiven. El enunciado y el
-             texto de la opción salen del histórico guardado al responder; si
-             no hay respuesta, del banco. Las opciones múltiples se juntan en
-             un texto. TIENE_RESPUESTA = 1 si hay algún valor guardado.
-             Nota: admisiones no guarda montos en cero, así que "$0" y "sin
-             respuesta" se ven igual.
-   -------------------------------------------------------------------------- */
-CREATE   VIEW dbo.V_ACA_PROSPECTO_SE_RESPUESTA
+CREATE OR ALTER VIEW dbo.V_ACA_PROSPECTO_SE_RESPUESTA
 AS
 SELECT
     VP.CORR_EMPRESA,
@@ -31,6 +16,8 @@ SELECT
     VPR.CORR_VERSION_PREGUNTA,
     VPR.ORDEN,
     VPR.ES_REQUERIDO,
+    VPR.CORR_SECCION_SE,
+    SEC.NOMBRE_SECCION,
     P.CORR_PREGUNTA,
     P.CODIGO AS CODIGO_PREGUNTA,
     P.CORR_TIPO_PREGUNTA,
@@ -64,7 +51,9 @@ SELECT
             THEN 1
             ELSE 0
          END AS BIT) AS TIENE_RESPUESTA,
-    R.FECHA_RESPUESTA
+    R.FECHA_RESPUESTA,
+    ISNULL(R.PUNTAJE_OBTENIDO, 0) AS PUNTAJE_OBTENIDO,
+    ISNULL(R.PORCENTAJE_APLICADO, 0) AS PORCENTAJE_APLICADO
 FROM dbo.V_ACA_PROSPECTO AS VP
 INNER JOIN dbo.ACA_PROSPECTO_SOCIOECONOMICO AS S
     ON S.CORR_PROSPECTO_PERSONA = VP.CORR_PROSPECTO_PERSONA
@@ -74,6 +63,8 @@ INNER JOIN dbo.ACA_SE_PREGUNTA AS P
     ON P.CORR_PREGUNTA = VPR.CORR_PREGUNTA
 LEFT JOIN dbo.GEN_SE_TIPO_PREGUNTA AS T
     ON T.CORR_TIPO_PREGUNTA = P.CORR_TIPO_PREGUNTA
+LEFT JOIN dbo.ACA_SE_SECCION AS SEC
+    ON SEC.CORR_SECCION_SE = VPR.CORR_SECCION_SE
 LEFT JOIN dbo.ACA_PROSPECTO_SE_RESPUESTA AS R
     ON R.CORR_PROSPECTO_SOCIOECONOMICO = S.CORR_PROSPECTO_SOCIOECONOMICO
    AND R.CORR_PREGUNTA = P.CORR_PREGUNTA
@@ -81,5 +72,4 @@ LEFT JOIN dbo.ACA_SE_OPCION AS OP
     ON OP.CORR_OPCION = R.CORR_OPCION
 WHERE VPR.ACTIVO = 1
    OR R.CORR_RESPUESTA IS NOT NULL;
-
 GO

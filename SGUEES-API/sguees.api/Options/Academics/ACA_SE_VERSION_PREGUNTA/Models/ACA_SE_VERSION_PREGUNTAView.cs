@@ -1,4 +1,4 @@
-// Qué hace: fila de V_ACA_SE_VERSION_PREGUNTA (incluye datos de versión y pregunta).
+// Qué hace: fila de V_ACA_SE_VERSION_PREGUNTA (versión, pregunta y sección).
 using System;
 
 namespace sguees.Models
@@ -12,6 +12,9 @@ namespace sguees.Models
 		public int CORR_PREGUNTA { get; set; }
 		public string CODIGO_PREGUNTA { get; set; }
 		public string ENUNCIADO_PREGUNTA { get; set; }
+		public int? CORR_SECCION_SE { get; set; }
+		public string NOMBRE_SECCION { get; set; }
+		public int? ORDEN_SECCION { get; set; }
 		public int ORDEN { get; set; }
 		public bool? ES_REQUERIDO { get; set; }
 		public bool? ACTIVO { get; set; }

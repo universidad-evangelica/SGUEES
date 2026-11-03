@@ -19,5 +19,9 @@ namespace sguees.Models
         public string ESTACION_ACTU { get; set; }
         public DateTime? FECHA_ACTU { get; set; }
         public int CORR_VERSION { get; set; }
+        public decimal? PUNTAJE_TOTAL { get; set; }
+        public decimal? PORCENTAJE_TOTAL { get; set; }
+        public string RESULTADO_EVALUACION { get; set; }
+        public string PRIORIDAD_EVALUACION { get; set; }
     }
 }

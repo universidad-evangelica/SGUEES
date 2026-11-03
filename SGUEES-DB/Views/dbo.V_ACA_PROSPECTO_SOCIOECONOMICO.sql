@@ -1,22 +1,12 @@
--- Qué hace: script de documentación de la vista V_ACA_PROSPECTO_SOCIOECONOMICO (ya existente en BD).
--- Cómo lo hace: definición leída desde SQL Server, sin cambiar columnas ni filtros.
+-- Qué hace: cabecera del estudio socioeconómico del prospecto (incluye puntaje/resultado).
+-- Cómo lo hace: ACA_PROSPECTO_SOCIOECONOMICO + conteo sobre V_ACA_PROSPECTO_SE_RESPUESTA + columnas ALTER.
+-- Ejecutar tú en BD (CREATE OR ALTER).
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
-/* --------------------------------------------------------------------------
-   BLOQUE 4.3 — V_ACA_PROSPECTO_SOCIOECONOMICO
-   Qué hace: cabecera del estudio socioeconómico (versión, términos, cuota
-             máxima, fechas) con el avance de preguntas respondidas.
-   Cómo lo hace: toma ACA_PROSPECTO_SOCIOECONOMICO y cuenta sobre
-             V_ACA_PROSPECTO_SE_RESPUESTA, para que el total y lo respondido
-             usen exactamente la misma regla que la lista de preguntas.
-             CORR_TIPO_INSTITUCION repite la respuesta a CENTRO_EDUCATIVO;
-             la pantalla muestra la respuesta (con su texto histórico).
-   -------------------------------------------------------------------------- */
-CREATE   VIEW dbo.V_ACA_PROSPECTO_SOCIOECONOMICO
+CREATE OR ALTER VIEW dbo.V_ACA_PROSPECTO_SOCIOECONOMICO
 AS
 SELECT
     VP.CORR_EMPRESA,
@@ -33,7 +23,11 @@ SELECT
     S.FECHA_CREA AS FECHA_REGISTRO,
     S.FECHA_ACTU AS FECHA_ACTUALIZACION,
     ISNULL(RS.TOTAL_PREGUNTAS, 0) AS TOTAL_PREGUNTAS,
-    ISNULL(RS.PREGUNTAS_RESPONDIDAS, 0) AS PREGUNTAS_RESPONDIDAS
+    ISNULL(RS.PREGUNTAS_RESPONDIDAS, 0) AS PREGUNTAS_RESPONDIDAS,
+    S.PUNTAJE_TOTAL,
+    S.PORCENTAJE_TOTAL,
+    S.RESULTADO_EVALUACION,
+    S.PRIORIDAD_EVALUACION
 FROM dbo.V_ACA_PROSPECTO AS VP
 INNER JOIN dbo.ACA_PROSPECTO_SOCIOECONOMICO AS S
     ON S.CORR_PROSPECTO_PERSONA = VP.CORR_PROSPECTO_PERSONA
@@ -50,5 +44,4 @@ LEFT JOIN (
     GROUP BY CORR_PROSPECTO_SOCIOECONOMICO
 ) AS RS
     ON RS.CORR_PROSPECTO_SOCIOECONOMICO = S.CORR_PROSPECTO_SOCIOECONOMICO;
-
 GO

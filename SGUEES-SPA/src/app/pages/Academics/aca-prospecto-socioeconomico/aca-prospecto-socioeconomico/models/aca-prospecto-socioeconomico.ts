@@ -15,4 +15,8 @@ export interface AcaProspectoSocioeconomico {
     FECHA_ACTUALIZACION: Date | null;
     TOTAL_PREGUNTAS: number;
     PREGUNTAS_RESPONDIDAS: number;
+    PUNTAJE_TOTAL?: number | null;
+    PORCENTAJE_TOTAL?: number | null;
+    RESULTADO_EVALUACION?: string | null;
+    PRIORIDAD_EVALUACION?: string | null;
 }

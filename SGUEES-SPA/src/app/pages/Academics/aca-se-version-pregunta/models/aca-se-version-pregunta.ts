@@ -1,5 +1,5 @@
 // Qué hace: modelos TypeScript de ACA_SE_VERSION_PREGUNTA y lookups.
-// Cómo lo hace: refleja V_ACA_SE_VERSION_PREGUNTA y los GetLookUp de versión/pregunta.
+// Cómo lo hace: refleja V_ACA_SE_VERSION_PREGUNTA y los GetLookUp / GetSeccionesLookup.
 export interface AcaSeVersionPregunta {
 	CORR_VERSION_PREGUNTA: number;
 	CORR_VERSION: number;
@@ -8,6 +8,9 @@ export interface AcaSeVersionPregunta {
 	CORR_PREGUNTA: number;
 	CODIGO_PREGUNTA?: string;
 	ENUNCIADO_PREGUNTA?: string;
+	CORR_SECCION_SE?: number | null;
+	NOMBRE_SECCION?: string;
+	ORDEN_SECCION?: number | null;
 	ORDEN: number;
 	ES_REQUERIDO: boolean;
 	ACTIVO: boolean;
@@ -30,5 +33,13 @@ export interface AcaSePreguntaLookup {
 	CORR_PREGUNTA: number;
 	CODIGO: string;
 	ENUNCIADO: string;
+	ACTIVO?: boolean;
+}
+
+export interface AcaSeSeccionLookup {
+	CORR_SECCION_SE: number;
+	CORR_VERSION: number;
+	NOMBRE_SECCION: string;
+	ORDEN?: number;
 	ACTIVO?: boolean;
 }

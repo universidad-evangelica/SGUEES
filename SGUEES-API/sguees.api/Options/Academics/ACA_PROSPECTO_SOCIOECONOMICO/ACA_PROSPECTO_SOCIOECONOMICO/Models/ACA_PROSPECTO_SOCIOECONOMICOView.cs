@@ -22,5 +22,9 @@ namespace sguees.Models
         public DateTime? FECHA_ACTUALIZACION { get; set; }
         public int TOTAL_PREGUNTAS { get; set; }
         public int PREGUNTAS_RESPONDIDAS { get; set; }
+        public decimal? PUNTAJE_TOTAL { get; set; }
+        public decimal? PORCENTAJE_TOTAL { get; set; }
+        public string RESULTADO_EVALUACION { get; set; }
+        public string PRIORIDAD_EVALUACION { get; set; }
     }
 }

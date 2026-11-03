@@ -42,6 +42,13 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_OPCION_ACA_PROSPECTO_ECONOMICO()
 			=> await _service.GetOpcionesActivasAsync();
 
+		// Qué hace: lookup de opciones activas para el mantenimiento de puntajes SE.
+		// Cómo lo hace: GetLookUp arma GetCORR_OPCION_ACA_SE_PUNTAJE; permiso de esa pantalla.
+		[HttpGet("GetCORR_OPCION_ACA_SE_PUNTAJE")]
+		[Authorize(Policy = "/aca-se-puntaje|R")]
+		public async Task<CResult> GetCORR_OPCION_ACA_SE_PUNTAJE()
+			=> await _service.GetOpcionesActivasAsync();
+
 		[HttpPost]
 		[Authorize(Policy = "/aca-se-opcion|C")]
 		public async Task<IActionResult> Post(ACA_SE_OPCIONTable Data)

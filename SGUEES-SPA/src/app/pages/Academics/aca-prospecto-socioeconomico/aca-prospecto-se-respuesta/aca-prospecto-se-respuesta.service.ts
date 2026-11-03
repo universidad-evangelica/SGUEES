@@ -44,14 +44,23 @@ export class AcaProspectoSeRespuestaService {
     getColumns(): any {
         return [
             { dataField: 'ORDEN', caption: 'Orden', width: 80 },
-            { dataField: 'ENUNCIADO', caption: 'Pregunta', width: 360 },
+            { dataField: 'NOMBRE_SECCION', caption: 'Sección', width: 180, minWidth: 120 },
+            { dataField: 'ENUNCIADO', caption: 'Pregunta', width: 300, minWidth: 200 },
             { dataField: 'TIPO_PREGUNTA_NOMBRE', caption: 'Tipo', width: 130 },
             {
                 caption: 'Respuesta',
-                width: 260,
-                calculateCellValue: (row: any) => this.textoRespuesta(row),
+                width: 220,
+                minWidth: 140,
+                calculateCellValue: (row: any) => this.textoRespuestaPublico(row),
             },
+            { dataField: 'PUNTAJE_OBTENIDO', caption: 'Puntaje', width: 100, dataType: 'number', format: '#,##0.00' },
+            { dataField: 'PORCENTAJE_APLICADO', caption: '%', width: 90, dataType: 'number', format: '#,##0.00' },
         ];
+    }
+
+    // Qué hace: texto legible de una respuesta (para chips / grilla, patrón becas).
+    textoRespuestaPublico(r: AcaProspectoSeRespuesta): string {
+        return this.textoRespuesta(r);
     }
 
     getSummary(): any {

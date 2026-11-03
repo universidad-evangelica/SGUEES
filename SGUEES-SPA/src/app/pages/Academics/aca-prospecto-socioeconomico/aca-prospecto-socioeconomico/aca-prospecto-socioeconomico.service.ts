@@ -47,6 +47,10 @@ export class AcaProspectoSocioeconomicoService {
                 dataType: 'boolean',
                 customizeText: (e: any) => e.value ? 'Sí' : 'No',
             },
+            { dataField: 'PUNTAJE_TOTAL', caption: 'Puntaje', width: 100, dataType: 'number', format: '#,##0.00' },
+            { dataField: 'PORCENTAJE_TOTAL', caption: '%', width: 90, dataType: 'number', format: '#,##0.00' },
+            { dataField: 'RESULTADO_EVALUACION', caption: 'Resultado', width: 200, minWidth: 140 },
+            { dataField: 'PRIORIDAD_EVALUACION', caption: 'Prioridad', width: 120 },
             { dataField: 'FECHA_REGISTRO', caption: 'Fecha', width: 150, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
         ];
     }
@@ -91,6 +95,32 @@ export class AcaProspectoSocioeconomicoService {
             },
             // Editable: el dx-form [readOnly] lo bloquea en consulta.
             { dataField: 'APLICA_CUOTA_MAXIMA', label: { text: 'Aplica cuota máxima' }, colSpan: 2, editorType: 'dxCheckBox' },
+            {
+                dataField: 'PUNTAJE_TOTAL',
+                label: { text: 'Puntaje total' },
+                colSpan: 2,
+                editorType: 'dxNumberBox',
+                editorOptions: { readOnly: true, format: '#,##0.00' },
+            },
+            {
+                dataField: 'PORCENTAJE_TOTAL',
+                label: { text: 'Porcentaje total' },
+                colSpan: 2,
+                editorType: 'dxNumberBox',
+                editorOptions: { readOnly: true, format: '#,##0.00' },
+            },
+            {
+                dataField: 'RESULTADO_EVALUACION',
+                label: { text: 'Resultado evaluación' },
+                colSpan: 2,
+                editorOptions: { readOnly: true },
+            },
+            {
+                dataField: 'PRIORIDAD_EVALUACION',
+                label: { text: 'Prioridad' },
+                colSpan: 2,
+                editorOptions: { readOnly: true },
+            },
         ];
     }
 }

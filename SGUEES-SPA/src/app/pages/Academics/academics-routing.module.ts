@@ -19,6 +19,10 @@ import { AcaSeVersionComponent } from './aca-se-version/aca-se-version.component
 import { AcaSePreguntaComponent } from './aca-se-pregunta/aca-se-pregunta.component';
 import { AcaSeVersionPreguntaComponent } from './aca-se-version-pregunta/aca-se-version-pregunta.component';
 import { AcaSeOpcionComponent } from './aca-se-opcion/aca-se-opcion.component';
+import { AcaSeSeccionComponent } from './aca-se-seccion/aca-se-seccion.component';
+import { AcaSePuntajeComponent } from './aca-se-puntaje/aca-se-puntaje.component';
+import { AcaSeBandaComponent } from './aca-se-banda/aca-se-banda.component';
+
 
 
 
@@ -120,6 +124,36 @@ const routes: Routes = [
     canDeactivate: [AppCanDeactivateGuard],
     data: { titulo: 'Opciones socioeconómico' },
     loadChildren: () => import('./aca-se-opcion/aca-se-opcion.module').then((m) => m.AcaSeOpcionModule),
+  },
+  // Qué hace: abre Secciones socioeconómico.
+  // Cómo lo hace: la dirección del menú es /aca-se-seccion.
+  {
+    path: 'aca-se-seccion',
+    component: AcaSeSeccionComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Secciones socioeconómico' },
+    loadChildren: () => import('./aca-se-seccion/aca-se-seccion.module').then((m) => m.AcaSeSeccionModule),
+  },
+  // Qué hace: abre Puntajes socioeconómico.
+  // Cómo lo hace: la dirección del menú es /aca-se-puntaje.
+  {
+    path: 'aca-se-puntaje',
+    component: AcaSePuntajeComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Puntajes socioeconómico' },
+    loadChildren: () => import('./aca-se-puntaje/aca-se-puntaje.module').then((m) => m.AcaSePuntajeModule),
+  },
+  // Qué hace: abre Bandas socioeconómico.
+  // Cómo lo hace: la dirección del menú es /aca-se-banda.
+  {
+    path: 'aca-se-banda',
+    component: AcaSeBandaComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Bandas socioeconómico' },
+    loadChildren: () => import('./aca-se-banda/aca-se-banda.module').then((m) => m.AcaSeBandaModule),
   },
   {
     path: 'aca-bec-origen-beca',
