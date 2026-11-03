@@ -1,0 +1,112 @@
+<div class="asignaturas-workspace">
+ <header class="workspace-header">
+  <div><div class="eyebrow">Académico <span>/</span> Tablas generales</div><h1>Asignaturas</h1><p>Administra las materias de cada carrera, sus planes y su clasificación académica.</p></div>
+  <dx-button *ngIf="tab===0 && !draft" text="Nueva asignatura" icon="add" type="default" [visible]="permiteAdd" [disabled]="busy || !catalogosListos || planesVisible" (onClick)="nuevo()"></dx-button>
+ </header>
+ <nav class="workspace-tabs" role="tablist" aria-label="Secciones de asignaturas">
+  <button type="button" role="tab" id="asignaturas-tab" aria-controls="asignaturas-content" [attr.aria-selected]="tab===0" [class.selected]="tab===0" [disabled]="busy || !!draft || catalogoEditando || planesVisible" (click)="cambiarSeccion(0)"><i class="dx-icon dx-icon-bookmark" aria-hidden="true"></i>Asignaturas <span class="tab-count">{{rows.length}}</span></button>
+  <button type="button" role="tab" id="catalogos-tab" aria-controls="catalogos-content" [attr.aria-selected]="tab===1" [class.selected]="tab===1" [disabled]="busy || !!draft || catalogoEditando || planesVisible" (click)="cambiarSeccion(1)"><i class="dx-icon dx-icon-preferences" aria-hidden="true"></i>Catálogos</button>
+ </nav>
+ <div *ngIf="tab===0" id="asignaturas-content" role="tabpanel" aria-labelledby="asignaturas-tab">
+  <section class="panel" *ngIf="!draft">
+   <div class="list-heading"><div><h2>Listado de asignaturas</h2><p>Encuentra una materia para editarla o administrar sus planes.</p></div><div class="list-summary"><span><strong>{{rows.length}}</strong> registradas</span><span><strong>{{conPlanCount}}</strong> con plan</span><span><strong>{{rows.length-conPlanCount}}</strong> sin plan</span></div></div>
+   <div class="list-filters">
+    <label>Facultad<dx-select-box [dataSource]="facultadesFiltro" valueExpr="id" displayExpr="nombre" [(value)]="filtroFacultad" [searchEnabled]="true" [showClearButton]="true" placeholder="Todas las facultades" (onValueChanged)="filtrarFacultad()" [disabled]="busy" [inputAttr]="{'aria-label':'Filtrar por facultad'}"></dx-select-box></label>
+    <label>Carrera<dx-select-box [dataSource]="carrerasFiltro" valueExpr="CORR_CARRERA" displayExpr="NOMBRE_CARRERA" [(value)]="filtroCarrera" [searchEnabled]="true" [showClearButton]="true" placeholder="Todas las carreras" (onValueChanged)="filtrar()" [disabled]="busy" [inputAttr]="{'aria-label':'Filtrar por carrera'}"></dx-select-box></label>
+    <label>Asociación a planes<dx-select-box [dataSource]="filtros" valueExpr="id" displayExpr="nombre" [(value)]="filtro" (onValueChanged)="filtrar()" [disabled]="busy" [inputAttr]="{'aria-label':'Filtrar por planes'}"></dx-select-box></label>
+    <div class="filter-actions"><dx-button icon="clearformat" hint="Limpiar filtros" [elementAttr]="{'aria-label':'Limpiar filtros'}" [disabled]="busy" (onClick)="limpiarFiltros()"></dx-button><dx-button icon="refresh" hint="Actualizar asignaturas" [elementAttr]="{'aria-label':'Actualizar asignaturas'}" [disabled]="busy" (onClick)="cargar()"></dx-button></div>
+   </div>
+   <dx-data-grid class="subjects-grid" [dataSource]="visibles" keyExpr="CORR_ASIGNATURA" [showBorders]="false" [showRowLines]="true" [columnAutoWidth]="false" [height]="'min(590px, 65vh)'" [wordWrapEnabled]="true" noDataText="No hay asignaturas para los filtros seleccionados.">
+    <dxo-scrolling mode="standard"></dxo-scrolling><dxo-paging [pageSize]="10"></dxo-paging><dxo-pager [visible]="true" [showInfo]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[10,25,50]"></dxo-pager>
+    <dxo-search-panel [visible]="true" [width]="260" placeholder="Buscar código o materia…"></dxo-search-panel><dxo-header-filter [visible]="true"></dxo-header-filter><dxo-column-chooser [enabled]="true" mode="select" title="Columnas visibles"></dxo-column-chooser>
+    <dxo-toolbar><dxi-item location="before"><span class="results-count">{{visibles.length}} resultados <span *ngIf="busy" role="status">· Actualizando…</span></span></dxi-item><dxi-item name="searchPanel" location="after"></dxi-item><dxi-item name="columnChooserButton" location="after"></dxi-item></dxo-toolbar>
+    <dxi-column caption="Acciones" cellTemplate="acciones" [width]="100" [fixed]="true" fixedPosition="left" [allowHiding]="false"></dxi-column>
+    <dxi-column dataField="CODIGO_ASIGNATURA" caption="Código" [width]="112" [allowHiding]="false"></dxi-column>
+    <dxi-column dataField="NOMBRE_ASIGNATURA" caption="Asignatura" [minWidth]="230" cellTemplate="materia" [allowHiding]="false"></dxi-column>
+    <dxi-column dataField="NOMBRE_CARRERA" caption="Carrera / Facultad" [width]="255" cellTemplate="carrera"></dxi-column><dxi-column dataField="NOMBRE_PERIODO" caption="Clasificación" [width]="160" cellTemplate="clasificacion"></dxi-column>
+    <dxi-column dataField="UNIDADES_VALORATIVAS" caption="UV" dataType="number" [width]="65" [allowFiltering]="false" alignment="center"></dxi-column><dxi-column dataField="CANTIDAD_PLANES" caption="Planes" dataType="number" [width]="95" cellTemplate="planes"></dxi-column><dxi-column dataField="ACTIVO" caption="Estado" dataType="boolean" [width]="110" cellTemplate="estado"></dxi-column>
+    <dxi-column dataField="ALIAS" caption="Alias" [visible]="false"></dxi-column><dxi-column dataField="NOMBRE_FACULTAD" caption="Facultad" [visible]="false"></dxi-column><dxi-column dataField="NOMBRE_TIPO_PRACTICA" caption="Tipo de práctica" [visible]="false"></dxi-column><dxi-column dataField="HABILITA_COBROS_ADICIONALES" caption="Cobros adicionales" dataType="boolean" [visible]="false"></dxi-column><dxi-column dataField="FECHA_APERTURA" caption="Apertura" dataType="date" format="dd/MM/yyyy" [visible]="false"></dxi-column>
+    <div *dxTemplate="let cell of 'acciones'" class="row-actions"><dx-button icon="edit" hint="Editar asignatura" [elementAttr]="{'aria-label':'Editar asignatura'}" stylingMode="text" [visible]="permiteEdit" [disabled]="busy" (onClick)="editar(cell.data)"></dx-button><dx-button icon="folder" hint="Ver planes" [elementAttr]="{'aria-label':'Ver planes'}" stylingMode="text" [disabled]="busy" (onClick)="verPlanes(cell.data)"></dx-button></div>
+    <div *dxTemplate="let cell of 'materia'"><div class="cell-main" [title]="cell.value">{{cell.value}}</div><div class="cell-secondary" *ngIf="cell.data.ALIAS && cell.data.ALIAS!==cell.data.CODIGO_ASIGNATURA">{{cell.data.ALIAS}}</div></div>
+    <div *dxTemplate="let cell of 'carrera'"><div class="cell-main career-name" [title]="cell.value">{{cell.value}}</div><div class="cell-secondary">{{cell.data.NOMBRE_FACULTAD}}</div></div>
+    <div *dxTemplate="let cell of 'clasificacion'"><div class="cell-main">{{cell.value}}</div><div class="cell-secondary">{{cell.data.NOMBRE_TIPO_PRACTICA || 'Sin práctica asignada'}}</div></div>
+    <div *dxTemplate="let cell of 'planes'"><span class="badge" [class.badge-pending]="!cell.value">{{cell.value ? cell.value + (cell.value===1 ? ' plan' : ' planes') : 'Sin plan'}}</span></div><div *dxTemplate="let cell of 'estado'"><span class="badge" [class.badge-active]="cell.value" [class.badge-muted]="!cell.value">{{cell.value ? 'Activa' : 'Inactiva'}}</span></div>
+   </dx-data-grid>
+   <div class="panel-footnote"><i class="dx-icon dx-icon-info" aria-hidden="true"></i>Una asignatura puede guardarse sin plan y asociarse después. Usa <strong>Ver planes</strong> en las acciones de cada fila.</div>
+  </section>
+<section class="panel formulario" *ngIf="draft">
+
+ <h3>{{draft.CORR_ASIGNATURA ? 'Editar asignatura' : 'Nueva asignatura'}}</h3>
+
+ <dx-form #formulario [formData]="draft" [colCount]="4" labelLocation="top" [disabled]="busy">
+
+  <dxo-col-count-by-screen [xs]="1" [sm]="2" [md]="4" [lg]="4"></dxo-col-count-by-screen>
+
+  <dxi-item dataField="CORR_FACULTAD" editorType="dxSelectBox" [colSpan]="2" [label]="{text:'Facultad'}" [editorOptions]="{dataSource:facultades,valueExpr:'id',displayExpr:'nombre',searchEnabled:true,onValueChanged:cambioFacultad,readOnly:(draft.CANTIDAD_PLANES || 0)>0}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+
+  <dxi-item dataField="CORR_CARRERA" editorType="dxSelectBox" [colSpan]="2" [label]="{text:'Carrera'}" [editorOptions]="{dataSource:carrerasDisponibles,valueExpr:'CORR_CARRERA',displayExpr:'NOMBRE_CARRERA',searchEnabled:true,readOnly:(draft.CANTIDAD_PLANES || 0)>0}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+
+  <dxi-item dataField="CODIGO_ASIGNATURA" [label]="{text:'Código de asignatura'}" [editorOptions]="{maxLength:30,readOnly:draft.CORR_ASIGNATURA>0}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+
+  <dxi-item dataField="ALIAS" [label]="{text:'Alias (opcional)'}" [editorOptions]="{maxLength:60}"></dxi-item>
+
+  <dxi-item dataField="FECHA_APERTURA" editorType="dxDateBox" [label]="{text:'Fecha de apertura'}" [editorOptions]="{type:'date',dateSerializationFormat:'yyyy-MM-dd',displayFormat:'dd/MM/yyyy'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+
+  <dxi-item dataField="ACTIVO" editorType="dxCheckBox" [label]="{text:'Activa'}"></dxi-item>
+
+  <dxi-item dataField="NOMBRE_ASIGNATURA" [colSpan]="4" [label]="{text:'Nombre de la asignatura'}" [editorOptions]="{maxLength:250}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+
+  <dxi-item dataField="UNIDADES_VALORATIVAS" editorType="dxNumberBox" [label]="{text:'Unidades valorativas'}" [editorOptions]="{min:0,max:9999.99,format:'#0.##'}"><dxi-validation-rule type="required" message="Ingrese las UV; puede indicar 0."></dxi-validation-rule></dxi-item>
+
+  <dxi-item dataField="CORR_PERIODO_CURSO" editorType="dxSelectBox" [label]="{text:'Período de curso habitual'}" [editorOptions]="{dataSource:periodosDisponibles,valueExpr:'CORR_PERIODO_CURSO',displayExpr:'NOMBRE_PERIODO',searchEnabled:true}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+
+  <dxi-item dataField="CORR_TIPO_PRACTICA" editorType="dxSelectBox" [colSpan]="2" [label]="{text:'Práctica o taller (opcional)'}" [editorOptions]="{dataSource:tiposDisponibles,valueExpr:'CORR_TIPO_PRACTICA',displayExpr:'NOMBRE_TIPO',searchEnabled:true,showClearButton:true,placeholder:'No aplica'}"></dxi-item>
+
+ </dx-form>
+
+ <p class="ayuda">{{cobroPractica}}</p>
+
+ <p class="ayuda">El código es único y queda reservado al desactivar. No necesita seleccionar un plan para guardar. La duración habitual no programa automáticamente materias dentro de un ciclo.</p>
+
+ <div class="acciones"><dx-button text="Guardar asignatura" icon="save" type="default" [disabled]="busy" (onClick)="guardar()"></dx-button><dx-button text="Cancelar" [disabled]="busy" (onClick)="cancelar()"></dx-button></div>
+
+</section>
+ </div>
+ <section *ngIf="tab===1" id="catalogos-content" class="catalog-layout" role="tabpanel" aria-labelledby="catalogos-tab">
+  <aside class="catalog-menu"><div class="eyebrow">Configuración académica</div><h2>Catálogos</h2><p>Valores que se utilizan al crear y clasificar las materias.</p>
+   <button type="button" [class.selected]="catalogo==='periodos'" [attr.aria-pressed]="catalogo==='periodos'" [disabled]="catalogoEditando || busy" (click)="cambiarCatalogo('periodos')"><i class="dx-icon dx-icon-event" aria-hidden="true"></i><span><strong>Períodos de curso</strong><small>Duración habitual de la materia</small></span></button>
+   <button type="button" [class.selected]="catalogo==='practicas'" [attr.aria-pressed]="catalogo==='practicas'" [disabled]="catalogoEditando || busy" (click)="cambiarCatalogo('practicas')"><i class="dx-icon dx-icon-tags" aria-hidden="true"></i><span><strong>Tipos de práctica</strong><small>Prácticas, talleres y asignaciones</small></span></button>
+   <div class="catalog-tip"><i class="dx-icon dx-icon-info" aria-hidden="true"></i><span>Los cambios se reutilizan al crear y editar asignaturas.</span></div>
+  </aside>
+  <div class="catalog-content"><app-aca-periodos-curso *ngIf="catalogo==='periodos'" (editorChanged)="estadoCatalogo($event)"></app-aca-periodos-curso><app-aca-tipos-practica *ngIf="catalogo==='practicas'" (editorChanged)="estadoCatalogo($event)"></app-aca-tipos-practica></div>
+ </section>
+</div>
+<dx-popup [visible]="planesVisible" title="Planes de la asignatura" [width]="'92vw'" [maxWidth]="1100" [height]="'auto'" [maxHeight]="'90vh'" [showCloseButton]="false" [hideOnOutsideClick]="false" [dragEnabled]="false" (onHiding)="ocultarPlanes($event)">
+ <div *dxTemplate="let data of 'content'" class="plans-dialog">
+ <div *ngIf="asignaturaPlanes">
+
+  <h3>{{asignaturaPlanes.NOMBRE_ASIGNATURA}}</h3>
+
+  <p>{{asignaturaPlanes?.NOMBRE_CARRERA}}</p>
+
+  <p class="ayuda">Puede conservar la asignatura sin plan. Solo se permiten planes de su carrera; los planes en uso conservan su estructura histórica.</p>
+
+  <dx-data-grid [dataSource]="planes" keyExpr="CORR_PLAN_ACADEMICO" [showBorders]="true" [columnAutoWidth]="true" [height]="330" noDataText="La carrera todavía no tiene planes académicos.">
+
+   <dxi-column dataField="ASOCIADO" caption="Asociado" dataType="boolean"></dxi-column><dxi-column dataField="CODIGO_PLAN" caption="Plan"></dxi-column><dxi-column dataField="ANIO_PLAN" caption="Año"></dxi-column><dxi-column dataField="NOMBRE_MODALIDAD" caption="Modalidad"></dxi-column>
+
+   <dxi-column dataField="FECHA_VIGENCIA_INICIO" caption="Inicio" dataType="date" format="dd/MM/yyyy"></dxi-column><dxi-column dataField="FECHA_VIGENCIA_FIN" caption="Fin" dataType="date" format="dd/MM/yyyy"></dxi-column><dxi-column dataField="PLAN_VIGENTE" caption="Vigente" dataType="boolean"></dxi-column><dxi-column dataField="EN_USO" caption="En uso" dataType="boolean"></dxi-column>
+
+   <dxi-column caption="Acción" cellTemplate="asociar" [width]="120"></dxi-column>
+
+   <div *dxTemplate="let cell of 'asociar'"><dx-button [text]="cell.data.ASOCIADO ? 'Retirar' : 'Asociar'" [visible]="permiteEdit" [disabled]="busy || cell.data.EN_USO || (!cell.data.ASOCIADO && (!cell.data.PLAN_VIGENTE || !asignaturaPlanes?.ACTIVO))" (onClick)="cambiarPlan(cell.data)"></dx-button></div>
+
+  </dx-data-grid>
+
+  <div class="acciones"><dx-button text="Cerrar planes" [disabled]="busy" (onClick)="cerrarPlanes()"></dx-button></div>
+
+ </div>
+
+
+ </div>
+</dx-popup>

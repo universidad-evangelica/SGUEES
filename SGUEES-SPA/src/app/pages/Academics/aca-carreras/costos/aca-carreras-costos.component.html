@@ -1,0 +1,41 @@
+<p *ngIf="!carreraId">Guarda primero la carrera para definir su matrícula y costos.</p>
+<ng-container *ngIf="carreraId">
+    <p>Define los importes por sede y vigencia. No puede haber dos configuraciones activas con fechas que se crucen en la misma sede. Guarda una nueva vigencia cuando cambien los aranceles.</p>
+    <p *ngIf="bloqueado">Guarda los cambios de Datos generales antes de modificar los costos.</p>
+    <p *ngIf="cargado && !tieneSedesActivas">Asocia primero una sede activa a la carrera en la pestaña Sedes. La facultad debe estar autorizada en esa sede.</p>
+    <dx-button text="Nueva vigencia de costos" icon="add" [visible]="permiteCrear" [disabled]="!puedeOperar || !tieneSedesActivas" (onClick)="nuevo()"></dx-button>
+    <dx-button text="Editar costos" icon="edit" [visible]="permiteEditar" [disabled]="!puedeOperar || !seleccion" (onClick)="editar()"></dx-button>
+    <dx-button text="Actualizar costos" icon="refresh" [disabled]="cargando" (onClick)="cargar()"></dx-button>
+    <dx-data-grid id="carreras-costos-grid" [dataSource]="costos" keyExpr="CORR_COSTO" [columns]="columns" [showBorders]="true" [wordWrapEnabled]="true" [allowColumnResizing]="true" (onSelectionChanged)="seleccion=$event.selectedRowsData[0]??null"><dxo-selection mode="single"></dxo-selection><dxo-paging [pageSize]="10"></dxo-paging><dxo-filter-row [visible]="true"></dxo-filter-row></dx-data-grid>
+</ng-container>
+<dx-popup [(visible)]="editorVisible" title="Matrícula y costos por sede" [width]="'94vw'" [maxWidth]="1000" [height]="'auto'" [maxHeight]="'90vh'" [showCloseButton]="false" [hideOnOutsideClick]="false">
+    <div *dxTemplate="let item of 'content'" style="max-height:75vh;overflow-y:auto;padding:4px">
+        <dx-form #formCosto [formData]="draft" labelLocation="top" [colCount]="2" [colCountByScreen]="{xs:1,sm:2,md:2,lg:2}" [disabled]="cargando || bloqueado">
+            <dxi-item itemType="group" caption="Sede y vigencia" [colSpan]="2" [colCount]="2" [colCountByScreen]="{xs:1,sm:2,md:2,lg:2}">
+                <dxi-item dataField="CORR_SEDE" editorType="dxSelectBox" [label]="{text:'Sede'}" [editorOptions]="{dataSource:sedesDisponibles,valueExpr:'CORR_SEDE',displayExpr:'NOMBRE_SEDE',readOnly:!!draft.CORR_COSTO}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                <dxi-item dataField="CORR_MONEDA" editorType="dxSelectBox" [label]="{text:'Moneda'}" [editorOptions]="{dataSource:monedasDisponibles,valueExpr:'Key',displayExpr:'Value'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                <dxi-item dataField="FECHA_INICIO" editorType="dxDateBox" [label]="{text:'Vigente desde'}" [editorOptions]="{type:'date',dateSerializationFormat:'yyyy-MM-dd',displayFormat:'dd/MM/yyyy'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                <dxi-item dataField="FECHA_FIN" editorType="dxDateBox" [label]="{text:'Vigente hasta (vacío: sin fecha final)'}" [editorOptions]="{type:'date',dateSerializationFormat:'yyyy-MM-dd',displayFormat:'dd/MM/yyyy',showClearButton:true}"></dxi-item>
+                <dxi-item dataField="ACTIVO" editorType="dxCheckBox" [label]="{text:'Configuración activa'}"></dxi-item>
+            </dxi-item>
+            <dxi-item itemType="group" caption="Aranceles" [colSpan]="2" [colCount]="2" [colCountByScreen]="{xs:1,sm:2,md:2,lg:2}">
+                <dxi-item *ngFor="let monto of montos" [dataField]="monto[0]" editorType="dxNumberBox" [label]="{text:monto[1]}" [editorOptions]="{min:0,max:9999999999.99,format:'#,##0.00'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                <dxi-item dataField="COBRA_DIFERENCIA_INSCRIPCION" editorType="dxCheckBox" [label]="{text:'Cobra diferencia de inscripción por nivel'}"></dxi-item>
+                <dxi-item dataField="TIPO_IMPUESTO" editorType="dxSelectBox" [label]="{text:'Tratamiento de impuesto'}" [editorOptions]="{dataSource:impuestos,valueExpr:'id',displayExpr:'text'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            </dxi-item>
+            <dxi-item itemType="group" caption="Financiamiento" [colSpan]="2" [colCount]="2" [colCountByScreen]="{xs:1,sm:2,md:2,lg:2}">
+                <dxi-item dataField="REFERENCIA_FINANCIAMIENTO" [label]="{text:'Referencia de tabla de financiamiento (opcional)'}" [editorOptions]="{maxLength:20,showClearButton:true}"></dxi-item>
+                <dxi-item dataField="MONTO_FINANCIAMIENTO" editorType="dxNumberBox" [label]="{text:'Monto de financiamiento'}" [editorOptions]="{min:0,max:9999999999.99,format:'#,##0.00'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                <dxi-item dataField="PORCENTAJE_RECUPERACION" editorType="dxNumberBox" [label]="{text:'Porcentaje de recuperación'}" [editorOptions]="{min:0,max:100,format:'#0.00'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+            </dxi-item>
+            <dxi-item itemType="group" caption="Cambio de asignaturas y forma de cobro" [colSpan]="2" [colCount]="2" [colCountByScreen]="{xs:1,sm:2,md:2,lg:2}">
+                <dxi-item dataField="CARGO_CAMBIO_ASIGNATURA" editorType="dxNumberBox" [label]="{text:'Cargo por cambio de asignaturas'}" [editorOptions]="{min:0,max:9999999999.99,format:'#,##0.00'}"><dxi-validation-rule type="required"></dxi-validation-rule></dxi-item>
+                <dxi-item dataField="POLITICA_CARGO" editorType="dxSelectBox" [label]="{text:'Cuándo cobrar el cargo'}" [editorOptions]="{dataSource:politicas,valueExpr:'id',displayExpr:'text'}"></dxi-item>
+                <dxi-item dataField="MODALIDAD_PAGO" editorType="dxSelectBox" [label]="{text:'Modalidad de pago'}" [editorOptions]="{dataSource:pagos,valueExpr:'id',displayExpr:'text'}"></dxi-item>
+                <dxi-item dataField="TIPO_COBRO_ASIGNATURA" editorType="dxSelectBox" [label]="{text:'Tipo de cobro de asignatura'}" [editorOptions]="{dataSource:tipos,valueExpr:'id',displayExpr:'text'}"></dxi-item>
+            </dxi-item>
+        </dx-form>
+        <dx-button text="Guardar costos" icon="save" type="default" [disabled]="!puedeOperar" (onClick)="guardar()"></dx-button>
+        <dx-button text="Cancelar" [disabled]="cargando" (onClick)="editorVisible=false"></dx-button>
+    </div>
+</dx-popup>

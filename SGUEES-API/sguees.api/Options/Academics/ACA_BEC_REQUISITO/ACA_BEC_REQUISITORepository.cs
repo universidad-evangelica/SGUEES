@@ -95,155 +95,17 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        public async Task<CResult> CreateAsync(ACA_BEC_REQUISITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult result = new();
+        public Task<CResult> CreateAsync(ACA_BEC_REQUISITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+            => WriteAsync(1, Data, vLOGIN_SISTEMA, vESTACION);
 
-            try
-            {
-                var reader = await objData.Insert(_TableName, BuildInsertParameters(Data), _CampoPk, BuildCompanyWhere(Data));
-                var response = new List<ACA_BEC_REQUISITOView>().FromDataReader(reader).FirstOrDefault();
+        public Task<CResult> UpdateAsync(ACA_BEC_REQUISITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+            => WriteAsync(2, Data, vLOGIN_SISTEMA, vESTACION);
 
-                reader.Close();
-                result.Data = response;
-                result.Result = true;
-                result.RowsAffected = 1;
-                result.CodeHelper = response?.CORR_BECA_REQUISITO ?? 0;
-                result.ErrorCode = 0;
-                result.ErrorMessage = string.Empty;
-                result.ErrorSource = string.Empty;
-            }
-            catch (Exception e)
-            {
-                SetDuplicateAwareError(result, e);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
+        public Task<CResult> DeleteAsync(ACA_BEC_REQUISITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+            => WriteAsync(3, Data, vLOGIN_SISTEMA, vESTACION);
 
-            return result;
-        }
-
-        public async Task<CResult> UpdateAsync(ACA_BEC_REQUISITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult result = new();
-
-            try
-            {
-                var reader = await objData.Update(_TableName, BuildUpdateParameters(Data), BuildPrimaryWhere(Data));
-                var response = new List<ACA_BEC_REQUISITOView>().FromDataReader(reader).FirstOrDefault();
-
-                reader.Close();
-                result.Data = response;
-                result.Result = true;
-                result.RowsAffected = response == null ? 0 : 1;
-                result.CodeHelper = response?.CORR_BECA_REQUISITO ?? Data.CORR_BECA_REQUISITO;
-                result.ErrorCode = 0;
-                result.ErrorMessage = string.Empty;
-                result.ErrorSource = string.Empty;
-            }
-            catch (Exception e)
-            {
-                SetDuplicateAwareError(result, e);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return result;
-        }
-
-        public async Task<CResult> DeleteAsync(ACA_BEC_REQUISITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult result = new();
-
-            try
-            {
-                result.RowsAffected = (int)await objData.Delete(_TableName, BuildPrimaryWhere(Data));
-                result.Data = null;
-                result.Result = true;
-                result.CodeHelper = Data.CORR_BECA_REQUISITO;
-                result.ErrorCode = 0;
-                result.ErrorMessage = string.Empty;
-                result.ErrorSource = string.Empty;
-            }
-            catch (Exception e)
-            {
-                result.Data = null;
-                result.Result = false;
-                result.CodeHelper = Data.CORR_BECA_REQUISITO;
-                result.ErrorCode = -1;
-                result.ErrorMessage = "No se puede eliminar el requisito porque tiene registros asociados.";
-                result.ErrorSource += $"[{e.Source}]";
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return result;
-        }
-
-        public async Task<CResult> ActivarInactivarAsync(ACA_BEC_REQUISITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult result = new();
-
-            try
-            {
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_BECA_REQUISITO, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
-                    new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
-                    new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
-                };
-
-                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
-
-                if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value != 0)
-                {
-                    result.Data = null;
-                    result.Result = false;
-                    result.RowsAffected = 0;
-                    result.CodeHelper = Data.CORR_BECA_REQUISITO;
-                    result.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
-                    result.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
-                    result.ErrorSource = "C" + _TableName + ".Mtto(" + UpdateType.Update.ToString() + ")";
-                    return result;
-                }
-
-                var reader = await objData.GetDataReader(_ViewName, BuildPrimaryWhere(Data));
-                var response = new List<ACA_BEC_REQUISITOView>().FromDataReader(reader).FirstOrDefault();
-
-                reader.Close();
-                result.Data = response;
-                result.Result = true;
-                result.RowsAffected = 1;
-                result.CodeHelper = response?.CORR_BECA_REQUISITO ?? Data.CORR_BECA_REQUISITO;
-                result.ErrorCode = 0;
-                result.ErrorMessage = string.Empty;
-                result.ErrorSource = string.Empty;
-            }
-            catch (Exception e)
-            {
-                SetError(result, e, Data.CORR_BECA_REQUISITO);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return result;
-        }
+        public Task<CResult> ActivarInactivarAsync(ACA_BEC_REQUISITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+            => WriteAsync(4, Data, vLOGIN_SISTEMA, vESTACION);
 
         public async Task<CResult> GetTiposBecaAsync(int corrEmpresa)
         {
@@ -283,31 +145,9 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        private static List<CParameter> BuildInsertParameters(ACA_BEC_REQUISITOTable Data)
-        {
-            var p = BuildUpdateParameters(Data);
-            p.Insert(0, new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 });
-            p.Insert(1, new CParameter() { ParameterName = "CORR_BECA_REQUISITO", Value = Data.CORR_BECA_REQUISITO, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput });
-            p.Add(new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String });
-            p.Add(new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String });
-            p.Add(new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime });
-            return p;
-        }
 
-        private static List<CParameter> BuildUpdateParameters(ACA_BEC_REQUISITOTable Data)
-        {
-            return new List<CParameter>
-            {
-                new CParameter() { ParameterName = "CORR_BECA", Value = Data.CORR_BECA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "NOMBRE_REQUISITO", Value = Data.NOMBRE_REQUISITO, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "OBLIGATORIO", Value = Data.OBLIGATORIO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
-            };
-        }
+
+
 
         private static List<CParameter> BuildCompanyWhere(ACA_BEC_REQUISITOTable Data)
         {
@@ -349,6 +189,37 @@ namespace SGUEES.Repositories
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
                 e.Message.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) ||
                 e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task<CResult> WriteAsync(int operation, ACA_BEC_REQUISITOTable Data, string user, string station)
+        {
+            if (Data == null) return new CResult { ErrorCode = 51000, ErrorMessage = "No se recibieron datos." };
+            try
+            {
+                var p = new List<CParameter> {
+                    new() { ParameterName="@TIPO_ACTUALIZA",Value=operation,DbType=System.Data.DbType.Int32 },
+                    new() { ParameterName="@CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32 },
+                    new() { ParameterName="@ID",Value=Data.CORR_BECA_REQUISITO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput },
+                    new() { ParameterName="@USUARIO",Value=user??"",DbType=System.Data.DbType.AnsiString },
+                    new() { ParameterName="@ESTACION",Value=station??"",DbType=System.Data.DbType.AnsiString },
+                    new() { ParameterName="@CORR_BECA",Value=(object)Data.CORR_BECA??DBNull.Value,DbType=System.Data.DbType.Int32 },
+                    new() { ParameterName="@NOMBRE_REQUISITO",Value=(object)Data.NOMBRE_REQUISITO??DBNull.Value,DbType=System.Data.DbType.AnsiString },
+                    new() { ParameterName="@DESCRIPCION",Value=(object)Data.DESCRIPCION??DBNull.Value,DbType=System.Data.DbType.AnsiString },
+                    new() { ParameterName="@OBLIGATORIO",Value=(object)Data.OBLIGATORIO??DBNull.Value,DbType=System.Data.DbType.Boolean },
+                    new() { ParameterName="@ACTIVO",Value=(object)Data.ACTIVO??DBNull.Value,DbType=System.Data.DbType.Boolean }
+                };
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BEC_REQUISITO", true, p);
+                Data.CORR_BECA_REQUISITO = Convert.ToInt32(objData.objCommand.Parameters["@ID"].Value);
+                objData.objConnection.Close();
+                if (operation == 3) return new CResult { Result = true, CodeHelper = Data.CORR_BECA_REQUISITO, RowsAffected = 1 };
+                var result = await GetAsync(new List<CParameter>{
+                    new(){ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                    new(){ParameterName="CORR_BECA_REQUISITO",Value=Data.CORR_BECA_REQUISITO,DbType=System.Data.DbType.Int32}
+                });
+                result.CodeHelper = Data.CORR_BECA_REQUISITO; result.RowsAffected = result.Data == null ? 0 : 1; return result;
+            }
+            catch (Exception ex) { return new CResult { ErrorCode = -1, ErrorMessage = ex.Message }; }
+            finally { objData.objConnection.Close(); }
         }
     }
 }

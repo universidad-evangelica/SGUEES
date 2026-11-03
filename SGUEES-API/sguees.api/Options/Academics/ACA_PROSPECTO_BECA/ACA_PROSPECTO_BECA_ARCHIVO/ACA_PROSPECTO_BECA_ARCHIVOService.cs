@@ -17,7 +17,7 @@ namespace sguees.Services
     public class ACA_PROSPECTO_BECA_ARCHIVOService : IACA_PROSPECTO_BECA_ARCHIVOService
     {
         // Carpeta del servidor de admisiones. Z:\Documentacion Becas apunta a esta ruta.
-        private const string RaizDocumentos = @"\\192.168.1.8\admision\Documentacion Becas";
+        private readonly string RaizDocumentos = @"\\192.168.1.8\admision\Documentacion Becas";
 
         private readonly IACA_PROSPECTO_BECA_ARCHIVORepository _repo;
         private readonly string _connectionString;
@@ -26,6 +26,7 @@ namespace sguees.Services
         {
             _repo = repo;
             _connectionString = config.GetConnectionString("defaultConnection");
+            RaizDocumentos = config["Becas:RaizDocumentos"] ?? RaizDocumentos;
         }
 
         // Qué hace: archivos cargados de la solicitud, agrupables por sección del cuestionario.
@@ -44,9 +45,9 @@ namespace sguees.Services
             return await _repo.GetArchivosAsync(p);
         }
 
-        // Qué hace: abre el archivo de una respuesta desde la carpeta del ciclo y la solicitud.
-        // Cómo lo hace: no usa la ruta que mande el navegador. La toma de la respuesta y solo
-        //               acepta un archivo dentro de Documentacion Becas\{año}-{período}_{solicitud}.
+        // Qué hace: abre el archivo de una respuesta desde su ubicacion registrada.
+        // Cómo lo hace: no usa la ruta que mande el navegador. La toma de la respuesta
+        //               autorizada y solo acepta archivos dentro de Documentacion Becas.
         public async Task<AcaProspectoBecaArchivoAbierto> AbrirArchivoAsync(ACA_PROSPECTO_BECAParam xWhere)
         {
             if (xWhere.CORR_PROSPECTO_BECA <= 0 || xWhere.CORR_RESPUESTA_BECA <= 0)
@@ -173,33 +174,37 @@ namespace sguees.Services
             return new CResult { Result = true, Data = nombre, ErrorMessage = "Archivo actualizado" };
         }
 
-        private static string ResolverRuta(ACA_PROSPECTO_BECA_ARCHIVOView row)
+        private string ResolverRuta(ACA_PROSPECTO_BECA_ARCHIVOView row)
         {
-            if (row == null || row.NUMERO_PERIODO == null)
+            if (row == null)
                 return null;
 
             var raiz = Path.GetFullPath(RaizDocumentos);
-            var carpeta = row.ANIO + "-" + row.NUMERO_PERIODO + "_" + row.CORR_PROSPECTO_BECA;
-            var directorio = Path.GetFullPath(Path.Combine(raiz, carpeta));
-            if (!EstaDentro(directorio, raiz))
-                return null;
-
             var nombre = Path.GetFileName(row.ARCHIVO_NOMBRE ?? "");
             if (string.IsNullOrWhiteSpace(nombre))
                 return null;
 
-            var porNombre = Path.GetFullPath(Path.Combine(directorio, nombre));
-            if (EstaDentro(porNombre, directorio) && File.Exists(porNombre))
-                return porNombre;
-
+            // La vista ya filtra por empresa, solicitud y respuesta. Admision guarda
+            // por ciclo y CIF; la ruta persistida conserva esa ubicacion autorizada.
             if (!string.IsNullOrWhiteSpace(row.ARCHIVO_RUTA))
             {
                 var porRuta = Path.GetFullPath(row.ARCHIVO_RUTA);
                 if (string.Equals(Path.GetFileName(porRuta), nombre, StringComparison.OrdinalIgnoreCase)
-                    && EstaDentro(porRuta, directorio)
+                    && EstaDentro(porRuta, raiz)
                     && File.Exists(porRuta))
                     return porRuta;
             }
+
+            // Compatibilidad con documentos anteriores guardados por solicitud.
+            if (row.NUMERO_PERIODO == null)
+                return null;
+            var carpeta = row.ANIO + "-" + row.NUMERO_PERIODO + "_" + row.CORR_PROSPECTO_BECA;
+            var directorio = Path.GetFullPath(Path.Combine(raiz, carpeta));
+            if (!EstaDentro(directorio, raiz))
+                return null;
+            var porNombre = Path.GetFullPath(Path.Combine(directorio, nombre));
+            if (EstaDentro(porNombre, directorio) && File.Exists(porNombre))
+                return porNombre;
 
             return null;
         }
