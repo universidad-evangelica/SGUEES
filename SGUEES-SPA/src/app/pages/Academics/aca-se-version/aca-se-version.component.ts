@@ -6,6 +6,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AcaSeVersion } from './models/aca-se-version';
@@ -202,6 +203,12 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
+		// Qué hace: en alta, no permite marcar activa si ya hay otra versión activa.
+		if (this.banderaMtto === UpdateType.Add && this.model.ACTIVO === true && this.existeOtraVersionActiva()) {
+			this.notifyFx(this.mensajeUnaSolaVersionActiva(), NotifyType.Warning, { raw: true });
+			return;
+		}
+
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
 			insert: () => this.service.insert(this.model),
@@ -251,8 +258,27 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Qué hace: al activar, exige que no exista otra versión activa.
 	activar_inactivar(): void {
+		if (this.model?.ACTIVO !== true && this.existeOtraVersionActiva()) {
+			this.notifyFx(this.mensajeUnaSolaVersionActiva(), NotifyType.Warning, { raw: true });
+			return;
+		}
+
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
+	}
+
+	private existeOtraVersionActiva(): boolean {
+		const corr = this.model?.CORR_VERSION ?? 0;
+		return (this.models ?? []).some((m: AcaSeVersion) => m.ACTIVO === true && m.CORR_VERSION !== corr);
+	}
+
+	private mensajeUnaSolaVersionActiva(): string {
+		const otra = (this.models ?? []).find((m: AcaSeVersion) => m.ACTIVO === true && m.CORR_VERSION !== (this.model?.CORR_VERSION ?? 0));
+		if (otra) {
+			return `Solo puede haber una versión activa. Desactive primero la versión ${otra.CODIGO} (${otra.NOMBRE}).`;
+		}
+		return 'Solo puede haber una versión activa. Desactive primero la otra versión.';
 	}
 
 	override bloquear(): void {

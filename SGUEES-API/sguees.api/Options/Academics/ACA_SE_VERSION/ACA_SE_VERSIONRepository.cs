@@ -90,6 +90,19 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				// Qué hace: impide crear una versión ya activa si existe otra activa.
+				if (Data.ACTIVO == true)
+				{
+					var otra = await ObtenerOtraVersionActivaAsync(0);
+					if (otra != null)
+					{
+						objResultado.Result = false;
+						objResultado.ErrorCode = 4000;
+						objResultado.ErrorMessage = $"Solo puede haber una versión activa. Desactive primero la versión {otra.CODIGO} ({otra.NOMBRE}).";
+						return objResultado;
+					}
+				}
+
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
@@ -211,6 +224,29 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				// Qué hace: si se va a activar esta versión, bloquea cuando ya hay otra activa.
+				// Cómo lo hace: lee el estado actual; si está inactiva, busca otra ACTIVO=1 y rechaza.
+				var xWhereActual = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
+				};
+				var readerActual = await objData.GetDataReader(_ViewName, xWhereActual);
+				var actual = new List<ACA_SE_VERSIONView>().FromDataReader(readerActual).FirstOrDefault();
+				readerActual.Close();
+
+				if (actual != null && actual.ACTIVO != true)
+				{
+					var otra = await ObtenerOtraVersionActivaAsync(Data.CORR_VERSION);
+					if (otra != null)
+					{
+						objResultado.Result = false;
+						objResultado.ErrorCode = 4000;
+						objResultado.ErrorMessage = $"Solo puede haber una versión activa. Desactive primero la versión {otra.CODIGO} ({otra.NOMBRE}).";
+						objResultado.CodeHelper = Data.CORR_VERSION;
+						return objResultado;
+					}
+				}
+
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
@@ -298,6 +334,18 @@ namespace sguees.Repositories
 			}
 			finally { objData.objConnection.Close(); }
 			return objResultado;
+		}
+
+		// Qué hace: busca otra versión con ACTIVO=1 distinta del correlativo indicado.
+		private async Task<ACA_SE_VERSIONView> ObtenerOtraVersionActivaAsync(int corrExcluir)
+		{
+			var reader = await objData.GetDataReader(_ViewName, new List<CParameter>
+			{
+				new CParameter() { ParameterName = "ACTIVO", Value = true, DbType = System.Data.DbType.Boolean },
+			});
+			var lista = new List<ACA_SE_VERSIONView>().FromDataReader(reader).ToList();
+			reader.Close();
+			return lista.FirstOrDefault(x => x.CORR_VERSION != corrExcluir && x.ACTIVO == true);
 		}
 
 		private static bool IsDuplicateKeyError(Exception e)
