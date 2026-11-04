@@ -3,6 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   EventEmitter,
+  HostListener,
   Input,
   NgModule,
   OnChanges,
@@ -44,6 +45,7 @@ import { PagerPageSize } from 'devextreme/common/grids';
   host: {
     class: 'sguees-data-grid-mtto-host sguees-data-grid-mtto-premium',
     '[class.sguees-data-grid-mtto-host--unified]': 'isUnifiedActive',
+    '[class.sguees-data-grid-mtto-host--fit-viewport]': 'fitViewport',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -58,6 +60,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isBrowse: boolean = true;
   @Input() keyExpr: string | string[] = '';
   @Input() gridHeight: string | number = 670;
+  /** Limita la altura y desplaza las filas dentro del grid. Opt-in por pantalla. */
+  @Input() fitViewport = false;
+  @Input() viewportOffset = 280;
   @Input() columnAutoWidth = false;
   /** Si true, las celdas hacen wrap y muestran el texto completo (filas más altas). */
   @Input() wordWrapEnabled = false;
@@ -437,7 +442,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['gridHeight']) {
+    if (changes['gridHeight'] || changes['fitViewport'] || changes['viewportOffset']) {
       this.resolveGridHeight();
     }
     if (changes['pageSize'] && !changes['pageSize'].firstChange) {
@@ -635,6 +640,10 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private resolveGridHeight(): void {
+    if (this.fitViewport) {
+      this.resolvedGridHeight = Math.min(670, Math.max(260, window.innerHeight - this.viewportOffset));
+      return;
+    }
     if (typeof this.gridHeight === 'number') {
       this.resolvedGridHeight = this.gridHeight;
       return;
@@ -644,6 +653,14 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.resolvedGridHeight = Math.min(670, Math.max(320, window.innerHeight - 280));
+  }
+
+  @HostListener('window:resize')
+  onViewportResize(): void {
+    if (this.fitViewport) {
+      this.resolveGridHeight();
+      this.cdr.markForCheck();
+    }
   }
 
   private resolveActionVisibility(): void {

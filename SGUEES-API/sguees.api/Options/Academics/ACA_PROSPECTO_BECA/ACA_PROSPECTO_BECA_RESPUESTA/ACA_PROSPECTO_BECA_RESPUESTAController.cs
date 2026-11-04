@@ -42,7 +42,7 @@ namespace sguees.Controllers
         // Cómo lo hace: actualiza las filas de esa pregunta y recalcula el total de la solicitud.
         [HttpPut("GuardarRespuesta")]
         [Authorize(Policy = "/aca-prospecto-beca|U")]
-        public async Task<CResult> GuardarRespuesta([FromBody] AcaProspectoBecaRespuestaEdicion Data)
+        public async Task<CResult> GuardarRespuesta([FromBody] sguees.Services.AcaProspectoBecaRespuestaEdicion Data)
         {
             return await _service.GuardarRespuestaAsync(Empresa(), Usuario(), Data);
         }
