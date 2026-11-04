@@ -89,6 +89,9 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 				CORR_PREGUNTA: xModel.CORR_PREGUNTA,
 				CODIGO_PREGUNTA: xModel.CODIGO_PREGUNTA,
 				ENUNCIADO_PREGUNTA: xModel.ENUNCIADO_PREGUNTA,
+				CORR_TIPO_PREGUNTA: xModel.CORR_TIPO_PREGUNTA,
+				CODIGO_TIPO_PREGUNTA: xModel.CODIGO_TIPO_PREGUNTA,
+				NOMBRE_TIPO_PREGUNTA: xModel.NOMBRE_TIPO_PREGUNTA,
 				ORDEN: xModel.ORDEN,
 				PUNTAJE: Number(xModel.PUNTAJE ?? 0),
 				ES_REQUERIDO: !!xModel.ES_REQUERIDO,
@@ -172,13 +175,16 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 						  })
 						: [];
 					this.mCORR_PREGUNTA = Array.isArray(result?.preguntas?.Data)
-						? result.preguntas.Data.map((item: AcaSePreguntaLookup) => {
+						? result.preguntas.Data.map((item: any) => {
 								const CODIGO = (item.CODIGO ?? '').trim();
 								const ENUNCIADO = (item.ENUNCIADO ?? '').trim();
 								return {
 									CORR_PREGUNTA: Number(item.CORR_PREGUNTA),
 									CODIGO,
 									ENUNCIADO,
+									CORR_TIPO_PREGUNTA: Number(item.CORR_TIPO_PREGUNTA ?? 0),
+									CODIGO_TIPO_PREGUNTA: (item.CODIGO_TIPO_PREGUNTA ?? '').trim(),
+									NOMBRE_TIPO_PREGUNTA: (item.NOMBRE_TIPO_PREGUNTA ?? '').trim(),
 									DISPLAY: `${CODIGO} - ${ENUNCIADO}`.trim(),
 									ACTIVO: item.ACTIVO,
 								};
@@ -207,43 +213,85 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		}
 	}
 
-	// Qué hace: indica si la sección actual permite puntaje de pregunta.
-	// Cómo lo hace: TIPO_EVALUACION = PREGUNTA en el catálogo de secciones.
-	private seccionPermitePuntaje(corrSeccion?: number): boolean {
+	// Qué hace: tipo de la pregunta seleccionada (lookup o fila).
+	private codigoTipoPregunta(corrPregunta?: number): string {
+		const corr = Number(corrPregunta ?? this.model?.CORR_PREGUNTA ?? 0);
+		const pregunta = this.mCORR_PREGUNTA.find((p) => p.CORR_PREGUNTA === corr);
+		return (pregunta?.CODIGO_TIPO_PREGUNTA ?? this.model?.CODIGO_TIPO_PREGUNTA ?? '').trim().toUpperCase();
+	}
+
+	// Qué hace: indica si la sección es tipo PREGUNTA (no rango).
+	private seccionEsTipoPregunta(corrSeccion?: number): boolean {
 		const corr = Number(corrSeccion ?? this.model?.CORR_SECCION_SE ?? 0);
 		const seccion = this.mCORR_SECCION_SE.find((s) => s.CORR_SECCION_SE === corr);
 		return (seccion?.TIPO_EVALUACION ?? '').toUpperCase() === 'PREGUNTA';
 	}
 
+	// Qué hace: puntaje en la pregunta: sección PREGUNTA y tipo distinto de OPCION_UNICA.
+	// Cómo lo hace: OPCION_UNICA usa puntaje en Opciones; múltiple/texto/número/etc. usan este campo.
+	private permitePuntajePregunta(): boolean {
+		if (!this.seccionEsTipoPregunta()) {
+			return false;
+		}
+		return this.codigoTipoPregunta() !== 'OPCION_UNICA';
+	}
+
+	private textosAyudaPuntaje(): { helpText: string; hint: string } {
+		if (!this.seccionEsTipoPregunta()) {
+			return {
+				helpText: 'Solo aplica a secciones tipo PREGUNTA (no a rangos de monto).',
+				hint: 'Solo aplica a secciones tipo PREGUNTA',
+			};
+		}
+		if (this.codigoTipoPregunta() === 'OPCION_UNICA') {
+			return {
+				helpText: 'Opción única: el puntaje se define en cada opción (pantalla Opciones), no aquí.',
+				hint: 'Opción única: configure el puntaje en Opciones socioeconómico.',
+			};
+		}
+		if (this.codigoTipoPregunta() === 'OPCION_MULTIPLE') {
+			return {
+				helpText:
+					'Opción múltiple: un solo puntaje por contestar la pregunta (no por ítem marcado). 0 = sin puntaje.',
+				hint: 'Opción múltiple: puntaje fijo al responder (0 = sin puntaje).',
+			};
+		}
+		return {
+			helpText: 'Puntaje de esta pregunta al responderla (texto, número, monto, sí/no, etc.). 0 = sin puntaje.',
+			hint: 'Puntaje de la pregunta al responderla (0 = sin puntaje).',
+		};
+	}
+
 	// Qué hace: reconstruye el formulario con los catálogos cargados.
 	private refrescarItemsForm(): void {
+		const ayuda = this.textosAyudaPuntaje();
 		this.items = this.service.getItems({
 			versiones: this.mCORR_VERSION,
 			secciones: this.mSeccionesFiltradas,
 			preguntas: this.mCORR_PREGUNTA,
-			permitePuntaje: this.seccionPermitePuntaje(),
+			permitePuntaje: this.permitePuntajePregunta(),
+			helpTextPuntaje: ayuda.helpText,
+			hintPuntaje: ayuda.hint,
 		});
 	}
 
-	// Qué hace: habilita/deshabilita puntaje según tipo de sección.
-	// Cómo lo hace: readOnly en editor PUNTAJE; si no aplica, deja 0.
+	// Qué hace: habilita/deshabilita puntaje según sección y tipo de pregunta.
+	// Cómo lo hace: readOnly + hint/helpText; OPCION_UNICA o rango → fuerza 0.
 	private sincronizarEditorPuntaje(): void {
-		const permite = this.seccionPermitePuntaje();
+		const permite = this.permitePuntajePregunta();
+		const ayuda = this.textosAyudaPuntaje();
 		if (!permite) {
 			this.model.PUNTAJE = 0;
 			this.dataForm?.instance?.updateData('PUNTAJE', 0);
 		}
 		const editor = this.dataForm?.instance?.getEditor('PUNTAJE');
 		editor?.option('readOnly', !permite);
-		editor?.option(
-			'hint',
-			permite ? 'Puntaje de la pregunta (0 = sin puntaje)' : 'Solo aplica a secciones tipo PREGUNTA'
-		);
+		editor?.option('hint', ayuda.hint);
+		this.dataForm?.instance?.itemOption('PUNTAJE', 'helpText', ayuda.helpText);
 	}
 
 	onFieldDataChanged(e: any): void {
-		// Qué hace: al cambiar versión, filtra secciones; al cambiar sección, sincroniza puntaje.
-		// Cómo lo hace: actualiza dataSource de sección o readOnly de PUNTAJE sin recrear el form.
+		// Qué hace: al cambiar versión/sección/pregunta, sincroniza puntaje (única → 0 en pregunta).
 		if (e?.dataField === 'CORR_VERSION') {
 			const corrVersion = Number(e?.value ?? this.model?.CORR_VERSION ?? 0);
 			this.model.CORR_VERSION = corrVersion;
@@ -268,6 +316,17 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.model.CORR_SECCION_SE = Number(e?.value ?? 0);
 			const seccion = this.mCORR_SECCION_SE.find((s) => s.CORR_SECCION_SE === this.model.CORR_SECCION_SE);
 			this.model.TIPO_EVALUACION = seccion?.TIPO_EVALUACION;
+			setTimeout(() => this.sincronizarEditorPuntaje());
+			return;
+		}
+
+		if (e?.dataField === 'CORR_PREGUNTA') {
+			const corr = Number(e?.value ?? 0);
+			this.model.CORR_PREGUNTA = corr;
+			const pregunta = this.mCORR_PREGUNTA.find((p) => p.CORR_PREGUNTA === corr);
+			this.model.CODIGO_TIPO_PREGUNTA = pregunta?.CODIGO_TIPO_PREGUNTA;
+			this.model.NOMBRE_TIPO_PREGUNTA = pregunta?.NOMBRE_TIPO_PREGUNTA;
+			this.model.CORR_TIPO_PREGUNTA = pregunta?.CORR_TIPO_PREGUNTA;
 			setTimeout(() => this.sincronizarEditorPuntaje());
 		}
 	}
@@ -374,7 +433,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		if (formData) {
 			this.model = { ...this.model, ...formData };
 		}
-		if (!this.seccionPermitePuntaje()) {
+		if (!this.permitePuntajePregunta()) {
 			this.model.PUNTAJE = 0;
 		}
 

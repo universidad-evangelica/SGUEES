@@ -16,6 +16,9 @@ namespace sguees.Models
 		public int CORR_PREGUNTA { get; set; }
 		public string CODIGO_PREGUNTA { get; set; }
 		public string ENUNCIADO_PREGUNTA { get; set; }
+		public int CORR_TIPO_PREGUNTA { get; set; }
+		public string CODIGO_TIPO_PREGUNTA { get; set; }
+		public string NOMBRE_TIPO_PREGUNTA { get; set; }
 		public int ORDEN { get; set; }
 		public decimal PUNTAJE { get; set; }
 		public bool? ES_REQUERIDO { get; set; }

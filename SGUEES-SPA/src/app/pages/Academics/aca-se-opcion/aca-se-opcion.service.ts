@@ -188,14 +188,17 @@ export class AcaSeOpcionService {
 				label: { text: 'Puntaje' },
 				editorType: 'dxNumberBox',
 				colSpan: 2,
+				helpText: permitePuntaje
+					? 'Puntaje de esta respuesta (opción única). 0 = sin puntaje.'
+					: 'En opción múltiple el puntaje se define en Preguntas por versión, no aquí.',
 				editorOptions: {
 					min: 0,
 					showSpinButtons: true,
 					format: '#0.00',
 					readOnly: !permitePuntaje,
 					hint: permitePuntaje
-						? 'Puntaje de la respuesta (0 = sin puntaje)'
-						: 'Solo aplica a preguntas de opción única',
+						? 'Puntaje de la respuesta seleccionada (opción única). 0 = sin puntaje.'
+						: 'Opción múltiple: configure el puntaje en Preguntas por versión.',
 				},
 			},
 			{ dataField: 'ACTIVO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },

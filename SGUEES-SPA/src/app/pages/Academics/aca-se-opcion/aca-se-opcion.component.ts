@@ -165,6 +165,7 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: habilita puntaje solo para OPCION_UNICA; si no, fuerza 0.
+	// Cómo lo hace: readOnly + hint/helpText; en múltiple indica que el puntaje va en versión-pregunta.
 	private sincronizarEditorPuntaje(): void {
 		const permite = this.preguntaPermitePuntaje();
 		if (!permite) {
@@ -175,7 +176,16 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 		editor?.option('readOnly', !permite);
 		editor?.option(
 			'hint',
-			permite ? 'Puntaje de la respuesta (0 = sin puntaje)' : 'Solo aplica a preguntas de opción única'
+			permite
+				? 'Puntaje de la respuesta seleccionada (opción única). 0 = sin puntaje.'
+				: 'Opción múltiple: configure el puntaje en Preguntas por versión.'
+		);
+		this.dataForm?.instance?.itemOption(
+			'PUNTAJE',
+			'helpText',
+			permite
+				? 'Puntaje de esta respuesta (opción única). 0 = sin puntaje.'
+				: 'En opción múltiple el puntaje se define en Preguntas por versión, no aquí.'
 		);
 	}
 

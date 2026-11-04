@@ -97,8 +97,8 @@ namespace sguees.Repositories
 				if (!validacion.Result)
 					return validacion;
 
-				// Qué hace: puntaje solo aplica a secciones PREGUNTA; en RANGO_MONTO queda 0.
-				Data.PUNTAJE = NormalizarPuntajePorSeccion(validacion, Data.PUNTAJE);
+				// Qué hace: puntaje en pregunta salvo RANGO_MONTO u OPCION_UNICA (esa usa puntaje de opción).
+				Data.PUNTAJE = await NormalizarPuntajePreguntaAsync(validacion, Data.CORR_PREGUNTA, Data.PUNTAJE);
 
 				// Qué hace: inserta sin CORR_VERSION_PREGUNTA porque la PK es IDENTITY.
 				// Cómo lo hace: Insert sin CampoPk y relee por versión+pregunta (UQ).
@@ -161,7 +161,7 @@ namespace sguees.Repositories
 				if (!validacion.Result)
 					return validacion;
 
-				Data.PUNTAJE = NormalizarPuntajePorSeccion(validacion, Data.PUNTAJE);
+				Data.PUNTAJE = await NormalizarPuntajePreguntaAsync(validacion, Data.CORR_PREGUNTA, Data.PUNTAJE);
 
 				var p = new List<CParameter>
 				{
@@ -343,15 +343,27 @@ namespace sguees.Repositories
 			return ok;
 		}
 
-		// Qué hace: si la sección no es PREGUNTA, el puntaje de la pregunta queda en 0.
-		// Cómo lo hace: lee TIPO_EVALUACION del Data de la validación; PUNTAJE < 0 → 0.
-		private static decimal NormalizarPuntajePorSeccion(CResult validacion, decimal puntaje)
+		// Qué hace: puntaje de pregunta solo en sección PREGUNTA y si el tipo NO es OPCION_UNICA.
+		// Cómo lo hace: RANGO_MONTO u OPCION_UNICA → 0; el puntaje de única va en ACA_SE_OPCION.
+		private async Task<decimal> NormalizarPuntajePreguntaAsync(CResult validacion, int corrPregunta, decimal puntaje)
 		{
 			var seccion = validacion?.Data as ACA_SE_SECCIONView;
-			var esPregunta = seccion != null &&
+			var esSeccionPregunta = seccion != null &&
 				string.Equals(seccion.TIPO_EVALUACION, "PREGUNTA", StringComparison.OrdinalIgnoreCase);
-			if (!esPregunta)
+			if (!esSeccionPregunta)
 				return 0m;
+
+			var reader = await objData.GetDataReader("V_ACA_SE_PREGUNTA", new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_PREGUNTA", Value = corrPregunta, DbType = System.Data.DbType.Int32 },
+			});
+			var pregunta = new List<ACA_SE_PREGUNTAView>().FromDataReader(reader).FirstOrDefault();
+			reader.Close();
+
+			if (pregunta != null &&
+				string.Equals(pregunta.CODIGO_TIPO_PREGUNTA, "OPCION_UNICA", StringComparison.OrdinalIgnoreCase))
+				return 0m;
+
 			return puntaje < 0 ? 0m : puntaje;
 		}
 

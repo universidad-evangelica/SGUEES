@@ -12,6 +12,9 @@ export interface AcaSeVersionPregunta {
 	CORR_PREGUNTA: number;
 	CODIGO_PREGUNTA?: string;
 	ENUNCIADO_PREGUNTA?: string;
+	CORR_TIPO_PREGUNTA?: number;
+	CODIGO_TIPO_PREGUNTA?: string;
+	NOMBRE_TIPO_PREGUNTA?: string;
 	ORDEN: number;
 	PUNTAJE: number;
 	ES_REQUERIDO: boolean;
@@ -47,6 +50,9 @@ export interface AcaSePreguntaLookup {
 	CORR_PREGUNTA: number;
 	CODIGO: string;
 	ENUNCIADO: string;
+	CORR_TIPO_PREGUNTA?: number;
+	CODIGO_TIPO_PREGUNTA?: string;
+	NOMBRE_TIPO_PREGUNTA?: string;
 	DISPLAY?: string;
 	ACTIVO?: boolean;
 }

@@ -132,6 +132,7 @@ export class AcaSeVersionPreguntaService {
 			{ dataField: 'TIPO_EVALUACION', caption: 'Tipo eval.', width: 120 },
 			{ dataField: 'CODIGO_PREGUNTA', caption: 'Cód. pregunta', width: 140 },
 			{ dataField: 'ENUNCIADO_PREGUNTA', caption: 'Pregunta', width: 280, minWidth: 180 },
+			{ dataField: 'CODIGO_TIPO_PREGUNTA', caption: 'Tipo', width: 130 },
 			{
 				dataField: 'ORDEN',
 				caption: 'Orden',
@@ -176,6 +177,8 @@ export class AcaSeVersionPreguntaService {
 		secciones?: AcaSeSeccionLookup[];
 		preguntas?: AcaSePreguntaLookup[];
 		permitePuntaje?: boolean;
+		helpTextPuntaje?: string;
+		hintPuntaje?: string;
 	}): any {
 		const versiones = options?.versiones ?? [];
 		const secciones = options?.secciones ?? [];
@@ -245,14 +248,19 @@ export class AcaSeVersionPreguntaService {
 				label: { text: 'Puntaje' },
 				editorType: 'dxNumberBox',
 				colSpan: 2,
+				helpText: options?.helpTextPuntaje
+					?? (permitePuntaje
+						? 'Puntaje de esta pregunta al responderla. 0 = sin puntaje.'
+						: 'No aplica a esta pregunta o sección.'),
 				editorOptions: {
 					min: 0,
 					showSpinButtons: true,
 					format: '#0.00',
 					readOnly: !permitePuntaje,
-					hint: permitePuntaje
-						? 'Puntaje de la pregunta (0 = sin puntaje)'
-						: 'Solo aplica a secciones tipo PREGUNTA',
+					hint: options?.hintPuntaje
+						?? (permitePuntaje
+							? 'Puntaje de la pregunta al responderla (0 = sin puntaje).'
+							: 'No aplica a esta pregunta o sección'),
 				},
 			},
 			{ dataField: 'ES_REQUERIDO', label: { text: 'Requerido' }, editorType: 'dxCheckBox', colSpan: 2 },
