@@ -98,7 +98,7 @@
 			[swipeEnabled]="false"
 			[deferRendering]="false"
 		>
-			<dxi-item title="Datos generales" icon="user">
+			<dxi-item title="Datos personales" icon="user">
 				<section
 					class="proveedor-persona-resumen"
 					aria-label="Resumen de persona"
@@ -130,37 +130,62 @@
 						<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
 					</div>
 
-					<dl class="proveedor-persona-resumen__fields" *ngIf="!personaResumenCargando && personaResumen?.CORR_PERSONA">
-						
-						<div class="proveedor-persona-resumen__field" *ngIf="personaResumen?.TIPO_PERSONERIA === 'N'">
-							<dt>DUI / DIP</dt>
-							<dd>{{ textoLectura(personaResumen?.NUMERO_DIP) }}</dd>
-						</div>
-						<div class="proveedor-persona-resumen__field">
-							<dt>NIT</dt>
-							<dd>{{ textoLectura(personaResumen?.NUMERO_NIT) }}</dd>
-						</div>
-						<div class="proveedor-persona-resumen__field">
-							<dt>NRC</dt>
-							<dd>{{ textoLectura(personaResumen?.NUMERO_NRC) }}</dd>
-						</div>
-						<div class="proveedor-persona-resumen__field proveedor-persona-resumen__field--full">
-							<dt>Actividad económica</dt>
-							<dd>{{ textoLectura(personaResumen?.NOMBRE_ACTIVIDAD_ECONOMICA) }}</dd>
-						</div>
-						<div class="proveedor-persona-resumen__field proveedor-persona-resumen__field--full">
-							<dt>Dirección</dt>
-							<dd>{{ textoLectura(personaResumen?.DIRECCION) }}</dd>
-						</div>
-						<div class="proveedor-persona-resumen__field">
-							<dt>Teléfono</dt>
-							<dd>{{ textoLectura(personaResumen?.TELEFONO_FIJO || personaResumen?.TELEFONO_MOVIL) }}</dd>
-						</div>
-						<div class="proveedor-persona-resumen__field">
-							<dt>Correo</dt>
-							<dd>{{ textoLectura(personaResumen?.CORREO_ELECTRONICO_1) }}</dd>
-						</div>
-					</dl>
+					<div class="proveedor-persona-resumen__cards" *ngIf="!personaResumenCargando && personaResumen?.CORR_PERSONA">
+						<section class="proveedor-persona-resumen__card" aria-label="Documentos">
+							<header class="proveedor-persona-resumen__card-head">
+								<h4>Documentos</h4>
+								<span>Identificación tributaria</span>
+							</header>
+							<dl class="proveedor-persona-resumen__fields">
+								<div class="proveedor-persona-resumen__field" *ngIf="personaResumen?.TIPO_PERSONERIA === 'N'">
+									<dt>DUI / DIP</dt>
+									<dd>{{ textoLectura(personaResumen?.NUMERO_DIP) }}</dd>
+								</div>
+								<div class="proveedor-persona-resumen__field">
+									<dt>NIT</dt>
+									<dd>{{ textoLectura(personaResumen?.NUMERO_NIT) }}</dd>
+								</div>
+								<div class="proveedor-persona-resumen__field">
+									<dt>NRC</dt>
+									<dd>{{ textoLectura(personaResumen?.NUMERO_NRC) }}</dd>
+								</div>
+								<div class="proveedor-persona-resumen__field proveedor-persona-resumen__field--full">
+									<dt>Actividad económica</dt>
+									<dd>{{ textoLectura(personaResumen?.NOMBRE_ACTIVIDAD_ECONOMICA) }}</dd>
+								</div>
+							</dl>
+						</section>
+
+						<section class="proveedor-persona-resumen__card" aria-label="Dirección">
+							<header class="proveedor-persona-resumen__card-head">
+								<h4>Dirección</h4>
+								<span>Domicilio de la persona</span>
+							</header>
+							<dl class="proveedor-persona-resumen__fields">
+								<div class="proveedor-persona-resumen__field proveedor-persona-resumen__field--full">
+									<dt>Dirección</dt>
+									<dd>{{ textoLectura(personaResumen?.DIRECCION) }}</dd>
+								</div>
+							</dl>
+						</section>
+
+						<section class="proveedor-persona-resumen__card" aria-label="Contacto">
+							<header class="proveedor-persona-resumen__card-head">
+								<h4>Contacto</h4>
+								<span>Teléfono y correo</span>
+							</header>
+							<dl class="proveedor-persona-resumen__fields">
+								<div class="proveedor-persona-resumen__field">
+									<dt>Teléfono</dt>
+									<dd>{{ textoLectura(personaResumen?.TELEFONO_FIJO || personaResumen?.TELEFONO_MOVIL) }}</dd>
+								</div>
+								<div class="proveedor-persona-resumen__field">
+									<dt>Correo</dt>
+									<dd>{{ textoLectura(personaResumen?.CORREO_ELECTRONICO_1) }}</dd>
+								</div>
+							</dl>
+						</section>
+					</div>
 				</section>
 			</dxi-item>
 
@@ -601,8 +626,11 @@
 		</p>
 
 		<ng-container *ngIf="previewProveedor?.CORR_PERSONA">
-			<section class="proveedor-preview-panel__section" aria-label="Persona">
-				<h3 class="proveedor-preview-panel__section-title">Persona</h3>
+			<section class="proveedor-preview-panel__card" aria-label="Persona">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Persona</h3>
+					<span>Datos de personería</span>
+				</header>
 				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
 						<dt>Nombre persona</dt>
@@ -635,8 +663,11 @@
 				</dl>
 			</section>
 
-			<section class="proveedor-preview-panel__section" aria-label="Documentos">
-				<h3 class="proveedor-preview-panel__section-title">Documentos</h3>
+			<section class="proveedor-preview-panel__card" aria-label="Documentos">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Documentos</h3>
+					<span>Identificación tributaria</span>
+				</header>
 				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field">
 						<dt>DUI / DIP</dt>
@@ -650,15 +681,27 @@
 						<dt>NRC</dt>
 						<dd>{{ textoLectura(previewProveedor?.NUMERO_NRC) }}</dd>
 					</div>
+				</dl>
+			</section>
+
+			<section class="proveedor-preview-panel__card" aria-label="Actividad económica">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Actividad económica</h3>
+					<span>Clasificación fiscal</span>
+				</header>
+				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
-						<dt>Actividad económica</dt>
+						<dt>Actividad</dt>
 						<dd>{{ textoLectura(previewProveedor?.NOMBRE_ACTIVIDAD_ECONOMICA) }}</dd>
 					</div>
 				</dl>
 			</section>
 
-			<section class="proveedor-preview-panel__section" aria-label="Dirección">
-				<h3 class="proveedor-preview-panel__section-title">Dirección</h3>
+			<section class="proveedor-preview-panel__card" aria-label="Dirección">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Dirección</h3>
+					<span>Domicilio registrado</span>
+				</header>
 				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
 						<dt>Dirección</dt>
@@ -679,8 +722,11 @@
 				</dl>
 			</section>
 
-			<section class="proveedor-preview-panel__section" aria-label="Contacto">
-				<h3 class="proveedor-preview-panel__section-title">Contacto</h3>
+			<section class="proveedor-preview-panel__card" aria-label="Contacto">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Contacto</h3>
+					<span>Teléfonos y correos</span>
+				</header>
 				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
 						<dt>Nombre contacto</dt>
