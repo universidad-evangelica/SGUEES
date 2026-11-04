@@ -8,7 +8,8 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { AcaCiclosService } from './aca-ciclos.service';
 
-@Component({ selector: 'app-aca-ciclos', templateUrl: './aca-ciclos.component.html', styleUrls: ['./aca-ciclos.component.scss'] })
+@Component({
+  standalone: false, selector: 'app-aca-ciclos', templateUrl: './aca-ciclos.component.html', styleUrls: ['./aca-ciclos.component.scss'] })
 export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDestroy {
     vista: 'areas' | 'ciclos' | 'ficha' = 'areas';
     areas: any[] = []; ciclos: any[] = []; areaElegida: any = null;

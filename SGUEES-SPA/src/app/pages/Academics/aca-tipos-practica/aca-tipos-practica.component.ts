@@ -12,7 +12,8 @@ import { TipoPractica } from './models/tipo-practica';
 import { AcaAsignaturasService } from '../aca-asignaturas/aca-asignaturas.service';
 import { CarreraAsignatura } from '../aca-asignaturas/models/asignatura';
 import { MateriaPractica } from '../aca-asignaturas/models/asignatura-practica';
-@Component({ selector: 'app-aca-tipos-practica', templateUrl: './aca-tipos-practica.component.html', styleUrls: ['./aca-tipos-practica.component.scss'] })
+@Component({
+  standalone: false, selector: 'app-aca-tipos-practica', templateUrl: './aca-tipos-practica.component.html', styleUrls: ['./aca-tipos-practica.component.scss'] })
 export class AcaTiposPracticaComponent extends CBaseComponent implements OnInit, OnDestroy {
     @Output() editorChanged = new EventEmitter<boolean>();
     @ViewChild('formulario')

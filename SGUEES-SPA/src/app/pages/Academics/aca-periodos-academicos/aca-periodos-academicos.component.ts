@@ -8,7 +8,8 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { AcaPeriodosAcademicosService, PeriodoCatalogo } from './aca-periodos-academicos.service';
 
-@Component({ selector: 'app-aca-periodos-academicos', templateUrl: './aca-periodos-academicos.component.html' })
+@Component({
+  standalone: false, selector: 'app-aca-periodos-academicos', templateUrl: './aca-periodos-academicos.component.html' })
 export class AcaPeriodosAcademicosComponent extends CBaseComponent implements OnInit {
     protected override etiquetaRegistro = 'el período';
     protected override requiereEmpresaSesion = true;

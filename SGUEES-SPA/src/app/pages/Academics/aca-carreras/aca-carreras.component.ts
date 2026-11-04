@@ -13,7 +13,8 @@ import { AcaCarrerasSedesService } from './sedes/aca-carreras-sedes.service';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { IResult } from 'src/app/FxAPI/IResult';
 
-@Component({ selector: 'app-aca-carreras', templateUrl: './aca-carreras.component.html', styleUrls: ['./aca-carreras.component.scss'] })
+@Component({
+  standalone: false, selector: 'app-aca-carreras', templateUrl: './aca-carreras.component.html', styleUrls: ['./aca-carreras.component.scss'] })
 export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
     //#region <Declarando Variables>
     protected override etiquetaRegistro = 'la carrera';

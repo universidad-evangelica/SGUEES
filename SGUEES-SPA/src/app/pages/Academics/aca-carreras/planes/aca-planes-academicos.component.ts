@@ -9,7 +9,8 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { cleanApiMessage, getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
 import { AcaPlanesAcademicosService, ModalidadPlan, PlanAcademico } from './aca-planes-academicos.service';
 
-@Component({ selector: 'app-aca-planes-academicos', templateUrl: './aca-planes-academicos.component.html' })
+@Component({
+  standalone: false, selector: 'app-aca-planes-academicos', templateUrl: './aca-planes-academicos.component.html' })
 export class AcaPlanesAcademicosComponent implements OnChanges, OnDestroy {
     @Input() carreraId = 0;
     @Input() bloqueado = false;

@@ -26,6 +26,7 @@ interface SedeLookup {
 }
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-facultades',
 	templateUrl: './aca-facultades.component.html',
 	styleUrls: ['./aca-facultades.component.scss'],

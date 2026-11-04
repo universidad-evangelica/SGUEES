@@ -9,7 +9,8 @@ import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { AcaPeriodosCursoService } from './aca-periodos-curso.service';
 import { PeriodoCurso } from './models/periodo-curso';
-@Component({ selector: 'app-aca-periodos-curso', templateUrl: './aca-periodos-curso.component.html', styleUrls: ['./aca-periodos-curso.component.scss'] })
+@Component({
+  standalone: false, selector: 'app-aca-periodos-curso', templateUrl: './aca-periodos-curso.component.html', styleUrls: ['./aca-periodos-curso.component.scss'] })
 export class AcaPeriodosCursoComponent extends CBaseComponent implements OnInit, OnDestroy {
     @Output() editorChanged = new EventEmitter<boolean>();
     @ViewChild('formulario')

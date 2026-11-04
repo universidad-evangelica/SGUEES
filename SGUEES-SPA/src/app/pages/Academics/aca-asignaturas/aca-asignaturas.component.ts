@@ -14,7 +14,8 @@ import { AcaAsignaturasService } from './aca-asignaturas.service';
 import { AcaPeriodosCursoService } from '../aca-periodos-curso/aca-periodos-curso.service';
 import { PeriodoCurso } from '../aca-periodos-curso/models/periodo-curso';
 import { Asignatura, CarreraAsignatura, PlanAsignatura } from './models/asignatura';
-@Component({ selector: 'app-aca-asignaturas', templateUrl: './aca-asignaturas.component.html', styleUrls: ['./aca-asignaturas.component.scss'] })
+@Component({
+  standalone: false, selector: 'app-aca-asignaturas', templateUrl: './aca-asignaturas.component.html', styleUrls: ['./aca-asignaturas.component.scss'] })
 export class AcaAsignaturasComponent extends CBaseComponent implements OnInit, OnDestroy {
     @ViewChild('formulario')
     formulario?: DxFormComponent;
@@ -182,7 +183,7 @@ export class AcaAsignaturasComponent extends CBaseComponent implements OnInit, O
             } recargar = true; this.notifyFx('Asociación actualizada.', NotifyType.Success); }, error: e => this.error(e) });
     }
     cerrarPlanes(): void { if (!this.busy) this.planesVisible = false; }
-    ocultarPlanes(e: { cancel: boolean }): void {
+    ocultarPlanes(e: { cancel?: boolean }): void {
         if (this.busy) { e.cancel = true; return; }
         this.planesVisible = false; this.asignaturaPlanes = null; this.permiteSalir = true; this.cargar();
     }

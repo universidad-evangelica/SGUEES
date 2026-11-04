@@ -7,7 +7,8 @@ import { AcaCarrerasSedesService } from '../sedes/aca-carreras-sedes.service';
 import { SgueesNotificationService } from 'src/app/shared/services/sguees-notification.service';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
-@Component({selector:'app-aca-carreras-costos',templateUrl:'./aca-carreras-costos.component.html'})
+@Component({
+  standalone: false,selector:'app-aca-carreras-costos',templateUrl:'./aca-carreras-costos.component.html'})
 export class AcaCarrerasCostosComponent implements OnChanges,OnDestroy {
     @Input() carreraId=0;@Input() bloqueado=false;@Input() permiteCrear=false;@Input() permiteEditar=false;
     @ViewChild('formCosto') form?:DxFormComponent;
