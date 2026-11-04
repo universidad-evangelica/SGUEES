@@ -21,19 +21,112 @@
 >
 </app-barra-data-mtto>
 
-	<!-- Formulario de creación/edición (oculto en browse). -->
+	<!-- Formulario: tabs Datos / Secciones (secciones solo con versión ya guardada). -->
 <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
-	<dx-form
-		#fData
-		id="fData"
-		[formData]="model"
-		[labelLocation]="'top'"
-		[colCount]="mttoFormColCount"
-		[colCountByScreen]="mttoFormColCountByScreen"
-		[showRequiredMark]="false"
-		[items]="items"
+	<dx-tab-panel
+		[(selectedIndex)]="tabVersionIndex"
+		[animationEnabled]="false"
+		[swipeEnabled]="false"
+		[deferRendering]="false"
 	>
-	</dx-form>
+		<!-- Tab datos de la versión -->
+		<dxi-item title="Datos">
+			<div class="aca-se-version-tab-body">
+				<dx-form
+					#fData
+					id="fData"
+					[formData]="model"
+					[labelLocation]="'top'"
+					[colCount]="mttoFormColCount"
+					[colCountByScreen]="mttoFormColCountByScreen"
+					[showRequiredMark]="false"
+					[items]="items"
+				>
+				</dx-form>
+			</div>
+		</dxi-item>
+
+		<!-- Tab secciones de la versión seleccionada -->
+		<dxi-item title="Secciones" [disabled]="!puedeGestionarSecciones">
+			<div class="aca-se-version-tab-body">
+				<p class="aca-se-version-hint" *ngIf="!puedeGestionarSecciones">
+					Guarde primero la versión para poder crear secciones.
+				</p>
+				<ng-container *ngIf="puedeGestionarSecciones">
+					<!-- motivo: botones a la izquierda (Crear / Editar / Activar-Desactivar); resumen a la derecha -->
+					<div class="aca-se-version-sec-toolbar">
+						<div class="aca-se-version-sec-toolbar-btns">
+							<dx-button
+								class="aca-se-version-sec-btn"
+								text="Crear sección"
+								type="success"
+								stylingMode="contained"
+								icon="plus"
+								[disabled]="!permiteAdd || porcentajeUsado >= 100"
+								(onClick)="nuevaSeccion()"
+							></dx-button>
+							<dx-button
+								class="aca-se-version-sec-btn"
+								text="Editar"
+								type="default"
+								stylingMode="contained"
+								icon="edit"
+								[disabled]="!seccionSeleccionada || !permiteEdit"
+								(onClick)="editarSeccionSeleccionada()"
+							></dx-button>
+							<dx-button
+								*ngIf="seccionSeleccionada?.ACTIVO"
+								class="aca-se-version-sec-btn"
+								text="Desactivar"
+								type="danger"
+								stylingMode="contained"
+								icon="close"
+								[disabled]="!permiteEdit"
+								(onClick)="activarInactivarSeleccionada()"
+							></dx-button>
+							<dx-button
+								*ngIf="seccionSeleccionada && !seccionSeleccionada.ACTIVO"
+								class="aca-se-version-sec-btn"
+								text="Activar"
+								type="success"
+								stylingMode="contained"
+								icon="check"
+								[disabled]="!permiteEdit"
+								(onClick)="activarInactivarSeleccionada()"
+							></dx-button>
+						</div>
+						<div class="aca-se-version-sec-resumen">
+							<span>Usado (activas): <strong>{{ porcentajeUsado | number:'1.0-2' }}%</strong></span>
+							<span>Disponible: <strong>{{ porcentajeDisponible | number:'1.0-2' }}%</strong></span>
+						</div>
+					</div>
+
+					<dx-data-grid
+						[dataSource]="secciones"
+						[keyExpr]="'CORR_SECCION_SE'"
+						[showBorders]="true"
+						[columnAutoWidth]="false"
+						[hoverStateEnabled]="true"
+						[rowAlternationEnabled]="true"
+						[focusedRowEnabled]="true"
+						[(focusedRowKey)]="seccionFocusedKey"
+						(onFocusedRowChanged)="onSeccionFocusedRowChanged($event)"
+					>
+						<dxo-paging [pageSize]="10"></dxo-paging>
+						<dxi-column
+							*ngFor="let col of columnsSeccion"
+							[dataField]="col.dataField"
+							[caption]="col.caption"
+							[width]="col.width"
+							[minWidth]="col.minWidth"
+							[dataType]="col.dataType"
+							[format]="col.format"
+						></dxi-column>
+					</dx-data-grid>
+				</ng-container>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
 </div>
 
 <!-- Grilla del catálogo con acciones de mantenimiento. -->
@@ -59,7 +152,7 @@
 	[focusedRowKey]="gridFocusedRowKey"
 	[permitePrint]="permitePrint"
 	[permiteEditar]="getPermiteEditar"
-	[permiteDele]="getPermiteDele"
+	[permiteDele]="false"
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
 	[exportFileName]="'VersionesSocioeconomico'"
@@ -71,6 +164,35 @@
 </app-data-grid-mtto>
 
 </div>
+
+<!-- motivo: alta/edición de sección en modal (no formulario inline). -->
+<dx-popup
+	[(visible)]="popupSeccionVisible"
+	[showTitle]="true"
+	[title]="seccionEsNueva ? 'Nueva sección' : 'Editar sección'"
+	[width]="720"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[wrapperAttr]="{ class: 'aca-se-version-sec-popup' }"
+	(onHiding)="cancelarSeccion()"
+>
+	<div class="aca-se-version-sec-popup-body" *ngIf="popupSeccionVisible">
+		<dx-form
+			#fSeccion
+			[formData]="seccionModel"
+			[labelLocation]="'top'"
+			[colCount]="8"
+			[items]="itemsSeccion"
+		></dx-form>
+		<div class="aca-se-version-sec-actions">
+			<dx-button text="Guardar" type="success" stylingMode="contained" icon="save" (onClick)="guardarSeccion()"></dx-button>
+			<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cancelarSeccion()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
 
 <!-- Panel de carga durante operaciones asíncronas. -->
 <dx-load-panel

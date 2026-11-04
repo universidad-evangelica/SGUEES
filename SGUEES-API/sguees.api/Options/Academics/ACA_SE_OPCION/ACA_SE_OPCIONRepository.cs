@@ -92,9 +92,10 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				// Qué hace: inserta sin CORR_OPCION porque la PK es IDENTITY.
+				// Cómo lo hace: Insert sin CampoPk y relee por pregunta+código (UQ).
 				var p = new List<CParameter>
 				{
-					new CParameter() { ParameterName = "CORR_OPCION", Value = Data.CORR_OPCION, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CODIGO", Value = Data.CODIGO, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "TEXTO", Value = Data.TEXTO, DbType = System.Data.DbType.String },
@@ -107,11 +108,16 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
 				};
-				var reader = await objData.Insert(_TableName, p, _CampoPk, new List<CParameter>());
+				var pWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CODIGO", Value = Data.CODIGO, DbType = System.Data.DbType.String },
+				};
+				var reader = await objData.Insert(_TableName, p, string.Empty, pWhere);
 				var inserted = new List<ACA_SE_OPCIONView>().FromDataReader(reader).FirstOrDefault();
 				reader.Close();
-				var corr = inserted?.CORR_OPCION ?? (int)(p.First(x => x.ParameterName == "CORR_OPCION").Value ?? 0);
-				var response = await LeerVistaPorPkAsync(corr);
+				var corr = inserted?.CORR_OPCION ?? 0;
+				var response = corr > 0 ? await LeerVistaPorPkAsync(corr) : inserted;
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;

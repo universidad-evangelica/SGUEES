@@ -1,5 +1,5 @@
 // Qué hace: modelo de tabla ACA_SE_VERSION_PREGUNTA.
-// Cómo lo hace: PK, FKs versión/pregunta, orden, requerido, activo y auditoría.
+// Cómo lo hace: PK, FKs versión/sección/pregunta, orden, requerido, activo y auditoría.
 using System;
 using eFramework.Data;
 
@@ -9,6 +9,7 @@ namespace sguees.Models
 	{
 		public int CORR_VERSION_PREGUNTA { get; set; }
 		public int CORR_VERSION { get; set; }
+		public int? CORR_SECCION_SE { get; set; }
 		public int CORR_PREGUNTA { get; set; }
 		public int ORDEN { get; set; }
 		public bool? ES_REQUERIDO { get; set; }

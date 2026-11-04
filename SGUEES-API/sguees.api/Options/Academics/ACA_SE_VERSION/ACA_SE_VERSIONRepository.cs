@@ -103,9 +103,10 @@ namespace sguees.Repositories
 					}
 				}
 
+				// Qué hace: inserta sin CORR_VERSION porque la PK es IDENTITY.
+				// Cómo lo hace: Insert sin CampoPk y relee la vista por CODIGO (UQ).
 				var p = new List<CParameter>
 				{
-					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 					new CParameter() { ParameterName = "CODIGO", Value = Data.CODIGO, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "NOMBRE", Value = Data.NOMBRE, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "DESCRIPCION", Value = (object)Data.DESCRIPCION ?? DBNull.Value, DbType = System.Data.DbType.String },
@@ -119,7 +120,11 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
 				};
-				var reader = await objData.Insert(_TableName, p, _CampoPk, new List<CParameter>());
+				var pWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CODIGO", Value = Data.CODIGO, DbType = System.Data.DbType.String },
+				};
+				var reader = await objData.Insert(_TableName, p, string.Empty, pWhere);
 				var response = new List<ACA_SE_VERSIONView>().FromDataReader(reader).FirstOrDefault();
 				reader.Close();
 				objResultado.Data = response;

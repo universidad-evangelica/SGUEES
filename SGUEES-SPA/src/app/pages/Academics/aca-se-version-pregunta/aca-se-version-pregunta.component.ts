@@ -1,5 +1,5 @@
 // Qué hace: vista de mantenimiento de preguntas por versión socioeconómico.
-// Cómo lo hace: CRUD de ACA_SE_VERSION_PREGUNTA; versión/pregunta vía getLookUp (patrón sc-descriptor).
+// Cómo lo hace: CRUD de ACA_SE_VERSION_PREGUNTA; versión → sección (filtrada) → pregunta.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, Observable, of, throwError } from 'rxjs';
@@ -10,6 +10,7 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import {
 	AcaSePreguntaLookup,
+	AcaSeSeccionLookup,
 	AcaSeVersionLookup,
 	AcaSeVersionPregunta,
 } from './models/aca-se-version-pregunta';
@@ -38,7 +39,9 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de preguntas por versión SE';
 	mCORR_VERSION: AcaSeVersionLookup[] = [];
+	mCORR_SECCION_SE: AcaSeSeccionLookup[] = [];
 	mCORR_PREGUNTA: AcaSePreguntaLookup[] = [];
+	mSeccionesFiltradas: AcaSeSeccionLookup[] = [];
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -79,6 +82,9 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 				CORR_VERSION: xModel.CORR_VERSION,
 				CODIGO_VERSION: xModel.CODIGO_VERSION,
 				NOMBRE_VERSION: xModel.NOMBRE_VERSION,
+				CORR_SECCION_SE: Number(xModel.CORR_SECCION_SE ?? 0),
+				CODIGO_SECCION: xModel.CODIGO_SECCION,
+				NOMBRE_SECCION: xModel.NOMBRE_SECCION,
 				CORR_PREGUNTA: xModel.CORR_PREGUNTA,
 				CODIGO_PREGUNTA: xModel.CODIGO_PREGUNTA,
 				ENUNCIADO_PREGUNTA: xModel.ENUNCIADO_PREGUNTA,
@@ -97,6 +103,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		return {
 			CORR_VERSION_PREGUNTA: 0,
 			CORR_VERSION: 0,
+			CORR_SECCION_SE: 0,
 			CORR_PREGUNTA: 0,
 			ORDEN: 0,
 			ES_REQUERIDO: false,
@@ -120,47 +127,111 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		});
 	}
 
-	// Qué hace: carga lookups de versión y pregunta.
-	// Cómo lo hace: forkJoin de GetCORR_VERSION y GetCORR_PREGUNTA.
+	// Qué hace: carga lookups de versión, sección y pregunta.
+	// Cómo lo hace: forkJoin de GetCORR_VERSION, GetCORR_SECCION_SE y GetCORR_PREGUNTA.
 	private cargarLookUps(): void {
 		forkJoin({
 			versiones: this.service.getCORR_VERSION().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
+			secciones: this.service.getCORR_SECCION_SE().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 			preguntas: this.service.getCORR_PREGUNTA().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 		})
 			.pipe(take(1))
 			.subscribe({
 				next: (result: any) => {
 					this.mCORR_VERSION = Array.isArray(result?.versiones?.Data)
-						? result.versiones.Data.map((item: AcaSeVersionLookup) => ({
-								CORR_VERSION: Number(item.CORR_VERSION),
-								CODIGO: (item.CODIGO ?? '').trim(),
-								NOMBRE: (item.NOMBRE ?? '').trim(),
-								ACTIVO: item.ACTIVO,
-						  }))
+						? result.versiones.Data.map((item: AcaSeVersionLookup) => {
+								const CODIGO = (item.CODIGO ?? '').trim();
+								const NOMBRE = (item.NOMBRE ?? '').trim();
+								return {
+									CORR_VERSION: Number(item.CORR_VERSION),
+									CODIGO,
+									NOMBRE,
+									DISPLAY: `${CODIGO} - ${NOMBRE}`.trim(),
+									ACTIVO: item.ACTIVO,
+								};
+						  })
+						: [];
+					this.mCORR_SECCION_SE = Array.isArray(result?.secciones?.Data)
+						? result.secciones.Data.map((item: any) => {
+								const CODIGO = (item.CODIGO ?? '').trim();
+								const NOMBRE_SECCION = (item.NOMBRE_SECCION ?? '').trim();
+								return {
+									CORR_SECCION_SE: Number(item.CORR_SECCION_SE),
+									CORR_VERSION: Number(item.CORR_VERSION),
+									CODIGO,
+									NOMBRE_SECCION,
+									DISPLAY: `${CODIGO} - ${NOMBRE_SECCION}`.trim(),
+									ACTIVO: item.ACTIVO,
+									ORDEN: Number(item.ORDEN ?? 0),
+								};
+						  })
 						: [];
 					this.mCORR_PREGUNTA = Array.isArray(result?.preguntas?.Data)
-						? result.preguntas.Data.map((item: AcaSePreguntaLookup) => ({
-								CORR_PREGUNTA: Number(item.CORR_PREGUNTA),
-								CODIGO: (item.CODIGO ?? '').trim(),
-								ENUNCIADO: (item.ENUNCIADO ?? '').trim(),
-								ACTIVO: item.ACTIVO,
-						  }))
+						? result.preguntas.Data.map((item: AcaSePreguntaLookup) => {
+								const CODIGO = (item.CODIGO ?? '').trim();
+								const ENUNCIADO = (item.ENUNCIADO ?? '').trim();
+								return {
+									CORR_PREGUNTA: Number(item.CORR_PREGUNTA),
+									CODIGO,
+									ENUNCIADO,
+									DISPLAY: `${CODIGO} - ${ENUNCIADO}`.trim(),
+									ACTIVO: item.ACTIVO,
+								};
+						  })
 						: [];
+					this.aplicarFiltroSecciones(Number(this.model?.CORR_VERSION ?? 0), false);
 					this.refrescarItemsForm();
 				},
 			});
+	}
+
+	// Qué hace: deja en el select solo secciones de la versión elegida.
+	private aplicarFiltroSecciones(corrVersion: number, limpiarSiNoPertenece: boolean): void {
+		this.mSeccionesFiltradas = corrVersion > 0
+			? this.mCORR_SECCION_SE
+					.filter((s) => Number(s.CORR_VERSION) === corrVersion)
+					.sort((a, b) => Number(a.ORDEN ?? 0) - Number(b.ORDEN ?? 0))
+			: [];
+
+		if (limpiarSiNoPertenece) {
+			const actual = Number(this.model?.CORR_SECCION_SE ?? 0);
+			const sigue = this.mSeccionesFiltradas.some((s) => s.CORR_SECCION_SE === actual);
+			if (!sigue) {
+				this.model.CORR_SECCION_SE = 0;
+			}
+		}
 	}
 
 	// Qué hace: reconstruye el formulario con los catálogos cargados.
 	private refrescarItemsForm(): void {
 		this.items = this.service.getItems({
 			versiones: this.mCORR_VERSION,
+			secciones: this.mSeccionesFiltradas,
 			preguntas: this.mCORR_PREGUNTA,
 		});
 	}
 
-	onFieldDataChanged(_e: any): void {
-		// Sin lógica de sección; el form no depende de cambios de campo aquí.
+	onFieldDataChanged(e: any): void {
+		// Qué hace: al cambiar versión, filtra secciones sin recrear el form (si se recrea, el select no deja elegir).
+		// Cómo lo hace: actualiza solo el dataSource/value del editor CORR_SECCION_SE.
+		if (e?.dataField !== 'CORR_VERSION') {
+			return;
+		}
+		const corrVersion = Number(e?.value ?? this.model?.CORR_VERSION ?? 0);
+		this.model.CORR_VERSION = corrVersion;
+		this.aplicarFiltroSecciones(corrVersion, true);
+		setTimeout(() => {
+			const editorSeccion = this.dataForm?.instance?.getEditor('CORR_SECCION_SE') as any;
+			if (!editorSeccion) {
+				return;
+			}
+			editorSeccion.option('dataSource', this.mSeccionesFiltradas);
+			editorSeccion.option('value', this.model.CORR_SECCION_SE > 0 ? this.model.CORR_SECCION_SE : null);
+			editorSeccion.option(
+				'placeholder',
+				this.mSeccionesFiltradas.length ? 'Sección...' : 'Seleccione primero la versión'
+			);
+		});
 	}
 
 	private ordenarModels(): void {
@@ -172,6 +243,10 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			const v = Number(a.CORR_VERSION) - Number(b.CORR_VERSION);
 			if (v !== 0) {
 				return v;
+			}
+			const s = Number(a.CORR_SECCION_SE ?? 0) - Number(b.CORR_SECCION_SE ?? 0);
+			if (s !== 0) {
+				return s;
 			}
 			const o = Number(a.ORDEN) - Number(b.ORDEN);
 			return o !== 0 ? o : Number(a.CORR_PREGUNTA) - Number(b.CORR_PREGUNTA);
@@ -223,6 +298,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.model = this.fillData(rowData);
 			this.modelUpdate = this.fillData(rowData);
 		}
+		this.aplicarFiltroSecciones(Number(this.model.CORR_VERSION), false);
 		this.refrescarItemsForm();
 		super.rowDblClick(e);
 		setTimeout(() => {
@@ -237,6 +313,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		}
 
 		this.model = this.fillData(e.row.data);
+		this.aplicarFiltroSecciones(Number(this.model.CORR_VERSION), false);
 		this.refrescarItemsForm();
 		this.editarClick(e);
 		setTimeout(() => {
@@ -247,6 +324,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 
 	override nuevo(): void {
 		super.nuevo();
+		this.aplicarFiltroSecciones(0, false);
 		this.refrescarItemsForm();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
@@ -322,6 +400,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_VERSION_PREGUNTA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_VERSION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_SECCION_SE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_PREGUNTA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ES_REQUERIDO')?.option('readOnly', true);
@@ -333,6 +412,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_VERSION_PREGUNTA')?.option('readOnly', true);
 			this.dataForm.instance.getEditor('CORR_VERSION')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('CORR_SECCION_SE')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('CORR_PREGUNTA')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ES_REQUERIDO')?.option('readOnly', false);

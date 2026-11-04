@@ -1,5 +1,5 @@
 // Qué hace: servicio de negocio de preguntas por versión socioeconómico.
-// Cómo lo hace: valida, CRUD, columnas/formulario y lookups (versión/pregunta).
+// Cómo lo hace: valida, CRUD, columnas/formulario y lookups (versión/sección/pregunta).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -11,6 +11,7 @@ import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app
 import { environment } from 'src/environments/environment';
 import {
 	AcaSePreguntaLookup,
+	AcaSeSeccionLookup,
 	AcaSeVersionLookup,
 	AcaSeVersionPregunta,
 } from './models/aca-se-version-pregunta';
@@ -26,10 +27,14 @@ export class AcaSeVersionPreguntaService {
 	) {}
 
 	// Qué hace: valida el formulario antes de guardar.
-	// Cómo lo hace: exige versión, pregunta y orden >= 0.
+	// Cómo lo hace: exige versión, sección, pregunta y orden >= 0.
 	esValido(model: AcaSeVersionPregunta, msg: Function): boolean {
 		if (!model.CORR_VERSION || model.CORR_VERSION <= 0) {
 			msg('Debe seleccionar la versión.', NotifyType.Warning);
+			return false;
+		}
+		if (!model.CORR_SECCION_SE || model.CORR_SECCION_SE <= 0) {
+			msg('Debe seleccionar la sección.', NotifyType.Warning);
 			return false;
 		}
 		if (!model.CORR_PREGUNTA || model.CORR_PREGUNTA <= 0) {
@@ -58,6 +63,18 @@ export class AcaSeVersionPreguntaService {
 			'ACA_SE_VERSION_PREGUNTA',
 			'ACA_SE_VERSION',
 			'GetCORR_VERSION',
+			undefined,
+			environment.UrlGENERALAPI
+		);
+	}
+
+	// Qué hace: trae secciones (el SPA filtra por versión seleccionada).
+	// Cómo lo hace: getLookUp(ACA_SE_VERSION_PREGUNTA, ACA_SE_SECCION, GetCORR_SECCION_SE).
+	getCORR_SECCION_SE(): Observable<IResult> {
+		return this.appInfoService.getLookUp(
+			'ACA_SE_VERSION_PREGUNTA',
+			'ACA_SE_SECCION',
+			'GetCORR_SECCION_SE',
 			undefined,
 			environment.UrlGENERALAPI
 		);
@@ -105,9 +122,11 @@ export class AcaSeVersionPreguntaService {
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			{ dataField: 'CODIGO_VERSION', caption: 'Cód. versión', width: 120 },
-			{ dataField: 'NOMBRE_VERSION', caption: 'Versión', width: 220, minWidth: 160 },
+			{ dataField: 'NOMBRE_VERSION', caption: 'Versión', width: 200, minWidth: 140 },
+			{ dataField: 'CODIGO_SECCION', caption: 'Cód. sección', width: 130 },
+			{ dataField: 'NOMBRE_SECCION', caption: 'Sección', width: 200, minWidth: 140 },
 			{ dataField: 'CODIGO_PREGUNTA', caption: 'Cód. pregunta', width: 140 },
-			{ dataField: 'ENUNCIADO_PREGUNTA', caption: 'Pregunta', width: 300, minWidth: 200 },
+			{ dataField: 'ENUNCIADO_PREGUNTA', caption: 'Pregunta', width: 280, minWidth: 180 },
 			{
 				dataField: 'ORDEN',
 				caption: 'Orden',
@@ -141,9 +160,11 @@ export class AcaSeVersionPreguntaService {
 
 	getItems(options?: {
 		versiones?: AcaSeVersionLookup[];
+		secciones?: AcaSeSeccionLookup[];
 		preguntas?: AcaSePreguntaLookup[];
 	}): any {
 		const versiones = options?.versiones ?? [];
+		const secciones = options?.secciones ?? [];
 		const preguntas = options?.preguntas ?? [];
 		return [
 			{ dataField: 'CORR_VERSION_PREGUNTA', label: { text: 'Corr.' }, colSpan: 2, editorOptions: { readOnly: true } },
@@ -155,11 +176,28 @@ export class AcaSeVersionPreguntaService {
 				editorOptions: {
 					dataSource: versiones,
 					valueExpr: 'CORR_VERSION',
-					displayExpr: (item: AcaSeVersionLookup) =>
-						item ? `${item.CODIGO ?? ''} - ${item.NOMBRE ?? ''}`.trim() : '',
+					displayExpr: 'DISPLAY',
 					searchEnabled: true,
+					searchExpr: ['CODIGO', 'NOMBRE', 'DISPLAY'],
 					showClearButton: true,
 					placeholder: 'Versión...',
+				},
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
+			},
+			{
+				dataField: 'CORR_SECCION_SE',
+				label: { text: 'Sección' },
+				editorType: 'dxSelectBox',
+				colSpan: 3,
+				editorOptions: {
+					dataSource: secciones,
+					valueExpr: 'CORR_SECCION_SE',
+					displayExpr: 'DISPLAY',
+					searchEnabled: true,
+					searchExpr: ['CODIGO', 'NOMBRE_SECCION', 'DISPLAY'],
+					showClearButton: true,
+					placeholder: secciones.length ? 'Sección...' : 'Seleccione primero la versión',
+					noDataText: 'No hay secciones para esta versión',
 				},
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
@@ -167,13 +205,13 @@ export class AcaSeVersionPreguntaService {
 				dataField: 'CORR_PREGUNTA',
 				label: { text: 'Pregunta' },
 				editorType: 'dxSelectBox',
-				colSpan: 3,
+				colSpan: 6,
 				editorOptions: {
 					dataSource: preguntas,
 					valueExpr: 'CORR_PREGUNTA',
-					displayExpr: (item: AcaSePreguntaLookup) =>
-						item ? `${item.CODIGO ?? ''} - ${item.ENUNCIADO ?? ''}`.trim() : '',
+					displayExpr: 'DISPLAY',
 					searchEnabled: true,
+					searchExpr: ['CODIGO', 'ENUNCIADO', 'DISPLAY'],
 					showClearButton: true,
 					placeholder: 'Pregunta...',
 				},
@@ -196,6 +234,7 @@ export class AcaSeVersionPreguntaService {
 		return {
 			CORR_VERSION_PREGUNTA: model?.CORR_VERSION_PREGUNTA,
 			CORR_VERSION: model?.CORR_VERSION,
+			CORR_SECCION_SE: Number(model?.CORR_SECCION_SE ?? 0),
 			CORR_PREGUNTA: model?.CORR_PREGUNTA,
 			ORDEN: Number(model?.ORDEN ?? 0),
 			ES_REQUERIDO: !!model?.ES_REQUERIDO,

@@ -33,6 +33,7 @@ namespace sguees.Repositories
 				var reader = await objData.GetDataReader(_ViewName, xWhere);
 				var response = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(reader)
 					.OrderBy(x => x.CORR_VERSION)
+					.ThenBy(x => x.CORR_SECCION_SE ?? 0)
 					.ThenBy(x => x.ORDEN)
 					.ThenBy(x => x.CORR_PREGUNTA)
 					.ToList();
@@ -92,10 +93,16 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				var validacion = await ValidarSeccionDeVersionAsync(Data.CORR_VERSION, Data.CORR_SECCION_SE);
+				if (!validacion.Result)
+					return validacion;
+
+				// Qué hace: inserta sin CORR_VERSION_PREGUNTA porque la PK es IDENTITY.
+				// Cómo lo hace: Insert sin CampoPk y relee por versión+pregunta (UQ).
 				var p = new List<CParameter>
 				{
-					new CParameter() { ParameterName = "CORR_VERSION_PREGUNTA", Value = Data.CORR_VERSION_PREGUNTA, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_SECCION_SE", Value = Data.CORR_SECCION_SE, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ES_REQUERIDO", Value = Data.ES_REQUERIDO ?? false, DbType = System.Data.DbType.Boolean },
@@ -107,11 +114,16 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
 				};
-				var reader = await objData.Insert(_TableName, p, _CampoPk, new List<CParameter>());
+				var pWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
+				};
+				var reader = await objData.Insert(_TableName, p, string.Empty, pWhere);
 				var inserted = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(reader).FirstOrDefault();
 				reader.Close();
-				var corr = inserted?.CORR_VERSION_PREGUNTA ?? (int)(p.First(x => x.ParameterName == "CORR_VERSION_PREGUNTA").Value ?? 0);
-				var response = await LeerVistaPorPkAsync(corr);
+				var corr = inserted?.CORR_VERSION_PREGUNTA ?? 0;
+				var response = corr > 0 ? await LeerVistaPorPkAsync(corr) : inserted;
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
@@ -141,9 +153,14 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				var validacion = await ValidarSeccionDeVersionAsync(Data.CORR_VERSION, Data.CORR_SECCION_SE);
+				if (!validacion.Result)
+					return validacion;
+
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_SECCION_SE", Value = Data.CORR_SECCION_SE, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ES_REQUERIDO", Value = Data.ES_REQUERIDO ?? false, DbType = System.Data.DbType.Boolean },
@@ -277,6 +294,45 @@ namespace sguees.Repositories
 			var response = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(readerGet).FirstOrDefault();
 			readerGet.Close();
 			return response;
+		}
+
+		// Qué hace: exige sección y que pertenezca a la versión elegida.
+		// Cómo lo hace: lee V_ACA_SE_SECCION por PK y compara CORR_VERSION.
+		private async Task<CResult> ValidarSeccionDeVersionAsync(int corrVersion, int? corrSeccion)
+		{
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			if (!corrSeccion.HasValue || corrSeccion.Value <= 0)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4004;
+				ok.ErrorMessage = "Debe seleccionar la sección de la versión.";
+				return ok;
+			}
+
+			var reader = await objData.GetDataReader("V_ACA_SE_SECCION", new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_SECCION_SE", Value = corrSeccion.Value, DbType = System.Data.DbType.Int32 },
+			});
+			var seccion = new List<ACA_SE_SECCIONView>().FromDataReader(reader).FirstOrDefault();
+			reader.Close();
+
+			if (seccion == null)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4005;
+				ok.ErrorMessage = "La sección seleccionada no existe.";
+				return ok;
+			}
+
+			if (seccion.CORR_VERSION != corrVersion)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4006;
+				ok.ErrorMessage = "La sección no pertenece a la versión seleccionada.";
+				return ok;
+			}
+
+			return ok;
 		}
 
 		private static bool IsDuplicateKeyError(Exception e)

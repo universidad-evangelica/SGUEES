@@ -1,1 +1,54 @@
-/* Estilos locales del mantenimiento de versiones socioeconómico (layout global). */
+/* Estilos locales: tab secciones; respeta tema claro/oscuro vía variables SGUEES. */
+.aca-se-version-tab-body {
+	padding: 12px 4px 8px;
+}
+
+.aca-se-version-hint {
+	margin: 8px 0 0;
+	color: var(--text-color-secondary, var(--base-text-color-alpha, #98a2b3));
+}
+
+.aca-se-version-sec-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.aca-se-version-sec-toolbar-btns {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.aca-se-version-sec-btn {
+	min-width: 120px;
+}
+
+.aca-se-version-sec-resumen {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	font-size: 13px;
+	color: var(--base-text-color, inherit);
+}
+
+.aca-se-version-sec-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.aca-se-version-sec-popup-body {
+	padding: 4px 2px 8px;
+	color: var(--base-text-color, inherit);
+}
+
+:host-context(.sguees-theme-light) {
+	.aca-se-version-hint {
+		color: #667085;
+	}
+}
