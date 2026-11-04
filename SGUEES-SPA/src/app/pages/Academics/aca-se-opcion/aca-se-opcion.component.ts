@@ -74,9 +74,13 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 				CORR_PREGUNTA: xModel.CORR_PREGUNTA,
 				CODIGO_PREGUNTA: xModel.CODIGO_PREGUNTA,
 				ENUNCIADO_PREGUNTA: xModel.ENUNCIADO_PREGUNTA,
+				CORR_TIPO_PREGUNTA: xModel.CORR_TIPO_PREGUNTA,
+				CODIGO_TIPO_PREGUNTA: xModel.CODIGO_TIPO_PREGUNTA,
+				NOMBRE_TIPO_PREGUNTA: xModel.NOMBRE_TIPO_PREGUNTA,
 				CODIGO: xModel.CODIGO,
 				TEXTO: xModel.TEXTO,
 				ORDEN: xModel.ORDEN,
+				PUNTAJE: Number(xModel.PUNTAJE ?? 0),
 				ACTIVO: xModel.ACTIVO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
@@ -93,6 +97,7 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 			CODIGO: '',
 			TEXTO: '',
 			ORDEN: 0,
+			PUNTAJE: 0,
 			ACTIVO: true,
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
@@ -114,7 +119,7 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: carga el catálogo de preguntas para el select.
-	// Cómo lo hace: getLookUp GetCORR_PREGUNTA → mCORR_PREGUNTA y refresca items del form.
+	// Cómo lo hace: getLookUp GetCORR_PREGUNTA → mCORR_PREGUNTA (incluye tipo) y refresca items.
 	getCORR_PREGUNTA(): void {
 		this.service
 			.getCORR_PREGUNTA()
@@ -122,22 +127,69 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 			.subscribe({
 				next: (response: any) => {
 					if (response?.Result && Array.isArray(response.Data)) {
-						this.mCORR_PREGUNTA = response.Data.map((item: AcaSePreguntaLookup) => ({
+						this.mCORR_PREGUNTA = response.Data.map((item: any) => ({
 							CORR_PREGUNTA: Number(item.CORR_PREGUNTA),
 							CODIGO: (item.CODIGO ?? '').trim(),
 							ENUNCIADO: (item.ENUNCIADO ?? '').trim(),
+							CORR_TIPO_PREGUNTA: Number(item.CORR_TIPO_PREGUNTA ?? 0),
+							CODIGO_TIPO_PREGUNTA: (item.CODIGO_TIPO_PREGUNTA ?? '').trim(),
+							NOMBRE_TIPO_PREGUNTA: (item.NOMBRE_TIPO_PREGUNTA ?? '').trim(),
 							ACTIVO: item.ACTIVO,
 						}));
 					} else {
 						this.mCORR_PREGUNTA = [];
 					}
-					this.items = this.service.getItems({ preguntas: this.mCORR_PREGUNTA });
+					this.refrescarItemsForm();
 				},
 				error: () => {
 					this.mCORR_PREGUNTA = [];
-					this.items = this.service.getItems({ preguntas: this.mCORR_PREGUNTA });
+					this.refrescarItemsForm();
 				},
 			});
+	}
+
+	// Qué hace: indica si la pregunta actual es opción única (permite puntaje de respuesta).
+	private preguntaPermitePuntaje(corrPregunta?: number): boolean {
+		const corr = Number(corrPregunta ?? this.model?.CORR_PREGUNTA ?? 0);
+		const pregunta = this.mCORR_PREGUNTA.find((p) => p.CORR_PREGUNTA === corr);
+		const codigo =
+			(pregunta?.CODIGO_TIPO_PREGUNTA ?? this.model?.CODIGO_TIPO_PREGUNTA ?? '').trim().toUpperCase();
+		return codigo === 'OPCION_UNICA';
+	}
+
+	private refrescarItemsForm(): void {
+		this.items = this.service.getItems({
+			preguntas: this.mCORR_PREGUNTA,
+			permitePuntaje: this.preguntaPermitePuntaje(),
+		});
+	}
+
+	// Qué hace: habilita puntaje solo para OPCION_UNICA; si no, fuerza 0.
+	private sincronizarEditorPuntaje(): void {
+		const permite = this.preguntaPermitePuntaje();
+		if (!permite) {
+			this.model.PUNTAJE = 0;
+			this.dataForm?.instance?.updateData('PUNTAJE', 0);
+		}
+		const editor = this.dataForm?.instance?.getEditor('PUNTAJE');
+		editor?.option('readOnly', !permite);
+		editor?.option(
+			'hint',
+			permite ? 'Puntaje de la respuesta (0 = sin puntaje)' : 'Solo aplica a preguntas de opción única'
+		);
+	}
+
+	onFieldDataChanged(e: any): void {
+		if (e?.dataField !== 'CORR_PREGUNTA') {
+			return;
+		}
+		const corr = Number(e?.value ?? 0);
+		this.model.CORR_PREGUNTA = corr;
+		const pregunta = this.mCORR_PREGUNTA.find((p) => p.CORR_PREGUNTA === corr);
+		this.model.CODIGO_TIPO_PREGUNTA = pregunta?.CODIGO_TIPO_PREGUNTA;
+		this.model.NOMBRE_TIPO_PREGUNTA = pregunta?.NOMBRE_TIPO_PREGUNTA;
+		this.model.CORR_TIPO_PREGUNTA = pregunta?.CORR_TIPO_PREGUNTA;
+		setTimeout(() => this.sincronizarEditorPuntaje());
 	}
 
 	private ordenarModels(): void {
@@ -200,6 +252,7 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 			this.model = this.fillData(rowData);
 			this.modelUpdate = this.fillData(rowData);
 		}
+		this.refrescarItemsForm();
 		super.rowDblClick(e);
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
@@ -213,6 +266,7 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 		}
 
 		this.model = this.fillData(e.row.data);
+		this.refrescarItemsForm();
 		this.editarClick(e);
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
@@ -222,6 +276,7 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 
 	override nuevo(): void {
 		super.nuevo();
+		this.refrescarItemsForm();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 		});
@@ -231,6 +286,9 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
 			this.model = { ...this.model, ...formData };
+		}
+		if (!this.preguntaPermitePuntaje()) {
+			this.model.PUNTAJE = 0;
 		}
 
 		const formValidation = this.dataForm?.instance?.validate();
@@ -298,6 +356,7 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 		this.dataForm.instance.getEditor('CODIGO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('TEXTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('PUNTAJE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ACTIVO')?.option('readOnly', true);
 	}
 
@@ -309,6 +368,7 @@ export class AcaSeOpcionComponent extends CBaseComponent implements OnInit {
 			this.dataForm.instance.getEditor('CODIGO')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('TEXTO')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', false);
+			this.sincronizarEditorPuntaje();
 			this.dataForm.instance.getEditor('ACTIVO')?.option('readOnly', estadoSoloLectura);
 		});
 	}

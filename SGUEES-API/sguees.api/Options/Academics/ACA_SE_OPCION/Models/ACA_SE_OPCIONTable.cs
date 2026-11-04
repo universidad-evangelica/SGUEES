@@ -12,6 +12,7 @@ namespace sguees.Models
 		public string CODIGO { get; set; }
 		public string TEXTO { get; set; }
 		public int ORDEN { get; set; }
+		public decimal PUNTAJE { get; set; }
 		public bool? ACTIVO { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }

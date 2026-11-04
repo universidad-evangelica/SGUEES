@@ -12,10 +12,12 @@ namespace sguees.Models
 		public int? CORR_SECCION_SE { get; set; }
 		public string CODIGO_SECCION { get; set; }
 		public string NOMBRE_SECCION { get; set; }
+		public string TIPO_EVALUACION { get; set; }
 		public int CORR_PREGUNTA { get; set; }
 		public string CODIGO_PREGUNTA { get; set; }
 		public string ENUNCIADO_PREGUNTA { get; set; }
 		public int ORDEN { get; set; }
+		public decimal PUNTAJE { get; set; }
 		public bool? ES_REQUERIDO { get; set; }
 		public bool? ACTIVO { get; set; }
 		public string USUARIO_CREA { get; set; }

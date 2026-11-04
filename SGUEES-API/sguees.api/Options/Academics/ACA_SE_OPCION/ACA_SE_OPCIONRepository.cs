@@ -92,6 +92,8 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				Data.PUNTAJE = await NormalizarPuntajeOpcionAsync(Data.CORR_PREGUNTA, Data.PUNTAJE);
+
 				// Qué hace: inserta sin CORR_OPCION porque la PK es IDENTITY.
 				// Cómo lo hace: Insert sin CampoPk y relee por pregunta+código (UQ).
 				var p = new List<CParameter>
@@ -100,6 +102,7 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "CODIGO", Value = Data.CODIGO, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "TEXTO", Value = Data.TEXTO, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "PUNTAJE", Value = Data.PUNTAJE, DbType = System.Data.DbType.Decimal },
 					new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO ?? true, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
@@ -147,12 +150,15 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				Data.PUNTAJE = await NormalizarPuntajeOpcionAsync(Data.CORR_PREGUNTA, Data.PUNTAJE);
+
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CODIGO", Value = Data.CODIGO, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "TEXTO", Value = Data.TEXTO, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "PUNTAJE", Value = Data.PUNTAJE, DbType = System.Data.DbType.Decimal },
 					new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -283,6 +289,24 @@ namespace sguees.Repositories
 			var response = new List<ACA_SE_OPCIONView>().FromDataReader(readerGet).FirstOrDefault();
 			readerGet.Close();
 			return response;
+		}
+
+		// Qué hace: puntaje de opción solo si la pregunta es OPCION_UNICA; si no, 0.
+		// Cómo lo hace: lee V_ACA_SE_PREGUNTA y compara CODIGO_TIPO_PREGUNTA.
+		private async Task<decimal> NormalizarPuntajeOpcionAsync(int corrPregunta, decimal puntaje)
+		{
+			var reader = await objData.GetDataReader("V_ACA_SE_PREGUNTA", new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_PREGUNTA", Value = corrPregunta, DbType = System.Data.DbType.Int32 },
+			});
+			var pregunta = new List<ACA_SE_PREGUNTAView>().FromDataReader(reader).FirstOrDefault();
+			reader.Close();
+
+			var esUnica = pregunta != null &&
+				string.Equals(pregunta.CODIGO_TIPO_PREGUNTA, "OPCION_UNICA", StringComparison.OrdinalIgnoreCase);
+			if (!esUnica)
+				return 0m;
+			return puntaje < 0 ? 0m : puntaje;
 		}
 
 		private static bool IsDuplicateKeyError(Exception e)

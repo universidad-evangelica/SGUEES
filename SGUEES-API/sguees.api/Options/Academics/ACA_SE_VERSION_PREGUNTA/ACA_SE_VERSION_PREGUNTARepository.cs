@@ -97,6 +97,9 @@ namespace sguees.Repositories
 				if (!validacion.Result)
 					return validacion;
 
+				// Qué hace: puntaje solo aplica a secciones PREGUNTA; en RANGO_MONTO queda 0.
+				Data.PUNTAJE = NormalizarPuntajePorSeccion(validacion, Data.PUNTAJE);
+
 				// Qué hace: inserta sin CORR_VERSION_PREGUNTA porque la PK es IDENTITY.
 				// Cómo lo hace: Insert sin CampoPk y relee por versión+pregunta (UQ).
 				var p = new List<CParameter>
@@ -105,6 +108,7 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "CORR_SECCION_SE", Value = Data.CORR_SECCION_SE, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "PUNTAJE", Value = Data.PUNTAJE, DbType = System.Data.DbType.Decimal },
 					new CParameter() { ParameterName = "ES_REQUERIDO", Value = Data.ES_REQUERIDO ?? false, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO ?? true, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
@@ -157,12 +161,15 @@ namespace sguees.Repositories
 				if (!validacion.Result)
 					return validacion;
 
+				Data.PUNTAJE = NormalizarPuntajePorSeccion(validacion, Data.PUNTAJE);
+
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_SECCION_SE", Value = Data.CORR_SECCION_SE, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "PUNTAJE", Value = Data.PUNTAJE, DbType = System.Data.DbType.Decimal },
 					new CParameter() { ParameterName = "ES_REQUERIDO", Value = Data.ES_REQUERIDO ?? false, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
@@ -297,10 +304,10 @@ namespace sguees.Repositories
 		}
 
 		// Qué hace: exige sección y que pertenezca a la versión elegida.
-		// Cómo lo hace: lee V_ACA_SE_SECCION por PK y compara CORR_VERSION.
+		// Cómo lo hace: lee V_ACA_SE_SECCION por PK y compara CORR_VERSION; deja TIPO_EVALUACION en Data.
 		private async Task<CResult> ValidarSeccionDeVersionAsync(int corrVersion, int? corrSeccion)
 		{
-			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "", Data = null };
 			if (!corrSeccion.HasValue || corrSeccion.Value <= 0)
 			{
 				ok.Result = false;
@@ -332,7 +339,20 @@ namespace sguees.Repositories
 				return ok;
 			}
 
+			ok.Data = seccion;
 			return ok;
+		}
+
+		// Qué hace: si la sección no es PREGUNTA, el puntaje de la pregunta queda en 0.
+		// Cómo lo hace: lee TIPO_EVALUACION del Data de la validación; PUNTAJE < 0 → 0.
+		private static decimal NormalizarPuntajePorSeccion(CResult validacion, decimal puntaje)
+		{
+			var seccion = validacion?.Data as ACA_SE_SECCIONView;
+			var esPregunta = seccion != null &&
+				string.Equals(seccion.TIPO_EVALUACION, "PREGUNTA", StringComparison.OrdinalIgnoreCase);
+			if (!esPregunta)
+				return 0m;
+			return puntaje < 0 ? 0m : puntaje;
 		}
 
 		private static bool IsDuplicateKeyError(Exception e)

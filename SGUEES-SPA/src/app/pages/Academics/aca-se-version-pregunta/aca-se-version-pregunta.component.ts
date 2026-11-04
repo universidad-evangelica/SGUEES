@@ -85,10 +85,12 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 				CORR_SECCION_SE: Number(xModel.CORR_SECCION_SE ?? 0),
 				CODIGO_SECCION: xModel.CODIGO_SECCION,
 				NOMBRE_SECCION: xModel.NOMBRE_SECCION,
+				TIPO_EVALUACION: xModel.TIPO_EVALUACION,
 				CORR_PREGUNTA: xModel.CORR_PREGUNTA,
 				CODIGO_PREGUNTA: xModel.CODIGO_PREGUNTA,
 				ENUNCIADO_PREGUNTA: xModel.ENUNCIADO_PREGUNTA,
 				ORDEN: xModel.ORDEN,
+				PUNTAJE: Number(xModel.PUNTAJE ?? 0),
 				ES_REQUERIDO: !!xModel.ES_REQUERIDO,
 				ACTIVO: xModel.ACTIVO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
@@ -106,6 +108,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			CORR_SECCION_SE: 0,
 			CORR_PREGUNTA: 0,
 			ORDEN: 0,
+			PUNTAJE: 0,
 			ES_REQUERIDO: false,
 			ACTIVO: true,
 			USUARIO_CREA: '',
@@ -155,11 +158,13 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 						? result.secciones.Data.map((item: any) => {
 								const CODIGO = (item.CODIGO ?? '').trim();
 								const NOMBRE_SECCION = (item.NOMBRE_SECCION ?? '').trim();
+								const TIPO_EVALUACION = (item.TIPO_EVALUACION ?? '').trim();
 								return {
 									CORR_SECCION_SE: Number(item.CORR_SECCION_SE),
 									CORR_VERSION: Number(item.CORR_VERSION),
 									CODIGO,
 									NOMBRE_SECCION,
+									TIPO_EVALUACION,
 									DISPLAY: `${CODIGO} - ${NOMBRE_SECCION}`.trim(),
 									ACTIVO: item.ACTIVO,
 									ORDEN: Number(item.ORDEN ?? 0),
@@ -202,36 +207,69 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		}
 	}
 
+	// Qué hace: indica si la sección actual permite puntaje de pregunta.
+	// Cómo lo hace: TIPO_EVALUACION = PREGUNTA en el catálogo de secciones.
+	private seccionPermitePuntaje(corrSeccion?: number): boolean {
+		const corr = Number(corrSeccion ?? this.model?.CORR_SECCION_SE ?? 0);
+		const seccion = this.mCORR_SECCION_SE.find((s) => s.CORR_SECCION_SE === corr);
+		return (seccion?.TIPO_EVALUACION ?? '').toUpperCase() === 'PREGUNTA';
+	}
+
 	// Qué hace: reconstruye el formulario con los catálogos cargados.
 	private refrescarItemsForm(): void {
 		this.items = this.service.getItems({
 			versiones: this.mCORR_VERSION,
 			secciones: this.mSeccionesFiltradas,
 			preguntas: this.mCORR_PREGUNTA,
+			permitePuntaje: this.seccionPermitePuntaje(),
 		});
 	}
 
+	// Qué hace: habilita/deshabilita puntaje según tipo de sección.
+	// Cómo lo hace: readOnly en editor PUNTAJE; si no aplica, deja 0.
+	private sincronizarEditorPuntaje(): void {
+		const permite = this.seccionPermitePuntaje();
+		if (!permite) {
+			this.model.PUNTAJE = 0;
+			this.dataForm?.instance?.updateData('PUNTAJE', 0);
+		}
+		const editor = this.dataForm?.instance?.getEditor('PUNTAJE');
+		editor?.option('readOnly', !permite);
+		editor?.option(
+			'hint',
+			permite ? 'Puntaje de la pregunta (0 = sin puntaje)' : 'Solo aplica a secciones tipo PREGUNTA'
+		);
+	}
+
 	onFieldDataChanged(e: any): void {
-		// Qué hace: al cambiar versión, filtra secciones sin recrear el form (si se recrea, el select no deja elegir).
-		// Cómo lo hace: actualiza solo el dataSource/value del editor CORR_SECCION_SE.
-		if (e?.dataField !== 'CORR_VERSION') {
+		// Qué hace: al cambiar versión, filtra secciones; al cambiar sección, sincroniza puntaje.
+		// Cómo lo hace: actualiza dataSource de sección o readOnly de PUNTAJE sin recrear el form.
+		if (e?.dataField === 'CORR_VERSION') {
+			const corrVersion = Number(e?.value ?? this.model?.CORR_VERSION ?? 0);
+			this.model.CORR_VERSION = corrVersion;
+			this.aplicarFiltroSecciones(corrVersion, true);
+			setTimeout(() => {
+				const editorSeccion = this.dataForm?.instance?.getEditor('CORR_SECCION_SE') as any;
+				if (!editorSeccion) {
+					return;
+				}
+				editorSeccion.option('dataSource', this.mSeccionesFiltradas);
+				editorSeccion.option('value', this.model.CORR_SECCION_SE > 0 ? this.model.CORR_SECCION_SE : null);
+				editorSeccion.option(
+					'placeholder',
+					this.mSeccionesFiltradas.length ? 'Sección...' : 'Seleccione primero la versión'
+				);
+				this.sincronizarEditorPuntaje();
+			});
 			return;
 		}
-		const corrVersion = Number(e?.value ?? this.model?.CORR_VERSION ?? 0);
-		this.model.CORR_VERSION = corrVersion;
-		this.aplicarFiltroSecciones(corrVersion, true);
-		setTimeout(() => {
-			const editorSeccion = this.dataForm?.instance?.getEditor('CORR_SECCION_SE') as any;
-			if (!editorSeccion) {
-				return;
-			}
-			editorSeccion.option('dataSource', this.mSeccionesFiltradas);
-			editorSeccion.option('value', this.model.CORR_SECCION_SE > 0 ? this.model.CORR_SECCION_SE : null);
-			editorSeccion.option(
-				'placeholder',
-				this.mSeccionesFiltradas.length ? 'Sección...' : 'Seleccione primero la versión'
-			);
-		});
+
+		if (e?.dataField === 'CORR_SECCION_SE') {
+			this.model.CORR_SECCION_SE = Number(e?.value ?? 0);
+			const seccion = this.mCORR_SECCION_SE.find((s) => s.CORR_SECCION_SE === this.model.CORR_SECCION_SE);
+			this.model.TIPO_EVALUACION = seccion?.TIPO_EVALUACION;
+			setTimeout(() => this.sincronizarEditorPuntaje());
+		}
 	}
 
 	private ordenarModels(): void {
@@ -336,6 +374,9 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		if (formData) {
 			this.model = { ...this.model, ...formData };
 		}
+		if (!this.seccionPermitePuntaje()) {
+			this.model.PUNTAJE = 0;
+		}
 
 		const formValidation = this.dataForm?.instance?.validate();
 		if (formValidation && !formValidation.isValid) {
@@ -403,6 +444,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		this.dataForm.instance.getEditor('CORR_SECCION_SE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_PREGUNTA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('PUNTAJE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ES_REQUERIDO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ACTIVO')?.option('readOnly', true);
 	}
@@ -415,6 +457,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.dataForm.instance.getEditor('CORR_SECCION_SE')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('CORR_PREGUNTA')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', false);
+			this.sincronizarEditorPuntaje();
 			this.dataForm.instance.getEditor('ES_REQUERIDO')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ACTIVO')?.option('readOnly', estadoSoloLectura);
 		});

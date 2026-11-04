@@ -48,6 +48,10 @@ export class AcaSeOpcionService {
 			msg('Debe ingresar un orden válido (0 o mayor).', NotifyType.Warning);
 			return false;
 		}
+		if (model.PUNTAJE === null || model.PUNTAJE === undefined || Number.isNaN(Number(model.PUNTAJE)) || Number(model.PUNTAJE) < 0) {
+			msg('El puntaje debe ser 0 o mayor.', NotifyType.Warning);
+			return false;
+		}
 		return true;
 	}
 
@@ -100,6 +104,7 @@ export class AcaSeOpcionService {
 			},
 			{ dataField: 'CODIGO_PREGUNTA', caption: 'Cód. pregunta', width: 140 },
 			{ dataField: 'ENUNCIADO_PREGUNTA', caption: 'Pregunta', width: 280, minWidth: 200 },
+			{ dataField: 'CODIGO_TIPO_PREGUNTA', caption: 'Tipo', width: 130 },
 			{ dataField: 'CODIGO', caption: 'Código', width: 120 },
 			{ dataField: 'TEXTO', caption: 'Texto', width: 300, minWidth: 200 },
 			{
@@ -107,6 +112,14 @@ export class AcaSeOpcionService {
 				caption: 'Orden',
 				width: 90,
 				dataType: 'number',
+				filterOperations: ['=', '<', '>', '<=', '>='],
+			},
+			{
+				dataField: 'PUNTAJE',
+				caption: 'Puntaje',
+				width: 110,
+				dataType: 'number',
+				format: '#0.00',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS, { caption: 'Estado' }),
@@ -127,8 +140,9 @@ export class AcaSeOpcionService {
 		};
 	}
 
-	getItems(options?: { preguntas?: AcaSePreguntaLookup[] }): any {
+	getItems(options?: { preguntas?: AcaSePreguntaLookup[]; permitePuntaje?: boolean }): any {
 		const preguntas = options?.preguntas ?? [];
+		const permitePuntaje = options?.permitePuntaje ?? false;
 		return [
 			{ dataField: 'CORR_OPCION', label: { text: 'Corr.' }, colSpan: 2, editorOptions: { readOnly: true } },
 			{
@@ -169,6 +183,21 @@ export class AcaSeOpcionService {
 				editorOptions: { min: 0, showSpinButtons: true },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
+			{
+				dataField: 'PUNTAJE',
+				label: { text: 'Puntaje' },
+				editorType: 'dxNumberBox',
+				colSpan: 2,
+				editorOptions: {
+					min: 0,
+					showSpinButtons: true,
+					format: '#0.00',
+					readOnly: !permitePuntaje,
+					hint: permitePuntaje
+						? 'Puntaje de la respuesta (0 = sin puntaje)'
+						: 'Solo aplica a preguntas de opción única',
+				},
+			},
 			{ dataField: 'ACTIVO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
@@ -180,6 +209,7 @@ export class AcaSeOpcionService {
 			CODIGO: typeof model?.CODIGO === 'string' ? model.CODIGO.trim() : model?.CODIGO,
 			TEXTO: typeof model?.TEXTO === 'string' ? model.TEXTO.trim() : model?.TEXTO,
 			ORDEN: Number(model?.ORDEN ?? 0),
+			PUNTAJE: Number(model?.PUNTAJE ?? 0),
 			ACTIVO: model?.ACTIVO,
 		};
 	}

@@ -8,10 +8,12 @@ export interface AcaSeVersionPregunta {
 	CORR_SECCION_SE: number;
 	CODIGO_SECCION?: string;
 	NOMBRE_SECCION?: string;
+	TIPO_EVALUACION?: string;
 	CORR_PREGUNTA: number;
 	CODIGO_PREGUNTA?: string;
 	ENUNCIADO_PREGUNTA?: string;
 	ORDEN: number;
+	PUNTAJE: number;
 	ES_REQUERIDO: boolean;
 	ACTIVO: boolean;
 	USUARIO_CREA: string;
@@ -35,6 +37,7 @@ export interface AcaSeSeccionLookup {
 	CORR_VERSION: number;
 	CODIGO: string;
 	NOMBRE_SECCION: string;
+	TIPO_EVALUACION?: string;
 	DISPLAY?: string;
 	ACTIVO?: boolean;
 	ORDEN?: number;
