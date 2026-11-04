@@ -1,5 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { confirm } from 'devextreme/ui/dialog';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
@@ -10,6 +11,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { GenProveedor } from './models/gen-proveedor';
+import { GenProveedorDoc } from './models/gen-proveedor-doc';
 import { emptyGenProveedorPersona, GenProveedorPersona } from './models/gen-proveedor-persona';
 import { GenProveedorService } from './gen-proveedor.service';
 
@@ -23,6 +25,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	@ViewChild('personaLookup') personaLookup?: DataLookupComponent;
 	@ViewChild('previewPanel') previewPanelRef?: ElementRef<HTMLElement>;
 	@ViewChild('previewBody') previewBodyRef?: ElementRef<HTMLDivElement>;
+	@ViewChild('docFileInput') docFileInputRef?: ElementRef<HTMLInputElement>;
 
 	protected override etiquetaRegistro = 'el proveedor';
 	protected override requiereEmpresaSesion = true;
@@ -70,6 +73,14 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	mCORR_PAIS_PERSONA: any[] = [];
 	mCORR_DEPTO_PERSONA: any[] = [];
 	mCORR_MUNICIPIO_PERSONA: any[] = [];
+
+	/** Tab Doc. Adjuntos */
+	documentos: GenProveedorDoc[] = [];
+	documentoColumns: any[] = [];
+	documentosCargando = false;
+	documentoSubiendo = false;
+	docAccept =
+		'.pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.csv';
 	// #endregion
 
 	/** Activar/Desactivar solo si hay fila del grid con PK válida (no el model vacío del form). */
@@ -90,7 +101,12 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
+		this.documentoColumns = this.service.getDocumentoColumns();
 		this.selectedLookUpCORR_PERSONA = this.selectedLookUpCORR_PERSONA.bind(this);
+	}
+
+	get puedeAdjuntarDocumentos(): boolean {
+		return Number(this.model?.CORR_PROVEEDOR ?? 0) > 0 && !this.readOnly;
 	}
 
 	//#region <Inicializando Opciones>
@@ -249,6 +265,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.personaResumen = null;
 		this.personaResumenCargando = false;
 		this.personaDetalleTabIndex = 0;
+		this.documentos = [];
 		this.getCORR_PERSONA(0);
 		super.nuevo();
 	}
@@ -265,6 +282,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			this.personaResumen = null;
 			this.personaResumenCargando = false;
 		}
+		this.consultarDocumentos(Number(row?.CORR_PROVEEDOR ?? 0));
 	}
 
 	/** Clic en fila del browse → panel lateral con datos de persona (solo lectura). */
@@ -380,6 +398,11 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			esValido: () => this.validarYEnfocar(),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
+			onSuccess: () => {
+				if (Number(this.model?.CORR_PROVEEDOR ?? 0) > 0) {
+					this.consultarDocumentos(this.model.CORR_PROVEEDOR);
+				}
+			},
 		});
 	}
 
@@ -412,6 +435,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.personaResumen = null;
 		this.personaResumenCargando = false;
 		this.personaDetalleTabIndex = 0;
+		this.documentos = [];
 		this.cerrarPersonaPopup();
 		super.cancelar((item: any) => item.CORR_PROVEEDOR === this.modelUpdate.CORR_PROVEEDOR);
 	}
@@ -714,6 +738,158 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 					this.personaResumen = null;
 					this.personaResumenCargando = false;
 				},
+			});
+	}
+
+	consultarDocumentos(corrProveedor?: number): void {
+		const corr = Number(corrProveedor ?? this.model?.CORR_PROVEEDOR ?? 0);
+		if (!(corr > 0)) {
+			this.documentos = [];
+			this.documentosCargando = false;
+			return;
+		}
+		this.documentosCargando = true;
+		this.service
+			.getDocumentos(corr)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.documentosCargando = false;
+					this.documentos = response?.Result ? response.Data ?? [] : [];
+				},
+				error: (error: any) => {
+					this.documentosCargando = false;
+					this.documentos = [];
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	abrirSelectorDocumento(): void {
+		if (!this.puedeAdjuntarDocumentos) {
+			this.notifyFx('Guarde el proveedor antes de adjuntar documentos.', NotifyType.Warning);
+			return;
+		}
+		this.docFileInputRef?.nativeElement?.click();
+	}
+
+	onDocumentoFileSelected(event: Event): void {
+		const input = event.target as HTMLInputElement;
+		const file = input?.files?.[0];
+		input.value = '';
+		if (!file) {
+			return;
+		}
+		this.subirDocumento(file);
+	}
+
+	private subirDocumento(file: File): void {
+		const corr = Number(this.model?.CORR_PROVEEDOR ?? 0);
+		if (!(corr > 0)) {
+			this.notifyFx('Guarde el proveedor antes de adjuntar documentos.', NotifyType.Warning);
+			return;
+		}
+		if (!this.service.esExtensionDocumentoPermitida(file.name)) {
+			this.notifyFx(
+				'Formato no permitido. Use PDF, imágenes u Office. No se admiten videos.',
+				NotifyType.Warning,
+			);
+			return;
+		}
+		if (file.size > this.service.maxDocBytes) {
+			this.notifyFx('El archivo no debe superar 10 MB.', NotifyType.Warning);
+			return;
+		}
+
+		this.documentoSubiendo = true;
+		this.service
+			.uploadDocumento(corr, file)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.documentoSubiendo = false;
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo subir el documento.', NotifyType.Error);
+						return;
+					}
+					this.notifyFx('Documento adjunto correctamente.', NotifyType.Success);
+					this.consultarDocumentos(corr);
+				},
+				error: (error: any) => {
+					this.documentoSubiendo = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	verDocumento(row: GenProveedorDoc): void {
+		if (!row?.CORR_DOCUMENTO) {
+			return;
+		}
+		this.service
+			.getDocumentoBlob(row)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob: Blob) => {
+					if (!blob || blob.size <= 0) {
+						this.notifyFx('No se pudo obtener el archivo.', NotifyType.Error);
+						return;
+					}
+					const objectUrl = window.URL.createObjectURL(blob);
+					window.open(objectUrl, '_blank');
+					setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60000);
+				},
+				error: (error: any) => this.notifyApiError(error),
+			});
+	}
+
+	descargarDocumento(row: GenProveedorDoc): void {
+		if (!row?.CORR_DOCUMENTO) {
+			return;
+		}
+		const fileName = (row.NOMBRE_ARCHIVO || '').trim() || `documento-${row.CORR_DOCUMENTO}`;
+		this.service
+			.getDocumentoBlob(row, true)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob: Blob) => {
+					if (!blob || blob.size <= 0) {
+						this.notifyFx('No se pudo obtener el archivo.', NotifyType.Error);
+						return;
+					}
+					this.appInfoService.downloadFile(blob, fileName);
+				},
+				error: (error: any) => this.notifyApiError(error),
+			});
+	}
+
+	async eliminarDocumento(row: GenProveedorDoc): Promise<void> {
+		if (!this.permiteDele || this.readOnly) {
+			return;
+		}
+		const corrProv = Number(this.model?.CORR_PROVEEDOR ?? 0);
+		const corrDoc = Number(row?.CORR_DOCUMENTO ?? 0);
+		if (!(corrProv > 0) || !(corrDoc > 0)) {
+			return;
+		}
+		const nombre = row.NOMBRE_ARCHIVO || `#${corrDoc}`;
+		const ok = await confirm(`¿Eliminar el documento "${nombre}"?`, 'Confirmar eliminación');
+		if (!ok) {
+			return;
+		}
+		this.service
+			.deleteDocumento(corrProv, corrDoc)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo eliminar el documento.', NotifyType.Error);
+						return;
+					}
+					this.notifyFx('Documento eliminado.', NotifyType.Success);
+					this.consultarDocumentos(corrProv);
+				},
+				error: (error: any) => this.notifyApiError(error),
 			});
 	}
 

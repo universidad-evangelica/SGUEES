@@ -7,8 +7,10 @@ import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { GenProveedorRepository } from './gen-proveedor.repository';
+import { GenProveedorDocRepository } from './gen-proveedor-doc.repository';
 import { GenProveedor } from './models/gen-proveedor';
 import { GenProveedorPersona } from './models/gen-proveedor-persona';
+import { GenProveedorDoc } from './models/gen-proveedor-doc';
 
 const ESTADO_FIELD = 'ACTIVO_PROVEEDOR';
 
@@ -16,7 +18,13 @@ const ESTADO_FIELD = 'ACTIVO_PROVEEDOR';
 	providedIn: 'root',
 })
 export class GenProveedorService {
-	constructor(private repo: GenProveedorRepository) {}
+	/** Máximo alineado con appsettings ProveedorDocumento:MaxBytes (10 MB). */
+	readonly maxDocBytes = 10 * 1024 * 1024;
+
+	constructor(
+		private repo: GenProveedorRepository,
+		private docRepo: GenProveedorDocRepository,
+	) {}
 
 	esValido(model: GenProveedor, msg: Function): boolean {
 		if (!model.CORR_PERSONA || model.CORR_PERSONA <= 0) {
@@ -104,6 +112,69 @@ export class GenProveedorService {
 		return this.repo.activarInactivar(model, [
 			{ Parameter: 'CORR_PROVEEDOR', Value: model.CORR_PROVEEDOR },
 		]);
+	}
+
+	getDocumentos(corrProveedor: number): Observable<IResult> {
+		return this.docRepo.getAll([{ Parameter: 'CORR_PROVEEDOR', Value: corrProveedor ?? 0 }]);
+	}
+
+	uploadDocumento(corrProveedor: number, file: File): Observable<IResult> {
+		const form = new FormData();
+		form.append('CORR_PROVEEDOR', String(corrProveedor));
+		form.append('ARCHIVO', file, file.name);
+		return this.docRepo.postDoc(form);
+	}
+
+	deleteDocumento(corrProveedor: number, corrDocumento: number): Observable<IResult> {
+		return this.docRepo.delete([
+			{ Parameter: 'CORR_PROVEEDOR', Value: corrProveedor },
+			{ Parameter: 'CORR_DOCUMENTO', Value: corrDocumento },
+		]);
+	}
+
+	getDocumentoBlob(doc: GenProveedorDoc, download = false): Observable<Blob> {
+		const params = [
+			{ Parameter: 'CORR_PROVEEDOR', Value: doc.CORR_PROVEEDOR },
+			{ Parameter: 'CORR_DOCUMENTO', Value: doc.CORR_DOCUMENTO },
+			{ Parameter: 'NOMBRE_ARCHIVO', Value: doc.NOMBRE_ARCHIVO ?? '' },
+		];
+		if (download) {
+			params.push({ Parameter: 'download', Value: 'true' });
+		}
+		return this.docRepo.getDoc(params);
+	}
+
+	esExtensionDocumentoPermitida(fileName: string): boolean {
+		const ext = (fileName.split('.').pop() ?? '').toLowerCase();
+		const allowed = new Set([
+			'pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp',
+			'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+			'txt', 'rtf', 'csv',
+		]);
+		return allowed.has(ext);
+	}
+
+	getDocumentoColumns(): any[] {
+		return [
+			{
+				caption: 'Options',
+				width: 150,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'docActionsTemplate',
+				alignment: 'center',
+			},
+			{ dataField: 'CORR_DOCUMENTO', caption: 'Corr.', width: 70 },
+			{ dataField: 'NOMBRE_ARCHIVO', caption: 'Archivo', minWidth: 220 },
+			{
+				dataField: 'FECHA_CREA',
+				caption: 'Fecha carga',
+				width: 150,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+			},
+			{ dataField: 'USUARIO_CREA', caption: 'Usuario', width: 120 },
+		];
 	}
 
 	getColumns(): any {

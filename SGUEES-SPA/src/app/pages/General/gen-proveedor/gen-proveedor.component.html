@@ -166,9 +166,93 @@
 
 			<dxi-item title="Doc. Adjuntos" icon="attach">
 				<div class="proveedor-docs-adjuntos">
-					<p class="proveedor-docs-adjuntos__empty">
-						Aún no hay documentos adjuntos para este proveedor.
+					<div class="proveedor-docs-adjuntos__toolbar">
+						<button
+							type="button"
+							class="proveedor-docs-adjuntos__upload"
+							[disabled]="!puedeAdjuntarDocumentos || documentoSubiendo"
+							(click)="abrirSelectorDocumento()"
+						>
+							<i class="dx-icon dx-icon-upload"></i>
+							{{ documentoSubiendo ? 'Subiendo…' : 'Adjuntar archivo' }}
+						</button>
+						<input
+							#docFileInput
+							type="file"
+							class="proveedor-docs-adjuntos__file"
+							[accept]="docAccept"
+							(change)="onDocumentoFileSelected($event)"
+						/>
+						<span class="proveedor-docs-adjuntos__hint">
+							PDF, imágenes u Office · máx. 10 MB
+						</span>
+					</div>
+
+					<p class="proveedor-docs-adjuntos__warn" *ngIf="!(model?.CORR_PROVEEDOR > 0)">
+						Guarde el proveedor para poder adjuntar documentos.
 					</p>
+
+					<div class="proveedor-docs-adjuntos__loading" *ngIf="documentosCargando">
+						<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
+						<span>Cargando documentos…</span>
+					</div>
+
+					<div
+						class="proveedor-docs-adjuntos__empty-state"
+						*ngIf="!documentosCargando && (model?.CORR_PROVEEDOR > 0) && documentos.length === 0"
+					>
+						<div class="proveedor-docs-adjuntos__empty-icon" aria-hidden="true">
+							<i class="dx-icon dx-icon-folder"></i>
+						</div>
+						<h4>Sin documentos adjuntos</h4>
+						<p>
+							Esta carpeta está vacía. Aún no se ha cargado ningún archivo para este proveedor.
+							Use <strong>Adjuntar archivo</strong> para agregar PDF, imágenes o documentos de Office.
+						</p>
+					</div>
+
+					<dx-data-grid
+						*ngIf="!documentosCargando && documentos.length > 0"
+						class="proveedor-docs-adjuntos__grid"
+						[dataSource]="documentos"
+						[columns]="documentoColumns"
+						[showBorders]="true"
+						[columnAutoWidth]="false"
+						[hoverStateEnabled]="true"
+						keyExpr="CORR_DOCUMENTO"
+						[paging]="{ enabled: false }"
+					>
+						<div *dxTemplate="let cell of 'docActionsTemplate'" class="proveedor-docs-adjuntos__actions">
+							<button
+								type="button"
+								class="proveedor-docs-adjuntos__action"
+								title="Vista previa"
+								aria-label="Vista previa"
+								(click)="verDocumento(cell.data)"
+							>
+								<i class="dx-icon dx-icon-eyeopen"></i>
+							</button>
+							<button
+								type="button"
+								class="proveedor-docs-adjuntos__action proveedor-docs-adjuntos__action--success"
+								title="Descargar"
+								aria-label="Descargar"
+								(click)="descargarDocumento(cell.data)"
+							>
+								<i class="dx-icon dx-icon-download"></i>
+							</button>
+							<button
+								type="button"
+								class="proveedor-docs-adjuntos__action proveedor-docs-adjuntos__action--danger"
+								title="Eliminar"
+								aria-label="Eliminar"
+								*ngIf="permiteDele && !readOnly"
+								(click)="eliminarDocumento(cell.data)"
+							>
+								<i class="dx-icon dx-icon-trash"></i>
+							</button>
+						</div>
+					</dx-data-grid>
 				</div>
 			</dxi-item>
 		</dx-tab-panel>
