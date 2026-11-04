@@ -226,3 +226,445 @@
 		border-left: 0;
 	}
 }
+
+.proveedor-persona-lookup {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+	width: 100%;
+
+	app-data-lookup {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	&__add {
+		flex: 0 0 auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		border: 1px solid var(--sguees-border-subtle, var(--border-color));
+		border-radius: 6px;
+		background: var(--sguees-surface-elevated, rgba(255, 255, 255, 0.04));
+		color: var(--sguees-text-primary, var(--base-text-color));
+		cursor: pointer;
+
+		&:hover {
+			border-color: var(--sguees-accent, #3b82f6);
+			color: var(--sguees-accent, #3b82f6);
+		}
+	}
+}
+
+.proveedor-persona-tabs {
+	margin-top: 18px;
+	border: 1px solid var(--sguees-border-subtle, var(--border-color));
+	border-radius: 10px;
+	overflow: hidden;
+	background: var(--sguees-surface-elevated, rgba(255, 255, 255, 0.03));
+
+	&__panel {
+		background: transparent;
+
+		::ng-deep {
+			.dx-tabpanel-tabs {
+				background: rgba(255, 255, 255, 0.02);
+				border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+			}
+
+			.dx-tabs-wrapper .dx-tab {
+				padding: 10px 16px;
+			}
+
+			.dx-multiview-wrapper,
+			.dx-multiview-item-content {
+				padding: 0;
+			}
+		}
+	}
+}
+
+.proveedor-persona-resumen {
+	padding: 14px 16px;
+
+	&__header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	&__subtitle {
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 8px;
+		line-height: 1.3;
+	}
+
+	&__nombre {
+		font-size: 17px;
+		font-weight: 700;
+		color: var(--sguees-text-primary, var(--base-text-color));
+	}
+
+	&__sep {
+		font-size: 13px;
+		opacity: 0.45;
+	}
+
+	&__tipo {
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+	}
+
+	&__edit {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		border-radius: 6px;
+		border: 1px solid var(--sguees-border-subtle, var(--border-color));
+		background: transparent;
+		color: var(--sguees-text-primary, var(--base-text-color));
+		cursor: pointer;
+		font-size: 13px;
+
+		&:hover {
+			border-color: var(--sguees-accent, #3b82f6);
+			color: var(--sguees-accent, #3b82f6);
+		}
+	}
+
+	&__loading {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 96px;
+		padding: 12px 0 4px;
+	}
+
+	&__fields {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 10px 16px;
+		margin: 0;
+	}
+
+	&__field {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+
+		&--full {
+			grid-column: 1 / -1;
+		}
+
+		dt {
+			margin: 0;
+			font-size: 11px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.02em;
+			color: var(--sguees-text-muted, var(--sguees-text-secondary, var(--base-text-color-alpha)));
+		}
+
+		dd {
+			margin: 0;
+			font-size: 13px;
+			overflow-wrap: anywhere;
+		}
+	}
+}
+
+.proveedor-docs-adjuntos {
+	padding: 20px 16px;
+	min-height: 120px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	&__empty {
+		margin: 0;
+		font-size: 13px;
+		color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+		text-align: center;
+	}
+}
+
+::ng-deep .proveedor-persona-popup-wrapper {
+	.dx-popup-content {
+		padding: 0 !important;
+	}
+}
+
+.proveedor-persona-popup {
+	display: flex;
+	flex-direction: column;
+	max-height: calc(88vh - 56px);
+	color: var(--sguees-text-primary, var(--base-text-color));
+
+	&__body {
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow: auto;
+		padding: 16px 18px 8px;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	&__hero {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	&__hero-label {
+		margin: 0;
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--sguees-text-muted, var(--sguees-text-secondary, var(--base-text-color-alpha)));
+	}
+
+	&__segment {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+		padding: 6px;
+		border-radius: 12px;
+		background: rgba(255, 255, 255, 0.03);
+		border: 1px solid var(--sguees-border-subtle, var(--border-color));
+
+		&--locked {
+			opacity: 0.85;
+		}
+	}
+
+	&__segment-btn {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 58px;
+		padding: 10px 12px;
+		border: 1px solid transparent;
+		border-radius: 9px;
+		background: transparent;
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
+		transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+
+		strong {
+			display: block;
+			font-size: 14px;
+			font-weight: 700;
+			line-height: 1.2;
+		}
+
+		small {
+			display: block;
+			margin-top: 2px;
+			font-size: 11px;
+			opacity: 0.7;
+		}
+
+		&:hover:not(:disabled) {
+			background: rgba(255, 255, 255, 0.04);
+		}
+
+		&--active {
+			background: rgba(46, 125, 50, 0.16);
+			border-color: rgba(76, 175, 80, 0.55);
+			box-shadow: inset 0 0 0 1px rgba(76, 175, 80, 0.2);
+
+			.proveedor-persona-popup__segment-icon {
+				background: #2e7d32;
+				color: #fff;
+			}
+		}
+
+		&:disabled {
+			cursor: default;
+		}
+	}
+
+	&__segment-icon {
+		flex: 0 0 auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.08);
+		font-size: 13px;
+		font-weight: 800;
+	}
+
+	&__card {
+		border: 1px solid var(--sguees-border-subtle, var(--border-color));
+		border-radius: 12px;
+		background: rgba(255, 255, 255, 0.025);
+		padding: 14px 14px 12px;
+	}
+
+	&__card-head {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		margin-bottom: 12px;
+		padding-bottom: 10px;
+		border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+
+		h4 {
+			margin: 0;
+			font-size: 14px;
+			font-weight: 700;
+			line-height: 1.2;
+		}
+
+		span {
+			font-size: 12px;
+			color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+		}
+	}
+
+	&__fields {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px 14px;
+	}
+
+	&__field {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+
+		> span {
+			font-size: 12px;
+			font-weight: 600;
+			color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+
+			em {
+				color: #ef5350;
+				font-style: normal;
+				font-weight: 700;
+			}
+		}
+
+		&--full {
+			grid-column: 1 / -1;
+		}
+
+		&--check {
+			justify-content: flex-end;
+		}
+
+		::ng-deep .dx-selectbox,
+		::ng-deep .dx-texteditor {
+			width: 100%;
+		}
+	}
+
+	&__input {
+		width: 100%;
+		box-sizing: border-box;
+		min-height: 38px;
+		padding: 8px 11px;
+		border-radius: 8px;
+		border: 1px solid var(--sguees-border-subtle, var(--border-color));
+		background: var(--sguees-surface-card, rgba(0, 0, 0, 0.2));
+		color: inherit;
+		font-size: 13px;
+		outline: none;
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+		&::placeholder {
+			color: var(--sguees-text-muted, rgba(255, 255, 255, 0.35));
+		}
+
+		&:focus {
+			border-color: rgba(76, 175, 80, 0.7);
+			box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.18);
+		}
+	}
+
+	&__switch {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 38px;
+		padding: 0 12px;
+		border-radius: 8px;
+		border: 1px solid var(--sguees-border-subtle, var(--border-color));
+		background: var(--sguees-surface-card, rgba(0, 0, 0, 0.16));
+		cursor: pointer;
+		font-size: 13px;
+		user-select: none;
+
+		input {
+			width: 16px;
+			height: 16px;
+			accent-color: #2e7d32;
+		}
+	}
+
+	&__actions {
+		flex: 0 0 auto;
+		display: flex;
+		justify-content: flex-end;
+		gap: 10px;
+		padding: 12px 18px 16px;
+		border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.12));
+	}
+
+	&__btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		min-width: 128px;
+		min-height: 38px;
+		padding: 8px 16px;
+		border-radius: 8px;
+		border: 1px solid transparent;
+		cursor: pointer;
+		font-size: 13px;
+		font-weight: 600;
+
+		&--cancel {
+			background: transparent;
+			border-color: var(--sguees-border-subtle, var(--border-color));
+			color: inherit;
+		}
+
+		&--save {
+			background: #2e7d32;
+			color: #fff;
+		}
+
+		&:disabled {
+			opacity: 0.6;
+			cursor: default;
+		}
+	}
+}
+
+@media (max-width: 720px) {
+	.proveedor-persona-popup {
+		&__segment,
+		&__fields {
+			grid-template-columns: 1fr;
+		}
+	}
+}

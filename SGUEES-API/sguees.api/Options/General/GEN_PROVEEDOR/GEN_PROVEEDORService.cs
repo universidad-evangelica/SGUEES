@@ -37,6 +37,21 @@ namespace sguees.Services
 		public Task<CResult> GetPersonasLookupAsync(GEN_PROVEEDORParam xWhere)
 			=> _repo.GetPersonasLookupAsync(xWhere.CORR_EMPRESA, xWhere.CORR_PERSONA);
 
+		public Task<CResult> GetPersonaAsync(GEN_PROVEEDORParam xWhere)
+			=> _repo.GetPersonaAsync(xWhere.CORR_EMPRESA, xWhere.CORR_PERSONA);
+
+		public Task<CResult> CreatePersonaNaturalAsync(GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> _repo.CreatePersonaNaturalAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
+		public Task<CResult> UpdatePersonaNaturalAsync(GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> _repo.UpdatePersonaNaturalAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
+		public Task<CResult> CreatePersonaJuridicaAsync(GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> _repo.CreatePersonaJuridicaAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
+		public Task<CResult> UpdatePersonaJuridicaAsync(GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> _repo.UpdatePersonaJuridicaAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
 		public async Task<CResult> CreateAsync(GEN_PROVEEDORTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			ApplyCreateDefaults(Data);

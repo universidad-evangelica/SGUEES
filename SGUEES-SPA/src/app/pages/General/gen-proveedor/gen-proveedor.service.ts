@@ -8,6 +8,7 @@ import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app
 
 import { GenProveedorRepository } from './gen-proveedor.repository';
 import { GenProveedor } from './models/gen-proveedor';
+import { GenProveedorPersona } from './models/gen-proveedor-persona';
 
 const ESTADO_FIELD = 'ACTIVO_PROVEEDOR';
 
@@ -39,6 +40,50 @@ export class GenProveedorService {
 			{ Parameter: 'CORR_PERSONA', Value: param.CORR_PERSONA ?? 0 },
 		];
 		return this.repo.getPersonas(xWhere);
+	}
+
+	getPersona(corrPersona: number): Observable<IResult> {
+		return this.repo.getPersona([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	esValidaPersona(model: GenProveedorPersona, msg: Function): boolean {
+		const tipo = (model?.TIPO_PERSONERIA ?? '').toUpperCase();
+		if (tipo === 'N') {
+			if (!model.PRIMER_NOMBRE?.trim() || !model.PRIMER_APELLIDO?.trim()) {
+				msg('Primer nombre y primer apellido son obligatorios.', NotifyType.Warning);
+				return false;
+			}
+			return true;
+		}
+		if (tipo === 'J') {
+			if (!model.RAZON_SOCIAL?.trim() && !model.NOMBRE_EMPRESA?.trim()) {
+				msg('Debe indicar Nombre empresa o Razón social.', NotifyType.Warning);
+				return false;
+			}
+			return true;
+		}
+		msg('Seleccione si la persona es Natural o Jurídica.', NotifyType.Warning);
+		return false;
+	}
+
+	crearPersonaNatural(model: GenProveedorPersona): Observable<IResult> {
+		return this.repo.createPersonaNatural(model);
+	}
+
+	actualizarPersonaNatural(model: GenProveedorPersona): Observable<IResult> {
+		return this.repo.updatePersonaNatural(model, [
+			{ Parameter: 'CORR_PERSONA', Value: model.CORR_PERSONA },
+		]);
+	}
+
+	crearPersonaJuridica(model: GenProveedorPersona): Observable<IResult> {
+		return this.repo.createPersonaJuridica(model);
+	}
+
+	actualizarPersonaJuridica(model: GenProveedorPersona): Observable<IResult> {
+		return this.repo.updatePersonaJuridica(model, [
+			{ Parameter: 'CORR_PERSONA', Value: model.CORR_PERSONA },
+		]);
 	}
 
 	insert(model: any): Observable<IResult> {

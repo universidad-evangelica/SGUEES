@@ -61,6 +61,13 @@ namespace SGUEES.Controllers
 			return await _service.GetAllAsync(data);
 		}
 
+		[HttpGet("GetCORR_PAIS_GEN_PROVEEDOR")]
+		[Authorize(Policy = "/gen-proveedor|R")]
+		public async Task<CResult> GetCORR_PAIS_GEN_PROVEEDOR([FromQuery] GEN_PAISParam data)
+		{
+			return await _service.GetAllAsync(data);
+		}
+
 		[HttpGet("GetCORR_PAIS_GEN_ESTRUCTURA_TERRITORIAL")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		// Qué hace: entrega el catálogo de países requerido por el mantenimiento relacionado y aplica el contexto de empresa.

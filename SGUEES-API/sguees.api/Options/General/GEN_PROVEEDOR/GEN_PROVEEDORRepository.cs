@@ -127,6 +127,58 @@ ORDER BY L.NOMBRE_PERSONA";
 			return objResultado;
 		}
 
+		public async Task<CResult> GetPersonaAsync(int corrEmpresa, long corrPersona)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_PERSONA", Value = corrPersona, DbType = System.Data.DbType.Int64 },
+				};
+				var reader = await objData.GetDataReader(System.Data.CommandType.StoredProcedure, "PRAL_DATA_GEN_PROVEEDOR_PERSONA", p);
+				var response = new List<GEN_PROVEEDOR_PERSONAView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = response != null;
+				objResultado.RowsAffected = response != null ? 1 : 0;
+				objResultado.ErrorCode = 0;
+				if (response == null)
+				{
+					objResultado.ErrorMessage = "Persona no encontrada.";
+					objResultado.Result = false;
+					objResultado.ErrorCode = 30000;
+				}
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
+		public Task<CResult> CreatePersonaNaturalAsync(GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> ExecPersonaNaturalMttoAsync(UpdateType.Add, Data, vLOGIN_SISTEMA, vESTACION);
+
+		public Task<CResult> UpdatePersonaNaturalAsync(GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> ExecPersonaNaturalMttoAsync(UpdateType.Update, Data, vLOGIN_SISTEMA, vESTACION);
+
+		public Task<CResult> CreatePersonaJuridicaAsync(GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> ExecPersonaJuridicaMttoAsync(UpdateType.Add, Data, vLOGIN_SISTEMA, vESTACION);
+
+		public Task<CResult> UpdatePersonaJuridicaAsync(GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> ExecPersonaJuridicaMttoAsync(UpdateType.Update, Data, vLOGIN_SISTEMA, vESTACION);
+
 		public async Task<CResult> CreateAsync(GEN_PROVEEDORTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			return await ExecMttoAsync(UpdateType.Add, Data, vLOGIN_SISTEMA, vESTACION);
@@ -297,6 +349,146 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 		{
 			var minSql = new System.DateTime(1753, 1, 1);
 			return value < minSql ? System.DateTime.Now : value;
+		}
+
+		private async Task<CResult> ExecPersonaNaturalMttoAsync(UpdateType tipo, GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@TIPO_ACTUALIZA", Value = (int)tipo, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_PERSONA", Value = Data.CORR_PERSONA, DbType = System.Data.DbType.Int64, Direction = System.Data.ParameterDirection.InputOutput },
+					new() { ParameterName = "@CORR_PERSONA_NATURAL", Value = Data.CORR_PERSONA_NATURAL ?? 0L, DbType = System.Data.DbType.Int64, Direction = System.Data.ParameterDirection.InputOutput },
+					new() { ParameterName = "@CODIGO_PERSONA", Value = Data.CODIGO_PERSONA ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@PRIMER_NOMBRE", Value = Data.PRIMER_NOMBRE ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@SEGUNDO_NOMBRE", Value = Data.SEGUNDO_NOMBRE ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@PRIMER_APELLIDO", Value = Data.PRIMER_APELLIDO ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@SEGUNDO_APELLIDO", Value = Data.SEGUNDO_APELLIDO ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@ES_EXTRANJERO", Value = Data.ES_EXTRANJERO ?? false, DbType = System.Data.DbType.Boolean },
+					new() { ParameterName = "@DOMICILIADO", Value = Data.DOMICILIADO ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@CORR_TIPO_CONTRIBUYENTE", Value = Data.CORR_TIPO_CONTRIBUYENTE ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_ACTIVIDAD_ECONOMICA", Value = Data.CORR_ACTIVIDAD_ECONOMICA ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@NUMERO_DIP", Value = Data.NUMERO_DIP ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@NUMERO_NIT", Value = Data.NUMERO_NIT ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@NUMERO_NRC", Value = Data.NUMERO_NRC ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@DIRECCION", Value = Data.DIRECCION ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@CORR_PAIS", Value = Data.CORR_PAIS ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_DEPTO", Value = Data.CORR_DEPTO ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_MUNICIPIO", Value = Data.CORR_MUNICIPIO ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_DISTRITO", Value = Data.CORR_DISTRITO ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@TELEFONO_FIJO", Value = Data.TELEFONO_FIJO ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@TELEFONO_MOVIL", Value = Data.TELEFONO_MOVIL ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@CORREO_ELECTRONICO_1", Value = Data.CORREO_ELECTRONICO_1 ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@CORREO_ELECTRONICO_2", Value = Data.CORREO_ELECTRONICO_2 ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+					new() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+					new() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+				};
+
+				await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_GEN_PROVEEDOR_PERSONA_NATURAL", true, p);
+
+				Data.CORR_PERSONA = System.Convert.ToInt64(objData.objCommand.Parameters["@CORR_PERSONA"].Value);
+				Data.CORR_PERSONA_NATURAL = System.Convert.ToInt64(objData.objCommand.Parameters["@CORR_PERSONA_NATURAL"].Value);
+				var errorCode = System.Convert.ToInt32(objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value);
+				var errorMsg = objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value?.ToString() ?? string.Empty;
+
+				if (errorCode != 0)
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.ErrorCode = errorCode;
+					objResultado.ErrorMessage = errorMsg;
+					return objResultado;
+				}
+
+				return await GetPersonaAsync(Data.CORR_EMPRESA, Data.CORR_PERSONA);
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				return objResultado;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+		}
+
+		private async Task<CResult> ExecPersonaJuridicaMttoAsync(UpdateType tipo, GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@TIPO_ACTUALIZA", Value = (int)tipo, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_PERSONA", Value = Data.CORR_PERSONA, DbType = System.Data.DbType.Int64, Direction = System.Data.ParameterDirection.InputOutput },
+					new() { ParameterName = "@CORR_PERSONA_JURIDICA", Value = Data.CORR_PERSONA_JURIDICA ?? 0L, DbType = System.Data.DbType.Int64, Direction = System.Data.ParameterDirection.InputOutput },
+					new() { ParameterName = "@CODIGO_PERSONA", Value = Data.CODIGO_PERSONA ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@NOMBRE_EMPRESA", Value = Data.NOMBRE_EMPRESA ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@RAZON_SOCIAL", Value = Data.RAZON_SOCIAL ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@GIRO", Value = Data.GIRO ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@ES_EXTRANJERO", Value = Data.ES_EXTRANJERO ?? false, DbType = System.Data.DbType.Boolean },
+					new() { ParameterName = "@DOMICILIADO", Value = Data.DOMICILIADO ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@CORR_TIPO_CONTRIBUYENTE", Value = Data.CORR_TIPO_CONTRIBUYENTE ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_ACTIVIDAD_ECONOMICA", Value = Data.CORR_ACTIVIDAD_ECONOMICA ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@NUMERO_NIT", Value = Data.NUMERO_NIT ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@NUMERO_NRC", Value = Data.NUMERO_NRC ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@DIRECCION", Value = Data.DIRECCION ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@CORR_PAIS", Value = Data.CORR_PAIS ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_DEPTO", Value = Data.CORR_DEPTO ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_MUNICIPIO", Value = Data.CORR_MUNICIPIO ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@CORR_DISTRITO", Value = Data.CORR_DISTRITO ?? 0, DbType = System.Data.DbType.Int32 },
+					new() { ParameterName = "@TELEFONO_FIJO", Value = Data.TELEFONO_FIJO ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@TELEFONO_MOVIL", Value = Data.TELEFONO_MOVIL ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@CORREO_ELECTRONICO_1", Value = Data.CORREO_ELECTRONICO_1 ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@CORREO_ELECTRONICO_2", Value = Data.CORREO_ELECTRONICO_2 ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+					new() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+					new() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+					new() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+				};
+
+				await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_GEN_PROVEEDOR_PERSONA_JURIDICA", true, p);
+
+				Data.CORR_PERSONA = System.Convert.ToInt64(objData.objCommand.Parameters["@CORR_PERSONA"].Value);
+				Data.CORR_PERSONA_JURIDICA = System.Convert.ToInt64(objData.objCommand.Parameters["@CORR_PERSONA_JURIDICA"].Value);
+				var errorCode = System.Convert.ToInt32(objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value);
+				var errorMsg = objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value?.ToString() ?? string.Empty;
+
+				if (errorCode != 0)
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.ErrorCode = errorCode;
+					objResultado.ErrorMessage = errorMsg;
+					return objResultado;
+				}
+
+				return await GetPersonaAsync(Data.CORR_EMPRESA, Data.CORR_PERSONA);
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				return objResultado;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
 		}
 	}
 }
