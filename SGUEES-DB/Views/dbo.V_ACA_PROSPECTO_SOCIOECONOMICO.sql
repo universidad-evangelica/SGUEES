@@ -1,6 +1,6 @@
--- Qué hace: cabecera del estudio socioeconómico del prospecto (puntaje + totales monto).
--- Cómo lo hace: ACA_PROSPECTO_SOCIOECONOMICO + conteo sobre V_ACA_PROSPECTO_SE_RESPUESTA.
--- Ejecutar tú en BD (CREATE OR ALTER). Preferir Anexos/...ADD_TOTALES_MONTO.sql si faltan columnas.
+-- Qué hace: cabecera del estudio socioeconómico del prospecto (incluye puntaje/resultado).
+-- Cómo lo hace: ACA_PROSPECTO_SOCIOECONOMICO + conteo sobre V_ACA_PROSPECTO_SE_RESPUESTA + columnas ALTER.
+-- Ejecutar tú en BD (CREATE OR ALTER).
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -27,9 +27,7 @@ SELECT
     S.PUNTAJE_TOTAL,
     S.PORCENTAJE_TOTAL,
     S.RESULTADO_EVALUACION,
-    S.PRIORIDAD_EVALUACION,
-    S.TOTAL_INGRESOS_LIQUIDOS,
-    S.TOTAL_EGRESOS
+    S.PRIORIDAD_EVALUACION
 FROM dbo.V_ACA_PROSPECTO AS VP
 INNER JOIN dbo.ACA_PROSPECTO_SOCIOECONOMICO AS S
     ON S.CORR_PROSPECTO_PERSONA = VP.CORR_PROSPECTO_PERSONA

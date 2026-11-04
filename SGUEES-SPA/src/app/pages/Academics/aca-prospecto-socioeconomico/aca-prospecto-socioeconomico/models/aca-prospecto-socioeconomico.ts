@@ -19,6 +19,4 @@ export interface AcaProspectoSocioeconomico {
     PORCENTAJE_TOTAL?: number | null;
     RESULTADO_EVALUACION?: string | null;
     PRIORIDAD_EVALUACION?: string | null;
-    TOTAL_INGRESOS_LIQUIDOS?: number | null;
-    TOTAL_EGRESOS?: number | null;
 }

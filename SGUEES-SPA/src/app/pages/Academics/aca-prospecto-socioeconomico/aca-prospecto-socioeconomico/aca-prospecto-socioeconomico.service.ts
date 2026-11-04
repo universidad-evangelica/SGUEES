@@ -110,20 +110,6 @@ export class AcaProspectoSocioeconomicoService {
                 editorOptions: { readOnly: true, format: '#,##0.00' },
             },
             {
-                dataField: 'TOTAL_INGRESOS_LIQUIDOS',
-                label: { text: 'Total ingresos líquidos' },
-                colSpan: 2,
-                editorType: 'dxNumberBox',
-                editorOptions: { readOnly: true, format: '#,##0.00' },
-            },
-            {
-                dataField: 'TOTAL_EGRESOS',
-                label: { text: 'Total egresos' },
-                colSpan: 2,
-                editorType: 'dxNumberBox',
-                editorOptions: { readOnly: true, format: '#,##0.00' },
-            },
-            {
                 dataField: 'RESULTADO_EVALUACION',
                 label: { text: 'Resultado evaluación' },
                 colSpan: 2,

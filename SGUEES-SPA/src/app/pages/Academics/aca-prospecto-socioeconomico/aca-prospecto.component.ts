@@ -1583,7 +1583,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             }
 
             const codigo = (fila.CODIGO_PREGUNTA || '').toUpperCase();
-            // Fallback si aún no hay TOTAL_* en cabecera: suma montos de respuestas.
             if (seccion.esRangoMonto && this.esCodigoMontoSeccionSE(codigo)) {
                 seccion.totalMonto += Number(fila.VALOR_NUMERO) || 0;
             }
@@ -1606,26 +1605,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     nombre: seccion.nombre,
                     porcentajeMaximo: seccion.porcentajeMaximo,
                     esRangoMonto: seccion.esRangoMonto,
-                    totalMonto: seccion.esRangoMonto ? this.totalMontoSeccionGuardado(seccion.codigoSeccion, seccion.totalMonto) : null,
+                    totalMonto: seccion.esRangoMonto ? seccion.totalMonto : null,
                     etiquetaTotal: this.etiquetaTotalSeccionSE(seccion.codigoSeccion, seccion.nombre),
                     puntaje,
                     preguntas,
                 };
             })
             .filter((seccion) => seccion.preguntas.length > 0);
-    }
-
-    // Qué hace: toma el total guardado en cabecera SE; si no existe, usa la suma local.
-    private totalMontoSeccionGuardado(codigoSeccion: string, fallback: number): number {
-        const cab = this.socioeconomicoModel;
-        if (!cab) return fallback;
-        if (codigoSeccion === 'INGRESOS' && cab.TOTAL_INGRESOS_LIQUIDOS != null && cab.TOTAL_INGRESOS_LIQUIDOS !== '') {
-            return Number(cab.TOTAL_INGRESOS_LIQUIDOS) || 0;
-        }
-        if (codigoSeccion === 'EGRESOS' && cab.TOTAL_EGRESOS != null && cab.TOTAL_EGRESOS !== '') {
-            return Number(cab.TOTAL_EGRESOS) || 0;
-        }
-        return fallback;
     }
 
     // Qué hace: resuelve nombre/orden/tipo de sección para agrupar el cuestionario SE.

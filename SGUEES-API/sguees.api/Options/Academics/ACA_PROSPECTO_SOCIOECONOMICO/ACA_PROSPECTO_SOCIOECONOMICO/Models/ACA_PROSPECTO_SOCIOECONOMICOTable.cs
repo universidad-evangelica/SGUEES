@@ -23,7 +23,5 @@ namespace sguees.Models
         public decimal? PORCENTAJE_TOTAL { get; set; }
         public string RESULTADO_EVALUACION { get; set; }
         public string PRIORIDAD_EVALUACION { get; set; }
-        public decimal? TOTAL_INGRESOS_LIQUIDOS { get; set; }
-        public decimal? TOTAL_EGRESOS { get; set; }
     }
 }
