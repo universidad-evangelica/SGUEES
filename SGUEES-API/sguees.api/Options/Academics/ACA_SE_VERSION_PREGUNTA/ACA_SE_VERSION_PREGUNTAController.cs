@@ -71,13 +71,6 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
-		// Qué hace: lookup de secciones SE (mientras no exista aca-se-seccion).
-		// Cómo lo hace: GetSeccionesLookup lee ACA_SE_SECCION activas.
-		[HttpGet("GetSeccionesLookup")]
-		[Authorize(Policy = "/aca-se-version-pregunta|R")]
-		public async Task<CResult> GetSeccionesLookup()
-			=> await _service.GetSeccionesLookupAsync();
-
 		private string GetUsuario()
 			=> User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
 

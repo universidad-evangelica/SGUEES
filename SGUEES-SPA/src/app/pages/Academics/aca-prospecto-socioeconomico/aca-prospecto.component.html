@@ -854,26 +854,21 @@
                                 El prospecto aceptó la cuota máxima: el formulario no le solicitó ingresos ni egresos.
                             </p>
 
-                            <!-- Qué hace: muestra el cuestionario SE con chips de puntaje por sección/pregunta (patrón becas). -->
+                            <!-- Qué hace: muestra el cuestionario SE (pregunta/respuesta, sin puntaje tipo becas). -->
                             <header class="aca-prospecto-section-head">
                                 <span class="aca-prospecto-section-title">Preguntas del cuestionario</span>
-                                <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Vacío o monto en 0 = sin respuesta (igual que el portal)' : 'Puntaje por sección y pregunta (mismo patrón que becas)' }}</span>
+                                <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Vacío o monto en 0 = sin respuesta (igual que el portal)' : 'Respuestas registradas del estudio socioeconómico' }}</span>
                             </header>
 
-                            <!-- Consulta: secciones + chips (como aca-prospecto-beca). -->
+                            <!-- Consulta: lista de preguntas/respuestas. -->
                             <div class="aca-beca-secciones" *ngIf="readOnly && seccionesCuestionarioSE.length; else bloqueEdicionOVacioSE">
                                 <article class="aca-beca-seccion" *ngFor="let seccion of seccionesCuestionarioSE">
                                     <header class="aca-beca-seccion-head">
                                         <span>{{ seccion.nombre }}</span>
-                                        <span></span>
-                                        <span class="aca-beca-chip" [class.aca-beca-chip-cero]="seccion.puntaje === 0">{{ seccion.puntaje | number:'1.2-2' }}</span>
                                     </header>
                                     <div class="aca-beca-pregunta" *ngFor="let pregunta of seccion.preguntas; trackBy: trackPreguntaSE">
                                         <p class="aca-beca-pregunta-texto">{{ pregunta.texto }}</p>
                                         <p class="aca-beca-respuesta">{{ pregunta.respuesta }}</p>
-                                        <span class="aca-beca-acciones">
-                                            <span class="aca-beca-chip" [class.aca-beca-chip-cero]="pregunta.puntaje === 0">{{ pregunta.puntaje | number:'1.2-2' }}</span>
-                                        </span>
                                     </div>
                                 </article>
                             </div>

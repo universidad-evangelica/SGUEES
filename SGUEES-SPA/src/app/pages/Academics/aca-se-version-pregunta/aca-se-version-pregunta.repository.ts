@@ -36,10 +36,4 @@ export class AcaSeVersionPreguntaRepository {
 	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlGENERALAPI);
 	}
-
-	// Qué hace: secciones SE activas para el select.
-	// Cómo lo hace: GetSeccionesLookup del mismo controller (hasta existir aca-se-seccion).
-	getSeccionesLookup(): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetSeccionesLookup', [], environment.UrlGENERALAPI);
-	}
 }

@@ -1,5 +1,5 @@
 // Qué hace: servicio de negocio de preguntas por versión socioeconómico.
-// Cómo lo hace: valida, CRUD, columnas/formulario y lookups (versión/pregunta/sección).
+// Cómo lo hace: valida, CRUD, columnas/formulario y lookups (versión/pregunta).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -11,7 +11,6 @@ import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app
 import { environment } from 'src/environments/environment';
 import {
 	AcaSePreguntaLookup,
-	AcaSeSeccionLookup,
 	AcaSeVersionLookup,
 	AcaSeVersionPregunta,
 } from './models/aca-se-version-pregunta';
@@ -76,12 +75,6 @@ export class AcaSeVersionPreguntaService {
 		);
 	}
 
-	// Qué hace: trae secciones SE activas.
-	// Cómo lo hace: GetSeccionesLookup del API versión-pregunta.
-	getCORR_SECCION_SE(): Observable<IResult> {
-		return this.repo.getSeccionesLookup();
-	}
-
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(this.normalizarPayload(model));
 	}
@@ -115,7 +108,6 @@ export class AcaSeVersionPreguntaService {
 			{ dataField: 'NOMBRE_VERSION', caption: 'Versión', width: 220, minWidth: 160 },
 			{ dataField: 'CODIGO_PREGUNTA', caption: 'Cód. pregunta', width: 140 },
 			{ dataField: 'ENUNCIADO_PREGUNTA', caption: 'Pregunta', width: 300, minWidth: 200 },
-			{ dataField: 'NOMBRE_SECCION', caption: 'Sección', width: 220, minWidth: 160 },
 			{
 				dataField: 'ORDEN',
 				caption: 'Orden',
@@ -150,15 +142,9 @@ export class AcaSeVersionPreguntaService {
 	getItems(options?: {
 		versiones?: AcaSeVersionLookup[];
 		preguntas?: AcaSePreguntaLookup[];
-		secciones?: AcaSeSeccionLookup[];
-		corrVersion?: number;
 	}): any {
 		const versiones = options?.versiones ?? [];
 		const preguntas = options?.preguntas ?? [];
-		const corrVersion = Number(options?.corrVersion ?? 0);
-		const secciones = (options?.secciones ?? []).filter(
-			(s) => !corrVersion || Number(s.CORR_VERSION) === corrVersion
-		);
 		return [
 			{ dataField: 'CORR_VERSION_PREGUNTA', label: { text: 'Corr.' }, colSpan: 2, editorOptions: { readOnly: true } },
 			{
@@ -194,20 +180,6 @@ export class AcaSeVersionPreguntaService {
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{
-				dataField: 'CORR_SECCION_SE',
-				label: { text: 'Sección' },
-				editorType: 'dxSelectBox',
-				colSpan: 4,
-				editorOptions: {
-					dataSource: secciones,
-					valueExpr: 'CORR_SECCION_SE',
-					displayExpr: (item: AcaSeSeccionLookup) => (item ? `${item.NOMBRE_SECCION ?? ''}`.trim() : ''),
-					searchEnabled: true,
-					showClearButton: true,
-					placeholder: 'Sección (opcional)...',
-				},
-			},
-			{
 				dataField: 'ORDEN',
 				label: { text: 'Orden' },
 				editorType: 'dxNumberBox',
@@ -221,12 +193,10 @@ export class AcaSeVersionPreguntaService {
 	}
 
 	private normalizarPayload(model: any): any {
-		const corrSeccion = Number(model?.CORR_SECCION_SE ?? 0);
 		return {
 			CORR_VERSION_PREGUNTA: model?.CORR_VERSION_PREGUNTA,
 			CORR_VERSION: model?.CORR_VERSION,
 			CORR_PREGUNTA: model?.CORR_PREGUNTA,
-			CORR_SECCION_SE: corrSeccion > 0 ? corrSeccion : null,
 			ORDEN: Number(model?.ORDEN ?? 0),
 			ES_REQUERIDO: !!model?.ES_REQUERIDO,
 			ACTIVO: model?.ACTIVO,

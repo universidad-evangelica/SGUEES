@@ -97,7 +97,6 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "CORR_VERSION_PREGUNTA", Value = Data.CORR_VERSION_PREGUNTA, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "CORR_SECCION_SE", Value = ToSeccionDbValue(Data.CORR_SECCION_SE), DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ES_REQUERIDO", Value = Data.ES_REQUERIDO ?? false, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO ?? true, DbType = System.Data.DbType.Boolean },
@@ -146,7 +145,6 @@ namespace sguees.Repositories
 				{
 					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "CORR_SECCION_SE", Value = ToSeccionDbValue(Data.CORR_SECCION_SE), DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ES_REQUERIDO", Value = Data.ES_REQUERIDO ?? false, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
@@ -269,44 +267,6 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: catálogo de secciones activas para el select de versión-pregunta.
-		// Cómo lo hace: lee ACA_SE_SECCION (tabla) ordenada por versión/orden.
-		public async Task<CResult> GetSeccionesLookupAsync()
-		{
-			CResult objResultado = new();
-			try
-			{
-				var reader = await objData.GetDataReader("ACA_SE_SECCION", new List<CParameter>
-				{
-					new CParameter() { ParameterName = "ACTIVO", Value = true, DbType = System.Data.DbType.Boolean },
-				});
-				var response = new List<ACA_SE_SECCIONLookup>().FromDataReader(reader)
-					.OrderBy(x => x.CORR_VERSION)
-					.ThenBy(x => x.ORDEN)
-					.ThenBy(x => x.CORR_SECCION_SE)
-					.ToList();
-				reader.Close();
-				objResultado.Data = response;
-				objResultado.Result = true;
-				objResultado.RowsAffected = response.Count;
-				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = 0;
-				objResultado.ErrorMessage = "";
-				objResultado.ErrorSource = "";
-			}
-			catch (Exception e)
-			{
-				objResultado.Data = null;
-				objResultado.Result = false;
-				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = -1;
-				objResultado.ErrorMessage = e.Message;
-				objResultado.ErrorSource += $"[{e.Source}]";
-			}
-			finally { objData.objConnection.Close(); }
-			return objResultado;
-		}
-
 		private async Task<ACA_SE_VERSION_PREGUNTAView> LeerVistaPorPkAsync(int corr)
 		{
 			var xWhere = new List<CParameter>
@@ -318,10 +278,6 @@ namespace sguees.Repositories
 			readerGet.Close();
 			return response;
 		}
-
-		// Qué hace: normaliza sección vacía/0 a NULL (FK nullable).
-		private static object ToSeccionDbValue(int? corrSeccion)
-			=> corrSeccion.HasValue && corrSeccion.Value > 0 ? corrSeccion.Value : DBNull.Value;
 
 		private static bool IsDuplicateKeyError(Exception e)
 		{

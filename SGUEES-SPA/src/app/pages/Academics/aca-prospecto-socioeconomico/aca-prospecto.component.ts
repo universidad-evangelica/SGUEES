@@ -198,11 +198,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     respuestasSE: AcaProspectoSeRespuesta[] = [];
     itemsRespuestasSE: any[] = [];
     respuestasSEModel: any = {};
-    // Qué hace: cuestionario SE agrupado por sección con puntaje (mismo patrón visual que becas).
+    // Qué hace: cuestionario SE en consulta (pregunta/respuesta, sin chips de puntaje).
     seccionesCuestionarioSE: {
         nombre: string;
-        puntaje: number;
-        preguntas: { orden: number; texto: string; respuesta: string; puntaje: number; codigo: string }[];
+        preguntas: { orden: number; texto: string; respuesta: string; codigo: string }[];
     }[] = [];
     // #endregion
 
@@ -1535,50 +1534,21 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.armarSeccionesCuestionarioSE();
     }
 
-    // Qué hace: arma secciones + chips de puntaje del SE (mismo patrón que armarSecciones de becas).
-    // Cómo lo hace: agrupa respuestas por CORR_SECCION_SE / NOMBRE_SECCION y suma PUNTAJE_OBTENIDO.
+    // Qué hace: arma el cuestionario SE en consulta (lista única por orden).
+    // Cómo lo hace: una sola sección "Cuestionario" con pregunta/respuesta; sin puntaje.
     private armarSeccionesCuestionarioSE(): void {
-        const secciones = new Map<
-            number,
-            {
-                orden: number;
-                nombre: string;
-                preguntas: { orden: number; texto: string; respuesta: string; puntaje: number; codigo: string }[];
-            }
-        >();
-
-        for (const fila of this.respuestasSE ?? []) {
-            const corrSeccion = Number(fila.CORR_SECCION_SE ?? 0);
-            let seccion = secciones.get(corrSeccion);
-            if (!seccion) {
-                seccion = {
-                    orden: Number(fila.ORDEN) || 0,
-                    nombre: (fila.NOMBRE_SECCION || '').trim() || 'Sin sección',
-                    preguntas: [],
-                };
-                secciones.set(corrSeccion, seccion);
-            }
-            seccion.orden = Math.min(seccion.orden, Number(fila.ORDEN) || 0);
-            seccion.preguntas.push({
+        const preguntas = (this.respuestasSE ?? [])
+            .map((fila) => ({
                 orden: Number(fila.ORDEN) || 0,
                 texto: fila.ENUNCIADO || fila.CODIGO_PREGUNTA,
                 respuesta: this.serviceRespuestaSE.textoRespuestaPublico(fila),
-                puntaje: Number(fila.PUNTAJE_OBTENIDO) || 0,
                 codigo: fila.CODIGO_PREGUNTA,
-            });
-        }
+            }))
+            .sort((a, b) => a.orden - b.orden);
 
-        this.seccionesCuestionarioSE = [...secciones.values()]
-            .sort((a, b) => a.orden - b.orden)
-            .map((seccion) => {
-                const preguntas = [...seccion.preguntas].sort((a, b) => a.orden - b.orden);
-                return {
-                    nombre: seccion.nombre,
-                    puntaje: preguntas.reduce((total, p) => total + p.puntaje, 0),
-                    preguntas,
-                };
-            })
-            .filter((seccion) => seccion.preguntas.length > 0);
+        this.seccionesCuestionarioSE = preguntas.length
+            ? [{ nombre: 'Cuestionario', preguntas }]
+            : [];
     }
 
     private prepararEmpleoNuevo(): void {

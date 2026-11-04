@@ -1,5 +1,5 @@
--- Qué hace: preguntas de la versión del SE del prospecto con respuesta y puntaje aplicado.
--- Cómo lo hace: misma lógica previa + PUNTAJE_OBTENIDO / PORCENTAJE_APLICADO / sección.
+-- Qué hace: preguntas de la versión del SE del prospecto con su respuesta.
+-- Cómo lo hace: version-pregunta + respuesta; sin secciones/puntaje tipo becas.
 -- Ejecutar tú en BD (CREATE OR ALTER).
 SET ANSI_NULLS ON
 GO
@@ -16,8 +16,6 @@ SELECT
     VPR.CORR_VERSION_PREGUNTA,
     VPR.ORDEN,
     VPR.ES_REQUERIDO,
-    VPR.CORR_SECCION_SE,
-    SEC.NOMBRE_SECCION,
     P.CORR_PREGUNTA,
     P.CODIGO AS CODIGO_PREGUNTA,
     P.CORR_TIPO_PREGUNTA,
@@ -63,8 +61,6 @@ INNER JOIN dbo.ACA_SE_PREGUNTA AS P
     ON P.CORR_PREGUNTA = VPR.CORR_PREGUNTA
 LEFT JOIN dbo.GEN_SE_TIPO_PREGUNTA AS T
     ON T.CORR_TIPO_PREGUNTA = P.CORR_TIPO_PREGUNTA
-LEFT JOIN dbo.ACA_SE_SECCION AS SEC
-    ON SEC.CORR_SECCION_SE = VPR.CORR_SECCION_SE
 LEFT JOIN dbo.ACA_PROSPECTO_SE_RESPUESTA AS R
     ON R.CORR_PROSPECTO_SOCIOECONOMICO = S.CORR_PROSPECTO_SOCIOECONOMICO
    AND R.CORR_PREGUNTA = P.CORR_PREGUNTA

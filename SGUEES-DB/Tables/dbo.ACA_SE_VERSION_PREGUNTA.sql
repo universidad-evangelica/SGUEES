@@ -1,5 +1,5 @@
 -- Qué hace: documentación de ACA_SE_VERSION_PREGUNTA (ya existe en BD).
--- Cómo lo hace: refleja identity, PK, UNIQUE (versión+pregunta), FKs y defaults reales. Sin CHECK. Sin triggers.
+-- Cómo lo hace: refleja identity, PK, UNIQUE (versión+pregunta), FKs y defaults reales. Sin sección/puntaje tipo becas.
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -10,7 +10,6 @@ CREATE TABLE [dbo].[ACA_SE_VERSION_PREGUNTA]
 	[CORR_VERSION_PREGUNTA] [int] IDENTITY(1,1) NOT NULL,
 	[CORR_VERSION] [int] NOT NULL,
 	[CORR_PREGUNTA] [int] NOT NULL,
-	[CORR_SECCION_SE] [int] NULL,
 	[ORDEN] [int] NOT NULL,
 	[ES_REQUERIDO] [bit] NOT NULL,
 	[ACTIVO] [bit] NOT NULL,
@@ -43,11 +42,8 @@ GO
 ALTER TABLE [dbo].[ACA_SE_VERSION_PREGUNTA] WITH CHECK ADD CONSTRAINT [FK_ACA_SE_VP_V4_PREGUNTA]
 	FOREIGN KEY ([CORR_PREGUNTA]) REFERENCES [dbo].[ACA_SE_PREGUNTA] ([CORR_PREGUNTA]);
 GO
-ALTER TABLE [dbo].[ACA_SE_VERSION_PREGUNTA] WITH CHECK ADD CONSTRAINT [FK_ACA_SE_VP_SECCION]
-	FOREIGN KEY ([CORR_SECCION_SE]) REFERENCES [dbo].[ACA_SE_SECCION] ([CORR_SECCION_SE]);
-GO
 
--- Sin FK entrantes.
+-- Sin FK a sección.
 -- Sin CHECK.
 -- Sin triggers.
 GO
