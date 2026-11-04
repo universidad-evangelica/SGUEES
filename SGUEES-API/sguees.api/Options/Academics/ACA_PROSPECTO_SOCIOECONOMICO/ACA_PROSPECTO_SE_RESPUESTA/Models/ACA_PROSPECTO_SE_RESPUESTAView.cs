@@ -16,6 +16,10 @@ namespace sguees.Models
         public bool ES_REQUERIDO { get; set; }
         public int? CORR_SECCION_SE { get; set; }
         public string NOMBRE_SECCION { get; set; }
+        public int? ORDEN_SECCION { get; set; }
+        public string CODIGO_SECCION { get; set; }
+        public string TIPO_EVALUACION { get; set; }
+        public decimal? PORCENTAJE_MAXIMO_SECCION { get; set; }
         public int CORR_PREGUNTA { get; set; }
         public string CODIGO_PREGUNTA { get; set; }
         public int CORR_TIPO_PREGUNTA { get; set; }

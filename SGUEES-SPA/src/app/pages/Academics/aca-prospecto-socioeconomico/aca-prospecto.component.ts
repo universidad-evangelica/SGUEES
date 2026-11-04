@@ -198,10 +198,21 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     respuestasSE: AcaProspectoSeRespuesta[] = [];
     itemsRespuestasSE: any[] = [];
     respuestasSEModel: any = {};
-    // Qué hace: cuestionario SE en consulta (pregunta/respuesta, sin chips de puntaje).
+    // Qué hace: cuestionario SE en consulta, agrupado por sección con puntaje (patrón becas).
     seccionesCuestionarioSE: {
         nombre: string;
-        preguntas: { orden: number; texto: string; respuesta: string; codigo: string }[];
+        puntaje: number;
+        porcentajeMaximo: number | null;
+        esRangoMonto: boolean;
+        totalMonto: number | null;
+        etiquetaTotal: string;
+        preguntas: {
+            orden: number;
+            texto: string;
+            respuesta: string;
+            codigo: string;
+            puntaje: number;
+        }[];
     }[] = [];
     // #endregion
 
@@ -1534,21 +1545,184 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.armarSeccionesCuestionarioSE();
     }
 
-    // Qué hace: arma el cuestionario SE en consulta (lista única por orden).
-    // Cómo lo hace: una sola sección "Cuestionario" con pregunta/respuesta; sin puntaje.
+    // Qué hace: arma el cuestionario SE en consulta por sección con puntajes.
+    // Cómo lo hace: agrupa por sección; en RANGO_MONTO calcula total de montos y deja el puntaje solo a nivel sección.
     private armarSeccionesCuestionarioSE(): void {
-        const preguntas = (this.respuestasSE ?? [])
-            .map((fila) => ({
+        type SeccionTmp = {
+            orden: number;
+            nombre: string;
+            porcentajeMaximo: number | null;
+            esRangoMonto: boolean;
+            codigoSeccion: string;
+            totalMonto: number;
+            preguntas: {
+                orden: number;
+                texto: string;
+                respuesta: string;
+                codigo: string;
+                puntaje: number;
+            }[];
+        };
+
+        const secciones = new Map<string, SeccionTmp>();
+
+        for (const fila of this.respuestasSE ?? []) {
+            const meta = this.resolverMetaSeccionSE(fila);
+            let seccion = secciones.get(meta.clave);
+            if (!seccion) {
+                seccion = {
+                    orden: meta.orden,
+                    nombre: meta.nombre,
+                    porcentajeMaximo: meta.porcentajeMaximo,
+                    esRangoMonto: meta.esRangoMonto,
+                    codigoSeccion: meta.codigoSeccion,
+                    totalMonto: 0,
+                    preguntas: [],
+                };
+                secciones.set(meta.clave, seccion);
+            }
+
+            const codigo = (fila.CODIGO_PREGUNTA || '').toUpperCase();
+            // Fallback si aún no hay TOTAL_* en cabecera: suma montos de respuestas.
+            if (seccion.esRangoMonto && this.esCodigoMontoSeccionSE(codigo)) {
+                seccion.totalMonto += Number(fila.VALOR_NUMERO) || 0;
+            }
+
+            seccion.preguntas.push({
                 orden: Number(fila.ORDEN) || 0,
                 texto: fila.ENUNCIADO || fila.CODIGO_PREGUNTA,
                 respuesta: this.serviceRespuestaSE.textoRespuestaPublico(fila),
                 codigo: fila.CODIGO_PREGUNTA,
-            }))
-            .sort((a, b) => a.orden - b.orden);
+                puntaje: Number(fila.PUNTAJE_OBTENIDO) || 0,
+            });
+        }
 
-        this.seccionesCuestionarioSE = preguntas.length
-            ? [{ nombre: 'Cuestionario', preguntas }]
-            : [];
+        this.seccionesCuestionarioSE = [...secciones.values()]
+            .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
+            .map((seccion) => {
+                const preguntas = seccion.preguntas.sort((a, b) => a.orden - b.orden || a.codigo.localeCompare(b.codigo));
+                const puntaje = preguntas.reduce((total, p) => total + (Number(p.puntaje) || 0), 0);
+                return {
+                    nombre: seccion.nombre,
+                    porcentajeMaximo: seccion.porcentajeMaximo,
+                    esRangoMonto: seccion.esRangoMonto,
+                    totalMonto: seccion.esRangoMonto ? this.totalMontoSeccionGuardado(seccion.codigoSeccion, seccion.totalMonto) : null,
+                    etiquetaTotal: this.etiquetaTotalSeccionSE(seccion.codigoSeccion, seccion.nombre),
+                    puntaje,
+                    preguntas,
+                };
+            })
+            .filter((seccion) => seccion.preguntas.length > 0);
+    }
+
+    // Qué hace: toma el total guardado en cabecera SE; si no existe, usa la suma local.
+    private totalMontoSeccionGuardado(codigoSeccion: string, fallback: number): number {
+        const cab = this.socioeconomicoModel;
+        if (!cab) return fallback;
+        if (codigoSeccion === 'INGRESOS' && cab.TOTAL_INGRESOS_LIQUIDOS != null && cab.TOTAL_INGRESOS_LIQUIDOS !== '') {
+            return Number(cab.TOTAL_INGRESOS_LIQUIDOS) || 0;
+        }
+        if (codigoSeccion === 'EGRESOS' && cab.TOTAL_EGRESOS != null && cab.TOTAL_EGRESOS !== '') {
+            return Number(cab.TOTAL_EGRESOS) || 0;
+        }
+        return fallback;
+    }
+
+    // Qué hace: resuelve nombre/orden/tipo de sección para agrupar el cuestionario SE.
+    // Cómo lo hace: usa datos de la vista; si faltan, infiere por prefijo de código.
+    private resolverMetaSeccionSE(fila: AcaProspectoSeRespuesta): {
+        clave: string;
+        orden: number;
+        nombre: string;
+        porcentajeMaximo: number | null;
+        esRangoMonto: boolean;
+        codigoSeccion: string;
+    } {
+        const tipo = (fila.TIPO_EVALUACION || '').toUpperCase();
+        const codigoSeccionVista = (fila.CODIGO_SECCION || '').toUpperCase();
+
+        if (fila.CORR_SECCION_SE != null || (fila.NOMBRE_SECCION && String(fila.NOMBRE_SECCION).trim())) {
+            const esRango =
+                tipo === 'RANGO_MONTO' ||
+                codigoSeccionVista === 'INGRESOS' ||
+                codigoSeccionVista === 'EGRESOS';
+            return {
+                clave: `S:${fila.CORR_SECCION_SE ?? fila.NOMBRE_SECCION}`,
+                orden: Number(fila.ORDEN_SECCION) || 999,
+                nombre: (fila.NOMBRE_SECCION && String(fila.NOMBRE_SECCION).trim()) || 'Sección',
+                porcentajeMaximo:
+                    fila.PORCENTAJE_MAXIMO_SECCION != null && fila.PORCENTAJE_MAXIMO_SECCION !== undefined
+                        ? Number(fila.PORCENTAJE_MAXIMO_SECCION)
+                        : null,
+                esRangoMonto: esRango,
+                codigoSeccion: codigoSeccionVista || (esRango ? 'RANGO' : 'PREGUNTA'),
+            };
+        }
+
+        const codigo = (fila.CODIGO_PREGUNTA || '').toUpperCase();
+        if (codigo === 'CENTRO_EDUCATIVO' || codigo.startsWith('BACH_') || codigo.startsWith('UNI_')) {
+            return {
+                clave: 'F:ESTUDIOS',
+                orden: 1,
+                nombre: 'Centro Educativo / Estudios',
+                porcentajeMaximo: null,
+                esRangoMonto: false,
+                codigoSeccion: 'CENTRO_EDUCATIVO',
+            };
+        }
+        if (codigo.startsWith('ING_')) {
+            return {
+                clave: 'F:INGRESOS',
+                orden: 2,
+                nombre: 'Ingresos',
+                porcentajeMaximo: null,
+                esRangoMonto: true,
+                codigoSeccion: 'INGRESOS',
+            };
+        }
+        if (codigo.startsWith('EGR_')) {
+            return {
+                clave: 'F:EGRESOS',
+                orden: 3,
+                nombre: 'Egresos',
+                porcentajeMaximo: null,
+                esRangoMonto: true,
+                codigoSeccion: 'EGRESOS',
+            };
+        }
+        return {
+            clave: 'F:OTROS',
+            orden: 900,
+            nombre: 'Otras preguntas',
+            porcentajeMaximo: null,
+            esRangoMonto: false,
+            codigoSeccion: 'OTROS',
+        };
+    }
+
+    // Qué hace: indica qué códigos entran en el total de monto de la sección (líquidos / egresos).
+    private esCodigoMontoSeccionSE(codigo: string): boolean {
+        return (
+            codigo.endsWith('_LIQ') ||
+            codigo.endsWith('_MONTO') ||
+            codigo === 'ING_REM_LIQ'
+        );
+    }
+
+    // Qué hace: etiqueta del total mostrado en secciones por rango de monto.
+    private etiquetaTotalSeccionSE(codigoSeccion: string, nombre: string): string {
+        if (codigoSeccion === 'INGRESOS') return 'Total aportes líquidos';
+        if (codigoSeccion === 'EGRESOS') return 'Total egresos';
+        return `Total ${nombre || 'sección'}`;
+    }
+
+    // Qué hace: puntaje total del estudio para el chip de lectura.
+    get puntajeTotalSE(): number {
+        const total = this.socioeconomicoModel?.PUNTAJE_TOTAL;
+        if (total != null && total !== undefined && total !== '') {
+            return Number(total) || 0;
+        }
+        return (this.seccionesCuestionarioSE ?? []).reduce((acc, s) => acc + (Number(s.puntaje) || 0), 0);
     }
 
     private prepararEmpleoNuevo(): void {

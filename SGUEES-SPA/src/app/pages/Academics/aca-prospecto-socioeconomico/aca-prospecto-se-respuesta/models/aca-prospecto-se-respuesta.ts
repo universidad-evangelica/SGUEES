@@ -7,6 +7,12 @@ export interface AcaProspectoSeRespuesta {
     CORR_VERSION_PREGUNTA: number;
     ORDEN: number;
     ES_REQUERIDO: boolean;
+    CORR_SECCION_SE?: number | null;
+    NOMBRE_SECCION?: string | null;
+    ORDEN_SECCION?: number | null;
+    CODIGO_SECCION?: string | null;
+    TIPO_EVALUACION?: string | null;
+    PORCENTAJE_MAXIMO_SECCION?: number | null;
     CORR_PREGUNTA: number;
     CODIGO_PREGUNTA: string;
     CORR_TIPO_PREGUNTA: number;

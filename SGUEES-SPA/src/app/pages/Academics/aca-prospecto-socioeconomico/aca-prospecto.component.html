@@ -854,21 +854,47 @@
                                 El prospecto aceptó la cuota máxima: el formulario no le solicitó ingresos ni egresos.
                             </p>
 
-                            <!-- Qué hace: muestra el cuestionario SE (pregunta/respuesta, sin puntaje tipo becas). -->
-                            <header class="aca-prospecto-section-head">
-                                <span class="aca-prospecto-section-title">Preguntas del cuestionario</span>
-                                <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Vacío o monto en 0 = sin respuesta (igual que el portal)' : 'Respuestas registradas del estudio socioeconómico' }}</span>
+                            <!-- Qué hace: muestra el cuestionario SE por sección con puntajes (solo lectura). -->
+                            <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
+                                <div class="aca-prospecto-section-head-texto">
+                                    <span class="aca-prospecto-section-title">Preguntas del cuestionario</span>
+                                    <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Vacío o monto en 0 = sin respuesta (igual que el portal)' : 'Respuestas y puntaje por sección del estudio socioeconómico' }}</span>
+                                </div>
+                                <span
+                                    *ngIf="readOnly && socioeconomicoModel"
+                                    class="aca-beca-chip"
+                                    [class.aca-beca-chip-cero]="puntajeTotalSE === 0"
+                                    title="Puntaje total"
+                                >{{ puntajeTotalSE | number:'1.2-2' }}</span>
                             </header>
 
-                            <!-- Consulta: lista de preguntas/respuestas. -->
+                            <!-- Consulta: secciones con chip de puntaje; en rangos muestra total → puntaje. -->
                             <div class="aca-beca-secciones" *ngIf="readOnly && seccionesCuestionarioSE.length; else bloqueEdicionOVacioSE">
                                 <article class="aca-beca-seccion" *ngFor="let seccion of seccionesCuestionarioSE">
                                     <header class="aca-beca-seccion-head">
-                                        <span>{{ seccion.nombre }}</span>
+                                        <span>
+                                            {{ seccion.nombre }}
+                                            <small *ngIf="seccion.porcentajeMaximo != null" class="aca-beca-seccion-max">
+                                                (máx. {{ seccion.porcentajeMaximo | number:'1.0-2' }}%)
+                                            </small>
+                                        </span>
+                                        <span class="aca-beca-chip" [class.aca-beca-chip-cero]="seccion.puntaje === 0">{{ seccion.puntaje | number:'1.2-2' }}</span>
                                     </header>
-                                    <div class="aca-beca-pregunta" *ngFor="let pregunta of seccion.preguntas; trackBy: trackPreguntaSE">
+                                    <!-- Qué hace: en ingresos/egresos explica de dónde salió el puntaje (suma → rango). -->
+                                    <div class="aca-beca-resumen-rango" *ngIf="seccion.esRangoMonto">
+                                        <span>{{ seccion.etiquetaTotal }}: <strong>{{ seccion.totalMonto | number:'1.2-2' }}</strong></span>
+                                        <span>→ Puntaje obtenido: <strong>{{ seccion.puntaje | number:'1.2-2' }}</strong></span>
+                                    </div>
+                                    <div
+                                        class="aca-beca-pregunta"
+                                        [class.aca-beca-pregunta--sin-chip]="seccion.esRangoMonto"
+                                        *ngFor="let pregunta of seccion.preguntas; trackBy: trackPreguntaSE"
+                                    >
                                         <p class="aca-beca-pregunta-texto">{{ pregunta.texto }}</p>
-                                        <p class="aca-beca-respuesta">{{ pregunta.respuesta }}</p>
+                                        <p class="aca-beca-respuesta">{{ pregunta.respuesta || '—' }}</p>
+                                        <span class="aca-beca-acciones" *ngIf="!seccion.esRangoMonto">
+                                            <span class="aca-beca-chip" [class.aca-beca-chip-cero]="pregunta.puntaje === 0">{{ pregunta.puntaje | number:'1.2-2' }}</span>
+                                        </span>
                                     </div>
                                 </article>
                             </div>
