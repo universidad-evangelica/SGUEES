@@ -326,8 +326,6 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 				new() { ParameterName = "@CODIGO_PROVEEDOR", Value = Data.CODIGO_PROVEEDOR ?? string.Empty, DbType = System.Data.DbType.String },
 				new() { ParameterName = "@NOMBRE_COMERCIAL", Value = Data.NOMBRE_COMERCIAL ?? string.Empty, DbType = System.Data.DbType.String },
 				new() { ParameterName = "@CORR_FORMA_PAGO", Value = Data.CORR_FORMA_PAGO, DbType = System.Data.DbType.Int32 },
-				new() { ParameterName = "@CUENTA_BANCARIA", Value = Data.CUENTA_BANCARIA ?? string.Empty, DbType = System.Data.DbType.String },
-				new() { ParameterName = "@CORR_BANCO", Value = Data.CORR_BANCO, DbType = System.Data.DbType.Int32 },
 				new() { ParameterName = "@ESTADO_PROVEEDOR", Value = Data.ESTADO_PROVEEDOR ?? "A", DbType = System.Data.DbType.String },
 				new() { ParameterName = "@ESTADO_PROVEEDOR_WEB", Value = Data.ESTADO_PROVEEDOR_WEB ?? "D", DbType = System.Data.DbType.String },
 				new() { ParameterName = "@CORR_CONDICION_PAGO", Value = Data.CORR_CONDICION_PAGO, DbType = System.Data.DbType.Int32 },

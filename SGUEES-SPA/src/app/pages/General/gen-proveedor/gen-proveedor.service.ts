@@ -8,9 +8,11 @@ import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app
 
 import { GenProveedorRepository } from './gen-proveedor.repository';
 import { GenProveedorDocRepository } from './gen-proveedor-doc.repository';
+import { GenPersonaBancoRepository } from './gen-persona-banco.repository';
 import { GenProveedor } from './models/gen-proveedor';
 import { GenProveedorPersona } from './models/gen-proveedor-persona';
 import { GenProveedorDoc } from './models/gen-proveedor-doc';
+import { GenPersonaBanco } from './models/gen-persona-banco';
 
 const ESTADO_FIELD = 'ACTIVO_PROVEEDOR';
 
@@ -24,6 +26,7 @@ export class GenProveedorService {
 	constructor(
 		private repo: GenProveedorRepository,
 		private docRepo: GenProveedorDocRepository,
+		private personaBancoRepo: GenPersonaBancoRepository,
 	) {}
 
 	esValido(model: GenProveedor, msg: Function): boolean {
@@ -114,6 +117,28 @@ export class GenProveedorService {
 		]);
 	}
 
+	getPersonaBancos(corrPersona: number): Observable<IResult> {
+		return this.personaBancoRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	insertPersonaBanco(model: GenPersonaBanco): Observable<IResult> {
+		return this.personaBancoRepo.create(model);
+	}
+
+	updatePersonaBanco(model: GenPersonaBanco): Observable<IResult> {
+		return this.personaBancoRepo.update(model, [
+			{ Parameter: 'CORR_PERSONA', Value: model.CORR_PERSONA },
+			{ Parameter: 'CORR_PERSONA_BANCO', Value: model.CORR_PERSONA_BANCO },
+		]);
+	}
+
+	deletePersonaBanco(corrPersona: number, corrPersonaBanco: number): Observable<IResult> {
+		return this.personaBancoRepo.delete([
+			{ Parameter: 'CORR_PERSONA', Value: corrPersona },
+			{ Parameter: 'CORR_PERSONA_BANCO', Value: corrPersonaBanco },
+		]);
+	}
+
 	getDocumentos(corrProveedor: number): Observable<IResult> {
 		return this.docRepo.getAll([{ Parameter: 'CORR_PROVEEDOR', Value: corrProveedor ?? 0 }]);
 	}
@@ -185,8 +210,6 @@ export class GenProveedorService {
 			{ dataField: 'NOMBRE_COMERCIAL', caption: 'Nombre / Razón social', width: 320 },
 			{ dataField: 'NOMBRE_PROVEEDOR', caption: 'Nombre persona', width: 280 },
 			{ dataField: 'NOMBRE_TIPO_PERSONERIA', caption: 'Personería', width: 110 },
-			{ dataField: 'NOMBRE_BANCO', caption: 'Banco', width: 180 },
-			{ dataField: 'CUENTA_BANCARIA', caption: 'Cuenta', width: 140 },
 			...buildAuditGridColumns(),
 		];
 	}
@@ -241,20 +264,6 @@ export class GenProveedorService {
 			},
 
 			{
-				dataField: 'CORR_BANCO',
-				label: { text: 'Banco' },
-				colSpan: 2,
-				template: 'CORR_BANCOLookup',
-			},
-
-			{
-				dataField: 'CUENTA_BANCARIA',
-				label: { text: 'Cuenta bancaria' },
-				colSpan: 2,
-				editorOptions: { placeholder: 'Cuenta...', showClearButton: true, maxLength: 30 },
-			},
-
-			{
 				dataField: 'NOMBRE_TIPO_PERSONERIA',
 				label: { text: 'Personería' },
 				colSpan: 1,
@@ -265,7 +274,7 @@ export class GenProveedorService {
 				dataField: 'ACTIVO_PROVEEDOR',
 				label: { text: 'Activo' },
 				editorType: 'dxCheckBox',
-				colSpan: 2,
+				colSpan: 1,
 			},
 		];
 	}

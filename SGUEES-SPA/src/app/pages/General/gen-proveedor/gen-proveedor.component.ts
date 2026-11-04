@@ -12,6 +12,7 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { GenProveedor } from './models/gen-proveedor';
 import { GenProveedorDoc } from './models/gen-proveedor-doc';
+import { GenPersonaBanco } from './models/gen-persona-banco';
 import { emptyGenProveedorPersona, GenProveedorPersona } from './models/gen-proveedor-persona';
 import { GenProveedorService } from './gen-proveedor.service';
 
@@ -73,6 +74,12 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	mCORR_PAIS_PERSONA: any[] = [];
 	mCORR_DEPTO_PERSONA: any[] = [];
 	mCORR_MUNICIPIO_PERSONA: any[] = [];
+	/** Tab Bancos (GEN_PERSONA_BANCO; persistencia inmediata). */
+	personaBancos: GenPersonaBanco[] = [];
+	nuevoBancoCorr: number | null = null;
+	nuevoBancoCuenta = '';
+	bancosCargando = false;
+	bancoGuardando = false;
 
 	/** Tab Doc. Adjuntos */
 	documentos: GenProveedorDoc[] = [];
@@ -107,6 +114,30 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 
 	get puedeAdjuntarDocumentos(): boolean {
 		return Number(this.model?.CORR_PROVEEDOR ?? 0) > 0 && !this.readOnly;
+	}
+
+	get puedeGestionarBancos(): boolean {
+		return (
+			Number(this.model?.CORR_PROVEEDOR ?? 0) > 0 &&
+			Number(this.model?.CORR_PERSONA ?? 0) > 0 &&
+			!this.readOnly
+		);
+	}
+
+	get bancosGridEditing(): {
+		allowAdding: boolean;
+		allowUpdating: boolean;
+		allowDeleting: boolean;
+		useIcons: boolean;
+		confirmDelete: boolean;
+	} {
+		return {
+			allowAdding: false,
+			allowUpdating: false,
+			allowDeleting: this.puedeGestionarBancos,
+			useIcons: true,
+			confirmDelete: true,
+		};
 	}
 
 	//#region <Inicializando Opciones>
@@ -223,8 +254,6 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 				NOMBRE_PROVEEDOR: xModel.NOMBRE_PROVEEDOR,
 				NOMBRE_COMERCIAL: xModel.NOMBRE_COMERCIAL ?? '',
 				CORR_FORMA_PAGO: xModel.CORR_FORMA_PAGO,
-				CUENTA_BANCARIA: xModel.CUENTA_BANCARIA,
-				CORR_BANCO: xModel.CORR_BANCO,
 				ESTADO_PROVEEDOR: xModel.ESTADO_PROVEEDOR,
 				ACTIVO_PROVEEDOR: !!xModel.ACTIVO_PROVEEDOR || xModel.ESTADO_PROVEEDOR === 'A',
 				ESTADO_PROVEEDOR_WEB: xModel.ESTADO_PROVEEDOR_WEB || 'D',
@@ -242,8 +271,6 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			NOMBRE_PROVEEDOR: '',
 			NOMBRE_COMERCIAL: '',
 			CORR_FORMA_PAGO: 0,
-			CUENTA_BANCARIA: '',
-			CORR_BANCO: 0,
 			ESTADO_PROVEEDOR: 'A',
 			ACTIVO_PROVEEDOR: true,
 			ESTADO_PROVEEDOR_WEB: 'D',
@@ -266,6 +293,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.personaResumenCargando = false;
 		this.personaDetalleTabIndex = 0;
 		this.documentos = [];
+		this.resetPersonaBancosLocal();
 		this.getCORR_PERSONA(0);
 		super.nuevo();
 	}
@@ -278,9 +306,11 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		const corrPersona = Number(row?.CORR_PERSONA ?? 0);
 		if (corrPersona > 0) {
 			this.cargarPersonaResumen(corrPersona);
+			this.cargarPersonaBancos(corrPersona);
 		} else {
 			this.personaResumen = null;
 			this.personaResumenCargando = false;
+			this.resetPersonaBancosLocal();
 		}
 		this.consultarDocumentos(Number(row?.CORR_PROVEEDOR ?? 0));
 	}
@@ -402,6 +432,10 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 				if (Number(this.model?.CORR_PROVEEDOR ?? 0) > 0) {
 					this.consultarDocumentos(this.model.CORR_PROVEEDOR);
 				}
+				const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+				if (corrPersona > 0) {
+					this.cargarPersonaBancos(corrPersona);
+				}
 			},
 		});
 	}
@@ -436,6 +470,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.personaResumenCargando = false;
 		this.personaDetalleTabIndex = 0;
 		this.documentos = [];
+		this.resetPersonaBancosLocal();
 		this.cerrarPersonaPopup();
 		super.cancelar((item: any) => item.CORR_PROVEEDOR === this.modelUpdate.CORR_PROVEEDOR);
 	}
@@ -455,7 +490,6 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.dataForm.instance.getEditor('CODIGO_PROVEEDOR')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_COMERCIAL')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_TIPO_PERSONERIA')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CUENTA_BANCARIA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ACTIVO_PROVEEDOR')?.option('readOnly', true);
 		this.readOnly = true;
 	}
@@ -495,7 +529,13 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			this.model.TIPO_PERSONERIA = row.TIPO_PERSONERIA ?? '';
 			this.model.NOMBRE_TIPO_PERSONERIA = row.NOMBRE_TIPO_PERSONERIA ?? '';
 			this.personaLookup?.markValid();
-			this.cargarPersonaResumen(Number(row.CORR_PERSONA ?? 0));
+			const corrPersona = Number(row.CORR_PERSONA ?? 0);
+			this.cargarPersonaResumen(corrPersona);
+			if (Number(this.model?.CORR_PROVEEDOR ?? 0) > 0 && corrPersona > 0) {
+				this.cargarPersonaBancos(corrPersona);
+			} else {
+				this.resetPersonaBancosLocal();
+			}
 		}
 		return row?.CORR_PERSONA;
 	}
@@ -640,6 +680,65 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		if (!this.service.esValidaPersona(this.personaModel, this.notifyFx.bind(this))) {
 			return;
 		}
+		if (this.personaGuardando) {
+			return;
+		}
+		this.ejecutarGuardarPersona();
+	}
+
+	agregarPersonaBanco(): void {
+		if (!this.puedeGestionarBancos || this.bancoGuardando) {
+			if (!(Number(this.model?.CORR_PERSONA ?? 0) > 0)) {
+				this.notifyFx('Seleccione una persona primero.', NotifyType.Warning);
+			} else if (!(Number(this.model?.CORR_PROVEEDOR ?? 0) > 0)) {
+				this.notifyFx('Guarde el proveedor para poder agregar cuentas bancarias.', NotifyType.Warning);
+			}
+			return;
+		}
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		const corrBanco = Number(this.nuevoBancoCorr ?? 0);
+		const cuenta = String(this.nuevoBancoCuenta ?? '').trim();
+		if (!(corrBanco > 0) || !cuenta) {
+			this.notifyFx('Seleccione banco e indique el número de cuenta.', NotifyType.Warning);
+			return;
+		}
+		const duplicada = (this.personaBancos ?? []).some(
+			(b) => Number(b.CORR_BANCO) === corrBanco && String(b.CUENTA_BANCARIA ?? '').trim() === cuenta,
+		);
+		if (duplicada) {
+			this.notifyFx('Esa cuenta ya está en la lista.', NotifyType.Warning);
+			return;
+		}
+
+		this.bancoGuardando = true;
+		this.service
+			.insertPersonaBanco({
+				CORR_PERSONA: corrPersona,
+				CORR_PERSONA_BANCO: 0,
+				CORR_BANCO: corrBanco,
+				CUENTA_BANCARIA: cuenta,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.bancoGuardando = false;
+					if (!response?.Result) {
+						this.notifyPersonaBancoError(response);
+						return;
+					}
+					this.nuevoBancoCorr = null;
+					this.nuevoBancoCuenta = '';
+					this.notifyFx('Cuenta bancaria agregada.', NotifyType.Success);
+					this.cargarPersonaBancos(corrPersona);
+				},
+				error: (error: any) => {
+					this.bancoGuardando = false;
+					this.notifyPersonaBancoError(error);
+				},
+			});
+	}
+
+	private ejecutarGuardarPersona(): void {
 		this.personaGuardando = true;
 		const payload = this.normalizarPersonaPayload(this.personaModel);
 		const esNatural = (payload.TIPO_PERSONERIA ?? '').toUpperCase() === 'N';
@@ -656,12 +755,15 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			next: (response: any) => {
 				this.personaGuardando = false;
 				if (!response?.Result || !response.Data) {
-					this.notifyApiError(response);
+					this.notifyApiResponse(response);
 					return;
 				}
 				const persona = response.Data as GenProveedorPersona;
 				this.aplicarPersonaGuardada(persona);
 				this.cerrarPersonaPopup();
+				if (Number(this.model?.CORR_PROVEEDOR ?? 0) > 0 && Number(persona.CORR_PERSONA ?? 0) > 0) {
+					this.cargarPersonaBancos(Number(persona.CORR_PERSONA));
+				}
 				this.notifyFx(
 					esNuevo ? 'Persona guardada correctamente.' : 'Persona actualizada correctamente.',
 					NotifyType.Success,
@@ -672,6 +774,97 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 				this.notifyApiError(error);
 			},
 		});
+	}
+
+	/** Elimina en API de inmediato; cancela la fila si falla. */
+	personaBancoRowRemoving(e: any): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		const corrLinea = Number(e?.data?.CORR_PERSONA_BANCO ?? 0);
+		if (!this.puedeGestionarBancos || !(corrPersona > 0) || !(corrLinea > 0)) {
+			e.cancel = true;
+			return;
+		}
+		e.cancel = new Promise<boolean>((resolve) => {
+			this.service
+				.deletePersonaBanco(corrPersona, corrLinea)
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (!response?.Result) {
+							this.notifyPersonaBancoError(response);
+							resolve(true);
+							return;
+						}
+						this.notifyFx('Cuenta bancaria eliminada.', NotifyType.Success);
+						resolve(false);
+					},
+					error: (error: any) => {
+						this.notifyPersonaBancoError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private resetPersonaBancosLocal(): void {
+		this.personaBancos = [];
+		this.nuevoBancoCorr = null;
+		this.nuevoBancoCuenta = '';
+		this.bancosCargando = false;
+		this.bancoGuardando = false;
+	}
+
+	private cargarPersonaBancos(corrPersona: number): void {
+		this.nuevoBancoCorr = null;
+		this.nuevoBancoCuenta = '';
+		if (!(corrPersona > 0)) {
+			this.personaBancos = [];
+			this.bancosCargando = false;
+			return;
+		}
+		this.bancosCargando = true;
+		this.service
+			.getPersonaBancos(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.bancosCargando = false;
+					if (response?.Result) {
+						this.personaBancos = [...(response.Data ?? [])];
+					} else {
+						this.personaBancos = [];
+						this.notifyPersonaBancoError(response);
+					}
+				},
+				error: (error: any) => {
+					this.bancosCargando = false;
+					this.personaBancos = [];
+					this.notifyPersonaBancoError(error);
+				},
+			});
+	}
+
+	private extraerMensajeBanco(error: any): string {
+		if (typeof error === 'string' && error.trim()) {
+			const t = error.trim();
+			if (t.toLowerCase().includes('invalid object name') || t.toLowerCase().includes('gen_persona_banco')) {
+				return 'La tabla GEN_PERSONA_BANCO no existe. Ejecute DEPLOY_GEN_PERSONA_BANCO_TABLA.sql.';
+			}
+			return t.length > 220 ? `${t.slice(0, 220)}…` : t;
+		}
+		const bodyMsg = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message;
+		if (typeof bodyMsg === 'string' && bodyMsg.trim()) {
+			const t = bodyMsg.trim();
+			if (t.toLowerCase().includes('invalid object name')) {
+				return 'La tabla GEN_PERSONA_BANCO no existe. Ejecute DEPLOY_GEN_PERSONA_BANCO_TABLA.sql.';
+			}
+			return t.length > 220 ? `${t.slice(0, 220)}…` : t;
+		}
+		return 'No se pudo guardar la cuenta bancaria.';
+	}
+
+	private notifyPersonaBancoError(error: any): void {
+		this.notifyFx(this.extraerMensajeBanco(error), NotifyType.Error);
 	}
 
 	/** Evita enviar null en FKs numéricos (rompe JSON→Int32 en el API). */

@@ -70,7 +70,6 @@ namespace sguees.Services
 		private static void ApplyCreateDefaults(GEN_PROVEEDORTable Data)
 		{
 			Data.CODIGO_PROVEEDOR ??= string.Empty;
-			Data.CUENTA_BANCARIA ??= string.Empty;
 			Data.ESTADO_PROVEEDOR = string.IsNullOrWhiteSpace(Data.ESTADO_PROVEEDOR) ? "A" : Data.ESTADO_PROVEEDOR;
 			Data.ESTADO_PROVEEDOR_WEB = string.IsNullOrWhiteSpace(Data.ESTADO_PROVEEDOR_WEB) ? "D" : Data.ESTADO_PROVEEDOR_WEB;
 		}

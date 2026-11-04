@@ -30,9 +30,6 @@ export interface GenProveedor {
 	CORREO_ELECTRONICO_2?: string;
 	CORR_FORMA_PAGO: number;
 	NOMBRE_FORMA_PAGO?: string;
-	CUENTA_BANCARIA: string;
-	CORR_BANCO: number;
-	NOMBRE_BANCO?: string;
 	ESTADO_PROVEEDOR: string;
 	ACTIVO_PROVEEDOR: boolean;
 	NOMBRE_ESTADO_PROVEEDOR?: string;

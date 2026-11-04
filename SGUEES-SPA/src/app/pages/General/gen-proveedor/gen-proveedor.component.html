@@ -55,16 +55,6 @@
 				</button>
 			</div>
 		</div>
-		<div *dxTemplate="let cellInfo of 'CORR_BANCOLookup'">
-			<app-data-lookup
-				[model]="mCORR_BANCO"
-				[(value)]="model.CORR_BANCO"
-				[valueExpr]="'CORR_BANCO'"
-				[displayExpr]="'NOMBRE_BANCO'"
-				[readOnly]="readOnly"
-			>
-			</app-data-lookup>
-		</div>
 		<div *dxTemplate="let cellInfo of 'CORR_FORMA_PAGOLookup'">
 			<app-data-lookup
 				[model]="mCORR_FORMA_PAGO"
@@ -278,6 +268,108 @@
 							</button>
 						</div>
 					</dx-data-grid>
+				</div>
+			</dxi-item>
+
+			<dxi-item title="Bancos" icon="money">
+				<div class="proveedor-bancos">
+					<p class="proveedor-bancos__warn" *ngIf="!(model?.CORR_PERSONA > 0)">
+						Seleccione una persona en el formulario para gestionar cuentas bancarias.
+					</p>
+					<p
+						class="proveedor-bancos__warn"
+						*ngIf="(model?.CORR_PERSONA > 0) && !(model?.CORR_PROVEEDOR > 0)"
+					>
+						Guarde el proveedor para poder agregar cuentas bancarias.
+					</p>
+
+					<ng-container *ngIf="(model?.CORR_PERSONA > 0) && (model?.CORR_PROVEEDOR > 0)">
+						<div class="proveedor-bancos__add" *ngIf="!readOnly">
+							<label class="proveedor-bancos__field">
+								<span>Banco</span>
+								<dx-select-box
+									[(value)]="nuevoBancoCorr"
+									[dataSource]="mCORR_BANCO"
+									valueExpr="CORR_BANCO"
+									displayExpr="NOMBRE_BANCO"
+									[searchEnabled]="true"
+									[showClearButton]="true"
+									placeholder="Seleccionar banco..."
+									[width]="'100%'"
+									[disabled]="bancoGuardando"
+								></dx-select-box>
+							</label>
+							<label class="proveedor-bancos__field">
+								<span>Cuenta bancaria</span>
+								<dx-text-box
+									[(value)]="nuevoBancoCuenta"
+									[maxLength]="30"
+									placeholder="Número de cuenta"
+									[width]="'100%'"
+									[disabled]="bancoGuardando"
+									(onEnterKey)="agregarPersonaBanco()"
+								></dx-text-box>
+							</label>
+							<button
+								type="button"
+								class="proveedor-bancos__add-btn"
+								[disabled]="!puedeGestionarBancos || bancoGuardando"
+								(click)="agregarPersonaBanco()"
+								title="Agregar cuenta"
+							>
+								<i class="dx-icon dx-icon-plus"></i>
+								{{ bancoGuardando ? 'Guardando…' : 'Agregar' }}
+							</button>
+						</div>
+
+						<div class="proveedor-bancos__loading" *ngIf="bancosCargando">
+							<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
+							<span>Cargando cuentas…</span>
+						</div>
+
+						<div
+							class="proveedor-bancos__empty-state"
+							*ngIf="!bancosCargando && personaBancos.length === 0"
+						>
+							<div class="proveedor-bancos__empty-icon" aria-hidden="true">
+								<i class="dx-icon dx-icon-card"></i>
+							</div>
+							<h4>Sin cuentas bancarias</h4>
+							<p>
+								Aún no hay cuentas asociadas a esta persona.
+								<span *ngIf="!readOnly"> Use <strong>Agregar</strong> para registrar banco y número de cuenta.</span>
+							</p>
+						</div>
+
+						<dx-data-grid
+							*ngIf="!bancosCargando && personaBancos.length > 0"
+							class="proveedor-bancos__grid"
+							[dataSource]="personaBancos"
+							[keyExpr]="'CORR_PERSONA_BANCO'"
+							[showBorders]="true"
+							[columnAutoWidth]="false"
+							[hoverStateEnabled]="true"
+							[paging]="{ enabled: false }"
+							[editing]="bancosGridEditing"
+							(onRowRemoving)="personaBancoRowRemoving($event)"
+						>
+							<dxi-column
+								dataField="NOMBRE_BANCO"
+								caption="Banco"
+								[minWidth]="180"
+								[allowEditing]="false"
+							></dxi-column>
+							<dxi-column
+								dataField="CUENTA_BANCARIA"
+								caption="Cuenta bancaria"
+								[minWidth]="180"
+								[allowEditing]="false"
+							></dxi-column>
+							<dxi-column type="buttons" [width]="56" caption="">
+								<dxi-button name="delete"></dxi-button>
+							</dxi-column>
+						</dx-data-grid>
+					</ng-container>
 				</div>
 			</dxi-item>
 		</dx-tab-panel>
@@ -526,6 +618,7 @@
 					</label>
 				</div>
 			</section>
+
 		</div>
 
 		<footer class="proveedor-persona-popup__actions">
