@@ -9,6 +9,7 @@ import { ScTipoEntrevista } from './models/sc-tipo-entrevista';
 import { ScTipoEntrevistaService } from './sc-tipo-entrevista.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-tipo-entrevista',
 	templateUrl: './sc-tipo-entrevista.component.html',
 	styleUrls: ['./sc-tipo-entrevista.component.scss'],

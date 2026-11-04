@@ -15,6 +15,7 @@ import {
  * La edición se dispara vía (editar) hacia el padre, que abre app-sc-solicitud-empleo-editar-persona.
  */
 @Component({
+  standalone: false,
 	selector: 'app-sc-persona-datos-vista',
 	templateUrl: './sc-persona-datos-vista.component.html',
 	styleUrls: ['./sc-persona-datos-vista.component.scss'],
@@ -56,6 +57,19 @@ export class ScPersonaDatosVistaComponent {
 
 	get tienePersonaDatos(): boolean {
 		return (this.personaDatos?.CORR_PERSONA_DATOS ?? 0) > 0;
+	}
+
+	// Qué hace: Evalúa si el candidato mostrado es menor de 18 años.
+	// Cómo lo hace: Comprueba la edad calculada o registrada en personaDatos.
+	get esMenorDeEdad(): boolean {
+		if (!this.personaDatos) {
+			return false;
+		}
+		const edad = Number(this.personaDatos.EDAD);
+		if (!Number.isNaN(edad) && edad > 0) {
+			return edad < 18;
+		}
+		return false;
 	}
 
 	get mostrarDocumentos(): boolean {

@@ -12,7 +12,7 @@
   [shading]="true"
 >
   <!-- Footer nativo del dx-popup: permanece fuera del área desplazable. -->
-  <dxi-toolbar-item toolbar="bottom" location="after">
+  <dxi-popup-toolbar-item toolbar="bottom" location="after">
     <div class="editar-persona__footer-actions">
       <dx-button
         text="Cancelar"
@@ -29,7 +29,7 @@
         (onClick)="guardar()"
       ></dx-button>
     </div>
-  </dxi-toolbar-item>
+  </dxi-popup-toolbar-item>
 
   <div *dxTemplate="let data of 'content'" class="editar-persona">
     <!-- Único scroll, conforme al patrón documentado de DevExtreme 24.1. -->
@@ -105,13 +105,16 @@
                   <label class="ep-label">Segundo apellido</label>
                   <dx-text-box stylingMode="outlined" [(value)]="draft.APELLIDO2"></dx-text-box>
                 </div>
+                <!-- motivo: Campo de fecha de nacimiento editable con máscara dd/MM/yyyy y validación de mayoría de edad -->
                 <div class="ep-field">
                   <label class="ep-label">Fecha nacimiento <span class="req">*</span></label>
                   <dx-date-box
                     stylingMode="outlined"
                     type="date"
                     displayFormat="dd/MM/yyyy"
-                    [value]="draft.FECHA_NACIMIENTO"
+                    [useMaskBehavior]="true"
+                    [max]="fechaMaximaMayorEdad"
+                    [(value)]="draft.FECHA_NACIMIENTO"
                     (onValueChanged)="onFechaNacimientoChanged($event.value)"
                   ></dx-date-box>
                 </div>
@@ -201,11 +204,14 @@
                 </div>
                 <div class="ep-field">
                   <label class="ep-label">Pretensión salarial</label>
+                  <!-- motivo: Pretensión salarial con step 0 para desactivar scroll de ratón y flechas en edición administrativa -->
                   <dx-number-box
                     stylingMode="outlined"
                     [(value)]="draft.PRETENSION_SALARIAL"
                     format="$#,##0.00"
                     [min]="0"
+                    [step]="0"
+                    [showSpinButtons]="false"
                   ></dx-number-box>
                 </div>
                 <div class="ep-field">

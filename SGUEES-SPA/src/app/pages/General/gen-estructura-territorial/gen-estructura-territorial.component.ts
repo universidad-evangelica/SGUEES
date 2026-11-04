@@ -33,6 +33,7 @@ type TerritorialConfirmDialogOptions = CustomDialogOptions & {
 };
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-estructura-territorial',
 	templateUrl: './gen-estructura-territorial.component.html',
 	styleUrls: ['./gen-estructura-territorial.component.scss'],

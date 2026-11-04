@@ -14,5 +14,13 @@ namespace SGUEES.Services
 		Task<CResult> GetEstadoAsociacionAsync(SC_EXPEDIENTE_ASOCIARParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> AsociarSolicitudAsync(SC_EXPEDIENTE_ASOCIARParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> ActivarProcesoSeleccionAsync(SC_EXPEDIENTE_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+
+		// Qué hace: Define la operación de servicio para actualizar los datos personales y colecciones del candidato en el expediente.
+		// Cómo lo hace: Declara el contrato que valida la sesión y delega al repositorio.
+		Task<CResult> ActualizarPersonaDatosAsync(
+			int corrEmpresa,
+			string usuario,
+			string estacion,
+			sguees.Models.SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data);
 	}
 }

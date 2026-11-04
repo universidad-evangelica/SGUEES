@@ -105,6 +105,12 @@ export class ScExpedienteCandidatoService {
 		]);
 	}
 
+	// Qué hace: Expone el método de actualización de datos de persona hacia el componente.
+	// Cómo lo hace: Delega la invocación a repo.actualizarPersonaDatos.
+	actualizarPersonaDatos(model: any): Observable<IResult> {
+		return this.repo.actualizarPersonaDatos(model);
+	}
+
 	activarProcesoSeleccion(corrExpedienteCandidato: number): Observable<IResult> {
 		return this.repo.activarProcesoSeleccion([
 			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpedienteCandidato },
@@ -612,7 +618,7 @@ export class ScExpedienteCandidatoService {
 			{
 				dataField: 'CORR_ESTADO_EXPEDIENTE',
 				caption: 'Estado expediente',
-				width: 190,
+				width: 210,
 				alignment: 'center',
 				cssClass: 'expediente-grid-estado-col',
 				allowFiltering: false,

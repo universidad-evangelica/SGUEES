@@ -185,6 +185,35 @@ namespace SGUEES.Services
 		/// Acción sin flujo: avisa al creador de la REQ y jefes activos de la unidad
 		/// (misma audiencia que bandeja actores · Candidatos).
 		/// </summary>
+		// Qué hace: Valida la sesión empresarial y delega la actualización de datos de persona al repositorio.
+		// Cómo lo hace: Comprueba CORR_EMPRESA y llama a _repo.ActualizarPersonaDatosAsync.
+		public async Task<CResult> ActualizarPersonaDatosAsync(
+			int corrEmpresa,
+			string usuario,
+			string estacion,
+			sguees.Models.SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data)
+		{
+			var empresaError = ValidateEmpresaSesion(corrEmpresa);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
+			// Qué hace: Valida que el candidato sea mayor de edad (mínimo 18 años).
+			// Cómo lo hace: Compara DateOnly de nacimiento con DateOnly de hace 18 años.
+			if (data.FECHA_NACIMIENTO > DateOnly.FromDateTime(DateTime.Today).AddYears(-18))
+			{
+				return new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = "La persona debe ser mayor de edad (mínimo 18 años).",
+				};
+			}
+
+			return await _repo.ActualizarPersonaDatosAsync(corrEmpresa, usuario, estacion, data);
+		}
+
 		private async Task NotificarDesdeActivarAsync(SC_EXPEDIENTE_CANDIDATOTable data, string loginActor)
 		{
 			var dto = await _repo.GetContextoNotificacionActivarAsync(

@@ -49,9 +49,8 @@
 			<dxi-item name="bulletList"></dxi-item>
 
 			<!-- motivo: botón desplegable de parámetros dinámicos ubicado en la primera fila al final de las listas -->
-			<dxi-item *ngIf="parametros && parametros.length > 0" name="separator"></dxi-item>
+			<dxi-item name="separator"></dxi-item>
 			<dxi-item
-				*ngIf="parametros && parametros.length > 0"
 				widget="dxButton"
 				[options]="opcionesBotonParametros"
 			></dxi-item>
@@ -145,7 +144,7 @@
 				</div>
 
 				<div *ngIf="parametrosFiltrados.length === 0" class="no-results">
-					No se encontraron parámetros coincidentes
+					{{ parametros.length === 0 ? 'Seleccione un menú o proceso para cargar las variables del proceso' : 'No se encontraron parámetros coincidentes' }}
 				</div>
 			</div>
 

@@ -1,3 +1,6 @@
+@use 'sass:map';
+@use 'sass:list';
+
 $portal-accent-palette: (
   (
     accent: #2563eb,
@@ -71,21 +74,21 @@ $portal-section-theme-index: (
 // Define variables CSS reutilizables por tarjeta/tab (consumidas más abajo).
 @mixin portal-accent-vars($theme) {
   // Color principal del módulo (icono, borde activo, tab seleccionado).
-  --portal-accent: #{map-get($theme, accent)};
+  --portal-accent: #{map.get($theme, accent)};
   // Variante para degradados (barra inferior de la tarjeta).
-  --portal-accent-light: #{map-get($theme, light)};
+  --portal-accent-light: #{map.get($theme, light)};
   // Fondo suave del círculo del icono.
-  --portal-accent-soft: #{map-get($theme, soft)};
+  --portal-accent-soft: #{map.get($theme, soft)};
   // Fondo más claro del círculo del icono.
-  --portal-accent-softer: #{map-get($theme, softer)};
+  --portal-accent-softer: #{map.get($theme, softer)};
   // Borde en hover de tarjetas y tabs.
-  --portal-accent-border: #{rgba(map-get($theme, accent), 0.35)};
+  --portal-accent-border: #{rgba(map.get($theme, accent), 0.35)};
   // Borde del tab activo.
-  --portal-accent-border-strong: #{rgba(map-get($theme, accent), 0.45)};
+  --portal-accent-border-strong: #{rgba(map.get($theme, accent), 0.45)};
   // Fondo del tab activo (capa superior del degradado).
-  --portal-accent-surface: #{rgba(map-get($theme, accent), 0.12)};
+  --portal-accent-surface: #{rgba(map.get($theme, accent), 0.12)};
   // Fondo del tab activo (capa inferior del degradado).
-  --portal-accent-surface-soft: #{rgba(map-get($theme, accent), 0.04)};
+  --portal-accent-surface-soft: #{rgba(map.get($theme, accent), 0.04)};
 }
 
 :host {
@@ -307,11 +310,11 @@ $portal-section-theme-index: (
    3) Tabs del módulo abierto: mismo color del padre, sin rotación por posición.
 ========================================= */
 
-$portal-palette-length: length($portal-accent-palette);
+$portal-palette-length: list.length($portal-accent-palette);
 
 // Fallback solo para tarjetas de módulos padre (vista sin tabs = listado principal).
 @for $index from 1 through $portal-palette-length {
-  $theme: nth($portal-accent-palette, $index);
+  $theme: list.nth($portal-accent-palette, $index);
 
   .home-portal:not(:has(.portal-menu-tabs)) .cards-grid > .portal-card:nth-child(#{$portal-palette-length}n + #{$index}) {
     @include portal-accent-vars($theme);
@@ -319,7 +322,7 @@ $portal-palette-length: length($portal-accent-palette);
 }
 
 @each $section-id, $theme-index in $portal-section-theme-index {
-  $theme: nth($portal-accent-palette, $theme-index);
+  $theme: list.nth($portal-accent-palette, $theme-index);
 
   // Módulo padre con codeSistema conocido (prioridad sobre nth-child).
   .home-portal:not(:has(.portal-menu-tabs)) .cards-grid > .portal-card[data-section="#{$section-id}"] {

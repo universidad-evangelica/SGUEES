@@ -9,6 +9,7 @@ import { Sales, SalesOrOpportunitiesByCategory } from 'src/app/types/analytics';
 import { ApplyPipeModule } from "src/app/pipes/apply.pipe";
 
 @Component({
+  standalone: false,
   selector: 'ticker-card',
   templateUrl: './ticker-card.component.html',
   styleUrls: ['./ticker-card.component.scss'],

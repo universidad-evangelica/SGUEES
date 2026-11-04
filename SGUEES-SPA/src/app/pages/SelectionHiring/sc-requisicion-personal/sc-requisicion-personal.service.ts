@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+﻿import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
@@ -88,8 +88,10 @@ export class ScRequisicionPersonalService {
             return false;
         }
 
-        // Solo aplica si la contratación NO es permanente (flag UI desde lookup).
-        if (model.ES_PERMANENTE !== true) {
+        // Qué hace: Valida tiempo de contrato solo para contrataciones no permanentes.
+        // Cómo lo hace: Considera permanente si ES_PERMANENTE es true o si CORR_TIPO_CONTRATACION es 1 (Permanente).
+        const esPermanente = model.ES_PERMANENTE === true || (model.ES_PERMANENTE == null && Number(model.CORR_TIPO_CONTRATACION) === 1);
+        if (!esPermanente) {
             if (model.TIEMPO_CONTRATO == null || model.TIEMPO_CONTRATO <= 0) {
                 msg('Debe digitar el tiempo de contrato (meses)', NotifyType.Warning);
                 return false;
@@ -885,10 +887,12 @@ export class ScRequisicionPersonalService {
                                     editorType: 'dxNumberBox',
                                     editorOptions: { placeholder: 'Ej. 6 meses', showClearButton: true, maxLength: 50 },
                                 },
+                                // Qué hace: Configura el campo de horario laboral en la fila de salario.
+                                // Cómo lo hace: Establece colSpan: 7 por defecto para completar la fila de 8 columnas junto a Salario (1) y evitar desbordes visuales al cargar.
                                 {
                                     dataField: 'HORARIO',
                                     label: { text: 'Horario laboral' },
-                                    colSpan: 4,
+                                    colSpan: 7,
                                     editorType: 'dxTextArea',
                                     editorOptions: { placeholder: 'Detalle horario laboral...', showClearButton: true, maxLength: 100 },
                                 },

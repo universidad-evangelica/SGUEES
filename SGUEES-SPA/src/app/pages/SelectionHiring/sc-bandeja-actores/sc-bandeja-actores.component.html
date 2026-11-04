@@ -172,10 +172,11 @@
 						[width]="250"
 						cellTemplate="solCell"
 					></dxi-column>
+					<!-- motivo: Descripción / Puesto flexible que absorbe el ancho sobrante para no estirar Estado -->
 					<dxi-column
 						dataField="DESCRIPCION"
 						caption="Descripción / Puesto"
-						[minWidth]="200"
+						[minWidth]="220"
 						cellTemplate="descCell"
 					></dxi-column>
 					<dxi-column
@@ -185,16 +186,18 @@
 						cellTemplate="fechaCell"
 						sortOrder="desc"
 					></dxi-column>
+					<!-- motivo: Estado ajustado a 195px para margen limpio sin exceso de espacio -->
 					<dxi-column
 						dataField="ESTADO"
 						caption="Estado"
-						[width]="170"
+						[width]="195"
 						cellTemplate="estadoCell"
 						[alignment]="'center'"
 					></dxi-column>
+					<!-- motivo: Ancho ampliado a 115 para que el título 'Acciones' no se corte con puntos suspensivos -->
 					<dxi-column
 						caption="Acciones"
-						[width]="90"
+						[width]="115"
 						[allowFiltering]="false"
 						[allowSorting]="false"
 						cellTemplate="accionesCell"

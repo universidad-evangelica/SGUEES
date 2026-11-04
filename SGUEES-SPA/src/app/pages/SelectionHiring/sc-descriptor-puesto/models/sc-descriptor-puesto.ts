@@ -27,13 +27,16 @@ export interface ScDescriptorPuesto {
 	NOMBRE_UNIDAD?: string; // Nombre de la unidad (join o lookup).
 }
 
-/** Unidad permitida al usuario de sesión (SC_UNIDADES_USUARIO). */
+/** Unidad permitida al usuario de sesión (SC_UNIDADES_USUARIO / PRAL_DATA_SC_UNIDADES_USUARIO). */
 export interface ScDescriptorUnidadLookup {
 	CORR_UNIDAD: number;
 	CODIGO_UNIDAD?: string;
 	NOMBRE_UNIDAD: string;
 	NOMBRE_UNIDAD_CATALOGO?: string;
 	ACTIVO?: boolean;
+	/** True si es descendiente de una unidad donde el usuario es jefe activo. */
+	ES_HIJA_A_CARGO?: boolean;
+	ORIGEN_UNIDAD?: string;
 }
 
 /** Puesto asignado a una unidad (GEN_UNIDADES_PUESTO). */

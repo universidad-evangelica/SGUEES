@@ -709,7 +709,7 @@
     [shading]="false"
     [(visible)]="popupVisible"
   >
-    <dxi-toolbar-item
+    <dxi-popup-toolbar-item
       location="after"
       toolbar= "top"
       widget="dxButton"
@@ -718,8 +718,8 @@
 			onClick: RefrescarSolicitud,
 		}"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="after"
       toolbar= "top"
       widget="dxDateBox"
@@ -733,8 +733,8 @@
                 onValueChanged: OnValueChangeANIO_PERIODO_SOLI_COMPRA_MODAL
                 }"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="after"
       toolbar= "top"
       widget="dxTextBox"
@@ -747,8 +747,8 @@
                 onValueChanged: OnValueChangeCORR_SOLI_COMPRA_MODAL,
                 }"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="after"
       toolbar= "top"
       menuItemTemplate="menuSeparatorTemplate"
@@ -756,8 +756,8 @@
     <div *dxTemplate>
       <div class="toolbar-separator"></div>
     </div>
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="after"
       toolbar= "top"
       widget="dxDateBox"
@@ -771,8 +771,8 @@
     onValueChanged: OnValueChangeFECHA_INICIAL_MODAL
     }"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="after"
       toolbar= "top"
       widget="dxDateBox"
@@ -785,8 +785,8 @@
         onValueChanged: OnValueChangeFECHA_FINAL_MODAL
       }"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="before"
       toolbar= "bottom"
       widget="dxButton"
@@ -798,8 +798,8 @@
 			onClick: guardarPopup,
 		}"
     >
-    </dxi-toolbar-item>
-    <dxi-toolbar-item
+    </dxi-popup-toolbar-item>
+    <dxi-popup-toolbar-item
       location="before"
       toolbar= "bottom"
       widget="dxButton"
@@ -812,7 +812,7 @@
       routerLinkActive: 'router-link-active'
 		}"
     >
-    </dxi-toolbar-item>
+    </dxi-popup-toolbar-item>
     <div *dxTemplate="let data of 'content'">
       <dx-data-grid
           #dataSolicitudDisponible
@@ -1013,7 +1013,7 @@
     [shading]="false"
     [(visible)]="popupVisibleProveedor"
   >
-  <dxi-toolbar-item
+  <dxi-popup-toolbar-item
   location="before"
   toolbar= "bottom"
   widget="dxButton"
@@ -1025,8 +1025,8 @@
   onClick: guardarPopupProveedor,
 }"
 >
-</dxi-toolbar-item>
-<dxi-toolbar-item
+</dxi-popup-toolbar-item>
+<dxi-popup-toolbar-item
   location="before"
   toolbar= "bottom"
   widget="dxButton"
@@ -1039,7 +1039,7 @@
   routerLinkActive: 'router-link-active'
 }"
 >
-</dxi-toolbar-item>
+</dxi-popup-toolbar-item>
     <div *dxTemplate="let data of 'content'">
       <dx-data-grid
               #dataProveedorDisponible

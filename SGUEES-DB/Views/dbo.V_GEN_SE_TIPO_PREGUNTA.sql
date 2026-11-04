@@ -1,0 +1,22 @@
+-- Qué hace: vista de mantenimiento del catálogo GEN_SE_TIPO_PREGUNTA.
+-- Cómo lo hace: proyecta todas las columnas; el usuario debe ejecutar este script en BD.
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE OR ALTER VIEW [dbo].[V_GEN_SE_TIPO_PREGUNTA]
+AS
+SELECT
+	T.CORR_TIPO_PREGUNTA,
+	T.CODIGO,
+	T.NOMBRE,
+	T.ACTIVO,
+	T.USUARIO_CREA,
+	T.ESTACION_CREA,
+	T.FECHA_CREA,
+	T.USUARIO_ACTU,
+	T.ESTACION_ACTU,
+	T.FECHA_ACTU
+FROM dbo.GEN_SE_TIPO_PREGUNTA AS T;
+GO

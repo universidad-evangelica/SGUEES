@@ -1,0 +1,25 @@
+-- Qué hace: vista de mantenimiento del catálogo ACA_SE_VERSION.
+-- Cómo lo hace: proyecta todas las columnas; el usuario debe ejecutar este script en BD.
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE OR ALTER VIEW [dbo].[V_ACA_SE_VERSION]
+AS
+SELECT
+	T.CORR_VERSION,
+	T.CODIGO,
+	T.NOMBRE,
+	T.DESCRIPCION,
+	T.ACTIVO,
+	T.FECHA_VIGENCIA_INI,
+	T.FECHA_VIGENCIA_FIN,
+	T.USUARIO_CREA,
+	T.ESTACION_CREA,
+	T.FECHA_CREA,
+	T.USUARIO_ACTU,
+	T.ESTACION_ACTU,
+	T.FECHA_ACTU
+FROM dbo.ACA_SE_VERSION AS T;
+GO

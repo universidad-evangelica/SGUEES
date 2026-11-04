@@ -13,6 +13,7 @@ import {
 import { ValidationRule } from 'devextreme-angular/common';
 
 @Component({
+  standalone: false,
   selector: 'change-profile-password-form',
   templateUrl: './change-profile-password-form.component.html',
   styleUrls: ['./change-profile-password-form.component.scss']

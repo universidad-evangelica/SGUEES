@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, NgModule } from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'app-section-card',
   templateUrl: './section-card.component.html',
   styleUrls: ['./section-card.component.scss'],

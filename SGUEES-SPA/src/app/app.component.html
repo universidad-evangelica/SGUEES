@@ -33,14 +33,20 @@
 </ng-container>
 
 <ng-template #appShell>
-  <ng-container *ngIf="isAuthenticated(); else unauthenticated">
+  <ng-container *ngIf="mostrarMarco(); else fueraDeSesion">
     <app-side-nav-outer-toolbar>
       <router-outlet></router-outlet>
     </app-side-nav-outer-toolbar>
   </ng-container>
 
-  <ng-template #unauthenticated>
-    <app-unauthenticated-content></app-unauthenticated-content>
+  <!-- Qué hace: sin sesión solo se ve el login. La pantalla que estaba abierta no entra en la tarjeta de 330px. -->
+  <ng-template #fueraDeSesion>
+    <app-unauthenticated-content *ngIf="esRutaAcceso(); else salidaOculta"></app-unauthenticated-content>
+    <ng-template #salidaOculta>
+      <div class="sguees-salida-sesion" *ngIf="asegurarLogin()">
+        <router-outlet></router-outlet>
+      </div>
+    </ng-template>
   </ng-template>
 </ng-template>
 

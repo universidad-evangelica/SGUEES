@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 
 import { ActivatedRoute } from '@angular/router';
 
@@ -29,6 +29,7 @@ import { ConCentroCostoPresupuesto } from '../con-centro-costo-presupuesto/model
 
 
 @Component({
+  standalone: false,
 
 	selector: 'app-con-centro-costo',
 

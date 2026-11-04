@@ -1,6 +1,8 @@
 /*
-  Actualiza V_COM_PROVEEDOR (linked server 4 partes + UNION proveedores/personal).
-  Uso:
+  Actualiza vistas V_COM_PROVEEDOR* (origen SGUEES; CLASS desconectado / comentado).
+  Preferir el deploy de Fase 1:
+    Scripts/DEPLOY_GEN_PERSONA_PROVEEDOR_FASE1.sql
+  Uso legacy:
     sqlcmd -S 192.168.0.250 -U erp -d SGUEES -f 65001 -i UPDATE_V_COM_PROVEEDOR.sql
 */
 SET NOCOUNT ON;

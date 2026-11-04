@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, NgModule, Input } from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'app-card-auth',
   templateUrl: './card-auth.component.html',
   styleUrls: ['./card-auth.component.scss'],

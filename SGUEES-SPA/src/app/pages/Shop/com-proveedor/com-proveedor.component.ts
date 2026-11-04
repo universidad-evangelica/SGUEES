@@ -16,6 +16,7 @@ import { DxDataGridComponent } from 'devextreme-angular';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-proveedor',
 	templateUrl: './com-proveedor.component.html',
 	styleUrls: ['./com-proveedor.component.scss'],

@@ -15,6 +15,7 @@ import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-orden-compra',
 	templateUrl: './com-orden-compra.component.html',
 	styleUrls: ['./com-orden-compra.component.scss'],

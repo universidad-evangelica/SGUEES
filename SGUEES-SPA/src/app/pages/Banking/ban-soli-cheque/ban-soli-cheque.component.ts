@@ -18,6 +18,7 @@ import { BanSoliChequeDetaService } from './ban-soli-cheque-deta/ban-soli-cheque
 import { ConCatalogoCuentaCentroCostoService } from '../../Accounting/con-catalogo-cuenta-centro-costo/con-catalogo-cuenta-centro-costo.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-soli-cheque',
 	templateUrl: './ban-soli-cheque.component.html',
 	styleUrls: ['./ban-soli-cheque.component.scss'],

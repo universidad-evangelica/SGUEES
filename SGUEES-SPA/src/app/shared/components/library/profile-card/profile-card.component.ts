@@ -17,6 +17,7 @@ import { getSizeQualifier } from 'src/app/shared/services/screen.service';
 type CardData = Record<string, any>;
 
 @Component({
+  standalone: false,
   selector: 'profile-card',
   templateUrl: './profile-card.component.html',
   styleUrls: ['profile-card.component.scss'],

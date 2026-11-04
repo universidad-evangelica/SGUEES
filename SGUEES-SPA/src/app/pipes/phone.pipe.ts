@@ -5,6 +5,7 @@ export function formatPhone(value) {
 }
 
 @Pipe({
+  standalone: false,
   name: 'phone',
 })
 export class PhonePipe implements PipeTransform {

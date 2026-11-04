@@ -12,6 +12,7 @@ import { ScTipoVacanteService } from './sc-tipo-vacante.service';
 import { confirm } from 'devextreme/ui/dialog';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-tipo-vacante',
 	templateUrl: './sc-tipo-vacante.component.html',
 	styleUrls: ['./sc-tipo-vacante.component.scss'],

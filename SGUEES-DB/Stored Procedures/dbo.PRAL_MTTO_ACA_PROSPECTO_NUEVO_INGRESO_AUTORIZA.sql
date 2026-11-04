@@ -21,7 +21,8 @@ GO
 -- Importante:
 --   Este procedimiento NO guarda datos personales ni archivos.
 --   Eso ya lo hizo el portal. Aquí solo mueve el flujo 104, sincroniza
---   ACA_PROSPECTO_ESTADO y bloquea el portal con ACA_PROSPECTO.ESTADO = 'C'.
+--   ACA_PROSPECTO_ESTADO y deja ACA_PROSPECTO.ESTADO en 'C'.
+--   OPERACION = 5 (reaperturar) deja ese campo en 'P' al final. El flujo no cambia.
 --
 -- Requisitos previos (script Scripts/ACA_PROSPECTO_NUEVO_INGRESO_FLUJO_PREPARAR.sql):
 --   1) CODIGO_OPCION por tipo (FK a SEG_OPCION_SISTEMA / menú ya existente):
@@ -34,7 +35,8 @@ GO
 -- Cómo lo hace (espejo del descriptor PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA):
 --   1) Valida prospecto, login (SEG_USUARIO activo), comentario y unidad.
 --   2) Resuelve tipo 104 / flujo defecto / paso inicial (ORDEN 1 = 18).
---   3) Si ya hay instancia activa del tipo 104 → no vuelve a enviar.
+--   3) Si ya hay instancia activa del tipo 104 y OPERACION = 1, solo pone
+--      ACA_PROSPECTO.ESTADO = 'C' y termina. No crea otra instancia.
 --   4) Llama a EjecutarFlujoProceso con acción 1 (FASE 2A):
 --        crea SEG_FLUJO_INSTANCIA + bitácora y, según la config actual,
 --        AVANZA al paso 19 (Aprobación del analista) con estado 38 Ingresado.
@@ -65,7 +67,7 @@ GO
 --   -7 = no hay acción 1 en el paso inicial
 --   -8 = falta @CORR_UNIDAD_DOCUMENTO
 --  -10 = falló EjecutarFlujoProceso (detalle en @MENSAJE_ERROR)
---  -12 = la solicitud 104 ya tiene instancia activa (ya enviada)
+--  -12 = hay instancia activa y la operación no es el reenvío (OPERACION = 1)
 --  -13 = el login no es el ejecutor del paso
 --  -14 = el paso no tiene la acción pedida
 --  -15 = no hay instancia para la operación
@@ -367,6 +369,21 @@ BEGIN
 			SET @MODO = CASE WHEN @OPERACION = 4 THEN 'RECHAZAR' ELSE 'APROBAR' END;
 		END
 	END
+	ELSE IF @ID_INSTANCIA IS NOT NULL AND @OPERACION = 1
+	BEGIN
+		-- Qué hace: el ciclo dejó la postulación en P y el flujo 104 ya existe.
+		-- Cómo lo hace: solo vuelve a marcar ACA_PROSPECTO.ESTADO = 'C'. No mueve la instancia.
+		UPDATE dbo.ACA_PROSPECTO
+		SET ESTADO = 'C',
+			USUARIO_ACTU = LEFT(@LOGIN_SISTEMA, 50),
+			ESTACION_ACTU = LEFT(@V_ESTACION, 50),
+			FECHA_ACTU = GETDATE()
+		WHERE CORR_PROSPECTO = @CORR_PROSPECTO;
+
+		SET @MODO = 'REENVIAR';
+		SET @MENSAJE_ERROR = NULL;
+		RETURN 0;
+	END
 	ELSE IF @ID_INSTANCIA IS NOT NULL
 	BEGIN
 		SELECT @V_NOMBRE_ESTADO = LEFT(NOMBRE_ESTADO, 100)
@@ -481,11 +498,12 @@ BEGIN
 	END
 
 	-- =========================================================================
-	-- PASO 6 — Lock del portal (ACA_PROSPECTO.ESTADO = 'C')
-	-- Qué hace: el front de admisiones usa ESTADO='C' como flagCompleted.
+	-- PASO 6 — Estado del portal (ACA_PROSPECTO.ESTADO)
+	-- Qué hace: enviar, aprobar y rechazar dejan 'C'. Reaperturar deja 'P'.
+	-- Cómo lo hace: el flujo ya terminó arriba. Este UPDATE solo cambia la letra.
 	-- =========================================================================
 	UPDATE dbo.ACA_PROSPECTO
-	SET ESTADO = 'C',
+	SET ESTADO = CASE WHEN @OPERACION = 5 THEN 'P' ELSE 'C' END,
 		USUARIO_ACTU = LEFT(@LOGIN_SISTEMA, 50),
 		ESTACION_ACTU = LEFT(@V_ESTACION, 50),
 		FECHA_ACTU = GETDATE()

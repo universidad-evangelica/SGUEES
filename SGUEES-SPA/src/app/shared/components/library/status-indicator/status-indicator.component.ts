@@ -6,6 +6,7 @@ import { TaskStatus, TaskPriority } from 'src/app/types/task';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 
 @Component({
+  standalone: false,
   selector: 'status-indicator',
   template: `
   <div

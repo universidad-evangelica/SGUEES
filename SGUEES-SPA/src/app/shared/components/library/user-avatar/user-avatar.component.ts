@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'user-avatar',
   templateUrl: './user-avatar.component.html',
   styleUrls: ['./user-avatar.component.scss'],

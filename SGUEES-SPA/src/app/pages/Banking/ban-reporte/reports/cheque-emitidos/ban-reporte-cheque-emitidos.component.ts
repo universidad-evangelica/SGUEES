@@ -10,6 +10,7 @@ import { BanReporteUiConfig } from '../../models/ban-reporte-ui.config';
 import { BanReporteColumnaService } from '../../services/ban-reporte-columna.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-reporte-cheque-emitidos',
 	templateUrl: '../../ban-reporte.component.html',
 })

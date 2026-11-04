@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 export function normalizeCuentaClassWeb(raw: unknown): string {
 	const s = String(raw ?? '').trim();
@@ -6,29 +6,59 @@ export function normalizeCuentaClassWeb(raw: unknown): string {
 	return s.replace(/0+$/, '') || '0';
 }
 
-export function parseClassWebWorkbook(buffer: ArrayBuffer): {
+function cellPlainValue(value: unknown): unknown {
+	if (value == null) return '';
+	if (value instanceof Date) return value;
+	if (typeof value === 'object') {
+		const obj = value as Record<string, unknown>;
+		if (obj.result !== undefined) return obj.result;
+		if (obj.text !== undefined) return obj.text;
+		if (Array.isArray(obj.richText)) {
+			return (obj.richText as { text?: string }[]).map((p) => p.text ?? '').join('');
+		}
+	}
+	return value;
+}
+
+function sheetToRowArrays(worksheet: { eachRow: (options: object, callback: (row: { values?: unknown[] }) => void) => void }): unknown[][] {
+	const rows: unknown[][] = [];
+	worksheet.eachRow({ includeEmpty: false }, (row) => {
+		const vals = row.values;
+		if (!vals || !Array.isArray(vals)) {
+			rows.push([]);
+			return;
+		}
+		rows.push(vals.slice(1).map((v) => cellPlainValue(v)));
+	});
+	return rows;
+}
+
+export async function parseClassWebWorkbook(buffer: ArrayBuffer): Promise<{
 	cuentaRows: any[];
 	centroRows: any[];
-} {
-	const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
-	let cuentaSheet: XLSX.WorkSheet | null = null;
-	let centroSheet: XLSX.WorkSheet | null = null;
+}> {
+	const workbook = new ExcelJS.Workbook();
+	await workbook.xlsx.load(buffer);
 
-	for (const name of wb.SheetNames) {
-		const normalized = name.toLowerCase().replace(/[\s_-]/g, '');
+	let cuentaSheet: (typeof workbook.worksheets)[number] | null = null;
+	let centroSheet: (typeof workbook.worksheets)[number] | null = null;
+
+	for (const ws of workbook.worksheets) {
+		const normalized = ws.name.toLowerCase().replace(/[\s_-]/g, '');
 		if (!cuentaSheet && (normalized.includes('catalogo') || normalized.includes('cuentas'))) {
-			cuentaSheet = wb.Sheets[name];
+			cuentaSheet = ws;
 		}
 		if (!centroSheet && (normalized.includes('centro') || normalized.includes('costo'))) {
-			centroSheet = wb.Sheets[name];
+			centroSheet = ws;
 		}
 	}
 
-	if (!cuentaSheet && wb.SheetNames.length > 0) {
-		cuentaSheet = wb.Sheets[wb.SheetNames.find((n) => n.toUpperCase().includes('CATALOGO')) || wb.SheetNames[0]];
+	if (!cuentaSheet && workbook.worksheets.length > 0) {
+		const catalogName = workbook.worksheets.find((w) => w.name.toUpperCase().includes('CATALOGO'))?.name;
+		cuentaSheet = workbook.getWorksheet(catalogName ?? workbook.worksheets[0].name) ?? null;
 	}
-	if (!centroSheet && wb.SheetNames.length > 1) {
-		centroSheet = wb.Sheets[wb.SheetNames[1]];
+	if (!centroSheet && workbook.worksheets.length > 1) {
+		centroSheet = workbook.worksheets[1];
 	}
 
 	return {
@@ -37,8 +67,8 @@ export function parseClassWebWorkbook(buffer: ArrayBuffer): {
 	};
 }
 
-function parseCuentaSheet(ws: XLSX.WorkSheet) {
-	const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: '' });
+function parseCuentaSheet(ws: Parameters<typeof sheetToRowArrays>[0]) {
+	const rows = sheetToRowArrays(ws) as any[][];
 	const accounts: any[] = [];
 	const seen = new Set<string>();
 	const all: any[] = [];
@@ -95,8 +125,8 @@ function parseCuentaSheet(ws: XLSX.WorkSheet) {
 	return accounts;
 }
 
-function parseCentroSheet(ws: XLSX.WorkSheet) {
-	const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: '' });
+function parseCentroSheet(ws: Parameters<typeof sheetToRowArrays>[0]) {
+	const rows = sheetToRowArrays(ws) as any[][];
 	const centros: any[] = [];
 	const seen = new Set<string>();
 

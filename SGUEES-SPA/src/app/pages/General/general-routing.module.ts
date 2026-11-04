@@ -12,11 +12,14 @@ import { GenEstructuraTerritorialComponent } from './gen-estructura-territorial/
 import { GenDivisionComponent } from './gen-division/gen-division.component';
 import { GenGerenciaComponent } from './gen-gerencia/gen-gerencia.component';
 import { GenBancoComponent } from './gen-banco/gen-banco.component';
+import { GenProveedorComponent } from './gen-proveedor/gen-proveedor.component';
 import { GenUnidadesPuestoComponent } from './gen-unidades-puesto/gen-unidades-puesto.component';
 import { GenActividadEconomicaComponent } from './gen-actividad-economica/gen-actividad-economica.component';
 import { GenTipoContribuyenteComponent } from './gen-tipo-contribuyente/gen-tipo-contribuyente.component';
 import { GenOrigenIngresoComponent } from './gen-origen-ingreso/gen-origen-ingreso.component';
 import { GenReligionComponent } from './gen-religion/gen-religion.component';
+import { GenSeTipoPreguntaComponent } from './gen-se-tipo-pregunta/gen-se-tipo-pregunta.component';
+import { GenTipoInstitucionComponent } from './gen-tipo-institucion/gen-tipo-institucion.component';
 import { GenTipoDocumentoIdentidadComponent } from './gen-tipo-documento-identidad/gen-tipo-documento-identidad.component';
 import { GenParentescoComponent } from './gen-parentesco/gen-parentesco.component';
 import { GenTipoContactoComponent } from './gen-tipo-contacto/gen-tipo-contacto.component';
@@ -98,6 +101,14 @@ const routes: Routes = [
     loadChildren: () => import('./gen-banco/gen-banco.module').then(m => m.GenBancoModule)
   },
   {
+    path: 'gen-proveedor',
+    component: GenProveedorComponent,
+    data: { titulo: 'Proveedores' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-proveedor/gen-proveedor.module').then(m => m.GenProveedorModule)
+  },
+  {
     path: 'gen-unidades-puesto',
     component: GenUnidadesPuestoComponent,
     data: { titulo: 'Asignación de Puestos a Unidades' },
@@ -136,6 +147,22 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-religion/gen-religion.module').then(m => m.GenReligionModule)
+  },
+  {
+    path: 'gen-se-tipo-pregunta',
+    component: GenSeTipoPreguntaComponent,
+    data: { titulo: 'Tipos de pregunta SE' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-se-tipo-pregunta/gen-se-tipo-pregunta.module').then(m => m.GenSeTipoPreguntaModule)
+  },
+  {
+    path: 'gen-tipo-institucion',
+    component: GenTipoInstitucionComponent,
+    data: { titulo: 'Tipos de institución' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-tipo-institucion/gen-tipo-institucion.module').then(m => m.GenTipoInstitucionModule)
   },
   {
     path: 'gen-tipo-documento-identidad',

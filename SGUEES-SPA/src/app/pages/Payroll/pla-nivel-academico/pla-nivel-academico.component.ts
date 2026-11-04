@@ -14,6 +14,7 @@ import { PlaNivelAcademicoService } from './pla-nivel-academico.service';
 const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
 
 @Component({
+  standalone: false,
 	selector: 'app-pla-nivel-academico',
 	templateUrl: './pla-nivel-academico.component.html',
 	styleUrls: ['./pla-nivel-academico.component.scss'],

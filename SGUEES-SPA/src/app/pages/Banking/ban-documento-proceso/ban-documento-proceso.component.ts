@@ -17,6 +17,7 @@ import {
 } from './ban-documento-proceso.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-documento-proceso',
 	templateUrl: './ban-documento-proceso.component.html',
 	styleUrls: ['./ban-documento-proceso.component.scss'],

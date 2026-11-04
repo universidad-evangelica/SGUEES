@@ -15,6 +15,7 @@ import { ComProveedorActuDoc } from './com-proveedor-actu-doc/models/com-proveed
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 @Component({
+  standalone: false,
 	selector: 'app-com-proveedor-actu',
 	templateUrl: './com-proveedor-actu.component.html',
 	styleUrls: ['./com-proveedor-actu.component.scss'],

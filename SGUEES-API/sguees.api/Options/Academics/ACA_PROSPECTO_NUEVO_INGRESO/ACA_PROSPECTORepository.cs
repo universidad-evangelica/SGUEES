@@ -675,14 +675,15 @@ namespace sguees.Repositories
             return objResultado;
         }
 
-        // Qué hace: el 100 % de la solicitud de nuevo ingreso, para enviar y para aprobar.
-        // Cómo lo hace: solo datos personales y documentación. Socioeconómico y beca no entran.
+        // Qué hace: el detalle de lo que falta para enviar o aprobar la solicitud de nuevo ingreso.
+        // Cómo lo hace: cada apartado se cuenta igual que el número del tab. Socioeconómico y beca no entran.
         private const string _SqlCompletitudAprobar =
             "DECLARE @persona int, @pFilled int = 0, @pTotal int = 0, @pPct int = 0, " +
             "@eq bit = 0, @cuota bit = 0, @dTotal int = 0, @dCarg int = 0, @dPct int = 0, " +
             "@socio int, @version varchar(20), @seFilled int = 0, @seTotal int = 0, @sePct int = 0, " +
             "@becas bit = 0, @beca int, @becaTipo int, @becaVer int, @bTotal int = 0, @bFilled int = 0, @bPct int = 0, " +
-            "@n int = 3, @general int = 0, @mensaje varchar(500) = ''; " +
+            "@n int = 3, @general int = 0, @mensaje varchar(500) = '', " +
+            "@faltaPersona int = 14, @faltaContacto int = 2, @faltaSalud int = 0, @faltaFamilia int = 4, @faltaEducacion int = 6, @faltaMedio int = 1, @faltaDoc int = 0; " +
             "SELECT TOP 1 @persona = CORR_PROSPECTO_PERSONA FROM dbo.ACA_PROSPECTO_PERSONA WHERE CORR_PROSPECTO = @CORR_PROSPECTO; " +
             "IF @persona IS NOT NULL BEGIN " +
             "  SELECT @pTotal = 11, @pFilled = " +
@@ -789,13 +790,63 @@ namespace sguees.Repositories
             "  END " +
             "END " +
             "IF @SOLO_NUEVO_INGRESO = 1 OR @PARA_APROBAR = 1 BEGIN " +
-            "  SET @general = CAST(ROUND((@pPct + @dPct) * 1.0 / 2, 0) AS int); " +
-            "  IF @pPct < 100 OR @dPct < 100 BEGIN " +
+            "  IF @persona IS NOT NULL BEGIN " +
+            "    SELECT @faltaPersona = " +
+            "      CASE WHEN NULLIF(LTRIM(RTRIM(NOMBRES)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN NULLIF(LTRIM(RTRIM(APELLIDO1)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN FECHA_NACIMIENTO IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN NULLIF(LTRIM(RTRIM(LUGAR_NACIMIENTO)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_PAIS_PROCEDENCIA IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_PAIS_RESIDENCIA IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_SEXO IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN NULLIF(LTRIM(RTRIM(DUI)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_ESTADO_CIVIL IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_RELIGION IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN NULLIF(LTRIM(RTRIM(IGLESIA_ACTUAL)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN NULLIF(LTRIM(RTRIM(DIRECCION_ACTUAL)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_DEPTO_RESIDENCIA IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_MUNICIPIO_RESIDENCIA IS NULL THEN 1 ELSE 0 END " +
+            "    FROM dbo.ACA_PROSPECTO_PERSONA WHERE CORR_PROSPECTO_PERSONA = @persona; " +
+            "    IF EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_PERSONA WHERE CORR_PROSPECTO_PERSONA = @persona AND HA_SIDO_DEPORTADO = 1) " +
+            "      AND NOT EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_DEPORTACION WHERE CORR_PROSPECTO_PERSONA = @persona AND ES_VIGENTE = 1) " +
+            "      SET @faltaPersona = @faltaPersona + 1; " +
+            "    IF EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_PERSONA WHERE CORR_PROSPECTO_PERSONA = @persona AND POSEE_DISCAPACIDAD = 1) " +
+            "      AND NOT EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_LIMITACION_FISICA WHERE CORR_PROSPECTO_PERSONA = @persona) " +
+            "      SET @faltaSalud = 1; " +
+            "    SELECT @faltaContacto = " +
+            "      CASE WHEN EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_CONTACTO WHERE CORR_PROSPECTO_PERSONA = @persona AND ES_CORREO = 1 AND NULLIF(LTRIM(RTRIM(CONTACTO)), '') IS NOT NULL) THEN 0 ELSE 1 END " +
+            "      + CASE WHEN EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_CONTACTO WHERE CORR_PROSPECTO_PERSONA = @persona AND ES_TELEFONO = 1 AND NULLIF(LTRIM(RTRIM(CONTACTO)), '') IS NOT NULL) THEN 0 ELSE 1 END; " +
+            "    SELECT TOP 1 @faltaFamilia = " +
+            "      CASE WHEN NULLIF(LTRIM(RTRIM(NOMBRES)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_PARENTESCO > 0 THEN 0 ELSE 1 END " +
+            "      + CASE WHEN NULLIF(LTRIM(RTRIM(TELEFONO_EMERGENCIA)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN NULLIF(LTRIM(RTRIM(DIRECCION_EMERGENCIA)), '') IS NULL THEN 1 ELSE 0 END " +
+            "    FROM dbo.ACA_PROSPECTO_FAMILIAR WHERE CORR_PROSPECTO_PERSONA = @persona AND ES_EMERGENCIA = 1; " +
+            "    SELECT TOP 1 @faltaEducacion = " +
+            "      CASE WHEN NULLIF(LTRIM(RTRIM(NOMBRE_INSTITUCION)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN NULLIF(LTRIM(RTRIM(TIPO_EDUCACION)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN NULLIF(LTRIM(RTRIM(TITULO_OBTENIDO)), '') IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN ANIO_TITULACION IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_PAIS IS NULL THEN 1 ELSE 0 END " +
+            "      + CASE WHEN CORR_DEPTO IS NULL THEN 1 ELSE 0 END " +
+            "    FROM dbo.ACA_PROSPECTO_ESTUDIO WHERE CORR_PROSPECTO_PERSONA = @persona AND NIVEL_ESTUDIO = 'MEDIO' AND GRADUADO_UEES = 0; " +
+            "    IF EXISTS (SELECT 1 FROM dbo.ACA_PROSPECTO_MEDIO_ORIGEN WHERE CORR_PROSPECTO_PERSONA = @persona) SET @faltaMedio = 0; " +
+            "  END " +
+            "  SELECT @faltaDoc = COUNT(*) FROM dbo.V_ACA_PROSPECTO_DOCUMENTO_NUEVO_INGRESO " +
+            "  WHERE CORR_PROSPECTO = @CORR_PROSPECTO AND OBLIGATORIO = 1 AND NULLIF(LTRIM(RTRIM(NOMBRE_ARCHIVO)), '') IS NULL; " +
+            "  SET @general = CASE WHEN @faltaPersona + @faltaContacto + @faltaSalud + @faltaFamilia + @faltaEducacion + @faltaMedio + @faltaDoc = 0 THEN 100 ELSE 0 END; " +
+            "  IF @general < 100 BEGIN " +
             "    SET @mensaje = CASE WHEN @PARA_APROBAR = 1 " +
-            "      THEN 'No se puede aprobar. La solicitud de nuevo ingreso debe estar al 100%.' " +
-            "      ELSE 'No se puede enviar. La solicitud de nuevo ingreso debe estar al 100%.' END; " +
-            "    IF @pPct < 100 SET @mensaje = @mensaje + ' Datos personales ' + CONVERT(varchar(10), @pPct) + '%.'; " +
-            "    IF @dPct < 100 SET @mensaje = @mensaje + ' Documentación ' + CONVERT(varchar(10), @dPct) + '%.'; " +
+            "      THEN 'No se puede aprobar. Complete los apartados que faltan:' " +
+            "      ELSE 'No se puede enviar. Complete los apartados que faltan:' END; " +
+            "    IF @faltaPersona > 0 SET @mensaje = @mensaje + ' Datos personales (' + CONVERT(varchar(10), @faltaPersona) + '),'; " +
+            "    IF @faltaContacto > 0 SET @mensaje = @mensaje + ' Contacto (' + CONVERT(varchar(10), @faltaContacto) + '),'; " +
+            "    IF @faltaSalud > 0 SET @mensaje = @mensaje + ' Salud (' + CONVERT(varchar(10), @faltaSalud) + '),'; " +
+            "    IF @faltaFamilia > 0 SET @mensaje = @mensaje + ' Datos familiares (' + CONVERT(varchar(10), @faltaFamilia) + '),'; " +
+            "    IF @faltaEducacion > 0 SET @mensaje = @mensaje + ' Educación (' + CONVERT(varchar(10), @faltaEducacion) + '),'; " +
+            "    IF @faltaMedio > 0 SET @mensaje = @mensaje + ' Información adicional (' + CONVERT(varchar(10), @faltaMedio) + '),'; " +
+            "    IF @faltaDoc > 0 SET @mensaje = @mensaje + ' Documentación (' + CONVERT(varchar(10), @faltaDoc) + '),'; " +
+            "    SET @mensaje = LEFT(@mensaje, LEN(@mensaje) - 1) + '.'; " +
             "  END " +
             "END ELSE BEGIN " +
             "  SET @general = CAST(ROUND((@pPct + @dPct + @sePct + CASE WHEN @becas = 1 THEN @bPct ELSE 0 END) * 1.0 / @n, 0) AS int); " +
@@ -851,8 +902,8 @@ namespace sguees.Repositories
             ") THEN 1 ELSE 0 END AS VENCIDA";
 
         // Qué hace: mueve el flujo 104 con el login de la sesión.
-        // Cómo lo hace: 1 envía y 3 aprueba si datos personales y documentación están al 100 %.
-        //               Socioeconómico y beca no bloquean. 4 rechaza y 5 revierte.
+        // Cómo lo hace: 1 envía y 3 aprueba si los apartados del tab están completos.
+        //               Socioeconómico y beca no bloquean. 4 rechaza y 5 revierte. Guardar no usa esto.
         public async Task<CResult> AccionFlujoAsync(int corrEmpresa, int corrProspecto, string login, string observacion, string estacion, int operacion)
         {
             CResult objResultado = new();
@@ -951,8 +1002,8 @@ namespace sguees.Repositories
             return vencida;
         }
 
-        // Qué hace: mensaje si falta el 100 % de nuevo ingreso para enviar o para aprobar.
-        // Cómo lo hace: en las dos acciones solo exige datos personales y documentación.
+        // Qué hace: mensaje si falta algún apartado de la solicitud para enviar o para aprobar.
+        // Cómo lo hace: usa los mismos conteos que los tabs. Guardar no llama esto.
         private async Task<string> MensajeSiNoEstaCompletaAsync(int corrProspecto, bool soloNuevoIngreso, bool paraAprobar)
         {
             var parametros = new List<CParameter>

@@ -14,6 +14,7 @@ import { GenTipoContribuyenteService } from './gen-tipo-contribuyente.service';
 const ESTADO_FIELD = 'ACTIVO_TIPO_CONTRIBUYENTE';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-tipo-contribuyente',
 	templateUrl: './gen-tipo-contribuyente.component.html',
 	styleUrls: ['./gen-tipo-contribuyente.component.scss'],

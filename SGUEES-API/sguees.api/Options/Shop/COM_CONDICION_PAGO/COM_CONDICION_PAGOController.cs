@@ -105,6 +105,13 @@ namespace sguees.Controllers
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAsync(Data);
 		}
+		[HttpGet("GetCORR_CONDICION_PAGO_GEN_PROVEEDOR")]
+		[Authorize(Policy = "/gen-proveedor|R")]
+		public async Task<CResult> GetCORR_CONDICION_PAGO_GEN_PROVEEDOR([FromQuery] COM_CONDICION_PAGOParam Data)
+		{
+			return await _service.GetAllAsync(Data);
+		}
+
 		[HttpGet("GetCORR_CONDICION_PAGO_COM_DOCUMENTO")]
 		[Authorize(Policy = "/com-documento|R")]
 		public async Task<CResult> GetCORR_CONDICION_PAGO_COM_DOCUMENTO([FromQuery] COM_CONDICION_PAGOParam Data)

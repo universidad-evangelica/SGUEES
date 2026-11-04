@@ -12,6 +12,7 @@ import { GenParametroSmtp } from './models/gen-parametro-smtp';
 import { GenParametroSmtpService } from './gen-parametro-smtp.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-parametro-smtp',
 	templateUrl: './gen-parametro-smtp.component.html',
 	styleUrls: ['./gen-parametro-smtp.component.scss'],

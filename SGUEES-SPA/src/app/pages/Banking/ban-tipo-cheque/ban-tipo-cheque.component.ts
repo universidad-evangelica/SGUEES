@@ -10,6 +10,7 @@ import { BanTipoCheque } from './models/ban-tipo-cheque';
 import { BanTipoChequeService } from './ban-tipo-cheque.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-tipo-cheque',
 	templateUrl: './ban-tipo-cheque.component.html',
 })

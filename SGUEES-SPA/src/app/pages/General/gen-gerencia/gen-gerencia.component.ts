@@ -13,6 +13,7 @@ import { GenGerencia } from './models/gen-gerencia';
 import { GenGerenciaService } from './gen-gerencia.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-gen-gerencia',
 	templateUrl: './gen-gerencia.component.html',
 	styleUrls: ['./gen-gerencia.component.scss'],

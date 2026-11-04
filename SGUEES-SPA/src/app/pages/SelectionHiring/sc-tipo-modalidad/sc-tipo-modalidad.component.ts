@@ -11,6 +11,7 @@ import { ScTipoModalidad } from './models/sc-tipo-modalidad';
 import { ScTipoModalidadService } from './sc-tipo-modalidad.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-tipo-modalidad',
 	templateUrl: './sc-tipo-modalidad.component.html',
 	styleUrls: ['./sc-tipo-modalidad.component.scss'],

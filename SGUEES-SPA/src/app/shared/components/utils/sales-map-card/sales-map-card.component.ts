@@ -10,6 +10,7 @@ import { DxVectorMapModule, DxVectorMapTypes } from 'devextreme-angular/ui/vecto
 import { MapLayerElement } from 'devextreme/viz/vector_map';
 
 @Component({
+  standalone: false,
   selector: 'sales-map-card',
   templateUrl: './sales-map-card.component.html',
   styleUrls: ['./sales-map-card.component.scss'],

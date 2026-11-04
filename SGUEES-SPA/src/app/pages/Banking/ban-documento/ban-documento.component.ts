@@ -18,6 +18,7 @@ import { BanDocumentoDetaApiScope } from './ban-documento-deta/ban-documento-det
 import { ConCatalogoCuentaCentroCostoService } from '../../Accounting/con-catalogo-cuenta-centro-costo/con-catalogo-cuenta-centro-costo.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-documento',
 	templateUrl: './ban-documento.component.html',
 	styleUrls: ['./ban-documento.component.scss'],

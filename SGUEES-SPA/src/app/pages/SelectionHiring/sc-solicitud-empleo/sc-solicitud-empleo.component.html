@@ -1,4 +1,4 @@
-<p-toast
+﻿<p-toast
   position="bottom-right"
   [showTransformOptions]="'translateY(100%)'"
   [hideTransitionOptions]="'500ms'"
@@ -214,8 +214,12 @@
           <dxo-paging [pageSize]="5"></dxo-paging>
 
           <dxo-pager
+            [visible]="true"
             [showPageSizeSelector]="true"
             [allowedPageSizes]="[5, 10, 20]"
+            [showInfo]="true"
+            [infoText]="'Página {0} de {1} ({2} ítems)'"
+            [showNavigationButtons]="true"
           ></dxo-pager>
 
           <dxo-editing
@@ -264,18 +268,7 @@
                 <span>Corr. {{ personaDatos?.CORR_PERSONA_DATOS }}</span>
               </div>
             </div>
-            <div
-              class="persona-datos-actions"
-              [attr.title]="!permiteEdit ? 'Sin permiso para editar' : null"
-            >
-              <dx-button
-                text="Editar Datos"
-                icon="edit"
-                type="default"
-                [disabled]="!permiteEdit || isConsulta() || asociacionExpedienteBloqueada || cargandoPersonaDatos || !tienePersonaDatos"
-                (onClick)="abrirEditarPersona()"
-              ></dx-button>
-            </div>
+            <!-- motivo: en solicitud de empleo se evita la edición de datos de persona; la edición se realiza exclusivamente desde expediente candidato -->
           </div>
         </div>
 
@@ -943,20 +936,7 @@
   />
 </div>
 
-<app-sc-solicitud-empleo-editar-persona
-  [(visible)]="editarPersonaVisible"
-  [corrSolicitudEmpleo]="model.CORR_SOLICITUD_EMPLEO"
-  [fotoPreviewUrl]="fotoPersonaUrl"
-  [persona]="personaDatos"
-  [familiares]="familiares"
-  [hijos]="hijos"
-  [estudios]="estudios"
-  [idiomas]="idiomas"
-  [competencias]="competencias"
-  [experiencias]="experiencias"
-  [familiaresUees]="familiaresUees"
-  (saved)="onPersonaDatosGuardados()"
-></app-sc-solicitud-empleo-editar-persona>
+<!-- motivo: en solicitud de empleo se evita editar; la edición se realiza exclusivamente desde expediente candidato -->
 
 <!-- motivo: modal para seleccionar plantilla de correo activa por su Nombre de Plantilla y previsualizar antes de enviar la solicitud -->
 <dx-popup
@@ -997,13 +977,6 @@
       ></dx-select-box>
     </div>
 
-    <!-- motivo: asunto en modo solo lectura de la plantilla para revisión -->
-    <div *ngIf="plantillaSeleccionadaCorr">
-      <label style="font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 4px; display: block;">
-        Asunto
-      </label>
-      <dx-text-box [(value)]="correoAsunto" [readOnly]="true"></dx-text-box>
-    </div>
 
     <!-- motivo: vista previa interactiva en modo solo lectura del cuerpo con formato institucional respetando estilos y colores -->
     <div *ngIf="plantillaSeleccionadaCorr" class="email-preview-container">

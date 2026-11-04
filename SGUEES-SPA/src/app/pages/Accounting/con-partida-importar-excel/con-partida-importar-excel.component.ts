@@ -12,6 +12,7 @@ import { ConPartidaImportRow } from './models/con-partida-importar-excel';
 import { ConPartidaImportarExcelService } from './con-partida-importar-excel.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-partida-importar-excel',
 	templateUrl: './con-partida-importar-excel.component.html',
 	styleUrls: ['./con-partida-importar-excel.component.scss'],

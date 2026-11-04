@@ -12,6 +12,7 @@ import { ScTipoContratacionService } from './sc-tipo-contratacion.service';
 import { confirm } from 'devextreme/ui/dialog';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-tipo-contratacion',
 	templateUrl: './sc-tipo-contratacion.component.html',
 	styleUrls: ['./sc-tipo-contratacion.component.scss'],

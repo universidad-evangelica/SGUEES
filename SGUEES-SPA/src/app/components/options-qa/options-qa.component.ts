@@ -9,6 +9,7 @@ interface OptionsQAFinding {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-options-qa',
   templateUrl: './options-qa.component.html',
   styleUrls: ['./options-qa.component.css']

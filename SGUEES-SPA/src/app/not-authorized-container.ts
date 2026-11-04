@@ -11,6 +11,7 @@ import { Router } from '@angular/router';
 
 
 @Component({
+  standalone: false,
 
   selector: 'app-not-authorized-container',
 

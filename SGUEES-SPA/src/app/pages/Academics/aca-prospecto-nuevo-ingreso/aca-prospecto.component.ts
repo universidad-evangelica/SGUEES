@@ -1,7 +1,7 @@
 import { Component, NgZone, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, forkJoin } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { Observable, forkJoin, of } from 'rxjs';
+import { switchMap, take } from 'rxjs/operators';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
 import { DxCheckBoxComponent } from 'devextreme-angular/ui/check-box';
 import { confirm } from 'devextreme/ui/dialog';
@@ -40,6 +40,7 @@ import { AcaProspectoEmpleoService } from './aca-prospecto-empleo/aca-prospecto-
 //               (persona → empleo → socioeconómico → respuestas → prospecto), como el resto del ERP
 //               (eFramework no maneja transacciones). Las grillas hijas siguen de solo lectura (fase 2).
 @Component({
+  standalone: false,
     selector: 'app-aca-prospecto-nuevo-ingreso',
     templateUrl: './aca-prospecto.component.html',
     styleUrls: ['./aca-prospecto.component.scss'],
@@ -63,6 +64,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     @ViewChild('chkDeportado', { static: false }) chkDeportado?: DxCheckBoxComponent;
     @ViewChild('chkUniversidad', { static: false }) chkUniversidad?: DxCheckBoxComponent;
     @ViewChild('chkUees', { static: false }) chkUees?: DxCheckBoxComponent;
+    @ViewChild('gridDocumentos') gridDocumentos?: { gData?: { instance?: { repaint: () => void } } };
+    @ViewChild('tabLista') tabLista?: { instance?: { element?: () => HTMLElement; repaint: () => void; option: (nombre: string, valor?: unknown) => unknown } };
 
     protected override mttoGridKeyExpr = 'CORR_PROSPECTO';
     readOnly = true;
@@ -75,6 +78,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     esBorrador = false;
     modelsPendientes: any[] = [];
     modelsBorrador: any[] = [];
+    conteoPendientes = 0;
+    conteoBorrador = 0;
+    private conteoTabsIntentos = 0;
+    private refrescandoTabs = false;
     popupAprobarVisible = false;
     observacionAprobar = '';
     accionFlujo: 'aprobar' | 'rechazar' | 'revertir' = 'aprobar';
@@ -95,6 +102,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     mCORR_CARRERA: any[] = [];
     mCORR_PARENTESCO: any[] = [];
     mCORR_LIMITACION_FISICA: any[] = [];
+    // Listas fijas vía ACA_LISTA (Key/Value), mismo patrón que SC_LISTA en descriptor.
+    mFORMA_INGRESO: any[] = [];
+    mTIPO_EDUCACION: any[] = [];
+    mTIPO_CONTACTO: any[] = [];
     // Códigos telefónicos de país ("+503 El Salvador"), del mismo SP que usa el registro del portal.
     mCODIGO_PAIS: any[] = [];
     mCORR_MEDIO_ORIGEN: any[] = [];
@@ -201,7 +212,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     //               y declara que trabaja, se prepararía un empleo "nuevo" aunque ya tenga uno.
     empleoCargado = false;
 
-    // Documentos que aplican a esta solicitud (tipo 104 y regla del prospecto).
+    // Documentos de la solicitud: tipo 104 con su regla, o marcados en el período.
     documentos: any[] = [];
     bitacorasFlujo: any[] = [];
     bitacorasEdicion: any[] = [];
@@ -248,7 +259,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         super(appInfoService, router);
         this.aplicarColumnasLista();
         this.summary = this.service.getSummary();
-        this.items = this.service.getItems();
+        this.items = this.service.getItems(this.mFORMA_INGRESO);
         this.prepararColumnasDocumento();
         this.columnsBitacoraFlujo = this.serviceBitacoraFlujo.getColumns();
         this.columnsBitacoraEdicion = this.serviceBitacora.getColumns();
@@ -257,7 +268,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.itemsPersona = this.servicePersona.getItems();
         this.columnsContacto = this.serviceContacto.getColumns();
         this.summaryContacto = this.serviceContacto.getSummary();
-        this.itemsContacto = this.serviceContacto.getItems();
+        this.itemsContacto = this.serviceContacto.getItems(false, true, this.mCODIGO_PAIS, this.mTIPO_CONTACTO);
         this.columnsFamiliar = this.serviceFamiliar.getColumns();
         this.summaryFamiliar = this.serviceFamiliar.getSummary();
         this.itemsFamiliar = this.serviceFamiliar.getItems();
@@ -271,7 +282,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.columnsMedio = this.serviceMedio.getColumns();
         this.summaryMedio = this.serviceMedio.getSummary();
         this.itemsMedio = this.serviceMedio.getItems();
-        this.itemsEstudioMedia = this.serviceEstudio.getItemsMedia();
+        this.itemsEstudioMedia = this.serviceEstudio.getItemsMedia(this.mTIPO_EDUCACION);
         this.itemsEstudioUniversidad = this.serviceEstudio.getItemsUniversidad();
         this.itemsEstudioUees = this.serviceEstudio.getItemsUees();
         this.itemsEmpleo = this.serviceEmpleo.getItems();
@@ -315,6 +326,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.getCORR_LIMITACION_FISICA();
         this.getCODIGO_PAIS();
         this.getCORR_MEDIO_ORIGEN();
+        this.getFORMA_INGRESO();
+        this.getTIPO_EDUCACION();
+        this.getTIPO_CONTACTO();
     }
 
     // Qué hace: llave seleccionada de cada lookup de edición (app-data-lookup exige la función).
@@ -429,6 +443,33 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             if (this.contactoModel) {
                 this.refrescarItemsContacto();
             }
+        });
+    }
+
+    // Qué hace: forma de ingreso desde ACA_LISTA (deja de usar la lista local del service).
+    // Cómo lo hace: getLookUp ACA_LISTA/GetFORMA_INGRESO y rearma el encabezado.
+    getFORMA_INGRESO() {
+        this.cargarLookup('ACA_LISTA', 'GetFORMA_INGRESO', (data) => {
+            this.mFORMA_INGRESO = data ?? [];
+            this.items = this.service.getItems(this.mFORMA_INGRESO);
+        });
+    }
+
+    // Qué hace: tipo de educación media desde ACA_LISTA.
+    // Cómo lo hace: getLookUp ACA_LISTA/GetTIPO_EDUCACION y rearma el formulario de media.
+    getTIPO_EDUCACION() {
+        this.cargarLookup('ACA_LISTA', 'GetTIPO_EDUCACION', (data) => {
+            this.mTIPO_EDUCACION = data ?? [];
+            this.itemsEstudioMedia = this.serviceEstudio.getItemsMedia(this.mTIPO_EDUCACION);
+        });
+    }
+
+    // Qué hace: tipo de contacto (Teléfono/Correo) desde ACA_LISTA.
+    // Cómo lo hace: getLookUp ACA_LISTA/GetTIPO_CONTACTO y, si hay ficha abierta, la rearma.
+    getTIPO_CONTACTO() {
+        this.cargarLookup('ACA_LISTA', 'GetTIPO_CONTACTO', (data) => {
+            this.mTIPO_CONTACTO = data ?? [];
+            this.refrescarItemsContacto();
         });
     }
 
@@ -717,9 +758,43 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: el número del círculo de cada pestaña de la lista.
+    // Cómo lo hace: usa el total ya guardado. El título del tab se pinta una vez y no se entera solo.
     conteoTabLista(data: any): number {
-        const total = data?.icon === 'edit' ? this.modelsBorrador : this.modelsPendientes;
-        return total?.length || 0;
+        return data?.icon === 'edit' ? this.conteoBorrador : this.conteoPendientes;
+    }
+
+    // Qué hace: pone el total real en las pestañas cuando la consulta llega después del primer dibujo.
+    // Cómo lo hace: el tab deja el 0 de la primera pintada. Escribe el largo de cada lista en el círculo
+    //               y lo reintenta si el título todavía no está en pantalla.
+    refrescarConteoTabs(): void {
+        const pendientes = this.modelsPendientes?.length || 0;
+        const borrador = this.modelsBorrador?.length || 0;
+        this.conteoPendientes = pendientes;
+        this.conteoBorrador = borrador;
+        const element = this.tabLista?.instance?.element?.();
+        const badges = element?.querySelectorAll?.('.aca-prospecto-tab-conteo');
+        const listos = !!badges && badges.length >= 2
+            && badges[0].textContent === String(pendientes)
+            && badges[1].textContent === String(borrador);
+        if (listos || this.conteoTabsIntentos >= 6) {
+            return;
+        }
+        this.conteoTabsIntentos += 1;
+        if (badges && badges.length >= 2) {
+            badges[0].textContent = String(pendientes);
+            badges[1].textContent = String(borrador);
+        } else if (this.tabLista?.instance && !this.refrescandoTabs) {
+            this.refrescandoTabs = true;
+            const indice = this.esBorrador ? 1 : 0;
+            this.tabLista.instance.repaint();
+            if (this.tabLista.instance.option('selectedIndex') !== indice) {
+                this.tabLista.instance.option('selectedIndex', indice);
+            }
+            setTimeout(() => {
+                this.refrescandoTabs = false;
+            }, 50);
+        }
+        setTimeout(() => this.refrescarConteoTabs(), 120);
     }
 
     // Qué hace: muestra los círculos de lo que falta solo mientras se puede enviar o aprobar.
@@ -729,12 +804,33 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return estado !== 39 && estado !== 46;
     }
 
+    // Qué hace: en el alta impide abrir los apartados que todavía no aplican.
+    // Cómo lo hace: Datos personales y Contacto siguen activos; el resto se cancela.
+    bloquearApartados(e: any): void {
+        const titulo = e?.addedItems?.[0]?.title;
+        if (this.esAlta() && titulo && titulo !== 'Datos personales' && titulo !== 'Contacto') {
+            e.cancel = true;
+        }
+    }
+
     // Qué hace: cuántos datos de ese apartado faltan para el 100 % de enviar y aprobar.
-    // Cómo lo hace: los mismos campos que exige el API. Contacto no entra. -1 oculta el círculo.
+    // Cómo lo hace: en el alta solo cuenta nombre, primer apellido, fecha, correo y teléfono.
+    //               Los demás apartados no muestran número hasta que la solicitud exista.
     faltanApartado(data: any): number {
+        if (this.esAlta()) {
+            if (data?.title === 'Datos personales') {
+                return this.faltanAltaPersonales();
+            }
+            if (data?.title === 'Contacto') {
+                return this.faltanAltaContacto();
+            }
+            return -1;
+        }
         switch (data?.title) {
             case 'Datos personales':
                 return this.faltanDatosPersonales();
+            case 'Contacto':
+                return this.faltanAltaContacto();
             case 'Salud':
                 return this.faltanSalud();
             case 'Datos familiares':
@@ -744,7 +840,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             case 'Información adicional':
                 return this.faltanMedio();
             case 'Documentación':
-                return (this.documentos || []).filter((d) => !d?.NOMBRE_ARCHIVO).length;
+                return (this.documentos || []).filter((d) => this.documentoObligatorio(d) && !d?.NOMBRE_ARCHIVO).length;
             default:
                 return -1;
         }
@@ -754,9 +850,23 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return valor === null || valor === undefined || String(valor).trim() === '';
     }
 
+    // Qué hace: dice si la fecha de nacimiento quedó después del día de hoy.
+    // Cómo lo hace: compara solo el día, en formato yyyy-MM-dd, sin la hora.
+    private fechaPosteriorAHoy(valor: any): boolean {
+        if (!valor) {
+            return false;
+        }
+        const texto = String(valor).slice(0, 10);
+        const hoy = new Date();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoy.getDate()).padStart(2, '0');
+        return texto > `${hoy.getFullYear()}-${mes}-${dia}`;
+    }
+
     // Qué hace: el campo obligatorio vacío se pinta en rojo mientras se puede enviar o aprobar.
+    // Cómo lo hace: en el alta no marca los catálogos; solo nombres, apellido y fecha llevan borde.
     reqVacio(valor: any): boolean {
-        if (!this.mostrarFaltantesApartado()) {
+        if (this.esAlta() || !this.mostrarFaltantesApartado()) {
             return false;
         }
         if (typeof valor === 'number') {
@@ -766,8 +876,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: enciende el borde rojo de los editores que el dx-form ya marca como requeridos.
-    pintarRequeridos(): void {
+    // Cómo lo hace: en el alta solo revisa los tres datos del encabezado. Después valida el formulario completo.
+    pintarRequeridos(e?: any): void {
         if (!this.mostrarFaltantesApartado() || this.readOnly) {
+            return;
+        }
+        if (this.esAlta()) {
+            this.pintarRequeridosAlta(e?.component ?? this.formPersona?.instance);
             return;
         }
         this.formPersona?.instance?.validate();
@@ -776,18 +891,99 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.formFamiliar?.instance?.validate();
     }
 
-    private faltanDatosPersonales(): number {
-        const persona = this.personaModel;
-        if (!persona) {
-            return 11;
+    // Qué hace: en el alta pinta en rojo solo nombres, primer apellido y fecha de nacimiento.
+    // Cómo lo hace: pone la clase en el editor. La fecha no tiene regla del dx-form, por eso no basta isValid.
+    private pintarRequeridosAlta(form: any): void {
+        if (!form?.getEditor?.('NOMBRES')) {
+            return;
         }
+        const persona = this.leerFormData(this.formPersona, this.personaModel) ?? this.personaModel;
+        this.marcarEditorAlta(form, 'NOMBRES', this.datoVacio(persona?.NOMBRES));
+        this.marcarEditorAlta(form, 'APELLIDO1', this.datoVacio(persona?.APELLIDO1));
+        this.marcarEditorAlta(form, 'FECHA_NACIMIENTO', !persona?.FECHA_NACIMIENTO);
+    }
+
+    private marcarEditorAlta(form: any, campo: string, vacio: boolean): void {
+        const editor = form.getEditor(campo);
+        const crudo = editor?.element?.();
+        const nodo = (crudo?.jquery ? crudo.get(0) : crudo) as HTMLElement | undefined;
+        const caja = nodo?.classList?.contains('dx-texteditor') ? nodo : nodo?.querySelector?.('.dx-texteditor');
+        caja?.classList.toggle('aca-prospecto-alta-vacio', vacio);
+    }
+
+    // Qué hace: cuenta lo que el alta pide en Datos personales.
+    // Cómo lo hace: nombres, primer apellido y fecha de nacimiento.
+    private faltanAltaPersonales(): number {
+        const persona = this.leerFormData(this.formPersona, this.personaModel);
+        if (!persona) {
+            return 3;
+        }
+        let faltan = 0;
+        if (this.datoVacio(persona.NOMBRES)) faltan += 1;
+        if (this.datoVacio(persona.APELLIDO1)) faltan += 1;
+        if (!persona.FECHA_NACIMIENTO) faltan += 1;
+        return faltan;
+    }
+
+    // Qué hace: cuenta lo que el alta pide en Contacto.
+    // Cómo lo hace: un correo y un teléfono con valor.
+    private faltanAltaContacto(): number {
+        let faltan = 0;
+        if (!this.contactoAlta(true)) faltan += 1;
+        if (!this.contactoAlta(false)) faltan += 1;
+        return faltan;
+    }
+
+    // Qué hace: impide guardar, enviar o aprobar si faltan la identidad o los dos contactos.
+    // Cómo lo hace: nombres, primer apellido, fecha de nacimiento, un teléfono y un correo.
+    private avisoParaEnviar(persona: any, contactos: any[], verbo: 'enviar' | 'aprobar' | 'guardar' = 'enviar'): string {
+        const partes: string[] = [];
+        if (this.datoVacio(persona?.NOMBRES) || this.datoVacio(persona?.APELLIDO1) || !persona?.FECHA_NACIMIENTO) {
+            partes.push('nombres, primer apellido y fecha de nacimiento');
+        }
+        const lista = contactos || [];
+        const correo = lista.some((c) => c?.ES_CORREO && !this.datoVacio(c?.CONTACTO));
+        const telefono = lista.some((c) => c?.ES_TELEFONO && !this.datoVacio(c?.CONTACTO));
+        if (!correo || !telefono) {
+            partes.push('un teléfono y un correo en Contacto');
+        }
+        return partes.length ? `No se puede ${verbo}. Complete ${partes.join(' y ')}.` : '';
+    }
+
+    // Qué hace: al enviar o aprobar exige los mismos apartados que marcan número en los tabs.
+    // Cómo lo hace: Guardar no pasa por aquí. El alta tampoco: ahí solo pide el encabezado.
+    private avisoParaCompletar(verbo: 'enviar' | 'aprobar'): string {
+        const titulos = ['Datos personales', 'Contacto', 'Salud', 'Datos familiares', 'Educación', 'Información adicional', 'Documentación'];
+        const faltan = titulos
+            .map((titulo) => ({ titulo, n: this.faltanApartado({ title: titulo }) }))
+            .filter((apartado) => apartado.n > 0);
+        if (!faltan.length) {
+            return '';
+        }
+        const lista = faltan.map((apartado) => `${apartado.titulo} (${apartado.n})`).join(', ');
+        return `No se puede ${verbo}. Complete los apartados que faltan: ${lista}.`;
+    }
+
+    private documentoObligatorio(fila: any): boolean {
+        return fila?.OBLIGATORIO === true || fila?.OBLIGATORIO === 1;
+    }
+
+    private faltanDatosPersonales(): number {
+        const persona = this.leerFormData(this.formPersona, this.personaModel);
+        if (!persona) {
+            return 14;
+        }
+        let faltan = 0;
+        if (this.datoVacio(persona.NOMBRES)) faltan += 1;
+        if (this.datoVacio(persona.APELLIDO1)) faltan += 1;
+        if (!persona.FECHA_NACIMIENTO) faltan += 1;
         const campos = [
             persona.LUGAR_NACIMIENTO,
             persona.DUI,
             persona.IGLESIA_ACTUAL,
             persona.DIRECCION_ACTUAL,
         ];
-        let faltan = campos.filter((campo) => this.datoVacio(campo)).length;
+        faltan += campos.filter((campo) => this.datoVacio(campo)).length;
         const codigos = [
             persona.CORR_PAIS_PROCEDENCIA,
             persona.CORR_PAIS_RESIDENCIA,
@@ -816,7 +1012,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return tiene ? 0 : 1;
     }
 
-    private faltanFamilia(): number {
+    // Qué hace: lo que falta del contacto de emergencia para que Datos familiares quede completo.
+    // Cómo lo hace: sin familiar marcado cuenta 4 (nombre, parentesco, teléfono y dirección).
+    //               Con uno marcado, solo los de esos cuatro que sigan vacíos. Padre y madre no entran.
+    faltanFamilia(): number {
         const emergencia = this.emergenciaModel || (this.familiares || []).find((f) => f?.ES_EMERGENCIA === true);
         if (!emergencia) {
             return 4;
@@ -849,8 +1048,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: el listado visible es el de la pestaña abierta.
+    // Cómo lo hace: copia el arreglo para que la grilla vea filas nuevas y actualiza el número de las pestañas.
     aplicarLista(): void {
-        this.models = this.esBorrador ? this.modelsBorrador : this.modelsPendientes;
+        const lista = this.esBorrador ? this.modelsBorrador : this.modelsPendientes;
+        this.models = [...(lista || [])];
+        this.conteoTabsIntentos = 0;
+        setTimeout(() => this.refrescarConteoTabs());
     }
 
     mostrarPendientes(): void {
@@ -884,6 +1087,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     // Qué hace: cambia la lista al pulsar la pestaña, igual que Datos personales y Contacto.
     onTabListaChanged(e: any): void {
+        if (this.refrescandoTabs) {
+            return;
+        }
         const indice = Number(e?.component?.option('selectedIndex'));
         if (indice === 1) {
             this.mostrarBorrador();
@@ -1091,6 +1297,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             }
             return;
         }
+        const enviar = () => {
         this.loadingVisible = true;
         this.service
             .enviar(corr, 'Envío de la solicitud de nuevo ingreso.')
@@ -1134,6 +1341,38 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     this.notifyApiError(error);
                 },
             });
+        };
+        if (Number(this.personaModel?.CORR_PROSPECTO) === corr) {
+            const aviso = this.avisoParaCompletar('enviar');
+            if (aviso) {
+                this.notifyFx(aviso, NotifyType.Warning, { raw: true });
+                this.pintarRequeridos();
+                return;
+            }
+            enviar();
+            return;
+        }
+        this.loadingVisible = true;
+        forkJoin({
+            persona: this.servicePersona.getPersonaPorProspecto(corr).pipe(take(1)),
+            contactos: this.serviceContacto.getContactosPorProspecto(corr).pipe(take(1)),
+        }).subscribe({
+            next: ({ persona, contactos }: any) => {
+                this.loadingVisible = false;
+                const fila = Array.isArray(persona?.Data) ? persona.Data[0] : persona?.Data;
+                const lista = Array.isArray(contactos?.Data) ? contactos.Data : [];
+                const aviso = this.avisoParaEnviar(fila, lista);
+                if (aviso) {
+                    this.notifyFx(aviso, NotifyType.Warning, { raw: true });
+                    return;
+                }
+                enviar();
+            },
+            error: (error: any) => {
+                this.loadingVisible = false;
+                this.notifyApiError(error);
+            },
+        });
     }
 
     // Qué hace: oculta el lápiz cuando la solicitud ya fue aprobada, rechazada o el ciclo ya venció.
@@ -1289,6 +1528,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.notifyFx('Debe ingresar un comentario.', NotifyType.Warning);
             return;
         }
+        const ejecutar = () => {
         this.popupAprobarVisible = false;
         this.loadingVisible = true;
         const llamada =
@@ -1362,10 +1602,47 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 this.notifyApiError(error);
             },
         });
+        };
+        if (accion !== 'aprobar') {
+            ejecutar();
+            return;
+        }
+        if (Number(this.personaModel?.CORR_PROSPECTO) === corr) {
+            const falta = this.avisoParaCompletar('aprobar');
+            if (falta) {
+                this.notifyFx(falta, NotifyType.Warning, { raw: true });
+                this.pintarRequeridos();
+                return;
+            }
+            ejecutar();
+            return;
+        }
+        this.loadingVisible = true;
+        forkJoin({
+            persona: this.servicePersona.getPersonaPorProspecto(corr).pipe(take(1)),
+            contactos: this.serviceContacto.getContactosPorProspecto(corr).pipe(take(1)),
+        }).subscribe({
+            next: ({ persona, contactos }: any) => {
+                this.loadingVisible = false;
+                const fila = Array.isArray(persona?.Data) ? persona.Data[0] : persona?.Data;
+                const lista = Array.isArray(contactos?.Data) ? contactos.Data : [];
+                const falta = this.avisoParaEnviar(fila, lista, 'aprobar');
+                if (falta) {
+                    this.notifyFx(falta, NotifyType.Warning, { raw: true });
+                    return;
+                }
+                ejecutar();
+            },
+            error: (error: any) => {
+                this.loadingVisible = false;
+                this.notifyApiError(error);
+            },
+        });
     }
 
     override bloquear(): void {
         this.readOnly = true;
+        this.refrescarOpcionesDocumento();
     }
 
     override habilitar(): void {
@@ -1374,6 +1651,14 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.sincronizarEstudioMedia();
         this.sincronizarDiscapacidad();
         this.sincronizarDeportado();
+        this.refrescarOpcionesDocumento();
+    }
+
+    // Qué hace: al pasar de consulta a Modificar, vuelve a pintar subir y eliminar en Documentación.
+    // Cómo lo hace: esas opciones se arman una vez, con el modo de ese momento. Los demás apartados
+    //               leen readOnly en el HTML y sí se actualizan. Aquí se redibuja la grilla.
+    private refrescarOpcionesDocumento(): void {
+        setTimeout(() => this.gridDocumentos?.gData?.instance?.repaint());
     }
 
     // Qué hace: concilia la declaración "trabaja" con la existencia del empleo al entrar a edición.
@@ -1993,7 +2278,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Qué hace: arma el formulario del contacto según el tipo elegido y la marca de principal.
     private refrescarItemsContacto(): void {
         const esTelefono = this.contactoModel?.TIPO !== TIPO_CORREO;
-        this.itemsContacto = this.serviceContacto.getItems(this.contactoEditando?.ES_PRINCIPAL === true, esTelefono, this.mCODIGO_PAIS);
+        this.itemsContacto = this.serviceContacto.getItems(
+            this.contactoEditando?.ES_PRINCIPAL === true,
+            esTelefono,
+            this.mCODIGO_PAIS,
+            this.mTIPO_CONTACTO
+        );
     }
 
     // Qué hace: abre el formulario de un familiar nuevo (el formulario reemplaza a la grilla).
@@ -2373,8 +2663,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             });
     }
 
-    // Qué hace: si el nombre y la fecha, o el correo, ya están en otra solicitud, lo avisa en amarillo.
-    // Cómo lo hace: reconoce el texto que devuelve el registro y lo cambia por un mensaje que el usuario entienda.
+    // Qué hace: un dato mal llenado al crear se avisa en amarillo; un fallo del sistema se queda en rojo.
+    // Cómo lo hace: el nombre duplicado, el correo duplicado y la fecha tienen su texto. El resto de validaciones
+    //               del registro (largo, forma de ingreso, correo, teléfono y ciclo cerrado) también salen en amarillo.
     private avisarNoCreada(mensaje: string): void {
         const texto = mensaje || 'No se pudo crear la solicitud.';
         if (/nombre y .*fecha de nacimiento/i.test(texto)) {
@@ -2393,7 +2684,31 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             );
             return;
         }
-        this.notifyFx(texto, NotifyType.Error, { raw: true });
+        if (/fecha de nacimiento/i.test(texto)) {
+            this.notifyFx(
+                /posterior a hoy|válida/i.test(texto)
+                    ? 'La fecha de nacimiento no puede ser posterior a hoy.'
+                    : 'Ingrese la fecha de nacimiento.',
+                NotifyType.Warning,
+                { raw: true }
+            );
+            return;
+        }
+        this.notifyFx(texto, this.esAvisoDeUsuario(texto) ? NotifyType.Warning : NotifyType.Error, { raw: true });
+    }
+
+    // Qué hace: si un apartado no se guardó, avisa en amarillo cuando el dato se puede corregir y en rojo si falló el sistema.
+    // Cómo lo hace: conserva el nombre del apartado y usa la frase que devolvió el API para elegir el color.
+    private avisarPaso(nombre: string, detalle: string): void {
+        const texto = detalle || 'no se pudo guardar';
+        this.notifyFx(`${nombre}: ${texto}`, this.esAvisoDeUsuario(texto) ? NotifyType.Warning : NotifyType.Error, { raw: true });
+    }
+
+    // Qué hace: distingue un dato que el usuario puede corregir de un fallo al guardar.
+    // Cómo lo hace: el API responde igual en los dos casos; estas frases son la validación de lo que escribió.
+    private esAvisoDeUsuario(mensaje: string): boolean {
+        return /no puede superar \d+ caracteres|no pueden ser negativos|no puede ser negativa|formato válido|c[oó]digo de pa[ií]s|parentesco|nombre del familiar|a[nñ]o de titulaci[oó]n|antes del departamento|antes del municipio|forma de ingreso|ingrese un correo|ingrese un tel[eé]fono|tel[eé]fono o el correo|inscripci[oó]n de este ciclo ya venci[oó]|no hay un per[ií]odo activo|seleccione el ciclo|seleccione la carrera|seleccione ciclo, carrera|seleccione el medio|seleccione la limitaci[oó]n|pa[ií]s de la deportaci[oó]n|nivel de estudio debe ser|financia estudios|cada apellido|los nombres no pueden|indique si el contacto/i
+            .test(mensaje || '');
     }
 
     // Qué hace: junta los datos que pide el registro de admisión.
@@ -2410,6 +2725,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         }
         if (!persona?.FECHA_NACIMIENTO) {
             this.notifyFx('Ingrese la fecha de nacimiento.', NotifyType.Warning, { raw: true });
+            return null;
+        }
+        if (this.fechaPosteriorAHoy(persona.FECHA_NACIMIENTO)) {
+            this.notifyFx('La fecha de nacimiento no puede ser posterior a hoy.', NotifyType.Warning, { raw: true });
             return null;
         }
         if (!ciclo) {
@@ -2546,8 +2865,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.ejecutarPasos(pasos, 0);
     }
 
-    // Qué hace: deja guardar una solicitud ingresada aunque los formularios no estén al 100 %.
-    // Cómo lo hace: el 100 % se exige solo al aprobar. Aquí solo se evita guardar con una ficha a medias.
+    // Qué hace: deja guardar una solicitud aunque los apartados no estén completos.
+    // Cómo lo hace: el detalle se exige al enviar y al aprobar. Aquí solo se frena la identidad y los dos contactos.
     private validarFormularios(): boolean {
         // Una ficha abierta (familiar, contacto, medio, limitación o deportación) se acepta o se cancela antes de guardar.
         if (this.medioModel) {
@@ -2572,14 +2891,26 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.notifyFx('Acepte o cancele el familiar que está editando antes de guardar.', NotifyType.Warning, { raw: true });
             return false;
         }
+        if (!this.esAlta()) {
+            const persona = this.leerFormData(this.formPersona, this.personaModel);
+            if (this.fechaPosteriorAHoy(persona?.FECHA_NACIMIENTO)) {
+                this.notifyFx('La fecha de nacimiento no puede ser posterior a hoy.', NotifyType.Warning, { raw: true });
+                return false;
+            }
+            const aviso = this.avisoParaEnviar(persona, this.contactos, 'guardar');
+            if (aviso) {
+                this.notifyFx(aviso, NotifyType.Warning, { raw: true });
+                this.pintarRequeridos();
+                return false;
+            }
+        }
 
         return true;
     }
 
     // Qué hace: agrega el paso de guardado de una sección de estudios.
-    // Cómo lo hace: eliminar si se apagó el interruptor y la fila existía; crear si no tiene llave;
-    //               actualizar solo si cambió. Sin modelo o sin cambios, la sección no participa: así
-    //               trabajar en una sección nunca obliga a tocar las otras.
+    // Cómo lo hace: eliminar si se apagó el interruptor y la fila existía; si no tiene llave, crea o
+    //               actualiza la fila que ya exista; si tiene llave, actualiza solo cuando cambió.
     private agregarPasoEstudio(
         pasos: { nombre: string; accion: () => Observable<IResult> }[],
         nombre: string,
@@ -2600,11 +2931,47 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (!this.estudioCambio(seccion, modelo, form)) {
             return;
         }
+        const datos = this.leerFormData(form, modelo);
         if (!(modelo.CORR_PROSPECTO_ESTUDIO > 0)) {
-            pasos.push({ nombre: `${nombre} (nuevo)`, accion: () => this.serviceEstudio.insert(this.leerFormData(form, modelo)) });
+            pasos.push({ nombre, accion: () => this.guardarEstudioSiNoExiste(seccion, datos) });
             return;
         }
-        pasos.push({ nombre, accion: () => this.serviceEstudio.update(this.leerFormData(form, modelo)) });
+        pasos.push({ nombre, accion: () => this.serviceEstudio.update(datos) });
+    }
+
+    // Qué hace: crea el estudio, o actualiza la fila si ya existe.
+    // Cómo lo hace: vuelve a leer las secciones antes de insertar. Si el portal ya dejó esa sección,
+    //               se usa su llave y se actualiza, para no intentar crear una segunda.
+    private guardarEstudioSiNoExiste(seccion: string, modelo: any): Observable<IResult> {
+        const corr = Number(this.model?.CORR_PROSPECTO);
+        return this.serviceEstudio.getEstudiosPorProspecto(corr).pipe(
+            take(1),
+            switchMap((response: any) => {
+                if (!response?.Result) {
+                    return of(response);
+                }
+                const filas = Array.isArray(response?.Data) ? response.Data : [];
+                const existente = filas.find((fila: any) => fila?.SECCION === seccion && Number(fila?.CORR_PROSPECTO_ESTUDIO) > 0);
+                if (!existente) {
+                    return this.serviceEstudio.insert(modelo);
+                }
+                const payload = { ...modelo, CORR_PROSPECTO_ESTUDIO: existente.CORR_PROSPECTO_ESTUDIO };
+                this.adoptarEstudioExistente(seccion, payload);
+                return this.serviceEstudio.update(payload);
+            }),
+        );
+    }
+
+    // Qué hace: la sección abierta pasa a usar la fila que ya está en la base.
+    // Cómo lo hace: copia la llave al modelo de esa sección para que el siguiente guardado sea una actualización.
+    private adoptarEstudioExistente(seccion: string, payload: any): void {
+        if (seccion === SECCION_MEDIA) {
+            this.estudioMedia = { ...this.estudioMedia, ...payload };
+        } else if (seccion === SECCION_UNIVERSIDAD) {
+            this.estudioUniversidad = { ...this.estudioUniversidad, ...payload };
+        } else if (seccion === SECCION_GRADUADO_UEES) {
+            this.estudioUees = { ...this.estudioUees, ...payload };
+        }
     }
 
     private armarPasosGuardado(): { nombre: string; accion: () => Observable<IResult> }[] {
@@ -2778,12 +3145,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                         this.ejecutarPasos(pasos, indice + 1);
                     } else {
                         this.loadingVisible = false;
-                        this.notifyFx(`${paso.nombre}: ${response?.ErrorMessage ?? 'no se pudo guardar'}`, NotifyType.Error, { raw: true });
+                        this.avisarPaso(paso.nombre, response?.ErrorMessage ?? 'no se pudo guardar');
                     }
                 },
                 error: (error: any) => {
                     this.loadingVisible = false;
-                    this.notifyFx(`${paso.nombre}: ${this.mensajeError(error)}`, NotifyType.Error, { raw: true });
+                    this.avisarPaso(paso.nombre, this.mensajeError(error));
                 },
             });
     }
@@ -3033,7 +3400,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: medios de origen con su código y su firma, para enviar al API solo los que cambien.
-    // Qué hace: documentos de esta solicitud según el tipo 104 y la regla del prospecto.
+    // Qué hace: documentos de esta solicitud, en borrador o pendiente.
+    // Cómo lo hace: la vista trae el tipo 104 con su regla y los marcados en el período.
     cargarDocumentos(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceDocumento.getDocumentosPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.documentos = data ?? [];
@@ -3259,8 +3627,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     //#region <Metodos Información Académica - Carga>
     // Qué hace: reparte los estudios en sus tres secciones (la vista ya los clasifica).
-    // Cómo lo hace: educación media siempre se muestra (si no existe, se crea al guardar); las otras
-    //               dos solo si tienen fila. Además carga los departamentos del país de la media.
+    // Cómo lo hace: educación media siempre se muestra. Si no hay fila, el formulario vacío no se guarda
+    //               hasta que cambie un campo. Además carga los departamentos del país de la media.
     cargarEstudios(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceEstudio.getEstudiosPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.estudioMedia = data.find((e) => e.SECCION === SECCION_MEDIA) ?? null;
@@ -3284,14 +3652,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: dice si una sección debe guardarse.
-    // Cómo lo hace: es nueva (sin llave) o su contenido cambió respecto de como se cargó. Las secciones
-    //               intactas no se envían ni se validan: cada bloque es independiente de los otros.
+    // Cómo lo hace: compara lo que hay en pantalla con lo cargado. El bachillerato vacío, sin llave,
+    //               no se envía hasta que cambie un campo.
     private estudioCambio(seccion: string, modelo: any, form: DxFormComponent | undefined): boolean {
         if (!modelo) {
             return false;
-        }
-        if (!(modelo.CORR_PROSPECTO_ESTUDIO > 0)) {
-            return true;
         }
         return this.huellaEstudio(this.leerFormData(form, modelo)) !== (this.estudioOriginal[seccion] ?? '');
     }
@@ -3366,9 +3731,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         }
     }
 
+    // Qué hace: lista los campos que cambiaron, marcando que se editaron.
     private cambiosCampos(antes: any, ahora: any, etiquetas: Record<string, string>): string {
         const nombres = Object.keys(etiquetas).filter((campo) => !this.mismoValor(antes?.[campo], ahora?.[campo]));
-        return nombres.map((campo) => etiquetas[campo]).join(', ');
+        if (!nombres.length) {
+            return '';
+        }
+        return `se editó ${nombres.map((campo) => etiquetas[campo]).join(', ')}`;
     }
 
     private cambiosFilas(original: Record<string, string>, actuales: any[], eliminados: any[], llave: string, payload: (fila: any) => any, nombre: (fila: any) => string, etiquetas: Record<string, string>, detalle?: (fila: any) => string): string {
@@ -3390,7 +3759,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             const campos = this.cambiosCampos(previo, datos, etiquetas);
             if (campos) {
                 const extra = (detalle?.(fila) || '').trim();
-                lineas.push(extra ? `${etiqueta}: ${campos} (${extra})` : `${etiqueta}: ${campos}`);
+                lineas.push(extra ? `${etiqueta} (${campos}: ${extra})` : `${etiqueta} (${campos})`);
             }
         });
         Object.keys(original ?? {}).forEach((id) => {
@@ -3439,20 +3808,20 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return 'se agregó';
         }
         if (antes && !ahora) {
-            return 'se quitó';
+            return 'se eliminó';
         }
         if (!antes || antes === ahora) {
             return '';
         }
         let previo: any = {};
         let actual: any = {};
-        try { previo = JSON.parse(antes); actual = JSON.parse(ahora); } catch { return 'se modificó'; }
+        try { previo = JSON.parse(antes); actual = JSON.parse(ahora); } catch { return 'se editó'; }
         return this.cambiosCampos(previo, actual, {
             NIVEL_ESTUDIO: 'Nivel', GRADUADO_UEES: 'Graduado UEES', GRADUADO: 'Graduado', NOMBRE_INSTITUCION: 'Institución',
             TIPO_EDUCACION: 'Tipo de educación', TITULO_OBTENIDO: 'Título', CARRERA_TEXTO: 'Carrera', NIVEL_CURSADO: 'Nivel cursado',
             CORR_CARRERA: 'Carrera', ANIO_TITULACION: 'Año de titulación', FECHA_GRADUACION: 'Fecha de graduación',
             CUOTA: 'Cuota', QUIEN_PAGO_CUOTA: 'Quién pagó la cuota', CORR_PAIS: 'País', CORR_DEPTO: 'Departamento',
-        }) || 'se modificó';
+        }) || 'se editó';
     }
 
     private cambioEmpleo(): string {
@@ -3461,18 +3830,18 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return 'se agregó el empleo';
         }
         if (this.empleoOriginalPayload && !ahora) {
-            return 'se quitó el empleo';
+            return 'se eliminó el empleo';
         }
         if (!this.empleoOriginalPayload || this.empleoOriginalPayload === ahora) {
             return '';
         }
         let previo: any = {};
         let actual: any = {};
-        try { previo = JSON.parse(this.empleoOriginalPayload); actual = JSON.parse(ahora); } catch { return 'se modificó el empleo'; }
+        try { previo = JSON.parse(this.empleoOriginalPayload); actual = JSON.parse(ahora); } catch { return 'se editó el empleo'; }
         return this.cambiosCampos(previo, actual, {
             EMPRESA: 'Empresa', CORR_SECTOR_LABORAL: 'Sector laboral', TIENE_EMPLEO_FUERA: 'Empleo fuera del país',
             CORR_PAIS: 'País', CORR_DEPTO: 'Departamento', CORR_MUNICIPIO: 'Municipio',
-        }) || 'se modificó el empleo';
+        }) || 'se editó el empleo';
     }
 
     private mismoValor(a: any, b: any): boolean {
@@ -3525,13 +3894,17 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         };
     }
 
-    // Qué hace: la educación media siempre debe existir; si el prospecto no la tiene, abre el
-    //           formulario vacío para crearla al guardar (solo en edición).
+    // Qué hace: si no hay bachillerato, abre el formulario vacío sin marcarlo como cambio.
+    // Cómo lo hace: guarda la firma de ese formulario vacío. Guardar no lo envía hasta que se modifique un campo.
     private sincronizarEstudioMedia(): void {
         if (this.readOnly || !this.personaModel || !this.estudiosCargados || this.estudioMedia) {
             return;
         }
         this.estudioMedia = this.serviceEstudio.getModeloNuevo(SECCION_MEDIA, this.personaModel);
+        this.estudioOriginal = {
+            ...this.estudioOriginal,
+            [SECCION_MEDIA]: this.huellaEstudio(this.estudioMedia),
+        };
     }
     // #endregion
 

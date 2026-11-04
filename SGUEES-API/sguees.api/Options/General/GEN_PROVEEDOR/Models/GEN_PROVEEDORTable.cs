@@ -7,6 +7,7 @@ namespace sguees.Models
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_PROVEEDOR { get; set; }
+		public long CORR_PERSONA { get; set; }
 		public string CODIGO_PROVEEDOR { get; set; }
 		public string TIPO_PERSONERIA { get; set; }
 		public string NOMBRE_PROVEEDOR { get; set; }

@@ -13,6 +13,7 @@ import { ScResponsabilidadCargoService } from './sc-responsabilidad-cargo.servic
 const ESTADO_FIELD = 'ESTADO_RESPONSABILIDAD';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-responsabilidad-cargo',
 	templateUrl: './sc-responsabilidad-cargo.component.html',
 	styleUrls: ['./sc-responsabilidad-cargo.component.scss'],

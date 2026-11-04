@@ -5,14 +5,17 @@ GO
 --   unidad+puesto) a partir de:
 --   1) Unidades y puesto en GEN_EMPLEADO_PUESTO (CORR_UNIDAD + CORR_PUESTO).
 --   2) Unidades donde es jefe activo (SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES).
---   3) Unidades configuradas en SC_UNIDADES_USUARIO.
+--   3) Unidades hijas (descendientes) de aquellas donde es jefe activo.
+--   4) Unidades configuradas en SC_UNIDADES_USUARIO.
 -- Cómo lo hace: Filtra por @CORR_EMPRESA y @LOGIN_SISTEMA, resuelve el empleado
---   vía GEN_PERSONA_USUARIO (login ya no vive en GEN_EMPLEADO), une las tres
---   fuentes con UNION y enriquece con organigrama y PLA_PUESTO.
+--   vía GEN_PERSONA_USUARIO, une las fuentes con UNION y enriquece con organigrama
+--   y PLA_PUESTO. Las hijas se obtienen con CTE recursiva desde las unidades
+--   de jefatura. ES_HIJA_A_CARGO = 1 solo en descendientes (no en la unidad
+--   donde es jefe directo).
 --   Si tiene puesto en esa unidad: muestra CORR_PUESTO y NOMBRE_PUESTO.
---   Si solo es jefe o configurada: CORR_PUESTO NULL y NOMBRE_PUESTO =
+--   Si solo es jefe, hija a cargo o configurada: CORR_PUESTO NULL y NOMBRE_PUESTO =
 --   'No lo tiene por puesto de trabajo'.
--- Nota: No ejecutar CREATE en el servidor desde el agente; el DBA lo aplica.
+-- Nota: No ejecutar CREATE en el servidor desde el agente; el DBA/usuario lo aplica.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_DATA_SC_UNIDADES_USUARIO]
 (
@@ -42,8 +45,7 @@ BEGIN
 	UnidadesPorPuesto AS
 	(
 		-- Qué hace: unidades y puesto donde el empleado trabaja.
-		-- Cómo: lee CORR_UNIDAD y CORR_PUESTO de GEN_EMPLEADO_PUESTO
-		--       (ya no hay ESTADO_EMPLEADO_PUESTO).
+		-- Cómo: lee CORR_UNIDAD y CORR_PUESTO de GEN_EMPLEADO_PUESTO.
 		SELECT DISTINCT
 			EP.CORR_EMPRESA,
 			EP.CORR_UNIDAD,
@@ -56,10 +58,8 @@ BEGIN
 	),
 	UnidadesComoJefe AS
 	(
-		-- Qué hace: unidades donde el empleado es jefe activo.
+		-- Qué hace: unidades donde el empleado es jefe activo (jefatura directa).
 		-- Cómo: SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES con ACTIVO = 1.
-		--       Ejemplo: Coordinador de Desarrollo que además es jefe de Subgerencia
-		--       ve Subgerencia aunque su puesto no esté ahí.
 		SELECT DISTINCT
 			JU.CORR_EMPRESA,
 			JU.CORR_UNIDAD
@@ -69,6 +69,40 @@ BEGIN
 		   AND EL.CORR_EMPLEADO = JU.CORR_EMPLEADO
 		WHERE JU.CORR_EMPRESA = @CORR_EMPRESA
 		  AND JU.ACTIVO = CONVERT(BIT, 1)
+	),
+	UnidadesHijasACargo AS
+	(
+		-- Qué hace: descendientes (hijas, nietas, …) de las unidades donde es jefe.
+		-- Cómo: CTE recursiva por CORR_UNIDAD_PADRE; excluye la unidad de jefatura directa.
+		SELECT
+			H.CORR_EMPRESA,
+			H.CORR_UNIDAD,
+			H.CORR_UNIDAD_PADRE,
+			0 AS NIVEL
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES H
+		INNER JOIN UnidadesComoJefe J
+			ON J.CORR_EMPRESA = H.CORR_EMPRESA
+		   AND J.CORR_UNIDAD = H.CORR_UNIDAD_PADRE
+		WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+
+		UNION ALL
+
+		SELECT
+			H.CORR_EMPRESA,
+			H.CORR_UNIDAD,
+			H.CORR_UNIDAD_PADRE,
+			P.NIVEL + 1
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES H
+		INNER JOIN UnidadesHijasACargo P
+			ON P.CORR_EMPRESA = H.CORR_EMPRESA
+		   AND P.CORR_UNIDAD = H.CORR_UNIDAD_PADRE
+		WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+		  AND P.NIVEL < 20
+	),
+	UnidadesHijasACargoDist AS
+	(
+		SELECT DISTINCT CORR_EMPRESA, CORR_UNIDAD
+		FROM UnidadesHijasACargo
 	),
 	UnidadesConfiguradas AS
 	(
@@ -83,9 +117,9 @@ BEGIN
 	),
 	UnidadesUnion AS
 	(
-		-- Qué hace: une las tres fuentes sin repetir unidad+puesto.
-		-- Cómo: filas de puesto traen CORR_PUESTO; jefe/config sin puesto en esa
-		--       unidad salen con NULL. UNION elimina duplicados.
+		-- Qué hace: une las fuentes sin repetir unidad+puesto.
+		-- Cómo: filas de puesto traen CORR_PUESTO; jefe/hija/config sin puesto
+		--       en esa unidad salen con NULL. UNION elimina duplicados.
 		SELECT CORR_EMPRESA, CORR_UNIDAD, CORR_PUESTO
 		FROM UnidadesPorPuesto
 
@@ -103,6 +137,25 @@ BEGIN
 
 		UNION
 
+		SELECT H.CORR_EMPRESA, H.CORR_UNIDAD, CONVERT(INT, NULL)
+		FROM UnidadesHijasACargoDist H
+		WHERE NOT EXISTS
+		(
+			SELECT 1
+			FROM UnidadesPorPuesto P
+			WHERE P.CORR_EMPRESA = H.CORR_EMPRESA
+			  AND P.CORR_UNIDAD = H.CORR_UNIDAD
+		)
+		  AND NOT EXISTS
+		(
+			SELECT 1
+			FROM UnidadesComoJefe J
+			WHERE J.CORR_EMPRESA = H.CORR_EMPRESA
+			  AND J.CORR_UNIDAD = H.CORR_UNIDAD
+		)
+
+		UNION
+
 		SELECT C.CORR_EMPRESA, C.CORR_UNIDAD, CONVERT(INT, NULL)
 		FROM UnidadesConfiguradas C
 		WHERE NOT EXISTS
@@ -111,6 +164,20 @@ BEGIN
 			FROM UnidadesPorPuesto P
 			WHERE P.CORR_EMPRESA = C.CORR_EMPRESA
 			  AND P.CORR_UNIDAD = C.CORR_UNIDAD
+		)
+		  AND NOT EXISTS
+		(
+			SELECT 1
+			FROM UnidadesComoJefe J
+			WHERE J.CORR_EMPRESA = C.CORR_EMPRESA
+			  AND J.CORR_UNIDAD = C.CORR_UNIDAD
+		)
+		  AND NOT EXISTS
+		(
+			SELECT 1
+			FROM UnidadesHijasACargoDist H
+			WHERE H.CORR_EMPRESA = C.CORR_EMPRESA
+			  AND H.CORR_UNIDAD = C.CORR_UNIDAD
 		)
 	)
 	SELECT
@@ -126,6 +193,8 @@ BEGIN
 		@LOGIN AS LOGIN_SISTEMA,
 		CONVERT(BIT, CASE WHEN U.CORR_PUESTO IS NOT NULL THEN 1 ELSE 0 END) AS ES_POR_PUESTO,
 		CONVERT(BIT, CASE WHEN JF.CORR_UNIDAD IS NOT NULL THEN 1 ELSE 0 END) AS ES_JEFE_UNIDAD,
+		-- Qué hace: marca unidades descendientes bajo su jefatura (a cargo por ser jefe del padre).
+		CONVERT(BIT, CASE WHEN HJ.CORR_UNIDAD IS NOT NULL THEN 1 ELSE 0 END) AS ES_HIJA_A_CARGO,
 		CONVERT(BIT, CASE WHEN CF.CORR_UNIDAD IS NOT NULL THEN 1 ELSE 0 END) AS ES_CONFIGURADA
 	FROM UnidadesUnion U
 	LEFT JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES O
@@ -137,6 +206,9 @@ BEGIN
 	LEFT JOIN UnidadesComoJefe JF
 		ON JF.CORR_EMPRESA = U.CORR_EMPRESA
 	   AND JF.CORR_UNIDAD = U.CORR_UNIDAD
+	LEFT JOIN UnidadesHijasACargoDist HJ
+		ON HJ.CORR_EMPRESA = U.CORR_EMPRESA
+	   AND HJ.CORR_UNIDAD = U.CORR_UNIDAD
 	LEFT JOIN UnidadesConfiguradas CF
 		ON CF.CORR_EMPRESA = U.CORR_EMPRESA
 	   AND CF.CORR_UNIDAD = U.CORR_UNIDAD
@@ -149,20 +221,13 @@ GO
 EJEMPLOS DE PRUEBA
 ================================================================================
 
--- Cesar Lopez (CORR_EMPLEADO=4): puesto en unidad 5 + jefe activo en 5 y 6
--- + config SC 1..8 → 1..8 una vez; unidad 5 con NOMBRE_PUESTO real;
--- unidades solo jefe/config con NOMBRE_PUESTO = 'No lo tiene por puesto de trabajo'
+-- Jonathan Avalos: jefe de Tecnología (5) → debe traer hijas 6 y 8 con ES_HIJA_A_CARGO=1
+EXEC dbo.PRAL_DATA_SC_UNIDADES_USUARIO
+	@CORR_EMPRESA = 1,
+	@LOGIN_SISTEMA = 'jonathan.avalos';
+
+-- Cesar Lopez
 EXEC dbo.PRAL_DATA_SC_UNIDADES_USUARIO
 	@CORR_EMPRESA = 1,
 	@LOGIN_SISTEMA = 'cesar.lopez';
-
--- Daniel Palacios: por puesto y/o jefe activo (sin SC_UNIDADES_USUARIO)
-EXEC dbo.PRAL_DATA_SC_UNIDADES_USUARIO
-	@CORR_EMPRESA = 1,
-	@LOGIN_SISTEMA = 'dpalacios';
-
--- Solo configuración → todas las filas con el mensaje (no tiene puesto ahí)
-EXEC dbo.PRAL_DATA_SC_UNIDADES_USUARIO
-	@CORR_EMPRESA = 1,
-	@LOGIN_SISTEMA = 'alexanderr';
 */

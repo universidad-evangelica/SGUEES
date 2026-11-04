@@ -21,6 +21,7 @@ import {
 } from '../shared/columnas-comunes';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-reporte-libro-diario-auxiliar',
 	templateUrl: '../con-reporte.component.html',
 })

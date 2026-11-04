@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+﻿import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { DxFormComponent } from 'devextreme-angular';
@@ -21,7 +21,10 @@ import {
 	ScPersonaIdioma,
 } from '../sc-solicitud-empleo/models/sc-persona-datos';
 import { ScSolicitudEmpleoService } from '../sc-solicitud-empleo/sc-solicitud-empleo.service';
-import { ScExpedienteCandidato } from './models/sc-expediente-candidato';
+import {
+	ScExpedienteCandidato,
+	ESTADO_EXPEDIENTE_ID,
+} from './models/sc-expediente-candidato';
 import { ScExpedienteEntrevista } from './sc-expediente-entrevista/models/sc-expediente-entrevista';
 import { ScExpedienteEntrevistaDocumento } from './sc-expediente-entrevista/sc-expediente-entrevista-documento/models/sc-expediente-entrevista-documento';
 import { ScExpedienteDocumento } from './sc-expediente-documento/models/sc-expediente-documento';
@@ -32,11 +35,12 @@ import { environment } from 'src/environments/environment';
 import { ScExpedienteCandidatoPostulacion } from '../sc-requisicion-personal/sc-requisicion-candidato/models/sc-requisicion-candidato';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-expediente-candidato',
 	templateUrl: './sc-expediente-candidato.component.html',
 	styleUrls: ['./sc-expediente-candidato.component.scss'],
 })
-export class ScExpedienteCandidatoComponent extends CBaseComponent implements OnInit, OnDestroy {
+export class ScExpedienteCandidatoComponent extends CBaseComponent implements OnInit, AfterViewInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('entrevistaForm', { static: false }) entrevistaForm?: DxFormComponent;
 	@ViewChild('documentoForm', { static: false }) documentoForm?: DxFormComponent;
@@ -44,6 +48,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	@ViewChild('entrevistaDocumentoForm', { static: false }) entrevistaDocumentoForm?: DxFormComponent;
 	@ViewChild('entrevistaDocumentoFileInput', { static: false })
 	entrevistaDocumentoFileInput?: ElementRef<HTMLInputElement>;
+
+	// Qué hace: Función de limpieza de listeners de arrastre horizontal (drag-to-scroll).
+	private cleanupDragToScroll?: () => void;
 
 	protected override etiquetaRegistro = 'el expediente de candidato';
 	protected override requiereEmpresaSesion = true;
@@ -270,13 +277,42 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		return Number(primera?.CORR_SOLICITUD_EMPLEO ?? 0);
 	}
 
+	// Qué hace: Evalúa si el candidato asociado al expediente actual es menor de 18 años.
+	// Cómo lo hace: Comprueba la propiedad EDAD o calcula los años respecto a FECHA_NACIMIENTO.
+	get candidatoEsMenorDeEdad(): boolean {
+		if (!this.personaDatos) {
+			return false;
+		}
+		const edad = Number(this.personaDatos.EDAD);
+		if (!Number.isNaN(edad) && edad > 0) {
+			return edad < 18;
+		}
+		return this.personaDatos.FECHA_NACIMIENTO
+			? this.calcularEdad(this.personaDatos.FECHA_NACIMIENTO) < 18
+			: false;
+	}
+
+	// Qué hace: Obtiene la edad en años del candidato del expediente.
+	// Cómo lo hace: Lee la edad numérica o la calcula a partir de la fecha de nacimiento.
+	get edadCandidato(): number {
+		if (!this.personaDatos) {
+			return 0;
+		}
+		const edad = Number(this.personaDatos.EDAD);
+		if (!Number.isNaN(edad) && edad > 0) {
+			return edad;
+		}
+		return this.calcularEdad(this.personaDatos.FECHA_NACIMIENTO);
+	}
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: ScExpedienteCandidatoService,
 		private solicitudService: ScSolicitudEmpleoService,
 		private messageService: MessageService,
-		private sanitizer: DomSanitizer
+		private sanitizer: DomSanitizer,
+		private elRef: ElementRef,
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -292,6 +328,25 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.entrevistaDocumentoItems = this.service.getEntrevistaDocumentoItems();
 	}
 
+	// Qué hace: Calcula la edad cumplida en años a partir de una fecha de nacimiento.
+	// Cómo lo hace: Evalúa la diferencia entre año actual y de nacimiento, ajustando por mes y día.
+	calcularEdad(fecha: Date | string | null | undefined): number {
+		if (!fecha) {
+			return 0;
+		}
+		const birth = fecha instanceof Date ? fecha : new Date(fecha);
+		if (Number.isNaN(birth.getTime())) {
+			return 0;
+		}
+		const today = new Date();
+		let age = today.getFullYear() - birth.getFullYear();
+		const m = today.getMonth() - birth.getMonth();
+		if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+			age--;
+		}
+		return age >= 0 ? age : 0;
+	}
+
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
@@ -303,6 +358,12 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.consultar();
 	}
 
+	// Qué hace: Inicializa listeners del DOM una vez renderizada la vista.
+	// Cómo lo hace: Invoca el método initDragToScroll para habilitar arrastre horizontal en la grilla.
+	ngAfterViewInit(): void {
+		this.initDragToScroll();
+	}
+
 	ngOnDestroy(): void {
 		this.clearWorkspaceCloseTimer();
 		this.clearWorkspaceSolicitudCloseTimer();
@@ -310,6 +371,86 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.revocarFotoPersona();
 		this.revocarPreviewFoto();
 		this.revokeDocumentoPreview();
+		if (this.cleanupDragToScroll) {
+			this.cleanupDragToScroll();
+		}
+	}
+
+	// Qué hace: Permite hacer scroll horizontal en la grilla mediante clic y arrastre desde cualquier fila.
+	// Cómo lo hace: Captura mousedown, mousemove y mouseup en .dx-datagrid-rowsview y actualiza scrollLeft según el desplazamiento del ratón.
+	private initDragToScroll(): void {
+		const host = this.elRef.nativeElement;
+		let isDown = false;
+		let startX = 0;
+		let scrollLeft = 0;
+		let hasDragged = false;
+		let scrollContainer: HTMLElement | null = null;
+
+		// Qué hace: Inicia el arrastre horizontal sobre registros sin interferir con la barra de scroll inferior.
+		// Cómo lo hace: Ignora clics en la barra de scroll y controles interactivos, asegurando que el clic provenga de filas de la grilla.
+		const onMouseDown = (e: MouseEvent) => {
+			if (e.button !== 0) return; // Solo botón izquierdo
+			const target = e.target as HTMLElement;
+
+			// Ignorar clics sobre la barra de desplazamiento inferior y sus deslizadores
+			if (target.closest('.dx-scrollable-scrollbar, .dx-scrollable-scroll, .dx-scrollbar-horizontal, .dx-scrollbar-vertical')) {
+				return;
+			}
+
+			// No activar arrastre sobre botones, inputs, links o iconos de acción
+			if (target.closest('button, .dx-button, a, input, select, textarea, .dx-checkbox, .dx-link, [role="button"]')) {
+				return;
+			}
+
+			// Verificar que el clic provenga de las filas/contenido de la tabla
+			const rowsView = target.closest('.dx-datagrid-rowsview');
+			const isTableContent = !!target.closest('.dx-data-row, .dx-datagrid-content');
+			if (!rowsView || !isTableContent) return;
+
+			scrollContainer = host.querySelector('.sguees-data-grid-mtto .dx-datagrid-rowsview .dx-scrollable-container');
+			if (!scrollContainer) return;
+
+			isDown = true;
+			hasDragged = false;
+			startX = e.pageX;
+			scrollLeft = scrollContainer.scrollLeft;
+		};
+
+		const onMouseMove = (e: MouseEvent) => {
+			if (!isDown || !scrollContainer) return;
+			const walk = e.pageX - startX;
+			if (Math.abs(walk) > 4) {
+				hasDragged = true;
+				scrollContainer.scrollLeft = scrollLeft - walk;
+				document.body.style.cursor = 'grabbing';
+				document.body.style.userSelect = 'none';
+			}
+		};
+
+		const onMouseUp = () => {
+			if (!isDown) return;
+			isDown = false;
+			document.body.style.cursor = '';
+			document.body.style.removeProperty('user-select');
+			if (hasDragged) {
+				const suppressClick = (ev: MouseEvent) => {
+					ev.stopPropagation();
+					ev.preventDefault();
+					window.removeEventListener('click', suppressClick, true);
+				};
+				window.addEventListener('click', suppressClick, true);
+			}
+		};
+
+		host.addEventListener('mousedown', onMouseDown);
+		window.addEventListener('mousemove', onMouseMove);
+		window.addEventListener('mouseup', onMouseUp);
+
+		this.cleanupDragToScroll = () => {
+			host.removeEventListener('mousedown', onMouseDown);
+			window.removeEventListener('mousemove', onMouseMove);
+			window.removeEventListener('mouseup', onMouseUp);
+		};
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -595,7 +736,35 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.limpiarPersonaDatos();
 	}
 
+	// Qué hace: Determina si el botón de edición debe mostrarse para una fila específica del expediente.
+	// Cómo lo hace: Retorna el permiso general de edición del usuario para asegurar que la acción esté siempre disponible.
+	override getPermiteEditar = (e: any): boolean => {
+		return this.permiteEdit;
+	};
+
+	// Qué hace: Determina si el botón de eliminación debe mostrarse para una fila específica del expediente.
+	// Cómo lo hace: Comprueba los permisos generales del rol y solo permite eliminar si el expediente se encuentra en estado Borrador (CORR_ESTADO_EXPEDIENTE === 1).
+	override getPermiteDele = (e: any): boolean => {
+		if (!this.permiteDele) {
+			return false;
+		}
+		const rowData = e?.row?.data ?? e?.data ?? e;
+		if (!rowData) {
+			return this.permiteDele;
+		}
+		const corrEstado = Number(rowData?.CORR_ESTADO_EXPEDIENTE ?? 0);
+		return corrEstado === ESTADO_EXPEDIENTE_ID.BORRADOR;
+	};
+
+	// Qué hace: Controla la eliminación de un expediente desde la grilla principal.
+	// Cómo lo hace: Valida que el expediente se encuentre en estado Borrador antes de proceder; si no lo está, cancela la acción y notifica una advertencia.
 	rowRemoving(e: any): void {
+		const corrEstado = Number(e?.data?.CORR_ESTADO_EXPEDIENTE ?? 0);
+		if (corrEstado !== ESTADO_EXPEDIENTE_ID.BORRADOR) {
+			e.cancel = true;
+			this.notifyFx('Solo se pueden eliminar expedientes en estado Borrador.', NotifyType.Warning);
+			return;
+		}
 		this.cerrarPreviewPanel(false);
 		this.rowRemovingMtto(e, {
 			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_EXPEDIENTE_CANDIDATO)),
@@ -1805,6 +1974,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 					this.experiencias = this.asArray(response.experiencias?.Data);
 					this.familiaresUees = this.asArray(response.familiaresUees?.Data);
 					this.cargandoPersonaDatos = false;
+					if (this.candidatoEsMenorDeEdad) {
+						this.notifyFx(`Atención: El candidato registrado tiene ${this.edadCandidato} años (es menor de edad).`, NotifyType.Warning);
+					}
 				},
 				error: (error: any) => {
 					this.limpiarPersonaDatos();
@@ -1812,6 +1984,12 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				},
 			});
 	}
+
+	// Qué hace: Delega la actualización de datos personales al endpoint propio de expediente de candidato.
+	// Cómo lo hace: Pasa el payload al método actualizarPersonaDatos de ScExpedienteCandidatoService.
+	guardarPersonaDatos = (payload: any) => {
+		return this.service.actualizarPersonaDatos(payload);
+	};
 
 	abrirEditarPersona(): void {
 		if (!this.permiteEdit || this.cargandoPersonaDatos || (this.personaDatos?.CORR_PERSONA_DATOS ?? 0) <= 0) {

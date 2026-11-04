@@ -19,6 +19,7 @@ import { ContactStatusModule } from 'src/app/shared/components/utils/contact-sta
 
 
 @Component({
+  standalone: false,
   selector: 'password-text-box',
   templateUrl: 'password-text-box.component.html',
   styles: [],

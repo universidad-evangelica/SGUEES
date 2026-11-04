@@ -19,6 +19,7 @@ import {
 
 
 @Component({
+  standalone: false,
   templateUrl: 'profile.component.html',
   styleUrls: [ './profile.component.scss' ]
 })

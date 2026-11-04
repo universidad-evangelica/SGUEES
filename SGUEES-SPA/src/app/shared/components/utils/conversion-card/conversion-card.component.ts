@@ -7,6 +7,7 @@ import { DxFunnelModule } from 'devextreme-angular/ui/funnel';
 import { SalesOrOpportunitiesByCategory } from 'src/app/types/analytics';
 
 @Component({
+  standalone: false,
   selector: 'conversion-card',
   templateUrl: 'conversion-card.component.html',
 })

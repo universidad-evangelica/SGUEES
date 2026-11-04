@@ -1,0 +1,167 @@
+<!-- Browse: documentos de admisión y cuántos períodos los muestran. -->
+<div class="sguees-mtto-view documentos-periodo-view">
+	<!-- Ribbon: abre el popup de períodos del documento enfocado. -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[showRibbon]="true"
+		[showExport]="false"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="false"
+		[showRefresh]="true"
+		[showEstadoToolbar]="false"
+		[btn1]="textoBtnMostrarPeriodos"
+		[btn1Icon]="'event'"
+		[btn1Type]="'default'"
+		[btn1Mode]="'contained'"
+		[btn1Width]="200"
+		(btn1Click)="onMostrarPeriodos()"
+		(consultar)="consultar()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Grilla de documentos. -->
+	<app-data-grid-mtto
+		#dataGrid
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[showEstadoToolbar]="false"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permitePrint]="false"
+		[permiteEditar]="false"
+		[permiteDele]="false"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[showGrouping]="true"
+		[exportFileName]="'DocumentosPorPeriodo'"
+		(focusedRowChanged)="focusedRowChanged($event)"
+	>
+	</app-data-grid-mtto>
+</div>
+
+<!-- Popup: períodos de la empresa con check en los que ya muestran el documento. -->
+<dx-popup
+	#popupPeriodos
+	[(visible)]="popupVisible"
+	[showTitle]="true"
+	[title]="popupTitulo"
+	[width]="1180"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[wrapperAttr]="{ class: 'documentos-periodo-popup' }"
+	(onHiding)="cerrarPopup()"
+>
+	<!-- Todos, Ninguno y Guardar solo con permiso de modificar. -->
+	<div class="documentos-periodo-popup-toolbar" *ngIf="permiteEdit">
+		<dx-button
+			icon="check"
+			text="Todos"
+			type="success"
+			stylingMode="contained"
+			(onClick)="selectTodos()"
+			[disabled]="guardando || !periodosModal.length"
+		></dx-button>
+		<dx-button
+			icon="close"
+			text="Ninguno"
+			type="danger"
+			stylingMode="contained"
+			(onClick)="selectNinguno()"
+			[disabled]="guardando || !periodosModal.length"
+		></dx-button>
+		<dx-button
+			icon="save"
+			text="Guardar"
+			type="default"
+			stylingMode="contained"
+			(onClick)="guardarPeriodos()"
+			[disabled]="guardando || !periodosModal.length"
+		></dx-button>
+	</div>
+
+	<!-- El check marcado es un período en el que el documento se muestra. -->
+	<dx-data-grid
+		#gridPeriodos
+		class="theme-dependent sguees-data-grid-mtto documentos-periodo-popup-grid"
+		[dataSource]="periodosModal"
+		keyExpr="CORR_PERIODO_ACADEMICO"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[width]="'100%'"
+		[height]="alturaPeriodosModal"
+		[repaintChangesOnly]="false"
+		[wordWrapEnabled]="true"
+		(onOptionChanged)="onPeriodosModalOptionChanged($event)"
+	>
+		<dxo-paging [enabled]="true" [pageSize]="periodoModalPageSize"></dxo-paging>
+		<dxo-pager
+			[visible]="true"
+			[showPageSizeSelector]="true"
+			[allowedPageSizes]="[5, 10, 25, 50]"
+			[showInfo]="true"
+		></dxo-pager>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+		<dxo-header-filter [visible]="true"></dxo-header-filter>
+		<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-editing
+			[mode]="'cell'"
+			[allowUpdating]="permiteEdit"
+			[allowAdding]="false"
+			[allowDeleting]="false"
+			[useIcons]="false"
+		></dxo-editing>
+		<dxi-column
+			dataField="SELECCION"
+			caption=""
+			[width]="70"
+			dataType="boolean"
+			[allowSorting]="false"
+			[allowFiltering]="false"
+			[allowHeaderFiltering]="false"
+			[allowEditing]="permiteEdit"
+			alignment="center"
+		></dxi-column>
+		<dxi-column dataField="CICLO" caption="Ciclo" [width]="110" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_SEDE" caption="Sede" [width]="180" [minWidth]="140" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="ALCANCE" caption="Alcance" [width]="110" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="LUGAR" caption="Lugar" [minWidth]="220" [width]="260" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="FECHA_INICIO" caption="Inicio" [width]="120" dataType="date" format="dd/MM/yyyy" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="FECHA_FIN" caption="Fin" [width]="120" dataType="date" format="dd/MM/yyyy" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="ACTIVO_TEXTO" caption="Activo" [width]="90" [allowEditing]="false"></dxi-column>
+	</dx-data-grid>
+</dx-popup>
+
+<!-- Panel de carga durante consultas y guardados. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

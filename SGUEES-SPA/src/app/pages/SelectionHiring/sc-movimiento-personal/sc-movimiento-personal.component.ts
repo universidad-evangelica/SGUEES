@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+﻿import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs/operators';
@@ -24,16 +24,20 @@ import {
 import { ScMovimientoPersonalService } from './sc-movimiento-personal.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-movimiento-personal',
 	templateUrl: './sc-movimiento-personal.component.html',
 	styleUrls: ['./sc-movimiento-personal.component.scss'],
 })
-export class ScMovimientoPersonalComponent extends CBaseComponent implements OnInit {
+export class ScMovimientoPersonalComponent extends CBaseComponent implements OnInit, AfterViewInit, OnDestroy {
 	protected override etiquetaRegistro = 'el movimiento de personal';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_MOVIMIENTO_PERSONAL';
 	protected override mttoPageSize = 15;
 	protected override mttoPageSizes = [15, 25, 50, 100];
+
+	// Qué hace: Función de limpieza de listeners de arrastre horizontal (drag-to-scroll).
+	private cleanupDragToScroll?: () => void;
 
 	//#region Declarando Variables
 	readOnly = false;
@@ -118,6 +122,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		private service: ScMovimientoPersonalService,
 		private authService: AuthService,
 		private sanitizer: DomSanitizer,
+		private elRef: ElementRef,
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -131,6 +136,97 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
+	}
+
+	// Qué hace: Inicializa listeners del DOM una vez renderizada la vista.
+	// Cómo lo hace: Invoca el método initDragToScroll para habilitar arrastre horizontal en la grilla.
+	ngAfterViewInit(): void {
+		this.initDragToScroll();
+	}
+
+	// Qué hace: Limpia los event listeners al destruir el componente.
+	// Cómo lo hace: Ejecuta la función cleanupDragToScroll para evitar fugas de memoria.
+	ngOnDestroy(): void {
+		if (this.cleanupDragToScroll) {
+			this.cleanupDragToScroll();
+		}
+	}
+
+	// Qué hace: Permite hacer scroll horizontal en la grilla mediante clic y arrastre desde cualquier fila.
+	// Cómo lo hace: Captura mousedown, mousemove y mouseup en .dx-datagrid-rowsview y actualiza scrollLeft según el desplazamiento del ratón.
+	private initDragToScroll(): void {
+		const host = this.elRef.nativeElement;
+		let isDown = false;
+		let startX = 0;
+		let scrollLeft = 0;
+		let hasDragged = false;
+		let scrollContainer: HTMLElement | null = null;
+
+		// Qué hace: Inicia el arrastre horizontal sobre registros sin interferir con la barra de scroll inferior.
+		// Cómo lo hace: Ignora clics en la barra de scroll y controles interactivos, asegurando que el clic provenga de filas de la grilla.
+		const onMouseDown = (e: MouseEvent) => {
+			if (e.button !== 0) return; // Solo botón izquierdo
+			const target = e.target as HTMLElement;
+
+			// Ignorar clics sobre la barra de desplazamiento inferior y sus deslizadores
+			if (target.closest('.dx-scrollable-scrollbar, .dx-scrollable-scroll, .dx-scrollbar-horizontal, .dx-scrollbar-vertical')) {
+				return;
+			}
+
+			// No activar arrastre sobre botones, inputs, links o iconos de acción
+			if (target.closest('button, .dx-button, a, input, select, textarea, .dx-checkbox, .dx-link, [role="button"]')) {
+				return;
+			}
+
+			// Verificar que el clic provenga de las filas/contenido de la tabla
+			const rowsView = target.closest('.dx-datagrid-rowsview');
+			const isTableContent = !!target.closest('.dx-data-row, .dx-datagrid-content');
+			if (!rowsView || !isTableContent) return;
+
+			scrollContainer = host.querySelector('.sguees-data-grid-mtto .dx-datagrid-rowsview .dx-scrollable-container');
+			if (!scrollContainer) return;
+
+			isDown = true;
+			hasDragged = false;
+			startX = e.pageX;
+			scrollLeft = scrollContainer.scrollLeft;
+		};
+
+		const onMouseMove = (e: MouseEvent) => {
+			if (!isDown || !scrollContainer) return;
+			const walk = e.pageX - startX;
+			if (Math.abs(walk) > 4) {
+				hasDragged = true;
+				scrollContainer.scrollLeft = scrollLeft - walk;
+				document.body.style.cursor = 'grabbing';
+				document.body.style.userSelect = 'none';
+			}
+		};
+
+		const onMouseUp = () => {
+			if (!isDown) return;
+			isDown = false;
+			document.body.style.cursor = '';
+			document.body.style.removeProperty('user-select');
+			if (hasDragged) {
+				const suppressClick = (ev: MouseEvent) => {
+					ev.stopPropagation();
+					ev.preventDefault();
+					window.removeEventListener('click', suppressClick, true);
+				};
+				window.addEventListener('click', suppressClick, true);
+			}
+		};
+
+		host.addEventListener('mousedown', onMouseDown);
+		window.addEventListener('mousemove', onMouseMove);
+		window.addEventListener('mouseup', onMouseUp);
+
+		this.cleanupDragToScroll = () => {
+			host.removeEventListener('mousedown', onMouseDown);
+			window.removeEventListener('mousemove', onMouseMove);
+			window.removeEventListener('mouseup', onMouseUp);
+		};
 	}
 
 	inicializaOpciones(): void {}

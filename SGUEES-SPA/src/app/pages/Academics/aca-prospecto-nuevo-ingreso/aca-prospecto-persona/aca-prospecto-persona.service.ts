@@ -110,6 +110,7 @@ export class AcaProspectoPersonaService {
                     colSpan: 2,
                     editorType: 'dxDateBox',
                     editorOptions: { type: 'date', displayFormat: 'dd/MM/yyyy', dateSerializationFormat: 'yyyy-MM-dd' },
+                    validationRules: [{ type: 'required', message: 'Ingrese la fecha de nacimiento' }],
                 },
                 { dataField: 'LUGAR_NACIMIENTO', label: { text: 'Lugar de nacimiento' }, colSpan: 2, editorOptions: { maxLength: 200 }, validationRules: [{ type: 'required', message: 'Ingrese el lugar de nacimiento' }] },
                 { dataField: 'CORR_SEXO', label: { text: 'Sexo' }, colSpan: 2, template: 'CORR_SEXOLookup', validationRules: [{ type: 'required', message: 'Seleccione el sexo' }] },
@@ -118,13 +119,17 @@ export class AcaProspectoPersonaService {
                 { dataField: 'CORR_PAIS_NACIONALIDAD', label: { text: 'Nacionalidad' }, colSpan: 2, template: 'CORR_PAIS_NACIONALIDADLookup' },
                 { dataField: 'CORR_PAIS_PROCEDENCIA', label: { text: 'País de procedencia' }, colSpan: 2, template: 'CORR_PAIS_PROCEDENCIALookup', validationRules: [{ type: 'required', message: 'Seleccione el país de procedencia' }] },
                 { dataField: 'CORR_RELIGION', label: { text: 'Religión' }, colSpan: 2, template: 'CORR_RELIGIONLookup', validationRules: [{ type: 'required', message: 'Seleccione la religión' }] },
-                { dataField: 'IGLESIA_ACTUAL', label: { text: 'Iglesia actual' }, colSpan: 4, editorOptions: { maxLength: 100 }, validationRules: [{ type: 'required', message: 'Ingrese la iglesia actual' }] },
+                // Qué hace: Iglesia queda del mismo ancho que Religión.
+                // Cómo lo hace: colSpan 2. Si se pide más de lo que queda en la fila, DevExtreme lo baja a 1 columna.
+                { dataField: 'IGLESIA_ACTUAL', label: { text: 'Iglesia actual' }, colSpan: 2, editorOptions: { maxLength: 100, width: '100%' }, validationRules: [{ type: 'required', message: 'Ingrese la iglesia actual' }] },
             ] },
             { itemType: 'group', caption: 'Residencia', colSpan: 8, colCount: 8, items: [
                 { dataField: 'CORR_PAIS_RESIDENCIA', label: { text: 'País' }, colSpan: 2, template: 'CORR_PAIS_RESIDENCIALookup', validationRules: [{ type: 'required', message: 'Seleccione el país de residencia' }] },
                 { dataField: 'CORR_DEPTO_RESIDENCIA', label: { text: 'Departamento' }, colSpan: 2, template: 'CORR_DEPTO_RESIDENCIALookup', validationRules: [{ type: 'required', message: 'Seleccione el departamento' }] },
                 { dataField: 'CORR_MUNICIPIO_RESIDENCIA', label: { text: 'Municipio' }, colSpan: 2, template: 'CORR_MUNICIPIO_RESIDENCIALookup', validationRules: [{ type: 'required', message: 'Seleccione el municipio' }] },
-                { dataField: 'DIRECCION_ACTUAL', label: { text: 'Dirección actual' }, colSpan: 8, editorOptions: { maxLength: 300 }, validationRules: [{ type: 'required', message: 'Ingrese la dirección actual' }] },
+                // Qué hace: Dirección queda del mismo ancho que Municipio.
+                // Cómo lo hace: colSpan 2, las dos columnas que quedan en esa fila.
+                { dataField: 'DIRECCION_ACTUAL', label: { text: 'Dirección actual' }, colSpan: 2, editorOptions: { maxLength: 300, width: '100%' }, validationRules: [{ type: 'required', message: 'Ingrese la dirección actual' }] },
             ] },
             // Trabaja, discapacidad y deportación no van aquí: en el portal cada una se marca en su
             // sección (información laboral, salud y país de deportación) y al guardar enciende la bandera.

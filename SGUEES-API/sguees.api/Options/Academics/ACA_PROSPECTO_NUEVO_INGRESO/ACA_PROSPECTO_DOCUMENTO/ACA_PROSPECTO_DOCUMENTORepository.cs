@@ -9,7 +9,8 @@ using sguees.Models;
 namespace sguees.Repositories
 {
     // Qué hace: documentos de la solicitud de nuevo ingreso.
-    // Cómo lo hace: lee V_ACA_PROSPECTO_DOCUMENTO_NUEVO_INGRESO. Solo consulta.
+    // Cómo lo hace: lee V_ACA_PROSPECTO_DOCUMENTO_NUEVO_INGRESO. Esa vista une el tipo 104
+    //               con su regla y los documentos marcados en el período. Solo consulta.
     public class ACA_PROSPECTO_DOCUMENTORepository : BaseRepository<ACA_PROSPECTO_DOCUMENTOTable>, IACA_PROSPECTO_DOCUMENTORepository
     {
         private const string _ViewName = "V_ACA_PROSPECTO_DOCUMENTO_NUEVO_INGRESO";

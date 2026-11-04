@@ -111,6 +111,16 @@ namespace sguees.Controllers
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAllAsync(Data);
         }
+        // Qué hace: Entrega la unidad organizativa para visualización en modo lectura/consulta en sc-requisicion-personal.
+        // Cómo lo hace: Fija CORR_EMPRESA de la sesión y consulta el organigrama estructural (filtrando por CORR_UNIDAD si se especifica) sin validar asignación por usuario.
+        [HttpGet("GetCORR_UNIDAD_LECTURA_SC_REQUISICION_PERSONAL")]
+        [Authorize(Policy = "/sc-requisicion-personal|R")]
+        public async Task<CResult> GetCORR_UNIDAD_LECTURA_SC_REQUISICION_PERSONAL([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
+
         //SC_REQUISICION_PERSONAL
         [HttpGet("GetCORR_UNIDAD_SC_REQUISICION_PERSONAL")]
         [Authorize(Policy = "/sc-requisicion-personal|R")]

@@ -14,6 +14,7 @@ import { ScDisponibilidadHorarioService } from './sc-disponibilidad-horario.serv
 const ESTADO_FIELD = 'ESTADO_DISPONIBILIDAD_HORARIO';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-disponibilidad-horario',
 	templateUrl: './sc-disponibilidad-horario.component.html',
 	styleUrls: ['./sc-disponibilidad-horario.component.scss'],

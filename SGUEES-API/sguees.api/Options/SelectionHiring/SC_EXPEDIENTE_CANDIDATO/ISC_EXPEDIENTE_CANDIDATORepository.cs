@@ -15,5 +15,14 @@ namespace SGUEES.Repositories
 		Task<SC_EXPEDIENTE_ACCION_NOTIF_DTO> GetContextoNotificacionActivarAsync(
 			int corrEmpresa,
 			int corrExpedienteCandidato);
+
+		// Qué hace: Define la operación de repositorio para actualizar los datos personales y colecciones del candidato en el expediente.
+		// Cómo lo hace: Declara el método asíncrono que recibe los parámetros de auditoría y el DTO con datos y colecciones.
+		Task<CResult> ActualizarPersonaDatosAsync(
+			int corrEmpresa,
+			string usuario,
+			string estacion,
+			
+			sguees.Models.SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data);
 	}
 }

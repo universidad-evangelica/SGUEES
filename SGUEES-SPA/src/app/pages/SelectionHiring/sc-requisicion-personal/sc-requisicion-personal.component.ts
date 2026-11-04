@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
+﻿import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -7,6 +7,7 @@ import { MessageService } from 'primeng/api'; //Import para usar PrimeNG Toast
 import { confirm } from 'devextreme/ui/dialog';
 import { DxFormComponent } from 'devextreme-angular';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { BarraMttoCombox } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
@@ -41,11 +42,15 @@ import {
 } from '../shared/selection-hiring-rpt';
 
 @Component({
+  standalone: false,
   selector: 'app-sc-requisicion-personal',
   templateUrl: './sc-requisicion-personal.component.html',
   styleUrls: ['./sc-requisicion-personal.component.scss']
 })
-export class ScRequisicionPersonalComponent extends CBaseComponent implements OnInit {
+export class ScRequisicionPersonalComponent extends CBaseComponent implements OnInit, AfterViewInit, OnDestroy {
+	// Qué hace: Función de limpieza de listeners de arrastre horizontal (drag-to-scroll).
+	private cleanupDragToScroll?: () => void;
+
 	@ViewChild('entrevistaForm', { static: false }) entrevistaForm?: DxFormComponent;
 	@ViewChild('entrevistaDocumentoForm', { static: false }) entrevistaDocumentoForm?: DxFormComponent;
 	@ViewChild('entrevistaDocumentoFileInput', { static: false })
@@ -88,9 +93,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	];
 
 	unidadLookupColumns: any[] = [
-		{ dataField: 'CORR_UNIDAD', caption: 'Unidad', width: 120 },
-		{ dataField: 'NOMBRE_UNIDAD', caption: 'Nombre Unidad', width: 250 },
+		{ dataField: 'NOMBRE_UNIDAD_CATALOGO', caption: 'Unidad', width: 280 },
+		{ dataField: 'ORIGEN_UNIDAD', caption: 'Origen', width: 140 },
 	];
+
+	/** Filtro de unidad en el listado (0 = Todas). */
+	filtroCorrUnidad: number = 0;
+	private modelsListadoCompleto: ScRequisicionPersonal[] = [];
+	barraFiltroUnidad: BarraMttoCombox | null = null;
 
 	puestoLookupColumns: any[] = [
 		{ dataField: 'CORR_PUESTO', caption: 'Puesto', width: 100 },
@@ -131,6 +141,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	mCORR_TIPO_VACANTE: any[] = [];
 	mLOGIN_SISTEMA: any[] = [];
 	mCORR_UNIDAD: any[] = [];
+	// Qué hace: Catálogo exclusivo para visualización en modo lectura/consulta.
+	// Cómo lo hace: Se alimenta del endpoint GetCORR_UNIDAD_LECTURA_SC_REQUISICION_PERSONAL sin afectar las unidades del usuario en sesión.
+	mCORR_UNIDAD_LECTURA: any[] = [];
 	mCORR_PUESTO: any[] = [];
 	mCORR_DESCRIPTOR_PUESTO: any[] = [];
 	mCORR_EMPLEADO_SUSTITUTO: any[] = [];
@@ -241,6 +254,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		private messageService: MessageService, //Import para usar PrimeNG Toast
 		private authService: AuthService,
 		private sanitizer: DomSanitizer,
+		private elRef: ElementRef,
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -447,6 +461,97 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.getCORR_TIPO_ENTREVISTA();
 		this.consultar();
 		this.subTituloVentana = 'Proceso y control de requisiciones de personal';
+	}
+
+	// Qué hace: Inicializa listeners del DOM una vez renderizada la vista.
+	// Cómo lo hace: Invoca el método initDragToScroll para habilitar arrastre horizontal en la grilla.
+	ngAfterViewInit(): void {
+		this.initDragToScroll();
+	}
+
+	// Qué hace: Limpia los event listeners al destruir el componente.
+	// Cómo lo hace: Ejecuta la función cleanupDragToScroll para evitar fugas de memoria.
+	ngOnDestroy(): void {
+		if (this.cleanupDragToScroll) {
+			this.cleanupDragToScroll();
+		}
+	}
+
+	// Qué hace: Permite hacer scroll horizontal en la grilla mediante clic y arrastre desde cualquier fila.
+	// Cómo lo hace: Captura mousedown, mousemove y mouseup en .dx-datagrid-rowsview y actualiza scrollLeft según el desplazamiento del ratón.
+	private initDragToScroll(): void {
+		const host = this.elRef.nativeElement;
+		let isDown = false;
+		let startX = 0;
+		let scrollLeft = 0;
+		let hasDragged = false;
+		let scrollContainer: HTMLElement | null = null;
+
+		// Qué hace: Inicia el arrastre horizontal sobre registros sin interferir con la barra de scroll inferior.
+		// Cómo lo hace: Ignora clics en la barra de scroll y controles interactivos, asegurando que el clic provenga de filas de la grilla.
+		const onMouseDown = (e: MouseEvent) => {
+			if (e.button !== 0) return; // Solo botón izquierdo
+			const target = e.target as HTMLElement;
+
+			// Ignorar clics sobre la barra de desplazamiento inferior y sus deslizadores
+			if (target.closest('.dx-scrollable-scrollbar, .dx-scrollable-scroll, .dx-scrollbar-horizontal, .dx-scrollbar-vertical')) {
+				return;
+			}
+
+			// No activar arrastre sobre botones, inputs, links o iconos de acción
+			if (target.closest('button, .dx-button, a, input, select, textarea, .dx-checkbox, .dx-link, [role="button"]')) {
+				return;
+			}
+
+			// Verificar que el clic provenga de las filas/contenido de la tabla
+			const rowsView = target.closest('.dx-datagrid-rowsview');
+			const isTableContent = !!target.closest('.dx-data-row, .dx-datagrid-content');
+			if (!rowsView || !isTableContent) return;
+
+			scrollContainer = host.querySelector('.sguees-data-grid-mtto .dx-datagrid-rowsview .dx-scrollable-container');
+			if (!scrollContainer) return;
+
+			isDown = true;
+			hasDragged = false;
+			startX = e.pageX;
+			scrollLeft = scrollContainer.scrollLeft;
+		};
+
+		const onMouseMove = (e: MouseEvent) => {
+			if (!isDown || !scrollContainer) return;
+			const walk = e.pageX - startX;
+			if (Math.abs(walk) > 4) {
+				hasDragged = true;
+				scrollContainer.scrollLeft = scrollLeft - walk;
+				document.body.style.cursor = 'grabbing';
+				document.body.style.userSelect = 'none';
+			}
+		};
+
+		const onMouseUp = () => {
+			if (!isDown) return;
+			isDown = false;
+			document.body.style.cursor = '';
+			document.body.style.removeProperty('user-select');
+			if (hasDragged) {
+				const suppressClick = (ev: MouseEvent) => {
+					ev.stopPropagation();
+					ev.preventDefault();
+					window.removeEventListener('click', suppressClick, true);
+				};
+				window.addEventListener('click', suppressClick, true);
+			}
+		};
+
+		host.addEventListener('mousedown', onMouseDown);
+		window.addEventListener('mousemove', onMouseMove);
+		window.addEventListener('mouseup', onMouseUp);
+
+		this.cleanupDragToScroll = () => {
+			host.removeEventListener('mousedown', onMouseDown);
+			window.removeEventListener('mousemove', onMouseMove);
+			window.removeEventListener('mouseup', onMouseUp);
+		};
 	}
 
 	//#region <Tabs dx-tab-panel — carga de datos>
@@ -947,6 +1052,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		return of({ Result: true, Data: [] } as any);
 	}
 
+	// Qué hace: Abre el modal para agregar observadores inicializando el estado limpio.
+	// Cómo lo hace: Valida que la requisición exista en BD, resetea el modelo y activa la visibilidad del popup.
 	abrirModalObservador(): void {
 		if (!this.model?.CORR_REQUISICION_PERSONAL || this.model.CORR_REQUISICION_PERSONAL <= 0) {
 			this.notifyFx('Debe guardar la requisición antes de agregar observadores.', NotifyType.Warning);
@@ -959,6 +1066,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.popupObservadorVisible = true;
 	}
 
+	// Qué hace: Cierra el modal de observador y limpia el modelo en memoria.
+	// Cómo lo hace: Pone popupObservadorVisible en false y resetea LOGIN_SISTEMA.
 	cerrarModalObservador(): void {
 		this.popupObservadorVisible = false;
 		this.modelObservador = { LOGIN_SISTEMA: '' };
@@ -1025,6 +1134,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	override nuevo(): void {
 		super.nuevo();
 		this.readOnly = false;
+			this.mCORR_UNIDAD_LECTURA = [];
 		this.limpiarDatosTabs();
 		this.cerrarModalObservador();
 		this.mCORR_PUESTO = [];
@@ -1050,6 +1160,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}
 
 		super.editarClick(e);
+			this.mCORR_UNIDAD_LECTURA = [];
 		this.readOnly = false;
 		this.cargarDatosTabs();
 		setTimeout(() => {
@@ -1060,6 +1171,24 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	/** Al consultar (doble clic): formulario sin Guardar (isForm=false). */
+	// Qué hace: Al seleccionar o enfocar un registro en la grilla del catálogo, pre-carga la unidad organizativa.
+	// Cómo lo hace: Si la fila tiene CORR_UNIDAD y NOMBRE_UNIDAD, pre-puebla mCORR_UNIDAD_LECTURA síncronamente y llama al endpoint en segundo plano para que al entrar ya esté listo sin parpadeos.
+	override focusedRowChanged(e: any): void {
+		super.focusedRowChanged(e);
+		const row = e?.row?.data;
+		if (row?.CORR_UNIDAD) {
+			if (row.NOMBRE_UNIDAD) {
+				this.mCORR_UNIDAD_LECTURA = [
+					{
+						CORR_UNIDAD: Number(row.CORR_UNIDAD),
+						NOMBRE_UNIDAD: row.NOMBRE_UNIDAD,
+					},
+				];
+			}
+			this.getCORR_UNIDAD_LECTURA(row.CORR_UNIDAD);
+		}
+	}
+
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		this.abrirEnConsulta(rowData);
@@ -1070,8 +1199,19 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		if (rowData) {
 			this.modelUpdate = { ...rowData };
 			this.model = this.fillData(rowData);
+			// Qué hace: Siembra síncronamente la unidad para que aparezca pintada al instante en que abre el formulario.
+			// Cómo lo hace: Construye el objeto con CORR_UNIDAD y NOMBRE_UNIDAD y lo asigna directamente a mCORR_UNIDAD_LECTURA.
+			if (rowData.CORR_UNIDAD && rowData.NOMBRE_UNIDAD) {
+				this.mCORR_UNIDAD_LECTURA = [
+					{
+						CORR_UNIDAD: Number(rowData.CORR_UNIDAD),
+						NOMBRE_UNIDAD: rowData.NOMBRE_UNIDAD,
+					},
+				];
+			}
 		}
 		this.AsignaStatus(UpdateType.Not_Defined);
+		this.getCORR_UNIDAD_LECTURA(rowData?.CORR_UNIDAD);
 		this.readOnly = true;
 		this.cargarDatosTabs();
 		setTimeout(() => {
@@ -1085,10 +1225,18 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}, 0);
 	}
 
-	/** Ícono Editar del grid: solo Borrador (1) y Devuelta (3). */
+	// Qué hace: Controla la visibilidad del ícono Editar en la grilla principal.
+	// Cómo lo hace: Solo permite editar si el usuario tiene permiso U y la requisición está en Borrador (1) o Devuelta (3).
 	override getPermiteEditar(e: any): boolean {
 		const data = e?.row?.data ?? e?.data;
 		return this.permiteEdit && this.service.esEstadoRequisicionEditable(data?.CORR_ESTADO_REQUISICION);
+	}
+
+	// Qué hace: Controla la visibilidad del ícono Eliminar en la grilla principal.
+	// Cómo lo hace: Solo permite eliminar si el usuario tiene permiso D y la requisición está en Borrador (1) o Devuelta (3).
+	override getPermiteDele(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
+		return this.permiteDele && this.service.esEstadoRequisicionEditable(data?.CORR_ESTADO_REQUISICION);
 	}
 
 	//#endregion
@@ -1096,6 +1244,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	inicializaOpciones() {}
 
 	llenaComboBox() {
+		this.syncBarraFiltros();
 		//this.getAllDepartamento();
 		this.getCORR_TIPO_MODALIDAD();
 		this.getCORR_TIPO_CONTRATACION();
@@ -1138,6 +1287,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		});
 	}
 
+	// Qué hace: Obtiene el catálogo de tipos de contratación y sincroniza la visibilidad de tiempo de contrato.
+	// Cómo lo hace: Consulta el endpoint vía getLookUp, asigna la lista a mCORR_TIPO_CONTRATACION y re-sincroniza si ya hay un modelo cargado.
 	getCORR_TIPO_CONTRATACION(){
 		this.appInfoService
 		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_TIPO_CONTRATACION', 'GetCORR_TIPO_CONTRATACION', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
@@ -1146,6 +1297,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			next: (response: any) => {
 				if (response.Result) {
 					this.mCORR_TIPO_CONTRATACION = response.Data;
+					if (this.model?.CORR_TIPO_CONTRATACION) {
+						this.sincronizarVisibilidadTiempoContrato();
+					}
 				}
 			},
 			error: (error: any) => {
@@ -1177,21 +1331,115 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		});
 	}
 
-	getCORR_UNIDAD(){
+	// Qué hace: Consulta la unidad organizativa desde el endpoint de lectura para modo consulta.
+	// Cómo lo hace: Llama a SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES/GetCORR_UNIDAD_LECTURA pasando el CORR_UNIDAD de la requisición.
+	getCORR_UNIDAD_LECTURA(corrUnidad?: number): void {
+		if (!corrUnidad || corrUnidad <= 0) {
+			this.mCORR_UNIDAD_LECTURA = [];
+			return;
+		}
 		this.appInfoService
-		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_UNIDADES_USUARIO', 'GetCORR_UNIDAD', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
-		.pipe(take(1))
-		.subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.mCORR_UNIDAD = response.Data;
+			.getLookUp(
+				'SC_REQUISICION_PERSONAL',
+				'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
+				'GetCORR_UNIDAD_LECTURA',
+				[{ Parameter: 'CORR_UNIDAD', Value: corrUnidad }],
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_UNIDAD_LECTURA = response?.Result ? (response.Data ?? []) : [];
+				},
+				error: (error: any) => {
+					this.mCORR_UNIDAD_LECTURA = [];
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	getCORR_UNIDAD() {
+		this.appInfoService
+			.getLookUp(
+				'SC_REQUISICION_PERSONAL',
+				'SC_UNIDADES_USUARIO',
+				'GetCORR_UNIDAD',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_UNIDAD = [];
+						this.syncBarraFiltros();
+						if (response?.Result === false && response?.ErrorMessage) {
+							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+						}
+						return;
+					}
+					this.mCORR_UNIDAD = this.mapUnidadesUsuarioLookup(response.Data);
+					this.syncBarraFiltros();
+				},
+				error: (error: any) => {
+					this.mCORR_UNIDAD = [];
+					this.syncBarraFiltros();
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	private mapUnidadesUsuarioLookup(data: any[]): any[] {
+		const vistos = new Set<number>();
+		return data
+			.map((item: any) => {
+				const nombre = (item.NOMBRE_UNIDAD ?? '').trim();
+				const esHijaACargo = item.ES_HIJA_A_CARGO === true || item.ES_HIJA_A_CARGO === 1;
+				const esJefe = item.ES_JEFE_UNIDAD === true || item.ES_JEFE_UNIDAD === 1;
+				const esPuesto = item.ES_POR_PUESTO === true || item.ES_POR_PUESTO === 1;
+				let origen = 'Configurada';
+				if (esHijaACargo) {
+					origen = 'A cargo (hija)';
+				} else if (esJefe) {
+					origen = 'Jefe de unidad';
+				} else if (esPuesto) {
+					origen = 'Por puesto';
 				}
-			},
-			error: (error: any) => {
-				this.notifyFx(error, NotifyType.Error);
-				//this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
-			},
-		});
+				return {
+					CORR_UNIDAD: Number(item.CORR_UNIDAD),
+					CODIGO_UNIDAD: (item.CODIGO_UNIDAD ?? '').trim(),
+					NOMBRE_UNIDAD: nombre,
+					NOMBRE_UNIDAD_CATALOGO: nombre,
+					ORIGEN_UNIDAD: origen,
+					ES_POR_PUESTO: esPuesto,
+					CORR_PUESTO: item.CORR_PUESTO,
+				};
+			})
+			.filter((item: any) => {
+				const corr = Number(item.CORR_UNIDAD);
+				if (!corr || corr <= 0 || vistos.has(corr)) {
+					return false;
+				}
+				vistos.add(corr);
+				return true;
+			});
+	}
+
+	private syncBarraFiltros(): void {
+		this.barraFiltroUnidad = {
+			label: 'Unidad',
+			model: this.mCORR_UNIDAD ?? [],
+			value: this.filtroCorrUnidad ?? 0,
+			valueExpr: 'CORR_UNIDAD',
+			displayExpr: 'NOMBRE_UNIDAD',
+			lookupColumns: this.unidadLookupColumns,
+			selectedRowKeys: this.selectedLookUpUnidadFiltro,
+			showClearButton: true,
+			dropDownWidth: 420,
+			width: 350,
+			todosOption: { CORR_UNIDAD: 0, NOMBRE_UNIDAD: 'Todos', NOMBRE_UNIDAD_CATALOGO: 'Todos' },
+			clearResetsTo: 0,
+		};
 	}
 
 	getCORR_PUESTO(corrUnidad?: number): void {
@@ -1214,7 +1462,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				next: (response: any) => {
 					if (response.Result) {
 						const puestos = response.Data ?? [];
-						const unidadActual = this.mCORR_UNIDAD.find(
+						const unidadActual = (this.mCORR_UNIDAD_LECTURA?.length ? this.mCORR_UNIDAD_LECTURA : this.mCORR_UNIDAD).find(
 							(u: any) => u.CORR_UNIDAD === unidad
 						);
 						// Qué hace: Excluye el puesto que el usuario desempeña en la unidad (puesto de jefatura/coordinación).
@@ -1337,6 +1585,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				CORR_REQUISICION_PERSONAL: xModel.CORR_REQUISICION_PERSONAL,
 				CORR_DESCRIPTOR_PUESTO: xModel.CORR_DESCRIPTOR_PUESTO,
 				CORR_UNIDAD: xModel.CORR_UNIDAD,
+				NOMBRE_UNIDAD: xModel.NOMBRE_UNIDAD,
 				CORR_PUESTO: xModel.CORR_PUESTO,
 				CORR_TIPO_MODALIDAD: xModel.CORR_TIPO_MODALIDAD,
 				CORR_TIPO_CONTRATACION: xModel.CORR_TIPO_CONTRATACION,
@@ -1404,23 +1653,45 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data ?? [];
-						this.abrirDesdeQueryCorr();
-					} else {
-						//this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
-					}
-				},
-				error: (error: any) => {
-					//this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.message ?? error });
-				},
-			});
+	consultar(resetPage = false): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+			onData: () => {
+				this.modelsListadoCompleto = Array.isArray(this.models) ? [...this.models] : [];
+				this.aplicarFiltrosListado(resetPage);
+				this.abrirDesdeQueryCorr();
+			},
+		});
+	}
+
+	private aplicarFiltrosListado(_resetPage = false): void {
+		let rows = Array.isArray(this.modelsListadoCompleto) ? [...this.modelsListadoCompleto] : [];
+		const corrUnidad = Number(this.filtroCorrUnidad);
+		if (corrUnidad > 0) {
+			rows = rows.filter((row) => Number(row.CORR_UNIDAD) === corrUnidad);
+		}
+		this.models = rows;
+	}
+
+	onFiltroUnidadChanged(value: any): void {
+		const corr = Number(value);
+		this.filtroCorrUnidad = corr > 0 ? corr : 0;
+		this.syncBarraFiltros();
+		if (this.isBrowse()) {
+			this.aplicarFiltrosListado(true);
+		}
+	}
+
+	selectedLookUpUnidadFiltro(vRow: any): number {
+		return Number(vRow?.[0]?.CORR_UNIDAD ?? 0);
+	}
+
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.syncBarraFiltros();
+			this.aplicarFiltrosListado(false);
+		}
 	}
 
 	/**
@@ -1461,7 +1732,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: guarda la requisición en la base de datos (creación o actualización) y permanece en el formulario en modo edición.
-	// Cómo lo hace: valida el formulario, ejecuta insert o update en el servicio y al recibir respuesta exitosa sincroniza en memoria (model, modelUpdate y models), cambia el estado a UpdateType.Update y carga los observadores sin salir a la grilla.
+	// Cómo lo hace: valida el formulario, ejecuta insert o update en el servicio y al recibir respuesta exitosa normaliza los datos con fillData (convirtiendo CORR_EMPLEADO_SUSTITUTO a número y preservando flags UI), cambia el estado a UpdateType.Update y refresca observadores y sustitutos.
 	guardar(): void {
 		// Solo Borrador/Observada (o alta nueva). En consulta / estados cerrados no hay Guardar.
 		if (this.banderaMtto !== UpdateType.Add
@@ -1489,11 +1760,23 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
+							const esPermanente = this.model?.ES_PERMANENTE;
+							const requiereSustitucion = this.model?.REQUIERE_SUSTITUCION;
 							this.models.push(response.Data);
-							this.model = response.Data;
-							this.modelUpdate = { ...response.Data };
+							const formattedModel = this.fillData(response.Data);
+							formattedModel.ES_PERMANENTE = esPermanente !== undefined ? esPermanente : true;
+							formattedModel.REQUIERE_SUSTITUCION = requiereSustitucion !== undefined ? requiereSustitucion : false;
+							this.model = formattedModel;
+							this.modelUpdate = { ...this.model };
 							this.AsignaStatus(UpdateType.Update);
 							this.cargarObservadores();
+							if (this.model.REQUIERE_SUSTITUCION && this.model.CORR_UNIDAD && this.model.CORR_PUESTO && !this.mCORR_EMPLEADO_SUSTITUTO?.length) {
+								this.getCORR_EMPLEADO_SUSTITUTO(this.model.CORR_UNIDAD, this.model.CORR_PUESTO);
+							}
+							setTimeout(() => {
+								this.sincronizarVisibilidadTiempoContrato();
+								this.sincronizarVisibilidadEmpleadoSustituto();
+							}, 0);
 							this.notifyFx('Registro creado con exito!', NotifyType.Success);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1512,13 +1795,25 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
-							this.model = response.Data;
-							this.modelUpdate = { ...response.Data };
+							const esPermanente = this.model?.ES_PERMANENTE;
+							const requiereSustitucion = this.model?.REQUIERE_SUSTITUCION;
+							const formattedModel = this.fillData(response.Data);
+							formattedModel.ES_PERMANENTE = esPermanente !== undefined ? esPermanente : true;
+							formattedModel.REQUIERE_SUSTITUCION = requiereSustitucion !== undefined ? requiereSustitucion : false;
+							this.model = formattedModel;
+							this.modelUpdate = { ...this.model };
 							const vIndex = this.models.findIndex((item: any) => item.CORR_REQUISICION_PERSONAL === response.Data.CORR_REQUISICION_PERSONAL);
 							if (vIndex >= 0) {
 								this.models[vIndex] = response.Data;
 							}
 							this.AsignaStatus(UpdateType.Update);
+							if (this.model.REQUIERE_SUSTITUCION && this.model.CORR_UNIDAD && this.model.CORR_PUESTO && !this.mCORR_EMPLEADO_SUSTITUTO?.length) {
+								this.getCORR_EMPLEADO_SUSTITUTO(this.model.CORR_UNIDAD, this.model.CORR_PUESTO);
+							}
+							setTimeout(() => {
+								this.sincronizarVisibilidadTiempoContrato();
+								this.sincronizarVisibilidadEmpleadoSustituto();
+							}, 0);
 							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1534,18 +1829,34 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	override cancelar(): void {
+			this.mCORR_UNIDAD_LECTURA = [];
 		super.cancelar((item: any) => item.CORR_REQUISICION_PERSONAL === this.modelUpdate.CORR_REQUISICION_PERSONAL);
 	}
 
+	// Qué hace: Elimina una requisición de la base de datos y actualiza la lista local.
+	// Cómo lo hace: Valida que esté en Borrador o Devuelta antes de enviar la petición de eliminación al servicio.
 	rowRemoving(e: any) {
+		if (!this.service.esEstadoRequisicionEditable(e?.data?.CORR_ESTADO_REQUISICION)) {
+			e.cancel = true;
+			this.notifyFx(
+				'Solo se puede eliminar una requisición en estado Borrador o Devuelta.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
 		this.service
 			.delete(this.fillParam(e.data.CORR_REQUISICION_PERSONAL))
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
+						const key = e.data.CORR_REQUISICION_PERSONAL;
+						this.modelsListadoCompleto = (this.modelsListadoCompleto ?? []).filter(
+							(item: any) => item.CORR_REQUISICION_PERSONAL !== key
+						);
 						this.models = this.models.filter(
-							(item: any) => item.CORR_REQUISICION_PERSONAL !== e.data.CORR_REQUISICION_PERSONAL
+							(item: any) => item.CORR_REQUISICION_PERSONAL !== key
 						);
 						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
 					} else {

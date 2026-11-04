@@ -18,6 +18,7 @@ export interface ChangePasswordFormValue {
 }
 
 @Component({
+  standalone: false,
   selector: 'change-password-form',
   templateUrl: './change-password-form.component.html',
   styleUrls: ['./change-password-form.component.scss'],

@@ -12,6 +12,7 @@ import { ConReporteColumnaService } from '../services/con-reporte-columna.servic
 import { COL_CUENTA, COL_NOMBRE_CUENTA, COL_SALDO_FINAL, columna } from '../shared/columnas-comunes';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-reporte-estado-resultados',
 	templateUrl: '../con-reporte.component.html',
 })

@@ -11,6 +11,7 @@ import { ScRequisicionObservadores } from './models/sc-requisicion-observadores'
 import { ScRequisicionObservadoresService } from './sc-requisicion-observadores.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-requisicion-observadores',
 	templateUrl: './sc-requisicion-observadores.component.html',
 	styleUrls: ['./sc-requisicion-observadores.component.scss'],

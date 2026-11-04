@@ -13,6 +13,7 @@ import { ScImpactoEconomicoService } from './sc-impacto-economico.service';
 const ESTADO_FIELD = 'ESTADO_IMPACTO_ECONOMICO';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-impacto-economico',
 	templateUrl: './sc-impacto-economico.component.html',
 	styleUrls: ['./sc-impacto-economico.component.scss'],

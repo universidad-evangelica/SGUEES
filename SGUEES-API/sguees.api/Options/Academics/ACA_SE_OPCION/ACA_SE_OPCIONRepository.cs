@@ -1,106 +1,289 @@
+// Qué hace: persistencia SQL del catálogo opciones socioeconómico.
+// Cómo lo hace: CRUD y ActivarInactivar sobre ACA_SE_OPCION / V_ACA_SE_OPCION (sin empresa).
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using System.Linq;
-using eFramework.Data;
+using System.Threading.Tasks;
 using eFramework.Core;
+using eFramework.Data;
+using Microsoft.Extensions.Configuration;
 using sguees.Models;
 
 namespace sguees.Repositories
 {
-    // Qué hace: catálogo de opciones de las preguntas del estudio socioeconómico que consumen otras pantallas.
-    // Cómo lo hace: hoy solo expone el combo de la edición de prospectos (GetCORR_OPCION_ACA_PROSPECTO);
-    //               el resto del CRUD queda sin habilitar hasta que exista una pantalla propia.
-    public class ACA_SE_OPCIONRepository : BaseRepository<ACA_SE_OPCIONTable>, IACA_SE_OPCIONRepository
-    {
-        private const string _TableName = "ACA_SE_OPCION";
+	public class ACA_SE_OPCIONRepository : BaseRepository<ACA_SE_OPCIONTable>, IACA_SE_OPCIONRepository
+	{
+		private const string _TableName = "ACA_SE_OPCION";
+		private const string _ViewName = "V_ACA_SE_OPCION";
+		private const string _CampoPk = "CORR_OPCION";
+		private const string _CampoEstado = "ACTIVO";
+		private const bool _UsaEmpresa = false;
 
-        public ACA_SE_OPCIONRepository(IConfiguration config) :
-                base(config.GetConnectionString("defaultConnection"),
-                     config.GetSection("DbProvider:defaultProvider").Value)
-        {
-        }
+		public ACA_SE_OPCIONRepository(IConfiguration config) :
+			base(config.GetConnectionString("defaultConnection"),
+				config.GetSection("DbProvider:defaultProvider").Value)
+		{
+		}
 
-        // Qué hace: opciones de las preguntas del estudio socioeconómico ordenados para el combo.
-        // Cómo lo hace: lee la tabla directamente (no tiene vista V_) ordenada por CORR_PREGUNTA, ORDEN.
-        public async Task<CResult> GetCORR_OPCION_ACA_PROSPECTOAsync(List<CParameter> xWhere)
-        {
-            CResult objResultado = new();
+		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var reader = await objData.GetDataReader(_ViewName, xWhere);
+				var response = new List<ACA_SE_OPCIONView>().FromDataReader(reader)
+					.OrderBy(x => x.CORR_PREGUNTA)
+					.ThenBy(x => x.ORDEN)
+					.ThenBy(x => x.CORR_OPCION)
+					.ToList();
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
 
-            try
-            {
-                var reader = await objData.GetDataReader(_TableName, xWhere, "CORR_PREGUNTA, ORDEN");
-                var response = new List<ACA_SE_OPCIONView>().FromDataReader(reader).ToList();
+		public async Task<CResult> GetAsync(List<CParameter> xWhere)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var reader = await objData.GetDataReader(_ViewName, xWhere);
+				var response = new List<ACA_SE_OPCIONView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response == null ? 0 : 1;
+				objResultado.CodeHelper = response?.CORR_OPCION ?? 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
 
-                reader.Close();
-                reader = null;
+		public async Task<CResult> CreateAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_OPCION", Value = Data.CORR_OPCION, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CODIGO", Value = Data.CODIGO, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "TEXTO", Value = Data.TEXTO, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO ?? true, DbType = System.Data.DbType.Boolean },
+					new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
+					new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
+				};
+				var reader = await objData.Insert(_TableName, p, _CampoPk, new List<CParameter>());
+				var inserted = new List<ACA_SE_OPCIONView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+				var corr = inserted?.CORR_OPCION ?? (int)(p.First(x => x.ParameterName == "CORR_OPCION").Value ?? 0);
+				var response = await LeerVistaPorPkAsync(corr);
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = 1;
+				objResultado.CodeHelper = response?.CORR_OPCION ?? corr;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				var dup = IsDuplicateKeyError(e);
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = dup ? 2627 : -1;
+				objResultado.ErrorMessage = dup
+					? "Ya existe una opción con ese código en la pregunta seleccionada."
+					: e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
 
-                objResultado.Data = response;
-                objResultado.Result = true;
-                objResultado.RowsAffected = response.Count;
-                objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = 0;
-                objResultado.ErrorMessage = "";
-                objResultado.ErrorSource = "";
-            }
-            catch (System.Exception e)
-            {
-                objResultado.Data = null;
-                objResultado.Result = false;
-                objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
-                objResultado.ErrorSource += $"[{e.Source}]";
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
+		public async Task<CResult> UpdateAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CODIGO", Value = Data.CODIGO, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "TEXTO", Value = Data.TEXTO, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
+				};
+				var pWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_OPCION", Value = Data.CORR_OPCION, DbType = System.Data.DbType.Int32 },
+				};
+				var reader = await objData.Update(_TableName, p, pWhere);
+				reader.Close();
+				var response = await LeerVistaPorPkAsync(Data.CORR_OPCION);
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = 1;
+				objResultado.CodeHelper = response?.CORR_OPCION ?? Data.CORR_OPCION;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				var dup = IsDuplicateKeyError(e);
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = dup ? 2627 : -1;
+				objResultado.ErrorMessage = dup
+					? "Ya existe una opción con ese código en la pregunta seleccionada."
+					: e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
 
-            return objResultado;
-        }
+		public async Task<CResult> DeleteAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var pWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_OPCION", Value = Data.CORR_OPCION, DbType = System.Data.DbType.Int32 },
+				};
+				objResultado.RowsAffected = (int)await objData.Delete(_TableName, pWhere);
+				objResultado.Data = null;
+				objResultado.Result = true;
+				objResultado.CodeHelper = Data.CORR_OPCION;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = "No se puede eliminar la opción porque tiene registros asociados en otras tablas.";
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
 
-        // Qué hace: consulta general y CRUD aún no habilitados.
-        // Cómo lo hace: IRepository exige los métodos; responden un error claro hasta que
-        //               exista una pantalla propia del catálogo.
-        public Task<CResult> GetAllAsync(List<CParameter> xWhere)
-        {
-            return Task.FromResult(OperacionNoHabilitada());
-        }
+		public async Task<CResult> ActivarInactivarAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = 0, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_OPCION, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+					new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+					new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+				};
+				await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
+				if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+				{
+					var response = await LeerVistaPorPkAsync(Data.CORR_OPCION);
+					objResultado.Data = response;
+					objResultado.Result = true;
+					objResultado.RowsAffected = 1;
+					objResultado.CodeHelper = response?.CORR_OPCION ?? Data.CORR_OPCION;
+					objResultado.ErrorCode = 0;
+					objResultado.ErrorMessage = string.Empty;
+					objResultado.ErrorSource = string.Empty;
+				}
+				else
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.RowsAffected = 0;
+					objResultado.CodeHelper = Data.CORR_OPCION;
+					objResultado.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+					objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
+					objResultado.ErrorSource = "C" + _TableName + ".Mtto(Update)";
+				}
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = Data.CORR_OPCION;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
 
-        public Task<CResult> GetAsync(List<CParameter> xWhere)
-        {
-            return Task.FromResult(OperacionNoHabilitada());
-        }
+		private async Task<ACA_SE_OPCIONView> LeerVistaPorPkAsync(int corr)
+		{
+			var xWhere = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_OPCION", Value = corr, DbType = System.Data.DbType.Int32 },
+			};
+			var readerGet = await objData.GetDataReader(_ViewName, xWhere);
+			var response = new List<ACA_SE_OPCIONView>().FromDataReader(readerGet).FirstOrDefault();
+			readerGet.Close();
+			return response;
+		}
 
-        public Task<CResult> CreateAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            return Task.FromResult(OperacionNoHabilitada());
-        }
-
-        public Task<CResult> UpdateAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            return Task.FromResult(OperacionNoHabilitada());
-        }
-
-        public Task<CResult> DeleteAsync(ACA_SE_OPCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            return Task.FromResult(OperacionNoHabilitada());
-        }
-
-        private static CResult OperacionNoHabilitada()
-        {
-            return new CResult()
-            {
-                Data = null,
-                Result = false,
-                RowsAffected = 0,
-                CodeHelper = 0,
-                ErrorCode = -1,
-                ErrorMessage = $"Operación no habilitada: {_TableName} solo expone GetCORR_OPCION_ACA_PROSPECTO.",
-                ErrorSource = ""
-            };
-        }
-    }
+		private static bool IsDuplicateKeyError(Exception e)
+		{
+			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
+				e.Message.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) ||
+				e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
+		}
+	}
 }

@@ -76,6 +76,23 @@ namespace SGUEES.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		/// <summary>
+		/// Actualiza los datos personales y colecciones del candidato en el contexto de su expediente.
+		/// </summary>
+		// Qué hace: Expone el endpoint PUT para actualizar los datos personales y colecciones de un candidato desde el expediente.
+		// Cómo lo hace: Valida claims de sesión, exige la policy /sc-expediente-candidato|U y delega a _service.ActualizarPersonaDatosAsync.
+		[HttpPut("ActualizarPersonaDatos")]
+		[Authorize(Policy = "/sc-expediente-candidato|U")]
+		public async Task<IActionResult> ActualizarPersonaDatos([FromBody] sguees.Models.SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data)
+		{
+			var corrEmpresa = GetCorrEmpresa();
+			var usuario = GetUsuario();
+			var estacion = ClientInfoHelper.GetClientStation(HttpContext);
+
+			var resultado = await _service.ActualizarPersonaDatosAsync(corrEmpresa, usuario, estacion, data);
+			return resultado.Result ? Ok(resultado) : BadRequest(resultado);
+		}
+
 		[HttpDelete]
 		[Authorize(Policy = "/sc-expediente-candidato|D")]
 		public async Task<IActionResult> Delete([FromQuery] SC_EXPEDIENTE_CANDIDATOTable Data)

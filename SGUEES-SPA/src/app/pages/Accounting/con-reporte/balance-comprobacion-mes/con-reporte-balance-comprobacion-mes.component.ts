@@ -19,6 +19,7 @@ import {
 } from '../shared/columnas-comunes';
 
 @Component({
+  standalone: false,
 	selector: 'app-con-reporte-balance-comprobacion-mes',
 	templateUrl: '../con-reporte.component.html',
 })

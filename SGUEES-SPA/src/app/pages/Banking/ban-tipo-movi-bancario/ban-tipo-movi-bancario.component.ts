@@ -14,6 +14,7 @@ import { BanTipoMoviSegunBanco } from './models/ban-tipo-movi-segun-banco';
 import { BanTipoMoviSegunBancoService } from './ban-tipo-movi-segun-banco/ban-tipo-movi-segun-banco.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-ban-tipo-movi-bancario',
 	templateUrl: './ban-tipo-movi-bancario.component.html',
 })

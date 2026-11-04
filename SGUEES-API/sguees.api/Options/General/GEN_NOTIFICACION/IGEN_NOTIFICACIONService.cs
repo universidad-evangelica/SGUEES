@@ -30,10 +30,29 @@ namespace sguees.Services
 			string estacionCrea = null);
 
 		/// <summary>
-		/// Resuelve URL_DESTINO desde SEG_OPCION_SISTEMA.URL_OPCION + ?corr={corr}.
-		/// codigoOpcion = CODIGO_OPCION del menú (ej. SC_REQUISICION_PERSONAL).
-		/// Retorna null si no hay opción, URL vacía o corr inválido.
+		/// Destino documento / seguimiento: SEG_OPCION_SISTEMA.URL_OPCION + ?corr={corr}.
+		/// Ejemplo observadores: SC_REQUISICION_PERSONAL + CORR_REQUISICION_PERSONAL.
 		/// </summary>
 		Task<string> ResolverUrlDestinoAsync(string codigoOpcion, int corr);
+
+		/// <summary>
+		/// Solo URL_OPCION del menú (sin query). Útil para bandejas.
+		/// </summary>
+		Task<string> ResolverUrlOpcionAsync(string codigoOpcion);
+
+		/// <summary>
+		/// Destino tarea / acción: bandeja TH o Actores según unidad del receptor.
+		/// Opcional: corr + tipo para deep link futuro (?corr=&amp;tipo=).
+		/// </summary>
+		Task<string> ResolverUrlBandejaTareaAsync(
+			int corrEmpresa,
+			string loginDestino,
+			int? corrDocumento = null,
+			string tipoDocumento = null);
+
+		/// <summary>
+		/// True si el login pertenece a unidad TH (nodo TH o hija directa).
+		/// </summary>
+		Task<bool> EsUsuarioThAsync(int corrEmpresa, string loginSistema);
 	}
 }

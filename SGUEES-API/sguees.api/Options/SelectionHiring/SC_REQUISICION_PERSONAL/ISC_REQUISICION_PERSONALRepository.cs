@@ -7,6 +7,11 @@ namespace SGUEES.Repositories
 {
     public interface ISC_REQUISICION_PERSONALRepository: IRepository<SC_REQUISICION_PERSONALTable>
     {
+        /// <summary>
+        /// Listado visible para sc-requisicion-personal (unidades del login + observadores).
+        /// Cómo: ejecuta PRAL_DATA_SC_REQUISICION_PERSONAL.
+        /// </summary>
+        Task<CResult> GetAllVisibleAsync(List<CParameter> xWhere);
         Task<CResult> GetAllAsyncBitacoraByCORR_REQUISICION(List<CParameter> xWhere);
         Task<CResult> GetAllAsyncCandidatosByCORR_REQUISICION(List<CParameter> xWhere);
         Task<CResult> AutorizaAsync(SC_REQUISICION_PERSONAL_AUTORIZAParam Data, string vLOGIN_SISTEMA);

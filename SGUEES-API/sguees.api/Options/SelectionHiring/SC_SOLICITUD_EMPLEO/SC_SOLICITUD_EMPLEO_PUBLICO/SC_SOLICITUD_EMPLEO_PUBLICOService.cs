@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
@@ -80,9 +80,23 @@ namespace sguees.Services
                 return Error("La solicitud de empleo está inactiva.");
             }
 
+            // Qué hace: valida que la solicitud no haya sido completada previamente antes de generar un nuevo token.
+            // Cómo lo hace: si la solicitud ya tiene CORR_PERSONA_DATOS, consulta sus tokens; solo bloquea la generación si alguno de los tokens de esta solicitud ya está en estado COMPLETADO. Si no tiene tokens completados (candidato con DUI precargado que aún no finaliza la postulación), permite generar y enviar el nuevo token.
             if (solicitud.CORR_PERSONA_DATOS.HasValue && solicitud.CORR_PERSONA_DATOS.Value > 0)
             {
-                return Error("La solicitud de empleo ya fue completada.");
+                var tokensResultado = await _repo.GetAllTokenAsync(new List<CParameter>
+                {
+                    new() { ParameterName = "@CORR_EMPRESA", Value = data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new() { ParameterName = "@CORR_SOLICITUD_EMPLEO", Value = data.CORR_SOLICITUD_EMPLEO, DbType = System.Data.DbType.Int32 },
+                });
+
+                if (tokensResultado.Result && tokensResultado.Data is IEnumerable<SC_SOLICITUD_EMPLEO_TOKENView> tokensList)
+                {
+                    if (tokensList.Any(t => string.Equals(t.ESTADO_TOKEN, "COMPLETADO", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        return Error("La solicitud de empleo ya fue completada.");
+                    }
+                }
             }
 
             if (!CorreoValido(solicitud.CORREO_INVITACION))
@@ -326,6 +340,15 @@ namespace sguees.Services
                 data.FAMILIARES_UEES.Clear();
             }
 
+            // Qué hace: Garantiza valor para FECHA_DECLARACION en guardados parciales desde los primeros pasos
+            // Cómo lo hace: Si la fecha es default se asigna la fecha y hora actual
+            if (data.FECHA_DECLARACION == default)
+            {
+                data.FECHA_DECLARACION = DateTime.Now;
+            }
+
+            // Qué hace: Valida los campos obligatorios para guardar la solicitud
+            // Cómo lo hace: Comprueba los campos NOT NULL de la pestaña personal/emergencia; las declaraciones aplican al completar en el paso 6
             if (string.IsNullOrWhiteSpace(token) ||
                 string.IsNullOrWhiteSpace(data.NOMBRE1) ||
                 string.IsNullOrWhiteSpace(data.APELLIDO1) ||
@@ -335,10 +358,7 @@ namespace sguees.Services
                 string.IsNullOrWhiteSpace(data.DIRECCION) ||
                 string.IsNullOrWhiteSpace(data.DUI) ||
                 string.IsNullOrWhiteSpace(data.EMERGENCIA_NOMBRE) ||
-                string.IsNullOrWhiteSpace(data.EMERGENCIA_TELEFONO) ||
-                !data.DECLARA_VERDAD ||
-                !data.AUTORIZA_VERIFICACION ||
-                data.FECHA_DECLARACION == default)
+                string.IsNullOrWhiteSpace(data.EMERGENCIA_TELEFONO))
             {
                 return Error("Debe completar los campos requeridos.");
             }
@@ -346,6 +366,13 @@ namespace sguees.Services
             if (data.POSEE_DISCAPACIDAD && string.IsNullOrWhiteSpace(data.TIPO_DISCAPACIDAD))
             {
                 return Error("Debe indicar el tipo de discapacidad.");
+            }
+
+            // Qué hace: Valida que el aspirante sea mayor de edad (mínimo 18 años).
+            // Cómo lo hace: Compara DateOnly de nacimiento con DateOnly de hace 18 años.
+            if (data.FECHA_NACIMIENTO > DateOnly.FromDateTime(DateTime.Today).AddYears(-18))
+            {
+                return Error("El aspirante debe ser mayor de edad (mínimo 18 años).");
             }
 
             var tokenHash = CalcularTokenHash(token);
@@ -549,6 +576,9 @@ namespace sguees.Services
             // Reducir padding excesivo de celdas y tarjetas institucionales
             var resultado = Regex.Replace(html, @"padding:\s*32px\s+24px;?", "padding: 8px 16px;", RegexOptions.IgnoreCase);
             resultado = Regex.Replace(resultado, @"padding:\s*22px\s+20px;?", "padding: 12px 16px;", RegexOptions.IgnoreCase);
+
+            // Eliminar párrafos vacíos redundantes <p><br></p> entre tablas que generan espaciado vertical excesivo
+            resultado = Regex.Replace(resultado, @"(</table>\s*(?:<p[^>]*>\s*<span[^>]*>(?:&nbsp;|\s*)</span>\s*</p>)?)\s*<p[^>]*>\s*(?:<br\s*/?>|&nbsp;|\s*)\s*</p>\s*(<table)", "$1$2", RegexOptions.IgnoreCase);
 
             // Asegurar align="center" y width="650" en tablas para que Outlook Desktop no las estire al 100%
             resultado = Regex.Replace(resultado, @"<table(\s+[^>]*)?>", match =>

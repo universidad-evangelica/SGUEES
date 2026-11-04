@@ -7,6 +7,7 @@ import { Duration } from 'luxon';
 import { ApplyPipeModule } from 'src/app/pipes/apply.pipe';
 
 @Component({
+  standalone: false,
   selector: 'agenda-list-item',
   template: `
     <div class='agenda-list-item'>

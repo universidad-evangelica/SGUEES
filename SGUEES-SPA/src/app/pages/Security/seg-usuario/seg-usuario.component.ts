@@ -12,6 +12,7 @@ import { SegUsuario } from './models/seg-usuario';
 import { SegUsuarioService } from './seg-usuario.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-seg-usuario',
 	templateUrl: './seg-usuario.component.html',
 })

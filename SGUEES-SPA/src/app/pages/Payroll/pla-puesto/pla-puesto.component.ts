@@ -29,6 +29,7 @@ interface UnidadModalFila extends UnidadDelPuesto {
 }
 
 @Component({
+  standalone: false,
 	selector: 'app-pla-puesto',
 	templateUrl: './pla-puesto.component.html',
 	styleUrls: ['./pla-puesto.component.scss'],

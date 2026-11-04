@@ -21,6 +21,7 @@ import {
 } from './sc-bandeja-actores.service';
 
 @Component({
+  standalone: false,
 	selector: 'app-sc-bandeja-actores',
 	templateUrl: './sc-bandeja-actores.component.html',
 	styleUrls: ['./sc-bandeja-actores.component.scss'],

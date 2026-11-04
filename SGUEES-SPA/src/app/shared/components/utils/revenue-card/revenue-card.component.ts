@@ -8,6 +8,7 @@ import { DxChartModule } from 'devextreme-angular/ui/chart';
 import { Sales } from 'src/app/types/analytics';
 
 @Component({
+  standalone: false,
   selector: 'revenue-card',
   templateUrl: './revenue-card.component.html',
 })

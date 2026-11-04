@@ -7,7 +7,8 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { ConCentroCostoNivel } from './models/con-centro-costo-nivel';
 import { ConCentroCostoNivelService } from './con-centro-costo-nivel.service';
 
-@Component({
+@Component({
+  standalone: false,
 	selector: 'app-con-centro-costo-nivel',
 	templateUrl: './con-centro-costo-nivel.component.html',
 })

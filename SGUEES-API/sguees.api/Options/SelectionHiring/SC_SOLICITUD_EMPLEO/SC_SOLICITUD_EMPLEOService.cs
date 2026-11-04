@@ -104,6 +104,18 @@ namespace sguees.Services
 				};
 			}
 
+			// Qué hace: Valida que la persona sea mayor de edad (mínimo 18 años).
+			// Cómo lo hace: Compara DateOnly de nacimiento con DateOnly de hace 18 años.
+			if (data.FECHA_NACIMIENTO > DateOnly.FromDateTime(DateTime.Today).AddYears(-18))
+			{
+				return new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = "La persona debe ser mayor de edad (mínimo 18 años).",
+				};
+			}
+
 			if (data.POSEE_DISCAPACIDAD && string.IsNullOrWhiteSpace(data.TIPO_DISCAPACIDAD))
 			{
 				return new CResult
@@ -254,6 +266,9 @@ namespace sguees.Services
 			var resultado = Regex.Replace(html, @"padding:\s*32px\s+24px;?", "padding: 8px 16px;", RegexOptions.IgnoreCase);
 			resultado = Regex.Replace(resultado, @"padding:\s*22px\s+20px;?", "padding: 12px 16px;", RegexOptions.IgnoreCase);
 
+			// Eliminar párrafos vacíos redundantes <p><br></p> entre tablas que generan espaciado vertical excesivo
+			resultado = Regex.Replace(resultado, @"(</table>\s*(?:<p[^>]*>\s*<span[^>]*>(?:&nbsp;|\s*)</span>\s*</p>)?)\s*<p[^>]*>\s*(?:<br\s*/?>|&nbsp;|\s*)\s*</p>\s*(<table)", "$1$2", RegexOptions.IgnoreCase);
+
 			// Asegurar align="center" y width="650" en tablas para que Outlook Desktop no las estire al 100%
 			resultado = Regex.Replace(resultado, @"<table(\s+[^>]*)?>", match =>
 			{
@@ -362,6 +377,17 @@ namespace sguees.Services
 			}
 
 			return resultado;
+		}
+
+		// Qué hace: consulta si existe un candidato con expediente previo a partir de su documento de identidad (DUI).
+		// Cómo lo hace: valida el DUI recibido y delega la consulta a _repo.BuscarCandidatoPorDuiAsync.
+		public async Task<CResult> BuscarCandidatoPorDuiAsync(int corrEmpresa, string dui)
+		{
+			if (string.IsNullOrWhiteSpace(dui))
+			{
+				return new CResult { Result = true, Data = null, ErrorCode = 0 };
+			}
+			return await _repo.BuscarCandidatoPorDuiAsync(corrEmpresa, dui);
 		}
 	}
 }

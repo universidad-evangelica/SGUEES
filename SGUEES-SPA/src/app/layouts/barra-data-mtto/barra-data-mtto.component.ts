@@ -67,6 +67,7 @@ export interface BarraMttoCombox {
  * FASE 8B: layoutMode header-only delega browse toolbar al grid unificado.
  */
 @Component({
+  standalone: false,
   selector: 'app-barra-data-mtto',
   templateUrl: './barra-data-mtto.component.html',
   styleUrls: ['./barra-data-mtto.component.scss'],

@@ -20,6 +20,7 @@ import { ConReporteShellComponent } from './shell/con-reporte-shell.component';
 import { environment } from 'src/environments/environment';
 
 @Component({
+  standalone: false,
 	template: '',
 })
 export abstract class ConReporteComponent extends CBaseComponent implements OnInit {

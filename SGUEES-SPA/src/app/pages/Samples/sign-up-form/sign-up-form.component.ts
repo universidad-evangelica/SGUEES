@@ -3,6 +3,7 @@ import { Component, NgModule } from '@angular/core';
 import { CardAuthModule, CreateAccountFormModule } from 'src/app/shared/components';
 
 @Component({
+  standalone: false,
   selector: 'app-sign-up-form',
   templateUrl: './sign-up-form.component.html',
   styleUrls: ['./sign-up-form.component.scss']

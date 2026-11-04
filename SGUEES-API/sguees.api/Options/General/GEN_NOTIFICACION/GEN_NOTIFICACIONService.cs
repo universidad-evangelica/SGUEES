@@ -11,6 +11,24 @@ namespace sguees.Services
 {
 	public class GEN_NOTIFICACIONService : IGEN_NOTIFICACIONService
 	{
+		public const string CodigoOpcionBandejaTh = "SC_BANDEJA_TH";
+		public const string CodigoOpcionBandejaActores = "SC_BANDEJA_ACTORES";
+		public const string CodigoOpcionRequisicionPersonal = "SC_REQUISICION_PERSONAL";
+		public const string CodigoOpcionMovimientoPersonal = "SC_MOVIMIENTO_PERSONAL";
+
+		/// <summary>
+		/// Si SEG_OPCION_SISTEMA no trae URL_OPCION (o Get falla), se usa esta ruta de routing SPA.
+		/// </summary>
+		private static readonly Dictionary<string, string> UrlOpcionFallback =
+			new(StringComparer.OrdinalIgnoreCase)
+			{
+				[CodigoOpcionBandejaTh] = "/sc-bandeja-th",
+				[CodigoOpcionBandejaActores] = "/sc-bandeja-actores",
+				[CodigoOpcionRequisicionPersonal] = "/sc-requisicion-personal",
+				[CodigoOpcionMovimientoPersonal] = "/sc-movimiento-personal",
+				["SC_EXPEDIENTE_CANDIDATO"] = "/sc-expediente-candidato",
+			};
+
 		private readonly IGEN_NOTIFICACIONRepository _repo;
 		private readonly INotificationSignalRService _signalR;
 		private readonly ISEG_OPCION_SISTEMAService _opcionSistema;
@@ -123,43 +141,137 @@ namespace sguees.Services
 
 		public async Task<string> ResolverUrlDestinoAsync(string codigoOpcion, int corr)
 		{
-			if (corr <= 0 || string.IsNullOrWhiteSpace(codigoOpcion))
+			if (corr <= 0)
 			{
 				return null;
 			}
+
+			var path = await ResolverUrlOpcionAsync(codigoOpcion);
+			return AppendCorrQuery(path, corr);
+		}
+
+		public async Task<string> ResolverUrlOpcionAsync(string codigoOpcion)
+		{
+			if (string.IsNullOrWhiteSpace(codigoOpcion))
+			{
+				return null;
+			}
+
+			var codigo = codigoOpcion.Trim();
+			string path = null;
 
 			try
 			{
 				var resultado = await _opcionSistema.GetAsync(new SEG_OPCION_SISTEMAParam
 				{
-					CODIGO_OPCION = codigoOpcion.Trim()
+					CODIGO_OPCION = codigo
 				});
 
-				if (!resultado.Result || resultado.Data is not SEG_OPCION_SISTEMAView opcion)
+				if (resultado.Result && resultado.Data is SEG_OPCION_SISTEMAView opcion)
 				{
-					_logger.LogWarning(
-						"[GEN_NOTIFICACION] No se encontró SEG_OPCION_SISTEMA.CODIGO_OPCION={Codigo}",
-						codigoOpcion);
-					return null;
+					path = NormalizePath(opcion.URL_OPCION);
+				}
+				else if (resultado.Result && resultado.Data != null)
+				{
+					// GetAsync a veces no tipa Data como View; intenta URL_OPCION por reflexión/dynamic.
+					path = NormalizePath(TryReadUrlOpcion(resultado.Data));
 				}
 
-				return AppendCorrQuery(opcion.URL_OPCION, corr);
+				if (string.IsNullOrWhiteSpace(path))
+				{
+					_logger.LogWarning(
+						"[GEN_NOTIFICACION] URL_OPCION vacía o sin fila para CODIGO_OPCION={Codigo}; se usa fallback.",
+						codigo);
+				}
 			}
 			catch (Exception ex)
 			{
 				_logger.LogWarning(ex,
-					"[GEN_NOTIFICACION] Error resolviendo URL_OPCION para CODIGO_OPCION={Codigo}",
-					codigoOpcion);
-				return null;
+					"[GEN_NOTIFICACION] Error resolviendo URL_OPCION para CODIGO_OPCION={Codigo}; se usa fallback.",
+					codigo);
 			}
+
+			if (string.IsNullOrWhiteSpace(path)
+				&& UrlOpcionFallback.TryGetValue(codigo, out var fallback))
+			{
+				path = fallback;
+			}
+
+			return path;
 		}
 
-		/// <summary>
-		/// Convención deep link TH: {URL_OPCION}?corr={corr}.
-		/// </summary>
+		private static string TryReadUrlOpcion(object data)
+		{
+			if (data == null)
+			{
+				return null;
+			}
+
+			var prop = data.GetType().GetProperty("URL_OPCION");
+			return prop?.GetValue(data)?.ToString();
+		}
+
+		public async Task<string> ResolverUrlBandejaTareaAsync(
+			int corrEmpresa,
+			string loginDestino,
+			int? corrDocumento = null,
+			string tipoDocumento = null)
+		{
+			var esTh = await EsUsuarioThAsync(corrEmpresa, loginDestino);
+			var codigoOpcion = esTh ? CodigoOpcionBandejaTh : CodigoOpcionBandejaActores;
+
+			var path = await ResolverUrlOpcionAsync(codigoOpcion);
+			if (string.IsNullOrWhiteSpace(path))
+			{
+				path = esTh ? "/sc-bandeja-th" : "/sc-bandeja-actores";
+			}
+
+			return AppendBandejaQuery(path, corrDocumento, tipoDocumento);
+		}
+
+		public Task<bool> EsUsuarioThAsync(int corrEmpresa, string loginSistema)
+		{
+			return _repo.EsUsuarioThAsync(corrEmpresa, loginSistema);
+		}
+
+		/// <summary>Deep link documento: {URL_OPCION}?corr={corr}.</summary>
 		private static string AppendCorrQuery(string urlOpcion, int corr)
 		{
-			if (corr <= 0 || string.IsNullOrWhiteSpace(urlOpcion))
+			var path = NormalizePath(urlOpcion);
+			if (corr <= 0 || string.IsNullOrWhiteSpace(path))
+			{
+				return null;
+			}
+
+			return $"{path}?corr={corr}";
+		}
+
+		/// <summary>Deep link bandeja: {URL}?corr=&amp;tipo= (corr/tipo opcionales).</summary>
+		private static string AppendBandejaQuery(string urlOpcion, int? corrDocumento, string tipoDocumento)
+		{
+			var path = NormalizePath(urlOpcion);
+			if (string.IsNullOrWhiteSpace(path))
+			{
+				return null;
+			}
+
+			var parts = new List<string>();
+			if (corrDocumento.HasValue && corrDocumento.Value > 0)
+			{
+				parts.Add($"corr={corrDocumento.Value}");
+			}
+
+			if (!string.IsNullOrWhiteSpace(tipoDocumento))
+			{
+				parts.Add($"tipo={Uri.EscapeDataString(tipoDocumento.Trim())}");
+			}
+
+			return parts.Count == 0 ? path : $"{path}?{string.Join("&", parts)}";
+		}
+
+		private static string NormalizePath(string urlOpcion)
+		{
+			if (string.IsNullOrWhiteSpace(urlOpcion))
 			{
 				return null;
 			}
@@ -176,7 +288,7 @@ namespace sguees.Services
 				path = path.Substring(0, queryAt);
 			}
 
-			return $"{path}?corr={corr}";
+			return path;
 		}
 
 		private static CResult ValidarCreacion(GEN_NOTIFICACIONCreateParam data)

@@ -244,15 +244,6 @@ export class AcaProspectoService {
         return `La inscripción del ciclo ${ciclo}${facultad} ${cierra}${fechaTexto ? ', el ' + fechaTexto : ''}.${enPaso}`;
     }
 
-    getFormasIngreso(): any[] {
-        return [
-            { CODIGO: 'NI', TEXTO: 'Nuevo Ingreso' },
-            { CODIGO: 'EQ', TEXTO: 'Ingreso por Equivalencia' },
-            { CODIGO: 'CC', TEXTO: 'Cambio de Carrera' },
-            { CODIGO: 'RI', TEXTO: 'Reingreso' },
-        ];
-    }
-
     // Qué hace: columnas del listado. En el paso y Paso actual solo van en solicitudes pendientes.
     // Cómo lo hace: el borrador todavía no tiene flujo; esas columnas aparecen cuando ya fue enviada.
     getColumns(mostrarPaso = true): any {
@@ -346,7 +337,8 @@ export class AcaProspectoService {
     // Cómo lo hace: son editables la forma de ingreso, quién financia, el ciclo y la carrera con su
     //               modalidad (el dx-form [readOnly] las bloquea en consulta); el resto lleva readOnly fijo.
     //               Facultad y plan son derivados: los resuelve ACA_SP_CAMBIAR_CICLO_PROSPECTO al guardar.
-    getItems(): any {
+    //               formasIngreso = ACA_LISTA GetFORMA_INGRESO (Key/Value).
+    getItems(formasIngreso: any[] = []): any {
         return [
             {
                 dataField: 'CODIGO_PROSPECTO',
@@ -395,7 +387,12 @@ export class AcaProspectoService {
                 label: { text: 'Forma de ingreso' },
                 colSpan: 2,
                 editorType: 'dxSelectBox',
-                editorOptions: { items: this.getFormasIngreso(), valueExpr: 'CODIGO', displayExpr: 'TEXTO' },
+                editorOptions: {
+                    items: formasIngreso,
+                    valueExpr: 'Key',
+                    displayExpr: 'Value',
+                    searchEnabled: false,
+                },
                 validationRules: [{ type: 'required', message: 'Seleccione la forma de ingreso' }],
             },
             {

@@ -1,4 +1,5 @@
 import { Injectable, NgZone } from '@angular/core';
+import { Location } from '@angular/common';
 import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
@@ -68,7 +69,12 @@ export class AuthService {
 		this._lastAuthenticatedPath = value;
 	}
 
-	constructor(private router: Router, private http: HttpClient, private zone: NgZone) {
+	constructor(
+		private router: Router,
+		private http: HttpClient,
+		private zone: NgZone,
+		private location: Location
+	) {
 		this.loadSessionContext();
 		this.adoptExistingSession();
 		this.listenForOtherTabs();
@@ -335,6 +341,9 @@ export class AuthService {
 
 	private handlingSessionExpiry = false;
 	private sessionClosing = false;
+	private yendoAlLogin: Promise<boolean> | null = null;
+	private loginProgramado = false;
+	private intentosLogin = 0;
 
 	get isHandlingSessionExpiry(): boolean {
 		return this.handlingSessionExpiry;
@@ -370,11 +379,7 @@ export class AuthService {
 			8000
 		);
 
-		void this.router.navigate(['/login-form'], { replaceUrl: true }).finally(() => {
-			this.handlingSessionExpiry = false;
-			this.sessionClosing = false;
-			document.body.classList.remove('sguees-sesion-cerrada');
-		});
+		this.irAlLogin();
 	}
 
 	async logOut(): Promise<void> {
@@ -383,10 +388,66 @@ export class AuthService {
 		this.clearOwnedSession();
 		this.decodedToken = {} as any;
 		this.mainMenu = [];
-		void this.router.navigate(['/login-form'], { replaceUrl: true }).finally(() => {
-			this.sessionClosing = false;
-			document.body.classList.remove('sguees-sesion-cerrada');
-		});
+		this.irAlLogin();
+	}
+
+	// Qué hace: manda al login y no suelta el cierre hasta que esa ruta ya está en pantalla.
+	// Cómo lo hace: si la navegación se cancela, la reintenta. Así la pantalla abierta no cae en la tarjeta de 330px.
+	irAlLogin(): void {
+		this.sessionClosing = true;
+		document.body.classList.add('sguees-sesion-cerrada');
+		if (this.estaEnRutaAcceso()) {
+			this.soltarCierreDeSesion();
+			return;
+		}
+		if (this.yendoAlLogin || this.loginProgramado) {
+			return;
+		}
+		if (this.intentosLogin >= 3) {
+			window.location.assign(this.location.prepareExternalUrl('/login-form'));
+			return;
+		}
+
+		this.loginProgramado = true;
+		setTimeout(() => {
+			this.loginProgramado = false;
+			if (this.estaEnRutaAcceso()) {
+				this.soltarCierreDeSesion();
+				return;
+			}
+			if (this.yendoAlLogin) {
+				return;
+			}
+			this.intentosLogin += 1;
+			this.yendoAlLogin = this.router.navigate(['/login-form'], { replaceUrl: true }).finally(() => {
+				this.yendoAlLogin = null;
+				if (this.estaEnRutaAcceso()) {
+					this.intentosLogin = 0;
+					this.soltarCierreDeSesion();
+					return;
+				}
+				this.irAlLogin();
+			});
+		}, 0);
+	}
+
+	// Qué hace: ya se puede mostrar el login.
+	// Cómo lo hace: quita la marca que ocultaba el marco de la aplicación.
+	private soltarCierreDeSesion(): void {
+		this.handlingSessionExpiry = false;
+		this.sessionClosing = false;
+		document.body.classList.remove('sguees-sesion-cerrada');
+	}
+
+	private estaEnRutaAcceso(): boolean {
+		const path = `${this.router.url || ''}`.split('?')[0];
+		return (
+			path.includes('login-form') ||
+			path.includes('recuperar-contrasena') ||
+			path.includes('reset-password') ||
+			path.includes('create-account') ||
+			path.includes('change-password')
+		);
 	}
 
 	// Qué hace: toma la sesión ya guardada al recargar esta pestaña.
@@ -465,16 +526,7 @@ export class AuthService {
 			8000
 		);
 
-		const path = (this.router.url || '').split('?')[0];
-		if (path !== '/login-form') {
-			void this.router.navigate(['/login-form'], { replaceUrl: true }).finally(() => {
-				document.body.classList.remove('sguees-sesion-cerrada');
-				this.sessionClosing = false;
-			});
-			return;
-		}
-		this.sessionClosing = false;
-		document.body.classList.remove('sguees-sesion-cerrada');
+		this.irAlLogin();
 	}
 
 	// Qué hace: borra token e id de la sesión de esta pestaña.
@@ -709,7 +761,7 @@ export class AuthGuardService implements CanActivate {
 		}
 
 		if (!isLoggedIn && !isAuthForm) {
-			this.router.navigate(['/login-form']);
+			this.authService.irAlLogin();
 		}
 
 		if (isLoggedIn) {
@@ -728,7 +780,7 @@ export class AuthGuardService implements CanActivate {
 			}
 		}
 
-		if ((isAuthorized === false || isLoggedIn === false) && isAuthForm === false && !this.authService.cerrandoSesion) {
+		if (isLoggedIn && isAuthorized === false && isAuthForm === false && !this.authService.cerrandoSesion) {
 			if (routerUrl !== '/' && routerUrl !== '/home') {
 				notify(
 					{
@@ -739,7 +791,7 @@ export class AuthGuardService implements CanActivate {
 						closeOnOutsideClick: true,
 					},
 					'error',
-					500000
+					5000
 				);
 			}
 		}

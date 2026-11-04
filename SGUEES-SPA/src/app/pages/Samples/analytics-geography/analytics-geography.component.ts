@@ -24,6 +24,7 @@ import { analyticsPanelItems, Dates } from 'src/app/types/resource';
 import { SalesByState, SalesByStateAndCity } from 'src/app/types/analytics';
 
 @Component({
+  standalone: false,
   templateUrl: './analytics-geography.component.html',
   styleUrls: ['./analytics-geography.component.scss'],
   providers: [DataService],

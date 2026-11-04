@@ -14,6 +14,7 @@ import { PlaTipoPuestoService } from './pla-tipo-puesto.service';
 const ESTADO_FIELD = 'ESTADO_TIPO_PUESTO';
 
 @Component({
+  standalone: false,
 	selector: 'app-pla-tipo-puesto',
 	templateUrl: './pla-tipo-puesto.component.html',
 	styleUrls: ['./pla-tipo-puesto.component.scss'],

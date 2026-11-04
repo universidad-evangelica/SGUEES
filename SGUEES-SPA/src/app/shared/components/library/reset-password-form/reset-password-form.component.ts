@@ -11,6 +11,7 @@ import { AuthService } from 'src/app/shared/services';
 const notificationText = 'Si el usuario existe, enviamos un correo con el enlace para restablecer la contraseña.';
 
 @Component({
+  standalone: false,
   selector: 'reset-password-form',
   templateUrl: './reset-password-form.component.html',
   styleUrls: ['./reset-password-form.component.scss'],

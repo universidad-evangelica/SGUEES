@@ -12,6 +12,7 @@ import { ScTest } from './models/sc-test';
 import { ScTestService } from './sc-test.service';
 
 @Component({
+  standalone: false,
   selector: 'app-sc-test',
   templateUrl: './sc-test.component.html',
   styleUrls: ['./sc-test.component.scss'],

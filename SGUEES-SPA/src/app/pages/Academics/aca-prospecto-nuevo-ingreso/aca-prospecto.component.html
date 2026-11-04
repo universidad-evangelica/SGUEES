@@ -125,10 +125,15 @@
                 <p class="aca-prospecto-vence-leyenda-texto" *ngIf="esBorrador">La inscripción de este ciclo ya cerró. No se puede editar ni enviar esta solicitud.</p>
                 <p class="aca-prospecto-vence-leyenda-texto" *ngIf="!esBorrador">La inscripción de este ciclo ya cerró. No se puede editar, aprobar, rechazar ni revertir esta solicitud.</p>
             </div>
+            <!-- Qué hace: en el alta explica qué hay que llenar para crear la solicitud y abrir el resto de apartados. -->
+            <div class="aca-prospecto-vence-leyenda aca-prospecto-alta-nota" *ngIf="esAlta()">
+                <span class="dx-icon-info aca-prospecto-vence-leyenda-icon" aria-hidden="true"></span>
+                <p class="aca-prospecto-vence-leyenda-texto">Para crear la solicitud complete los apartados principales: nombres, primer apellido, fecha de nacimiento, ciclo, carrera y modalidad. En Contacto registre dos contactos, un teléfono y un correo. Al llenar lo solicitado y guardar, se habilitan los demás apartados.</p>
+            </div>
             <!-- Qué hace: el color del badge sigue el estado del flujo 104. -->
             <span class="aca-prospecto-badge" [ngClass]="claseEstadoSolicitud()">{{ model.ESTADO_SOLICITUD || 'Pendiente nuevo ingreso' }}</span>
-            <!-- Qué hace: un borrador todavía no tiene pasos. Enviar solicitud es el que abre el flujo. -->
-            <p class="aca-prospecto-borrador-nota" *ngIf="!model.CORR_ESTADO">Esta solicitud está en borrador. Guardar no la envía. Enviar solicitud la manda al flujo.</p>
+            <!-- Qué hace: un borrador ya creado todavía no tiene pasos. Enviar solicitud es el que abre el flujo. -->
+            <p class="aca-prospecto-borrador-nota" *ngIf="!esAlta() && !model.CORR_ESTADO">Esta solicitud está en borrador. Guardar no la envía. Enviar solicitud la manda al flujo.</p>
             <!-- Qué hace: tres pasos. Ingresada está en el analista; Aprobada está en Solicitud aprobada. -->
             <ol class="aca-prospecto-flujo-pasos" *ngIf="model.CORR_ESTADO">
                 <li class="aca-prospecto-paso aca-prospecto-paso--hecho">
@@ -158,7 +163,8 @@
         <section class="sguees-section-card aca-prospecto-card">
             <!-- Qué hace: cada bloque del formulario va en su propia pestaña para no bajar por toda la ficha. -->
             <!-- Cómo lo hace: deferRendering=false deja todas renderizadas para validar al guardar. -->
-            <dx-tab-panel #tabPanel class="aca-prospecto-tab-panel" [selectedIndex]="0" [animationEnabled]="false" [swipeEnabled]="false" [deferRendering]="false" itemTitleTemplate="tituloApartado">
+            <!-- Qué hace: en el alta solo se abren Datos personales y Contacto. El resto espera a que exista la solicitud. -->
+            <dx-tab-panel #tabPanel class="aca-prospecto-tab-panel" [selectedIndex]="0" [animationEnabled]="false" [swipeEnabled]="false" [deferRendering]="false" itemTitleTemplate="tituloApartado" (onSelectionChanging)="bloquearApartados($event)">
 
                 <!-- ================= Datos personales ================= -->
                 <dxi-item title="Datos personales" [icon]="'user'">
@@ -176,8 +182,8 @@
                             [colCount]="8"
                             [readOnly]="readOnly"
                             [items]="itemsPersona"
-                            (onContentReady)="pintarRequeridos()"
-                            (onFieldDataChanged)="pintarRequeridos()"
+                            (onContentReady)="pintarRequeridos($event)"
+                            (onFieldDataChanged)="pintarRequeridos($event)"
                         >
                             <div *dxTemplate="let cellInfo of 'CORR_SEXOLookup'" class="aca-prospecto-req" [class.aca-prospecto-req--vacio]="reqVacio(personaModel?.CORR_SEXO)">
                                 <app-data-lookup
@@ -432,11 +438,8 @@
                     <div class="aca-prospecto-tab">
                         <!-- Contactos: N teléfonos y correos; el principal de cada tipo es el que usa el portal
                              (perfil y correo del token), por eso no se puede eliminar. -->
-                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
-                            <span class="aca-prospecto-section-head-texto">
-                                <span class="aca-prospecto-section-title">Contacto</span>
-                                <span class="aca-prospecto-section-subtitle">{{ contactoModel ? 'Acepte o cancele para volver al listado' : 'Teléfonos y correos; uno principal por tipo' }}</span>
-                            </span>
+                        <!-- Qué hace: Nuevo queda a la izquierda del título, en borrador, pendiente y alta. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion aca-prospecto-section-head--boton">
                             <dx-button
                                 *ngIf="!readOnly && !contactoModel"
                                 [text]="'Nuevo'"
@@ -446,6 +449,10 @@
                                 (onClick)="nuevoContacto()"
                             >
                             </dx-button>
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">Contacto</span>
+                                <span class="aca-prospecto-section-subtitle">{{ contactoModel ? 'Acepte o cancele para volver al listado' : 'Teléfonos y correos; uno principal por tipo' }}</span>
+                            </span>
                         </header>
                         <app-data-grid-mtto
                             *ngIf="!contactoModel; else formularioContacto"
@@ -490,7 +497,7 @@
                 </dxi-item>
 
                 <!-- ================= Salud ================= -->
-                <dxi-item title="Salud" [icon]="'heart'">
+                <dxi-item title="Salud" [icon]="'heart'" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab">
                         <!-- Igual que el portal: el check habilita la limitación y al guardar queda POSEE_DISCAPACIDAD. -->
                         <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
@@ -537,14 +544,16 @@
                 </dxi-item>
 
                 <!-- ================= Datos familiares ================= -->
-                <dxi-item title="Datos familiares" [icon]="'group'">
+                <dxi-item title="Datos familiares" [icon]="'group'" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab">
+                        <!-- El número del apartado no cuenta al padre ni a la madre: cuenta el contacto de emergencia. -->
+                        <div class="aca-prospecto-vence-leyenda aca-prospecto-alta-nota" *ngIf="isForm() && faltanFamilia() > 0">
+                            <span class="dx-icon-info aca-prospecto-vence-leyenda-icon" aria-hidden="true"></span>
+                            <p class="aca-prospecto-vence-leyenda-texto">Para completar Datos familiares marque un familiar como contacto de emergencia, en su ficha dentro de Familia, y llene el teléfono de emergencia y la dirección de emergencia.</p>
+                        </div>
                         <!-- Familia: mientras se edita un familiar, el formulario ocupa el lugar de la grilla. -->
-                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
-                            <span class="aca-prospecto-section-head-texto">
-                                <span class="aca-prospecto-section-title">Familia</span>
-                                <span class="aca-prospecto-section-subtitle">{{ familiarModel ? 'Acepte o cancele para volver al listado' : 'Padre, madre, cónyuge y cualquier otro familiar' }}</span>
-                            </span>
+                        <!-- Qué hace: Nuevo queda a la izquierda del título. En el alta este tab sigue apagado. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion aca-prospecto-section-head--boton">
                             <dx-button
                                 *ngIf="!readOnly && !familiarModel"
                                 [text]="'Nuevo'"
@@ -554,6 +563,10 @@
                                 (onClick)="nuevoFamiliar()"
                             >
                             </dx-button>
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">Familia</span>
+                                <span class="aca-prospecto-section-subtitle">{{ familiarModel ? 'Acepte o cancele para volver al listado' : 'Padre, madre, cónyuge y cualquier otro familiar' }}</span>
+                            </span>
                         </header>
                         <app-data-grid-mtto
                             *ngIf="!familiarModel; else formularioFamiliar"
@@ -636,7 +649,7 @@
                 </dxi-item>
 
                 <!-- ================= Educación ================= -->
-                <dxi-item title="Educación" [icon]="'bookmark'" [visible]="esAcademico">
+                <dxi-item title="Educación" [icon]="'bookmark'" [visible]="esAcademico" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab">
                         <header class="aca-prospecto-section-head">
                             <span class="aca-prospecto-section-title">Carrera a la que aplica</span>
@@ -795,15 +808,12 @@
                 </dxi-item>
 
                 <!-- ================= Información adicional ================= -->
-                <dxi-item title="Información adicional" [icon]="'info'">
+                <dxi-item title="Información adicional" [icon]="'info'" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab">
                         <!-- Información adicional: N medios, uno por medio. "Otro" y "Referido amigo/familiar"
                              llevan campos propios, igual que en el portal. -->
-                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
-                            <span class="aca-prospecto-section-head-texto">
-                                <span class="aca-prospecto-section-title">Información adicional</span>
-                                <span class="aca-prospecto-section-subtitle">{{ medioModel ? 'Acepte o cancele para volver al listado' : '¿Cómo se enteró de la universidad?' }}</span>
-                            </span>
+                        <!-- Qué hace: Nuevo queda a la izquierda del título. En el alta este tab sigue apagado. -->
+                        <header class="aca-prospecto-section-head aca-prospecto-section-head--accion aca-prospecto-section-head--boton">
                             <dx-button
                                 *ngIf="!readOnly && !medioModel"
                                 [text]="'Nuevo'"
@@ -813,6 +823,10 @@
                                 (onClick)="nuevoMedio()"
                             >
                             </dx-button>
+                            <span class="aca-prospecto-section-head-texto">
+                                <span class="aca-prospecto-section-title">Información adicional</span>
+                                <span class="aca-prospecto-section-subtitle">{{ medioModel ? 'Acepte o cancele para volver al listado' : '¿Cómo se enteró de la universidad?' }}</span>
+                            </span>
                         </header>
                         <app-data-grid-mtto
                             *ngIf="!medioModel; else formularioMedio"
@@ -881,7 +895,7 @@
                 </dxi-item>
 
                 <!-- Documentos del tipo 104 que además cumplen la regla de este prospecto. -->
-                <dxi-item title="Documentación" [icon]="'file'">
+                <dxi-item title="Documentación" [icon]="'file'" [disabled]="esAlta()">
                     <div class="aca-prospecto-tab aca-prospecto-docs">
                         <header class="aca-prospecto-section-head">
                             <span class="aca-prospecto-section-title">Documentación obligatoria</span>
@@ -889,6 +903,7 @@
                         </header>
                         <!-- La carga va en la fila. El ojo abre el PDF o la imagen en otra pestaña. -->
                         <app-data-grid-mtto
+                            #gridDocumentos
                             [isBrowse]="true"
                             [models]="documentos"
                             [columns]="columnsDocumento"
@@ -903,7 +918,7 @@
                             [permiteDele]="false"
                             [showEmptyState]="true"
                             [emptyTitle]="'Sin documentos'"
-                            [emptyMessage]="'No hay documentos configurados para esta solicitud, o la regla de equivalencia y cuota no pide ninguno.'"
+                            [emptyMessage]="'No hay documentos en la solicitud ni en el período, o la regla de equivalencia y cuota no pide ninguno.'"
                         >
                         </app-data-grid-mtto>
                     </div>
@@ -992,12 +1007,13 @@
         [selectedIndex]="esBorrador ? 1 : 0"
         [animationEnabled]="false"
         [swipeEnabled]="false"
+        #tabLista
         [deferRendering]="true"
         itemTitleTemplate="tituloTabLista"
         (onSelectionChanged)="onTabListaChanged($event)"
     >
-        <dxi-item title="Solicitudes pendientes" icon="folder"></dxi-item>
-        <dxi-item title="Solicitudes borrador" icon="edit"></dxi-item>
+        <dxi-item title="Solicitudes recibidas" icon="folder"></dxi-item>
+        <dxi-item title="Solicitudes pendientes de recibir" icon="edit"></dxi-item>
         <!-- Qué hace: mismo ícono y texto del tab; el total va en un círculo a la derecha. -->
         <div *dxTemplate="let data of 'tituloTabLista'" class="aca-prospecto-tab-lista">
             <i class="dx-icon" [ngClass]="'dx-icon-' + data.icon"></i>
@@ -1022,14 +1038,19 @@
     </div>
 
     <!-- Listado de todos los ciclos. Buscar, exportar y recargar quedan en la barra. -->
+    <!-- Qué hace: el Excel se descarga como Solicitudes nuevo ingreso, no como Data. -->
     <app-data-grid-mtto
         [isBrowse]="isBrowse()"
+        [exportFileName]="'Solicitudes nuevo ingreso'"
         [models]="models"
         [columns]="columns"
         [summary]="summary"
         [keyExpr]="mttoGridKeyExpr"
         [focusedRowKey]="gridFocusedRowKey"
         [loading]="loadingVisible"
+        [nativeToolbar]="true"
+        [unifiedToolbar]="false"
+        [repaintChangesOnly]="false"
         [showSearch]="false"
         [showExport]="false"
         [showAdd]="false"

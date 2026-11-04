@@ -1,0 +1,75 @@
+// Qué hace: estilos del popup de períodos por documento.
+// Cómo: ordena los botones y alinea el checkbox de la grilla.
+.documentos-periodo-popup-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+:host ::ng-deep .documentos-periodo-popup-toolbar .dx-button {
+	flex: 0 0 auto;
+	width: auto;
+	min-width: 0;
+	height: 36px;
+	min-height: 36px;
+	font-weight: 600;
+}
+
+:host ::ng-deep .documentos-periodo-popup-toolbar .dx-button .dx-button-content {
+	padding: 0 14px;
+}
+
+:host ::ng-deep .documentos-periodo-popup-toolbar .dx-button .dx-button-text {
+	white-space: nowrap;
+}
+
+/* Qué hace: el título largo del documento no se corta con puntos suspensivos.
+   Cómo: el texto usa el ancho del popup y puede pasar a otra línea. */
+::ng-deep .documentos-periodo-popup .dx-popup-title {
+	padding-right: 42px;
+}
+
+::ng-deep .documentos-periodo-popup .dx-popup-title .dx-toolbar-before {
+	width: calc(100% - 44px);
+	max-width: calc(100% - 44px);
+}
+
+::ng-deep .documentos-periodo-popup .dx-popup-title .dx-toolbar-label,
+::ng-deep .documentos-periodo-popup .dx-popup-title .dx-toolbar-label > div,
+::ng-deep .documentos-periodo-popup .dx-popup-title .dx-toolbar-item-content {
+	width: 100% !important;
+	max-width: none !important;
+	white-space: normal !important;
+	overflow: visible !important;
+	text-overflow: clip !important;
+}
+
+/* Qué hace: con muchas filas el popup no se sale de la pantalla.
+   Cómo: el scroll queda en la tabla y el paginador sigue visible. */
+::ng-deep .documentos-periodo-popup .dx-popup-content {
+	box-sizing: border-box;
+	overflow: visible;
+	padding-bottom: 8px;
+}
+
+::ng-deep .documentos-periodo-popup .documentos-periodo-popup-grid {
+	width: 100%;
+	max-height: calc(100vh - 300px);
+
+	.dx-datagrid-headers .dx-header-row > td,
+	.dx-datagrid-filter-row > td,
+	.dx-datagrid-rowsview .dx-data-row > td {
+		vertical-align: middle;
+	}
+
+	.dx-datagrid-rowsview .dx-data-row > td {
+		padding-top: 8px;
+		padding-bottom: 8px;
+	}
+
+	.dx-checkbox {
+		margin: 0 auto;
+	}
+}

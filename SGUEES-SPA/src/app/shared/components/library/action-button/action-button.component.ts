@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, NgModule, Output } from '@angular/core'
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 
 @Component({
+  standalone: false,
   selector: 'app-action-button',
   templateUrl: './action-button.component.html',
   styleUrls: ['./action-button.component.scss'],

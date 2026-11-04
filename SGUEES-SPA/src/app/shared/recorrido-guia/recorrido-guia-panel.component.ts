@@ -4,6 +4,7 @@ import { RecorridoGuiaService } from './recorrido-guia.service';
 import { RecorridoGuiaState, RecorridoPaso } from './recorrido-guia.models';
 
 @Component({
+  standalone: false,
 	selector: 'app-recorrido-guia-panel',
 	templateUrl: './recorrido-guia-panel.component.html',
 	styleUrls: ['./recorrido-guia-panel.component.scss'],

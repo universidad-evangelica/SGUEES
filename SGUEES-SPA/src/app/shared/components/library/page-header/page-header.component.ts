@@ -13,6 +13,7 @@ export type BreadcrumbItem = SgueesBreadcrumbItem;
 export type PageHeaderVariant = 'default' | 'enterprise';
 
 @Component({
+  standalone: false,
   selector: 'app-page-header',
   templateUrl: './page-header.component.html',
   styleUrls: ['./page-header.component.scss'],

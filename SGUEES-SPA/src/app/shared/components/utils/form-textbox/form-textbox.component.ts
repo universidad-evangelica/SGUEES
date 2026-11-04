@@ -8,6 +8,7 @@ import {
 import { ValidationRule } from 'devextreme-angular/common';
 
 @Component({
+  standalone: false,
   selector: 'form-textbox',
   templateUrl: './form-textbox.component.html',
   styleUrls: ['form-textbox.component.scss'],

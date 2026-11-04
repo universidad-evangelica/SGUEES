@@ -34,6 +34,7 @@ type DashboardData = SalesOrOpportunitiesByCategory | Sales | SalesByState | Sal
 type DataLoader = (startDate: string, endDate: string) => Observable<Object>;
 
 @Component({
+  standalone: false,
   templateUrl: './analytics-dashboard.component.html',
   styleUrls: ['./analytics-dashboard.component.scss'],
   providers: [DataService],

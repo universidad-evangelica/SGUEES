@@ -18,5 +18,9 @@ namespace sguees.Models
         /// Correo de la invitación (SC_SOLICITUD_EMPLEO). El SPA lo precarga en el formulario.
         /// </summary>
         public string CORREO_INVITACION { get; set; }
+        /// <summary>DUI registrado en la solicitud para precarga en el formulario.</summary>
+        public string DUI { get; set; }
+        /// <summary>Nombre del puesto de la requisición vinculada para precarga en Plaza Solicitada.</summary>
+        public string PLAZA_SOLICITADA { get; set; }
     }
 }

@@ -10,6 +10,7 @@ import { SC_OrganigramaEstructuralNivel } from './models/sc-organigrama-estructu
 import { SC_OrganigramaEstructuralNivelService } from './sc-organigrama-estructural-nivel.service';
 
 @Component({
+  standalone: false,
     selector: 'app-sc-organigrama-estructural-nivel',
     templateUrl: './sc-organigrama-estructural-nivel.component.html',
     styleUrls: ['./sc-organigrama-estructural-nivel.component.scss'],

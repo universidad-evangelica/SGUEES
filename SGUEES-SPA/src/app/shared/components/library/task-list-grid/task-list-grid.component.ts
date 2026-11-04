@@ -26,6 +26,7 @@ import { Task } from 'src/app/types/task';
 import 'jspdf-autotable';
 
 @Component({
+  standalone: false,
   selector: 'task-list-grid',
   templateUrl: './task-list-grid.component.html',
   styleUrls: ['./task-list-grid.component.scss'],

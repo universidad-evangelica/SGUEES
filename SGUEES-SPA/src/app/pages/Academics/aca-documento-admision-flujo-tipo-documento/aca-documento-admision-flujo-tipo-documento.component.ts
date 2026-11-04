@@ -18,6 +18,7 @@ import {
 } from './models/aca-documento-admision-flujo-tipo-documento';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-documento-admision-flujo-tipo-documento',
 	templateUrl: './aca-documento-admision-flujo-tipo-documento.component.html',
 	styleUrls: ['./aca-documento-admision-flujo-tipo-documento.component.scss'],

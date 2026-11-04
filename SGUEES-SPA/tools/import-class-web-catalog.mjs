@@ -1,5 +1,5 @@
-import XLSX from 'xlsx';
 import fs from 'fs';
+import { readExcelFile, worksheetToRows } from './excel-read-rows.mjs';
 import { execSync } from 'child_process';
 
 const CORR_EMPRESA = 1;
@@ -20,10 +20,13 @@ function sqlStr(value) {
 	return "N'" + String(value).replace(/'/g, "''").trim() + "'";
 }
 
-function parseCuentas() {
-	const wb = XLSX.readFile(CUENTAS_FILE);
-	const ws = wb.Sheets['CATALOGO DE CUENTAS'];
-	const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+async function parseCuentas() {
+	if (!CUENTAS_FILE.toLowerCase().endsWith('.xlsx')) {
+		throw new Error('CUENTAS_FILE debe ser .xlsx (ExcelJS no lee .xls).');
+	}
+	const wb = await readExcelFile(CUENTAS_FILE);
+	const ws = wb.getWorksheet('CATALOGO DE CUENTAS') ?? wb.worksheets[0];
+	const rows = worksheetToRows(ws);
 	const accounts = [];
 	const seen = new Set();
 
@@ -77,10 +80,10 @@ function parseCuentas() {
 	return { accounts, byRubro, nivelMap };
 }
 
-function parseCentros() {
-	const wb = XLSX.readFile(CENTROS_FILE);
-	const ws = wb.Sheets[wb.SheetNames[0]];
-	const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+async function parseCentros() {
+	const wb = await readExcelFile(CENTROS_FILE);
+	const ws = wb.worksheets[0];
+	const rows = worksheetToRows(ws);
 	const centros = [];
 	const seenCentros = new Set();
 
@@ -182,8 +185,8 @@ function buildSql({ accounts, byRubro }, centros) {
 	return lines.join('\n');
 }
 
-const cuentas = parseCuentas();
-const centros = parseCentros();
+const cuentas = await parseCuentas();
+const centros = await parseCentros();
 console.log(`Cuentas: ${cuentas.accounts.length}, Centros: ${centros.length}`);
 const sql = buildSql(cuentas, centros);
 fs.writeFileSync(SQL_OUT, sql, 'utf8');

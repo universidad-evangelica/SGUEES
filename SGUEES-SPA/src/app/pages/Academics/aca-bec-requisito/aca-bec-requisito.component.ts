@@ -12,6 +12,7 @@ import { AcaBecRequisitoService } from './aca-bec-requisito.service';
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
+  standalone: false,
 	selector: 'app-aca-bec-requisito',
 	templateUrl: './aca-bec-requisito.component.html',
 	styleUrls: ['./aca-bec-requisito.component.scss'],

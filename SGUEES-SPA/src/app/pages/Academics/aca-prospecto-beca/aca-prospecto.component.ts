@@ -20,6 +20,7 @@ import { AcaProspectoBecaArchivoService } from './aca-prospecto-beca-archivo/aca
 // Cómo lo hace: el listado muestra prospecto, beca, puntaje, resultado y prioridad cuando el
 //               estado es Borrador o Enviada. Un clic abre las respuestas del cuestionario.
 @Component({
+  standalone: false,
     selector: 'app-aca-prospecto-beca',
     templateUrl: './aca-prospecto.component.html',
     styleUrls: ['./aca-prospecto.component.scss'],
@@ -44,7 +45,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     barraFiltroCiclo: BarraMttoCombox | null = null;
     cicloLookupColumns = [
         { dataField: 'NOMBRE_CICLO', caption: 'Ciclo', width: 160 },
-        { dataField: 'CANTIDAD_PROSPECTOS', caption: 'Prospectos', width: 110 },
+        { dataField: 'CANTIDAD_PROSPECTOS', caption: 'Solicitudes', width: 110 },
     ];
 
     constructor(

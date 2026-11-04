@@ -10,6 +10,7 @@ import { Task } from 'src/app/types/task';
 import { UserAvatarModule } from 'src/app/shared/components/library/user-avatar/user-avatar.component';
 
 @Component({
+  standalone: false,
   selector: 'task-kanban-card',
   templateUrl: './task-kanban-card.component.html',
   styleUrls: ['./task-kanban-card.component.scss'],

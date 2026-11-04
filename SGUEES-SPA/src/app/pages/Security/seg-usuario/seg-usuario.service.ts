@@ -84,13 +84,13 @@ export class SegUsuarioService {
 
 	getColumns(): any {
 		return [
-			{ dataField: 'LOGIN_SISTEMA', caption: 'Login', width: 110 },
+			{ dataField: 'LOGIN_SISTEMA', caption: 'Login', width: 140 },
 			{ dataField: 'NOMBRE_USUARIO', caption: 'Nombre Completo Usuario', width: 250 },
-			{ dataField: 'CORREO_ELECTRONICO', caption: 'Correo Electrónico', width: 190 },
-			{ dataField: 'NOMBRE_TIPO_USUARIO', caption: 'Tipo Usuario', width: 220 },
+			{ dataField: 'CORREO_ELECTRONICO', caption: 'Correo Electrónico', width: 250 },
+			{ dataField: 'NOMBRE_TIPO_USUARIO', caption: 'Tipo Usuario', width: 250 },
 			{ dataField: 'NOMBRE_ESTADO_USUARIO', caption: 'Estado Usuario', width: 150 },
-			{ dataField: 'IDIOMA', caption: 'Idioma', width: 80 },
-			{ dataField: 'USUARIO_AD', caption: 'Usuario AD', width: 120 },
+			{ dataField: 'IDIOMA', caption: 'Idioma', width: 100 },
+			{ dataField: 'USUARIO_AD', caption: 'Usuario AD', width: 150 },
 			...buildAuditGridColumns(),
 		];
 	}
@@ -138,7 +138,7 @@ export class SegUsuarioService {
 			{
 				dataField: 'TIPO_USUARIO',
 				label: { text: 'Tipo Usuario' },
-				colSpan: 2,
+				colSpan: 3,
 				editorOptions: { placeholder: 'Tipo Usuario...', showClearButton: true },
 				template: 'TIPO_USUARIOLookup',
 			},
