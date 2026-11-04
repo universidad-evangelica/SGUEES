@@ -48,13 +48,13 @@ import {
   styleUrls: ['./sc-requisicion-personal.component.scss']
 })
 export class ScRequisicionPersonalComponent extends CBaseComponent implements OnInit, AfterViewInit, OnDestroy {
-	// Qué hace: Función de limpieza de listeners de arrastre horizontal (drag-to-scroll).
-	private cleanupDragToScroll?: () => void;
-
 	@ViewChild('entrevistaForm', { static: false }) entrevistaForm?: DxFormComponent;
 	@ViewChild('entrevistaDocumentoForm', { static: false }) entrevistaDocumentoForm?: DxFormComponent;
 	@ViewChild('entrevistaDocumentoFileInput', { static: false })
 	entrevistaDocumentoFileInput?: ElementRef<HTMLInputElement>;
+	
+	// Qué hace: Función de limpieza de listeners de arrastre horizontal (drag-to-scroll).
+	private cleanupDragToScroll?: () => void;
 
 	protected override etiquetaRegistro = 'la requisición de personal';
 	protected override requiereEmpresaSesion = true;
@@ -1762,7 +1762,10 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 						if (response.Result) {
 							const esPermanente = this.model?.ES_PERMANENTE;
 							const requiereSustitucion = this.model?.REQUIERE_SUSTITUCION;
-							this.models.push(response.Data);
+							// Qué hace: actualiza la lista maestra completa y la lista de la grilla en memoria con el nuevo registro.
+							// Cómo lo hace: agrega response.Data al inicio de modelsListadoCompleto y models para conservar el registro al regresar al modo Browse.
+							this.modelsListadoCompleto = [response.Data, ...(this.modelsListadoCompleto ?? [])];
+							this.models = [response.Data, ...(this.models ?? [])];
 							const formattedModel = this.fillData(response.Data);
 							formattedModel.ES_PERMANENTE = esPermanente !== undefined ? esPermanente : true;
 							formattedModel.REQUIERE_SUSTITUCION = requiereSustitucion !== undefined ? requiereSustitucion : false;
@@ -1802,9 +1805,15 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 							formattedModel.REQUIERE_SUSTITUCION = requiereSustitucion !== undefined ? requiereSustitucion : false;
 							this.model = formattedModel;
 							this.modelUpdate = { ...this.model };
+							// Qué hace: sincroniza el registro modificado tanto en la grilla activa como en el listado maestro completo.
+							// Cómo lo hace: busca por CORR_REQUISICION_PERSONAL en models y modelsListadoCompleto y reemplaza el elemento con response.Data.
 							const vIndex = this.models.findIndex((item: any) => item.CORR_REQUISICION_PERSONAL === response.Data.CORR_REQUISICION_PERSONAL);
 							if (vIndex >= 0) {
 								this.models[vIndex] = response.Data;
+							}
+							const vIndexCompleto = (this.modelsListadoCompleto ?? []).findIndex((item: any) => item.CORR_REQUISICION_PERSONAL === response.Data.CORR_REQUISICION_PERSONAL);
+							if (vIndexCompleto >= 0) {
+								this.modelsListadoCompleto[vIndexCompleto] = response.Data;
 							}
 							this.AsignaStatus(UpdateType.Update);
 							if (this.model.REQUIERE_SUSTITUCION && this.model.CORR_UNIDAD && this.model.CORR_PUESTO && !this.mCORR_EMPLEADO_SUSTITUTO?.length) {
@@ -1998,11 +2007,19 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 						if (row) {
 							this.model = this.fillData(row);
 							this.modelUpdate = this.fillData(row);
+							// Qué hace: actualiza el estado de la requisición enviada en ambas listas en memoria.
+							// Cómo lo hace: actualiza el registro por CORR_REQUISICION_PERSONAL en models y modelsListadoCompleto antes de cambiar a Browse.
 							const idx = this.models?.findIndex(
 								(m: any) => m.CORR_REQUISICION_PERSONAL === corr
 							);
 							if (idx >= 0) {
 								this.models[idx] = { ...this.models[idx], ...row };
+							}
+							const idxCompleto = this.modelsListadoCompleto?.findIndex(
+								(m: any) => m.CORR_REQUISICION_PERSONAL === corr
+							);
+							if (idxCompleto >= 0) {
+								this.modelsListadoCompleto[idxCompleto] = { ...this.modelsListadoCompleto[idxCompleto], ...row };
 							}
 						}
 						this.cargarBitacora();
