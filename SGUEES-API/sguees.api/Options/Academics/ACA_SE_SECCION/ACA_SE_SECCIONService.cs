@@ -55,5 +55,8 @@ namespace sguees.Services
 
 		public Task<CResult> GetSeccionesLookUpAsync()
 			=> _repo.GetSeccionesLookUpAsync();
+
+		public Task<CResult> GetSeccionesRangoMontoLookUpAsync()
+			=> _repo.GetSeccionesRangoMontoLookUpAsync();
 	}
 }

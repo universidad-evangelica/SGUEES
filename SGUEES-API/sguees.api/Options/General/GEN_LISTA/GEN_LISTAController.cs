@@ -293,5 +293,14 @@ namespace sguees.Controllers
 		{
 			return _service.GetESTADO_NIP();
 		}
+
+		// Qué hace: lookup TIPO_EVALUACION de secciones SE (CHECK PREGUNTA/RANGO_MONTO).
+		// Cómo lo hace: GetLookUp arma GetTIPO_EVALUACION_ACA_SE_VERSION; policy de esa pantalla.
+		[HttpGet("GetTIPO_EVALUACION_ACA_SE_VERSION")]
+		[Authorize(Policy = "/aca-se-version|R")]
+		public CResult GetTIPO_EVALUACION_ACA_SE_VERSION()
+		{
+			return _service.GetTIPO_EVALUACION();
+		}
 	}
 }

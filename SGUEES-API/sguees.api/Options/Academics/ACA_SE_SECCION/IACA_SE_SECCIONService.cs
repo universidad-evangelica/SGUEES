@@ -13,5 +13,7 @@ namespace sguees.Services
 		Task<CResult> DeleteAsync(ACA_SE_SECCIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> ActivarInactivarAsync(ACA_SE_SECCIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> GetSeccionesLookUpAsync();
+		// Qué hace: secciones solo RANGO_MONTO para el catálogo de rangos.
+		Task<CResult> GetSeccionesRangoMontoLookUpAsync();
 	}
 }

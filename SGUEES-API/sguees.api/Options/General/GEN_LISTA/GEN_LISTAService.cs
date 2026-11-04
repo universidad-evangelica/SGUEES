@@ -104,5 +104,6 @@ namespace sguees.Services
 		public CResult GetSI_NO() => _repo.GetSI_NO();
 		public CResult GetNIVEL_ACADEMICO() => _repo.GetNIVEL_ACADEMICO();
 		public CResult GetESTADO_NIP() => _repo.GetESTADO_NIP();
+		public CResult GetTIPO_EVALUACION() => _repo.GetTIPO_EVALUACION();
 	}
 }

@@ -30,5 +30,6 @@ namespace sguees.Services
 		CResult GetSI_NO();
 		CResult GetNIVEL_ACADEMICO();
 		CResult GetESTADO_NIP();
+		CResult GetTIPO_EVALUACION();
 	}
 }

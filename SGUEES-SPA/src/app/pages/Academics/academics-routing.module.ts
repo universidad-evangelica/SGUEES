@@ -19,6 +19,7 @@ import { AcaSeVersionComponent } from './aca-se-version/aca-se-version.component
 import { AcaSePreguntaComponent } from './aca-se-pregunta/aca-se-pregunta.component';
 import { AcaSeVersionPreguntaComponent } from './aca-se-version-pregunta/aca-se-version-pregunta.component';
 import { AcaSeOpcionComponent } from './aca-se-opcion/aca-se-opcion.component';
+import { AcaSeRangoMontoComponent } from './aca-se-rango-monto/aca-se-rango-monto.component';
 
 
 
@@ -121,6 +122,16 @@ const routes: Routes = [
     canDeactivate: [AppCanDeactivateGuard],
     data: { titulo: 'Opciones socioeconómico' },
     loadChildren: () => import('./aca-se-opcion/aca-se-opcion.module').then((m) => m.AcaSeOpcionModule),
+  },
+  // Qué hace: abre Rangos de monto SE (ingresos/egresos por sección RANGO_MONTO).
+  // Cómo lo hace: la dirección del menú es /aca-se-rango-monto.
+  {
+    path: 'aca-se-rango-monto',
+    component: AcaSeRangoMontoComponent,
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    data: { titulo: 'Rangos de monto SE' },
+    loadChildren: () => import('./aca-se-rango-monto/aca-se-rango-monto.module').then((m) => m.AcaSeRangoMontoModule),
   },
   {
     path: 'aca-bec-origen-beca',

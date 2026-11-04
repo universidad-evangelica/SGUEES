@@ -93,6 +93,7 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				var tipoEval = NormalizarTipoEvaluacion(Data.TIPO_EVALUACION);
 				var validacion = await ValidarPorcentajeAsync(
 					Data.CORR_VERSION,
 					0,
@@ -100,6 +101,10 @@ namespace sguees.Repositories
 					Data.ACTIVO ?? true);
 				if (!validacion.Result)
 					return validacion;
+
+				var validTipo = ValidarTipoEvaluacionValor(tipoEval);
+				if (!validTipo.Result)
+					return validTipo;
 
 				// Qué hace: inserta sin CORR_SECCION_SE porque la PK es IDENTITY.
 				// Cómo lo hace: Insert sin CampoPk (evita MAX+1/valor explícito) y relee por versión+código (UQ).
@@ -111,6 +116,7 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "DESCRIPCION", Value = (object)Data.DESCRIPCION ?? DBNull.Value, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "PORCENTAJE_MAXIMO", Value = Data.PORCENTAJE_MAXIMO, DbType = System.Data.DbType.Decimal },
+					new CParameter() { ParameterName = "TIPO_EVALUACION", Value = tipoEval, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO ?? true, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA <= 0 ? 1 : Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
@@ -161,6 +167,7 @@ namespace sguees.Repositories
 			{
 				var actual = await LeerVistaPorPkAsync(Data.CORR_SECCION_SE);
 				var activo = Data.ACTIVO ?? actual?.ACTIVO ?? true;
+				var tipoEval = NormalizarTipoEvaluacion(Data.TIPO_EVALUACION ?? actual?.TIPO_EVALUACION);
 				var validacion = await ValidarPorcentajeAsync(
 					Data.CORR_VERSION,
 					Data.CORR_SECCION_SE,
@@ -168,6 +175,14 @@ namespace sguees.Repositories
 					activo == true);
 				if (!validacion.Result)
 					return validacion;
+
+				var validTipo = ValidarTipoEvaluacionValor(tipoEval);
+				if (!validTipo.Result)
+					return validTipo;
+
+				var validMontos = await ValidarRangoMontoTienePreguntasMontoAsync(Data.CORR_SECCION_SE, tipoEval);
+				if (!validMontos.Result)
+					return validMontos;
 
 				var p = new List<CParameter>
 				{
@@ -177,6 +192,7 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "DESCRIPCION", Value = (object)Data.DESCRIPCION ?? DBNull.Value, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "PORCENTAJE_MAXIMO", Value = Data.PORCENTAJE_MAXIMO, DbType = System.Data.DbType.Decimal },
+					new CParameter() { ParameterName = "TIPO_EVALUACION", Value = tipoEval, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -256,7 +272,7 @@ namespace sguees.Repositories
 					return objResultado;
 				}
 
-				// Qué hace: si va a activar, valida que no se pase del 100% con las demás activas.
+				// Qué hace: si va a activar, valida tope 100% y, si es RANGO_MONTO, que tenga preguntas MONTO.
 				var quedaraActiva = !(actual.ACTIVO == true);
 				if (quedaraActiva)
 				{
@@ -268,6 +284,13 @@ namespace sguees.Repositories
 						"activar");
 					if (!validacion.Result)
 						return validacion;
+
+					var validMontos = await ValidarRangoMontoTienePreguntasMontoAsync(
+						actual.CORR_SECCION_SE,
+						actual.TIPO_EVALUACION,
+						exigirAlMenosUnaPregunta: true);
+					if (!validMontos.Result)
+						return validMontos;
 				}
 
 				var p = new List<CParameter>
@@ -329,6 +352,42 @@ namespace sguees.Repositories
 			{
 				var reader = await objData.GetDataReader(_ViewName, new List<CParameter>());
 				var response = new List<ACA_SE_SECCIONView>().FromDataReader(reader)
+					.OrderBy(x => x.CORR_VERSION)
+					.ThenBy(x => x.ORDEN)
+					.ThenBy(x => x.CORR_SECCION_SE)
+					.ToList();
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
+
+		// Qué hace: lista solo secciones RANGO_MONTO para el catálogo de rangos $.
+		// Cómo lo hace: lee V_ACA_SE_SECCION y filtra TIPO_EVALUACION = RANGO_MONTO.
+		public async Task<CResult> GetSeccionesRangoMontoLookUpAsync()
+		{
+			CResult objResultado = new();
+			try
+			{
+				var reader = await objData.GetDataReader(_ViewName, new List<CParameter>());
+				var response = new List<ACA_SE_SECCIONView>().FromDataReader(reader)
+					.Where(x => string.Equals(x.TIPO_EVALUACION, "RANGO_MONTO", StringComparison.OrdinalIgnoreCase))
 					.OrderBy(x => x.CORR_VERSION)
 					.ThenBy(x => x.ORDEN)
 					.ThenBy(x => x.CORR_SECCION_SE)
@@ -422,6 +481,75 @@ namespace sguees.Repositories
 			var response = new List<ACA_SE_SECCIONView>().FromDataReader(readerGet).FirstOrDefault();
 			readerGet.Close();
 			return response;
+		}
+
+		private static string NormalizarTipoEvaluacion(string valor)
+		{
+			var v = (valor ?? string.Empty).Trim().ToUpperInvariant();
+			return string.IsNullOrWhiteSpace(v) ? "PREGUNTA" : v;
+		}
+
+		private static CResult ValidarTipoEvaluacionValor(string tipoEval)
+		{
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			if (tipoEval != "PREGUNTA" && tipoEval != "RANGO_MONTO")
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4007;
+				ok.ErrorMessage = "Tipo de evaluación inválido. Use PREGUNTA o RANGO_MONTO.";
+			}
+			return ok;
+		}
+
+		// Qué hace: si la sección es RANGO_MONTO y ya tiene preguntas, exige al menos una MONTO.
+		// Cómo lo hace: cuenta preguntas asociadas a la sección cuyo tipo GEN_SE_TIPO_PREGUNTA.CODIGO = MONTO.
+		private async Task<CResult> ValidarRangoMontoTienePreguntasMontoAsync(
+			int corrSeccion,
+			string tipoEval,
+			bool exigirAlMenosUnaPregunta = false)
+		{
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			if (!string.Equals(NormalizarTipoEvaluacion(tipoEval), "RANGO_MONTO", StringComparison.Ordinal))
+				return ok;
+
+			var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
+SELECT
+	COUNT(*) AS TOTAL,
+	SUM(CASE WHEN T.CODIGO = N'MONTO' THEN 1 ELSE 0 END) AS CANT_MONTO
+FROM dbo.ACA_SE_VERSION_PREGUNTA AS VP
+INNER JOIN dbo.ACA_SE_PREGUNTA AS P ON P.CORR_PREGUNTA = VP.CORR_PREGUNTA
+INNER JOIN dbo.GEN_SE_TIPO_PREGUNTA AS T ON T.CORR_TIPO_PREGUNTA = P.CORR_TIPO_PREGUNTA
+WHERE VP.CORR_SECCION_SE = @CORR_SECCION_SE;",
+				new List<CParameter>
+				{
+					new CParameter() { ParameterName = "@CORR_SECCION_SE", Value = corrSeccion, DbType = System.Data.DbType.Int32 },
+				});
+
+			int total = 0;
+			int cantMonto = 0;
+			if (reader != null && await reader.ReadAsync())
+			{
+				total = reader["TOTAL"] == DBNull.Value ? 0 : Convert.ToInt32(reader["TOTAL"]);
+				cantMonto = reader["CANT_MONTO"] == DBNull.Value ? 0 : Convert.ToInt32(reader["CANT_MONTO"]);
+			}
+			reader?.Close();
+
+			if (exigirAlMenosUnaPregunta && total == 0)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4008;
+				ok.ErrorMessage = "Una sección RANGO_MONTO debe tener al menos una pregunta de tipo MONTO asociada antes de activarla.";
+				return ok;
+			}
+
+			if (total > 0 && cantMonto == 0)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4009;
+				ok.ErrorMessage = "La sección es RANGO_MONTO y ya tiene preguntas, pero ninguna es tipo MONTO. Asocie al menos una pregunta de monto.";
+			}
+
+			return ok;
 		}
 
 		private static bool IsDuplicateKeyError(Exception e)

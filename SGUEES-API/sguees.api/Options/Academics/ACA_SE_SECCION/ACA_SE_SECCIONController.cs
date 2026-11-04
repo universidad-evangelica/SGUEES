@@ -42,6 +42,13 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_SECCION_SE_ACA_SE_VERSION_PREGUNTA()
 			=> await _service.GetSeccionesLookUpAsync();
 
+		// Qué hace: lookup de secciones RANGO_MONTO para el catálogo de rangos.
+		// Cómo lo hace: GetLookUp arma GetCORR_SECCION_SE_ACA_SE_RANGO_MONTO; filtra TIPO_EVALUACION.
+		[HttpGet("GetCORR_SECCION_SE_ACA_SE_RANGO_MONTO")]
+		[Authorize(Policy = "/aca-se-rango-monto|R")]
+		public async Task<CResult> GetCORR_SECCION_SE_ACA_SE_RANGO_MONTO()
+			=> await _service.GetSeccionesRangoMontoLookUpAsync();
+
 		[HttpPost]
 		[Authorize(Policy = "/aca-se-version|C")]
 		public async Task<IActionResult> Post(ACA_SE_SECCIONTable Data)
@@ -94,6 +101,9 @@ namespace sguees.Controllers
 			if (string.IsNullOrWhiteSpace(Data.DESCRIPCION)) Data.DESCRIPCION = null;
 			if (!string.IsNullOrWhiteSpace(Data.CODIGO)) Data.CODIGO = Data.CODIGO.Trim();
 			if (!string.IsNullOrWhiteSpace(Data.NOMBRE_SECCION)) Data.NOMBRE_SECCION = Data.NOMBRE_SECCION.Trim();
+			Data.TIPO_EVALUACION = string.IsNullOrWhiteSpace(Data.TIPO_EVALUACION)
+				? "PREGUNTA"
+				: Data.TIPO_EVALUACION.Trim().ToUpperInvariant();
 		}
 
 		private void SetUpdateAudit(ACA_SE_SECCIONTable Data)
@@ -104,6 +114,8 @@ namespace sguees.Controllers
 			if (string.IsNullOrWhiteSpace(Data.DESCRIPCION)) Data.DESCRIPCION = null;
 			if (!string.IsNullOrWhiteSpace(Data.CODIGO)) Data.CODIGO = Data.CODIGO.Trim();
 			if (!string.IsNullOrWhiteSpace(Data.NOMBRE_SECCION)) Data.NOMBRE_SECCION = Data.NOMBRE_SECCION.Trim();
+			if (!string.IsNullOrWhiteSpace(Data.TIPO_EVALUACION))
+				Data.TIPO_EVALUACION = Data.TIPO_EVALUACION.Trim().ToUpperInvariant();
 		}
 	}
 }

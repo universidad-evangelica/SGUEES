@@ -49,6 +49,13 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_VERSION_ACA_SE_SECCION()
 			=> await _service.GetVersionesActivasAsync();
 
+		// Qué hace: lookup de versiones para el catálogo de rangos de monto.
+		// Cómo lo hace: GetLookUp arma GetCORR_VERSION_ACA_SE_RANGO_MONTO; policy de esa pantalla.
+		[HttpGet("GetCORR_VERSION_ACA_SE_RANGO_MONTO")]
+		[Authorize(Policy = "/aca-se-rango-monto|R")]
+		public async Task<CResult> GetCORR_VERSION_ACA_SE_RANGO_MONTO()
+			=> await _service.GetVersionesActivasAsync();
+
 		[HttpPost]
 		[Authorize(Policy = "/aca-se-version|C")]
 		public async Task<IActionResult> Post(ACA_SE_VERSIONTable Data)

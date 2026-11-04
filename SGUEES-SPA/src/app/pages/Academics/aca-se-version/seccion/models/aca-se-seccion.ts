@@ -1,5 +1,5 @@
 // Qué hace: modelo TypeScript de sección SE por versión.
-// Cómo lo hace: refleja V_ACA_SE_SECCION.
+// Cómo lo hace: refleja V_ACA_SE_SECCION (incluye TIPO_EVALUACION).
 export interface AcaSeSeccion {
 	CORR_SECCION_SE: number;
 	CORR_VERSION: number;
@@ -10,6 +10,7 @@ export interface AcaSeSeccion {
 	DESCRIPCION?: string | null;
 	ORDEN: number;
 	PORCENTAJE_MAXIMO: number;
+	TIPO_EVALUACION: string;
 	ACTIVO: boolean;
 	CORR_EMPRESA?: number;
 	USUARIO_CREA?: string;
@@ -18,4 +19,9 @@ export interface AcaSeSeccion {
 	USUARIO_ACTU?: string;
 	ESTACION_ACTU?: string;
 	FECHA_ACTU?: Date | string;
+}
+
+export interface AcaSeTipoEvaluacionLookup {
+	Key: string;
+	Value: string;
 }

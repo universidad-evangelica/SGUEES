@@ -12,7 +12,7 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AcaSeVersion } from './models/aca-se-version';
 import { AcaSeVersionService } from './aca-se-version.service';
-import { AcaSeSeccion } from './seccion/models/aca-se-seccion';
+import { AcaSeSeccion, AcaSeTipoEvaluacionLookup } from './seccion/models/aca-se-seccion';
 import { AcaSeSeccionService } from './seccion/aca-se-seccion.service';
 
 const ESTADO_FIELD = 'ACTIVO';
@@ -49,6 +49,7 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 	seccionSeleccionada: AcaSeSeccion | null = null;
 	columnsSeccion: any[] = [];
 	itemsSeccion: any[] = [];
+	mTIPO_EVALUACION: AcaSeTipoEvaluacionLookup[] = [];
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -82,7 +83,27 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.cargarLookUpTipoEvaluacion();
 		this.consultar();
+	}
+
+	// Qué hace: carga GEN_LISTA TIPO_EVALUACION para el form/grilla de secciones.
+	private cargarLookUpTipoEvaluacion(): void {
+		this.serviceSeccion
+			.getTIPO_EVALUACION()
+			.pipe(take(1), catchError(() => of({ Result: false, Data: [] } as any)))
+			.subscribe({
+				next: (response: any) => {
+					this.mTIPO_EVALUACION = Array.isArray(response?.Data)
+						? response.Data.map((x: any) => ({
+								Key: `${x.Key ?? x.key ?? ''}`.trim(),
+								Value: `${x.Value ?? x.value ?? ''}`.trim(),
+						  }))
+						: [];
+					this.columnsSeccion = this.serviceSeccion.getColumns(this.mTIPO_EVALUACION);
+					this.itemsSeccion = this.buildItemsSeccion();
+				},
+			});
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -630,6 +651,21 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 				dataField: 'NOMBRE_SECCION',
 				label: { text: 'Nombre' },
 				colSpan: 2,
+				validationRules: [{ type: 'required', message: 'Obligatorio' }],
+			},
+			{
+				dataField: 'TIPO_EVALUACION',
+				label: { text: 'Tipo evaluación' },
+				editorType: 'dxSelectBox',
+				colSpan: 2,
+				editorOptions: {
+					dataSource: this.mTIPO_EVALUACION,
+					valueExpr: 'Key',
+					displayExpr: 'Value',
+					searchEnabled: false,
+					showClearButton: false,
+					placeholder: 'Tipo...',
+				},
 				validationRules: [{ type: 'required', message: 'Obligatorio' }],
 			},
 			{

@@ -14,6 +14,7 @@ namespace sguees.Models
 		public string DESCRIPCION { get; set; }
 		public int ORDEN { get; set; }
 		public decimal PORCENTAJE_MAXIMO { get; set; }
+		public string TIPO_EVALUACION { get; set; }
 		public bool? ACTIVO { get; set; }
 		public int CORR_EMPRESA { get; set; }
 		public string USUARIO_CREA { get; set; }

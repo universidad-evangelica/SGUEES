@@ -667,6 +667,24 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Qué hace: tipos de evaluación de sección SE (CHECK ACA_SE_SECCION.TIPO_EVALUACION).
+		public CResult GetTIPO_EVALUACION()
+		{
+			CResult objResultado = new();
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "PREGUNTA", Value = "Por pregunta" },
+				new() { Key = "RANGO_MONTO", Value = "Por rango de monto (suma)" },
+			};
+			objResultado.Result = true;
+			objResultado.RowsAffected = 2;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+			return objResultado;
+		}
+
 		// Qué hace: niveles académicos para formación (campo NIVEL, sin CHECK en BD).
 		public CResult GetNIVEL_ACADEMICO()
 		{
