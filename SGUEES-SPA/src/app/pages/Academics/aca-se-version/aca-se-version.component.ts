@@ -639,25 +639,29 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 		return String(msg || fallback);
 	}
 
+	// Qué hace: formulario de la modal de sección (filas que suman colCount 8).
+	// Cómo lo hace: fila1 código/nombre/tipo; fila2 orden/%/activo; fila3 descripción a lo ancho.
 	private buildItemsSeccion(): any[] {
 		return [
 			{
 				dataField: 'CODIGO',
 				label: { text: 'Código' },
 				colSpan: 2,
+				editorOptions: { maxLength: 50, showClearButton: true },
 				validationRules: [{ type: 'required', message: 'Obligatorio' }],
 			},
 			{
 				dataField: 'NOMBRE_SECCION',
 				label: { text: 'Nombre' },
-				colSpan: 2,
+				colSpan: 3,
+				editorOptions: { maxLength: 200, showClearButton: true },
 				validationRules: [{ type: 'required', message: 'Obligatorio' }],
 			},
 			{
 				dataField: 'TIPO_EVALUACION',
 				label: { text: 'Tipo evaluación' },
 				editorType: 'dxSelectBox',
-				colSpan: 2,
+				colSpan: 3,
 				editorOptions: {
 					dataSource: this.mTIPO_EVALUACION,
 					valueExpr: 'Key',
@@ -672,24 +676,29 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 				dataField: 'ORDEN',
 				label: { text: 'Orden' },
 				editorType: 'dxNumberBox',
-				colSpan: 1,
-				editorOptions: { min: 0, showSpinButtons: true, width: '100%' },
+				colSpan: 2,
+				editorOptions: { min: 0, showSpinButtons: true },
 			},
 			{
 				dataField: 'PORCENTAJE_MAXIMO',
 				label: { text: '% máximo' },
 				editorType: 'dxNumberBox',
-				colSpan: 2,
-				editorOptions: { min: 0, max: 100, showSpinButtons: true, format: '#0.##', width: '100%' },
+				colSpan: 3,
+				editorOptions: { min: 0, max: 100, showSpinButtons: true, format: '#0.##' },
 				validationRules: [{ type: 'required', message: 'Obligatorio' }],
 			},
-			{ dataField: 'ACTIVO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 1 },
+			{ dataField: 'ACTIVO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 3 },
 			{
 				dataField: 'DESCRIPCION',
 				label: { text: 'Descripción' },
 				editorType: 'dxTextArea',
 				colSpan: 8,
-				editorOptions: { height: 70 },
+				editorOptions: {
+					height: 90,
+					maxLength: 1000,
+					autoResizeEnabled: false,
+					width: '100%',
+				},
 			},
 		];
 	}

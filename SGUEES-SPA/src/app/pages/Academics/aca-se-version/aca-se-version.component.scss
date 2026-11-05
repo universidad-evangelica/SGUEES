@@ -43,8 +43,28 @@
 }
 
 .aca-se-version-sec-popup-body {
-	padding: 4px 2px 8px;
+	padding: 8px 4px 12px;
 	color: var(--base-text-color, inherit);
+	min-width: 0;
+}
+
+/* Popup se renderiza fuera del host: estilos vía wrapperAttr.aca-se-version-sec-popup. */
+::ng-deep .aca-se-version-sec-popup .dx-popup-content {
+	overflow-x: hidden;
+}
+
+::ng-deep .aca-se-version-sec-popup .aca-se-version-sec-popup-body .dx-form {
+	width: 100%;
+}
+
+::ng-deep .aca-se-version-sec-popup .aca-se-version-sec-popup-body .dx-textarea,
+::ng-deep .aca-se-version-sec-popup .aca-se-version-sec-popup-body .dx-texteditor {
+	width: 100%;
+	max-width: 100%;
+}
+
+::ng-deep .aca-se-version-sec-popup .aca-se-version-sec-popup-body .dx-field-item-content {
+	min-width: 0;
 }
 
 :host-context(.sguees-theme-light) {

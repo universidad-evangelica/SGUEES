@@ -165,12 +165,12 @@
 
 </div>
 
-<!-- motivo: alta/edición de sección en modal (no formulario inline). -->
+<!-- motivo: alta/edición de sección en modal (layout estable: 3 filas / colCount 8). -->
 <dx-popup
 	[(visible)]="popupSeccionVisible"
 	[showTitle]="true"
 	[title]="seccionEsNueva ? 'Nueva sección' : 'Editar sección'"
-	[width]="720"
+	[width]="780"
 	[maxWidth]="'calc(100vw - 24px)'"
 	[height]="'auto'"
 	[maxHeight]="'calc(100vh - 48px)'"
@@ -185,6 +185,7 @@
 			[formData]="seccionModel"
 			[labelLocation]="'top'"
 			[colCount]="8"
+			[colCountByScreen]="{ xs: 1, sm: 2, md: 8, lg: 8 }"
 			[items]="itemsSeccion"
 		></dx-form>
 		<div class="aca-se-version-sec-actions">
