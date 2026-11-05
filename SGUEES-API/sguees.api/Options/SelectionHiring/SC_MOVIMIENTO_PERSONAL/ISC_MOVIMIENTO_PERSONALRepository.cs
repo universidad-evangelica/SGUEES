@@ -8,6 +8,9 @@ namespace SGUEES.Repositories
 {
 	public interface ISC_MOVIMIENTO_PERSONALRepository : IRepository<SC_MOVIMIENTO_PERSONALTable>
 	{
+		/// <summary>Listado filtrado por organigrama del login (PRAL_DATA_SC_MOVIMIENTO_PERSONAL).</summary>
+		Task<CResult> GetAllVisibleAsync(List<CParameter> xWhere);
+
 		Task<CResult> AutorizaAsync(SC_MOVIMIENTO_PERSONAL_AUTORIZAParam Data, string vLOGIN_SISTEMA);
 		Task<CResult> ConfirmarAsync(SC_MOVIMIENTO_PERSONALTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> GetAllAsyncBitacora(List<CParameter> xWhere);

@@ -1,0 +1,197 @@
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
+/*
+  Listado visible de movimientos de personal (sc-movimiento-personal).
+
+  Reglas:
+    1) Quien creó el movimiento (USUARIO_CREA = login) → siempre lo ve.
+    2) Jefe activo de la unidad TH PADRE (CODIGO 1010101 / Depto. Talento Humano)
+       → ve TODOS los de la empresa.
+    3) Jefe activo de otra unidad (no el padre TH) → ámbito unidad + padre + hijas:
+         - ORIGEN = REQUISICION → CORR_UNIDAD de la requisición ligada
+           (SC_MOVIMIENTO_REQUISICION → SC_REQUISICION_PERSONAL).
+         - ORIGEN = DIRECTO (desde cero) → CORR_UNIDAD_ACTUAL del movimiento
+           (NO la unidad propuesta).
+    4) Quien no creó, no es jefe TH ni jefe de unidad → vacío
+       (SEG define menú / CRUD).
+
+  Ejecutar:
+  sqlcmd -S <srv> -d SGUEES -U <user> -P <pwd> -f 65001 -i PRAL_DATA_SC_MOVIMIENTO_PERSONAL.sql
+*/
+
+CREATE OR ALTER PROCEDURE [dbo].[PRAL_DATA_SC_MOVIMIENTO_PERSONAL]
+(
+	@CORR_EMPRESA INT,
+	@LOGIN_SISTEMA VARCHAR(30)
+)
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	DECLARE @LOGIN VARCHAR(30) = UPPER(LTRIM(RTRIM(ISNULL(@LOGIN_SISTEMA, ''))));
+
+	IF @CORR_EMPRESA IS NULL OR @CORR_EMPRESA <= 0 OR @LOGIN = ''
+	BEGIN
+		SELECT TOP (0) *
+		FROM dbo.V_SC_MOVIMIENTO_PERSONAL;
+		RETURN;
+	END;
+
+	/* Empleado del login (para jefatura / TH). Si no hay, igual puede ver lo que creó. */
+	IF OBJECT_ID('tempdb..#EmpleadoLogin') IS NOT NULL DROP TABLE #EmpleadoLogin;
+	SELECT
+		E.CORR_EMPRESA,
+		E.CORR_EMPLEADO
+	INTO #EmpleadoLogin
+	FROM dbo.GEN_EMPLEADO AS E
+	INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+		ON PU.CORR_PERSONA = E.CORR_PERSONA
+	WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+	  AND UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) = @LOGIN;
+
+	/* TH padre. */
+	IF OBJECT_ID('tempdb..#UnidadThPadre') IS NOT NULL DROP TABLE #UnidadThPadre;
+	SELECT
+		U.CORR_EMPRESA,
+		U.CORR_UNIDAD
+	INTO #UnidadThPadre
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+	WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+	  AND U.ACTIVO = CONVERT(BIT, 1)
+	  AND (
+			LTRIM(RTRIM(ISNULL(U.CODIGO_UNIDAD, N''))) = N'1010101'
+			OR U.NOMBRE_UNIDAD LIKE N'%Departamento de Talento Humano%'
+		  );
+
+	/* Jefaturas activas del login. */
+	IF OBJECT_ID('tempdb..#UnidadesComoJefe') IS NOT NULL DROP TABLE #UnidadesComoJefe;
+	SELECT DISTINCT
+		JU.CORR_EMPRESA,
+		JU.CORR_UNIDAD
+	INTO #UnidadesComoJefe
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS JU
+	INNER JOIN #EmpleadoLogin AS EL
+		ON EL.CORR_EMPRESA = JU.CORR_EMPRESA
+	   AND EL.CORR_EMPLEADO = JU.CORR_EMPLEADO
+	WHERE JU.CORR_EMPRESA = @CORR_EMPRESA
+	  AND JU.ACTIVO = CONVERT(BIT, 1);
+
+	DECLARE @EsJefeThPadre BIT = CASE WHEN EXISTS (
+		SELECT 1
+		FROM #UnidadesComoJefe AS J
+		INNER JOIN #UnidadThPadre AS T
+			ON T.CORR_EMPRESA = J.CORR_EMPRESA
+		   AND T.CORR_UNIDAD = J.CORR_UNIDAD
+	) THEN 1 ELSE 0 END;
+
+	/* Jefaturas no-TH (el jefe TH ya ve todo). */
+	IF OBJECT_ID('tempdb..#JefaturasAmbito') IS NOT NULL DROP TABLE #JefaturasAmbito;
+	SELECT J.CORR_EMPRESA, J.CORR_UNIDAD
+	INTO #JefaturasAmbito
+	FROM #UnidadesComoJefe AS J
+	WHERE NOT EXISTS (
+		SELECT 1
+		FROM #UnidadThPadre AS T
+		WHERE T.CORR_EMPRESA = J.CORR_EMPRESA
+		  AND T.CORR_UNIDAD = J.CORR_UNIDAD
+	);
+
+	/* Hijas de esas jefaturas. */
+	IF OBJECT_ID('tempdb..#HijasJefe') IS NOT NULL DROP TABLE #HijasJefe;
+	;WITH HijasJefe AS
+	(
+		SELECT
+			H.CORR_EMPRESA,
+			H.CORR_UNIDAD,
+			0 AS NIVEL
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS H
+		INNER JOIN #JefaturasAmbito AS J
+			ON J.CORR_EMPRESA = H.CORR_EMPRESA
+		   AND J.CORR_UNIDAD = H.CORR_UNIDAD_PADRE
+		WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+
+		UNION ALL
+
+		SELECT
+			H.CORR_EMPRESA,
+			H.CORR_UNIDAD,
+			P.NIVEL + 1
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS H
+		INNER JOIN HijasJefe AS P
+			ON P.CORR_EMPRESA = H.CORR_EMPRESA
+		   AND P.CORR_UNIDAD = H.CORR_UNIDAD_PADRE
+		WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+		  AND P.NIVEL < 20
+	)
+	SELECT DISTINCT CORR_EMPRESA, CORR_UNIDAD
+	INTO #HijasJefe
+	FROM HijasJefe
+	OPTION (MAXRECURSION 20);
+
+	/* Ámbito: unidad jefaturada + padre + hijas. */
+	IF OBJECT_ID('tempdb..#AmbitoJefe') IS NOT NULL DROP TABLE #AmbitoJefe;
+	SELECT CORR_EMPRESA, CORR_UNIDAD
+	INTO #AmbitoJefe
+	FROM #JefaturasAmbito
+
+	UNION
+
+	SELECT
+		U.CORR_EMPRESA,
+		U.CORR_UNIDAD_PADRE AS CORR_UNIDAD
+	FROM #JefaturasAmbito AS J
+	INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+		ON U.CORR_EMPRESA = J.CORR_EMPRESA
+	   AND U.CORR_UNIDAD = J.CORR_UNIDAD
+	WHERE U.CORR_UNIDAD_PADRE IS NOT NULL
+
+	UNION
+
+	SELECT CORR_EMPRESA, CORR_UNIDAD
+	FROM #HijasJefe;
+
+	SELECT V.*
+	FROM dbo.V_SC_MOVIMIENTO_PERSONAL AS V
+	WHERE V.CORR_EMPRESA = @CORR_EMPRESA
+	  AND (
+			/* 1) Creador del movimiento */
+			UPPER(LTRIM(RTRIM(ISNULL(V.USUARIO_CREA, '')))) = @LOGIN
+			/* 2) Jefe TH padre: todos */
+			OR @EsJefeThPadre = CONVERT(BIT, 1)
+			/* 3a) Jefe no-TH + origen REQUISICION → unidad de la requisición */
+			OR (
+				UPPER(LTRIM(RTRIM(ISNULL(V.ORIGEN_MOVIMIENTO, '')))) = N'REQUISICION'
+				AND EXISTS (
+					SELECT 1
+					FROM dbo.SC_MOVIMIENTO_REQUISICION AS MR
+					INNER JOIN dbo.SC_REQUISICION_PERSONAL AS R
+						ON R.CORR_EMPRESA = MR.CORR_EMPRESA
+					   AND R.CORR_REQUISICION_PERSONAL = MR.CORR_REQUISICION_PERSONAL
+					INNER JOIN #AmbitoJefe AS A
+						ON A.CORR_EMPRESA = R.CORR_EMPRESA
+					   AND A.CORR_UNIDAD = R.CORR_UNIDAD
+					WHERE MR.CORR_EMPRESA = V.CORR_EMPRESA
+					  AND MR.CORR_MOVIMIENTO_PERSONAL = V.CORR_MOVIMIENTO_PERSONAL
+				)
+			)
+			/* 3b) Jefe no-TH + origen DIRECTO → unidad ACTUAL (no propuesta) */
+			OR (
+				UPPER(LTRIM(RTRIM(ISNULL(V.ORIGEN_MOVIMIENTO, '')))) = N'DIRECTO'
+				AND EXISTS (
+					SELECT 1
+					FROM #AmbitoJefe AS A
+					WHERE A.CORR_EMPRESA = V.CORR_EMPRESA
+					  AND A.CORR_UNIDAD = V.CORR_UNIDAD_ACTUAL
+				)
+			)
+		  )
+	ORDER BY V.CORR_MOVIMIENTO_PERSONAL DESC;
+END;
+GO
+
+PRINT N'OK: PRAL_DATA_SC_MOVIMIENTO_PERSONAL (creador + jefe TH + jefe unidad por origen).';
+GO
