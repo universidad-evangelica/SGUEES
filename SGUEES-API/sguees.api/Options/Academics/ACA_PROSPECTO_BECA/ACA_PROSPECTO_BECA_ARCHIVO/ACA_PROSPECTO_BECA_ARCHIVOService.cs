@@ -5,7 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using sguees.Models;
 using sguees.Repositories;
@@ -20,12 +21,10 @@ namespace sguees.Services
         private readonly string RaizDocumentos = @"\\192.168.1.8\admision\Documentacion Becas";
 
         private readonly IACA_PROSPECTO_BECA_ARCHIVORepository _repo;
-        private readonly string _connectionString;
 
         public ACA_PROSPECTO_BECA_ARCHIVOService(IACA_PROSPECTO_BECA_ARCHIVORepository repo, IConfiguration config)
         {
             _repo = repo;
-            _connectionString = config.GetConnectionString("defaultConnection");
             RaizDocumentos = config["Becas:RaizDocumentos"] ?? RaizDocumentos;
         }
 
@@ -33,7 +32,7 @@ namespace sguees.Services
         // Cómo lo hace: filtra la vista por empresa y solicitud.
         public async Task<CResult> GetArchivosAsync(ACA_PROSPECTO_BECAParam xWhere)
         {
-            if (xWhere.CORR_PROSPECTO_BECA <= 0)
+            if (xWhere.CORR_EMPRESA <= 0 || xWhere.CORR_PROSPECTO_BECA <= 0)
                 return Error("Debe indicar la solicitud de beca");
 
             var p = new List<CParameter>
@@ -50,7 +49,7 @@ namespace sguees.Services
         //               autorizada y solo acepta archivos dentro de Documentacion Becas.
         public async Task<AcaProspectoBecaArchivoAbierto> AbrirArchivoAsync(ACA_PROSPECTO_BECAParam xWhere)
         {
-            if (xWhere.CORR_PROSPECTO_BECA <= 0 || xWhere.CORR_RESPUESTA_BECA <= 0)
+            if (xWhere.CORR_EMPRESA <= 0 || xWhere.CORR_PROSPECTO_BECA <= 0 || xWhere.CORR_RESPUESTA_BECA <= 0)
                 return new AcaProspectoBecaArchivoAbierto();
 
             var p = new List<CParameter>
@@ -61,6 +60,7 @@ namespace sguees.Services
             };
 
             var resultado = await _repo.GetArchivoAsync(p);
+            if (!resultado.Result) throw new InvalidOperationException(resultado.ErrorMessage);
             var row = (resultado.Data as List<ACA_PROSPECTO_BECA_ARCHIVOView>)?.FirstOrDefault();
             var ruta = ResolverRuta(row);
             if (ruta == null)
@@ -73,140 +73,116 @@ namespace sguees.Services
             };
         }
 
-        // Qué hace: reemplaza el archivo de una respuesta de tipo documento.
-        // Cómo lo hace: lo guarda en la carpeta del ciclo y la solicitud, con el mismo
-        //               nombre {pregunta}_{archivo} que usa el formulario de admisión.
+
+        // Sustituye el documento dentro de la carpeta ciclo_CIF que ya creo admision.
         public async Task<CResult> ReemplazarArchivoAsync(int corrEmpresa, string usuario, int corrProspectoBeca, int corrRespuestaBeca, IFormFile archivo)
         {
+            if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(usuario)) return Error("Sesion invalida");
             if (corrProspectoBeca <= 0 || corrRespuestaBeca <= 0 || archivo == null || archivo.Length == 0)
                 return Error("Seleccione un archivo");
-            if (archivo.Length > 5 * 1024 * 1024)
-                return Error("El archivo no puede superar 5 MB");
-
+            if (archivo.Length > 5 * 1024 * 1024) return Error("El archivo no puede superar 5 MB");
             var extension = Path.GetExtension(archivo.FileName ?? "").ToLowerInvariant();
             if (extension != ".pdf" && extension != ".jpg" && extension != ".jpeg" && extension != ".png" && extension != ".webp")
                 return Error("Solo se permiten archivos PDF, JPG, PNG o WEBP");
 
-            await using var cn = new SqlConnection(_connectionString);
-            await cn.OpenAsync();
+            var filtros = ParametrosArchivo(corrEmpresa, corrProspectoBeca, corrRespuestaBeca);
+            var contexto = await _repo.GetContextoArchivoAsync(filtros);
+            if (!contexto.Result) return contexto;
+            var row = (contexto.Data as List<ACA_PROSPECTO_BECA_ARCHIVO_EDICIONView>)?.SingleOrDefault();
+            if (row == null) return Error("El documento no pertenece a esta solicitud o no permite modificaciones");
+            var directorio = ResolverDirectorio(row.CARPETA);
+            if (directorio == null) return Error("No existe la carpeta de ciclo y CIF creada por SIS_ADMISION. No se creo otra carpeta");
 
-            int corrPregunta;
-            string carpeta;
-            await using (var cmd = cn.CreateCommand())
-            {
-                cmd.CommandText = @"
-                    SELECT P.CORR_PREGUNTA_BECA, P.TIPO_RESPUESTA,
-                           CAST(PA.ANIO AS varchar(4)) + '-' + CAST(PA.NUMERO_PERIODO AS varchar(2)) + '_' + CAST(PB.CORR_PROSPECTO_BECA AS varchar(12))
-                    FROM dbo.ACA_PROSPECTO_BECA_RESPUESTA R
-                    INNER JOIN dbo.ACA_PROSPECTO_BECA_PREGUNTA P ON P.CORR_PREGUNTA_BECA = R.CORR_PREGUNTA_BECA
-                    INNER JOIN dbo.ACA_PROSPECTO_BECA PB ON PB.CORR_PROSPECTO_BECA = R.CORR_PROSPECTO_BECA
-                    INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS PA ON PA.CORR_PERIODO_ACADEMICO = PB.CORR_PERIODO_ACADEMICO
-                    WHERE R.CORR_RESPUESTA_BECA = @Respuesta
-                      AND R.CORR_PROSPECTO_BECA = @Solicitud
-                      AND PB.CORR_EMPRESA = @Empresa
-                      AND PB.ESTADO_BECA IN ('BORRADOR', 'ENVIADA');";
-                cmd.Parameters.Add(new SqlParameter("@Respuesta", corrRespuestaBeca));
-                cmd.Parameters.Add(new SqlParameter("@Solicitud", corrProspectoBeca));
-                cmd.Parameters.Add(new SqlParameter("@Empresa", corrEmpresa));
-                await using var rd = await cmd.ExecuteReaderAsync();
-                if (!await rd.ReadAsync())
-                    return Error("No se encontró el archivo de esta solicitud");
-                if (!string.Equals(rd.GetString(1), "DOCUMENTO", StringComparison.OrdinalIgnoreCase))
-                    return Error("Esta respuesta no es un documento");
-                corrPregunta = rd.GetInt32(0);
-                carpeta = rd.GetString(2);
-            }
-
-            var raiz = Path.GetFullPath(RaizDocumentos);
-            var directorio = Path.GetFullPath(Path.Combine(raiz, carpeta));
-            if (!EstaDentro(directorio, raiz))
-                return Error("La carpeta del archivo no es válida");
-
-            var nombre = corrPregunta + "_" + LimpiarNombre(Path.GetFileNameWithoutExtension(archivo.FileName)) + extension;
-            if (nombre.Length > 255)
-                return Error("El nombre del archivo es demasiado largo");
-
-            Directory.CreateDirectory(directorio);
+            // Un nombre unico evita sobrescribir el original antes de confirmar la base.
+            var nombre = row.CORR_PREGUNTA_BECA + "_" + Guid.NewGuid().ToString("N") + "_" + LimpiarNombre(Path.GetFileNameWithoutExtension(archivo.FileName)) + extension;
             var destino = Path.GetFullPath(Path.Combine(directorio, nombre));
-            if (!EstaDentro(destino, directorio))
-                return Error("El nombre del archivo no es válido");
-
-            await using (var stream = new FileStream(destino, FileMode.Create, FileAccess.Write, FileShare.None))
-                await archivo.CopyToAsync(stream);
-
+            if (!EstaDentro(destino, directorio) || nombre.Length > 255 || destino.Length > 500)
+                return Error("El nombre o la ruta del archivo no son validos");
+            var creado = false;
+            var eliminarNuevo = true;
             try
             {
-                await using var tx = (SqlTransaction)await cn.BeginTransactionAsync();
-                await using var update = cn.CreateCommand();
-                update.Transaction = tx;
-                update.CommandText = @"
-                    UPDATE dbo.ACA_PROSPECTO_BECA_RESPUESTA
-                    SET ARCHIVO_NOMBRE = @Nombre,
-                        ARCHIVO_RUTA = @Ruta,
-                        RESPUESTA_TEXTO = @Nombre,
-                        USUARIO_ACTU = @Usuario,
-                        ESTACION_ACTU = @Estacion,
-                        FECHA_ACTU = GETDATE()
-                    WHERE CORR_RESPUESTA_BECA = @Respuesta
-                      AND CORR_PROSPECTO_BECA = @Solicitud;";
-                update.Parameters.Add(new SqlParameter("@Nombre", nombre));
-                update.Parameters.Add(new SqlParameter("@Ruta", destino));
-                update.Parameters.Add(new SqlParameter("@Usuario", usuario));
-                update.Parameters.Add(new SqlParameter("@Estacion", Environment.MachineName.Length > 30 ? Environment.MachineName.Substring(0, 30) : Environment.MachineName));
-                update.Parameters.Add(new SqlParameter("@Respuesta", corrRespuestaBeca));
-                update.Parameters.Add(new SqlParameter("@Solicitud", corrProspectoBeca));
-                await update.ExecuteNonQueryAsync();
-                await tx.CommitAsync();
+                await using (var stream = new FileStream(destino, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous))
+                {
+                    creado = true;
+                    await archivo.CopyToAsync(stream);
+                }
+                var parametros = new List<CParameter>
+                {
+                    new() { ParameterName="@CORR_EMPRESA", Value=corrEmpresa, DbType=DbType.Int32 },
+                    new() { ParameterName="@SOLICITUD", Value=corrProspectoBeca, DbType=DbType.Int32 },
+                    new() { ParameterName="@RESPUESTA", Value=corrRespuestaBeca, DbType=DbType.Int32 },
+                    new() { ParameterName="@NOMBRE", Value=nombre, DbType=DbType.AnsiString, Size=255 },
+                    new() { ParameterName="@RUTA", Value=destino, DbType=DbType.AnsiString, Size=500 },
+                    new() { ParameterName="@RUTA_ANTERIOR", Value=(object)row.ARCHIVO_RUTA ?? DBNull.Value, DbType=DbType.AnsiString, Size=500 },
+                    new() { ParameterName="@NOMBRE_ANTERIOR", Value=(object)row.ARCHIVO_NOMBRE ?? DBNull.Value, DbType=DbType.AnsiString, Size=255 },
+                    new() { ParameterName="@USUARIO", Value=usuario.Trim().Substring(0, Math.Min(usuario.Trim().Length,30)), DbType=DbType.AnsiString, Size=30 },
+                    new() { ParameterName="@ESTACION", Value=Environment.MachineName.Substring(0,Math.Min(Environment.MachineName.Length,30)), DbType=DbType.AnsiString, Size=30 },
+                };
+                // Si se pierde la confirmacion, no borrar un archivo que pudiera haberse guardado.
+                eliminarNuevo = false;
+                var guardado = await _repo.GuardarArchivoAsync(parametros);
+                if (!guardado.Result)
+                {
+                    var verificacion = await _repo.GetContextoArchivoAsync(filtros);
+                    if (!verificacion.Result) return guardado;
+                    var actual = (verificacion.Data as List<ACA_PROSPECTO_BECA_ARCHIVO_EDICIONView>)?.SingleOrDefault();
+                    if (actual == null || !string.Equals(actual.ARCHIVO_RUTA, destino, StringComparison.OrdinalIgnoreCase)
+                        || !string.Equals(actual.ARCHIVO_NOMBRE, nombre, StringComparison.OrdinalIgnoreCase))
+                    {
+                        eliminarNuevo = true;
+                        return guardado;
+                    }
+                }
+                // El original se conserva para recuperacion; no se borran archivos por patron.
+                return new CResult { Result=true, Data=nombre, RowsAffected=1, ErrorMessage="Archivo actualizado" };
             }
-            catch
+            catch (UnauthorizedAccessException) { return Error("No se tiene permiso para escribir en la carpeta del documento"); }
+            catch (IOException) { return Error("No se pudo escribir el documento. Verifique la disponibilidad de la carpeta compartida"); }
+            finally
             {
-                if (File.Exists(destino))
-                    File.Delete(destino);
-                throw;
+                if (creado && eliminarNuevo)
+                {
+                    try { File.Delete(destino); }
+                    catch (IOException) { }
+                    catch (UnauthorizedAccessException) { }
+                }
             }
+        }
 
-            foreach (var anterior in Directory.GetFiles(directorio, corrPregunta + "_*"))
+        private static List<CParameter> ParametrosArchivo(int empresa, int solicitud, int respuesta)
+            => new()
             {
-                if (!string.Equals(Path.GetFullPath(anterior), destino, StringComparison.OrdinalIgnoreCase))
-                    File.Delete(anterior);
-            }
+                new() { ParameterName="CORR_EMPRESA", Value=empresa, DbType=DbType.Int32 },
+                new() { ParameterName="CORR_PROSPECTO_BECA", Value=solicitud, DbType=DbType.Int32 },
+                new() { ParameterName="CORR_RESPUESTA_BECA", Value=respuesta, DbType=DbType.Int32 },
+            };
 
-            return new CResult { Result = true, Data = nombre, ErrorMessage = "Archivo actualizado" };
+        private string ResolverDirectorio(string carpeta)
+        {
+            if (string.IsNullOrWhiteSpace(carpeta) || !Regex.IsMatch(carpeta, @"^\d{4}-\d{1,2}_\d+$")) return null;
+            var raiz = Path.GetFullPath(RaizDocumentos);
+            var directorio = Path.GetFullPath(Path.Combine(raiz, carpeta));
+            return EstaDentro(directorio, raiz) && Directory.Exists(directorio) ? directorio : null;
         }
 
         private string ResolverRuta(ACA_PROSPECTO_BECA_ARCHIVOView row)
         {
-            if (row == null)
-                return null;
-
-            var raiz = Path.GetFullPath(RaizDocumentos);
+            if (row == null) return null;
+            var directorio = ResolverDirectorio(row.CARPETA);
             var nombre = Path.GetFileName(row.ARCHIVO_NOMBRE ?? "");
-            if (string.IsNullOrWhiteSpace(nombre))
-                return null;
-
-            // La vista ya filtra por empresa, solicitud y respuesta. Admision guarda
-            // por ciclo y CIF; la ruta persistida conserva esa ubicacion autorizada.
+            if (directorio == null || string.IsNullOrWhiteSpace(nombre)) return null;
+            // Se conserva la ruta registrada si apunta a la misma carpeta ciclo_CIF.
             if (!string.IsNullOrWhiteSpace(row.ARCHIVO_RUTA))
             {
-                var porRuta = Path.GetFullPath(row.ARCHIVO_RUTA);
-                if (string.Equals(Path.GetFileName(porRuta), nombre, StringComparison.OrdinalIgnoreCase)
-                    && EstaDentro(porRuta, raiz)
-                    && File.Exists(porRuta))
-                    return porRuta;
+                var registrada = Path.GetFullPath(row.ARCHIVO_RUTA);
+                if (string.Equals(Path.GetDirectoryName(registrada), directorio, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(Path.GetFileName(registrada), nombre, StringComparison.OrdinalIgnoreCase) && File.Exists(registrada))
+                    return registrada;
             }
-
-            // Compatibilidad con documentos anteriores guardados por solicitud.
-            if (row.NUMERO_PERIODO == null)
-                return null;
-            var carpeta = row.ANIO + "-" + row.NUMERO_PERIODO + "_" + row.CORR_PROSPECTO_BECA;
-            var directorio = Path.GetFullPath(Path.Combine(raiz, carpeta));
-            if (!EstaDentro(directorio, raiz))
-                return null;
-            var porNombre = Path.GetFullPath(Path.Combine(directorio, nombre));
-            if (EstaDentro(porNombre, directorio) && File.Exists(porNombre))
-                return porNombre;
-
-            return null;
+            // Recupera rutas con letra local del servidor usando el mismo ciclo_CIF y nombre.
+            var ruta = Path.GetFullPath(Path.Combine(directorio, nombre));
+            return EstaDentro(ruta, directorio) && File.Exists(ruta) ? ruta : null;
         }
 
         private static bool EstaDentro(string ruta, string carpeta)

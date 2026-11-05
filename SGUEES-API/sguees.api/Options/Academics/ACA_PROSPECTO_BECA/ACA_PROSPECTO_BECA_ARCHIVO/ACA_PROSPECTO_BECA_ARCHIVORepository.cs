@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -39,6 +40,29 @@ namespace sguees.Repositories
         public Task<CResult> GetArchivoAsync(List<CParameter> xWhere)
         {
             return LeerAsync(xWhere, "CORR_RESPUESTA_BECA");
+        }
+
+        public async Task<CResult> GetContextoArchivoAsync(List<CParameter> parameters)
+        {
+            try
+            {
+                using var reader = await objData.GetDataReader("V_ACA_PROSPECTO_BECA_ARCHIVO_EDICION", parameters);
+                var rows = new List<ACA_PROSPECTO_BECA_ARCHIVO_EDICIONView>().FromDataReader(reader).ToList();
+                return new CResult { Result=true, Data=rows, RowsAffected=rows.Count };
+            }
+            catch (Exception ex) { return new CResult { ErrorCode=-1, ErrorMessage=ex.Message }; }
+            finally { objData.objConnection.Close(); }
+        }
+
+        public async Task<CResult> GuardarArchivoAsync(List<CParameter> parameters)
+        {
+            try
+            {
+                await objData.ExecCmd(CommandType.StoredProcedure, "PRAL_MTTO_ACA_PROSPECTO_BECA_ARCHIVO", true, parameters);
+                return new CResult { Result = true, RowsAffected = 1 };
+            }
+            catch (Exception ex) { return new CResult { ErrorCode = -1, ErrorMessage = ex.Message }; }
+            finally { objData.objConnection.Close(); }
         }
 
         public Task<CResult> CreateAsync(ACA_PROSPECTO_BECA_ARCHIVOTable Data, string vLOGIN_SISTEMA, string vESTACION)
