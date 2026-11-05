@@ -1,3 +1,5 @@
+import { agruparMenuConfiguracionBecas } from 'src/app/pages/Academics/becas-configuracion/becas-configuracion.navigation';
+import { agruparMenuConvenios } from 'src/app/pages/Academics/becas-convenios/becas-convenios.navigation';
 import {
   Component,
   NgModule,
@@ -103,7 +105,13 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
       .pipe(take(1))
       .subscribe((response: any) => {
         const menu = Array.isArray(response?.Data) ? response.Data : [];
-        this._items = this.normalizeMenuItems(menu);
+        this._items = this.normalizeMenuItems(agruparMenuConfiguracionBecas(agruparMenuConvenios(menu, path => {
+          const permisos = this.authService.decodedToken?.[path];
+          return typeof permisos === 'string' && permisos.includes('R');
+        }), path => {
+          const permisos = this.authService.decodedToken?.[path];
+          return typeof permisos === 'string' && permisos.includes('R');
+        }));
         setTimeout(() => this.setSelectedItem());
       });
   }
@@ -139,7 +147,7 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
 
   private findMenuKeyByPath(items: any[], path: string): string | null {
     for (const item of items || []) {
-      if (item.path === path) {
+      if (item.path === path || item.workspacePaths?.includes(path)) {
         return item.menuKey;
       }
 

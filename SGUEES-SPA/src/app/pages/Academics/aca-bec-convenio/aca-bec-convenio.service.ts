@@ -100,7 +100,7 @@ export class AcaBecConvenioService {
 	}
 
 	delete(model: any): Observable<IResult> {
-		return this.repo.delete([{ Parameter: 'CORR_CONVENIO', Value: model.CORR_CONVENIO }]);
+		return this.repo.delete([{ Parameter: 'CORR_CONVENIO', Value: model.CORR_CONVENIO }, { Parameter: 'VERSION_REGISTRO', Value: model.VERSION_REGISTRO }]);
 	}
 
 	activarInactivar(model: any): Observable<IResult> {
@@ -153,95 +153,32 @@ export class AcaBecConvenioService {
 
 	getItems(entidades: AcaBecEntidadFinanciadoraLookup[] = []): any {
 		return [
-			{
-				itemType: 'group',
-				caption: 'Datos generales',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{ dataField: 'CORR_CONVENIO', label: { text: 'Corr.' }, colSpan: 2, editorOptions: { readOnly: true } },
-					{
-						dataField: 'CODIGO_CONVENIO',
-						label: { text: 'Codigo' },
-						colSpan: 3,
-						editorOptions: { placeholder: 'Codigo...', showClearButton: true, maxLength: 50 },
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'ESTADO_CONVENIO',
-						label: { text: 'Estado' },
-						editorType: 'dxSelectBox',
-						colSpan: 3,
-						editorOptions: {
-							dataSource: ESTADOS_CONVENIO,
-							searchEnabled: true,
-							placeholder: 'Estado...',
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'NOMBRE_CONVENIO',
-						label: { text: 'Convenio' },
-						colSpan: 12,
-						editorOptions: { placeholder: 'Convenio...', showClearButton: true, maxLength: 200 },
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'CORR_ENTIDAD_FINANCIADORA',
-						label: { text: 'Entidad financiadora' },
-						editorType: 'dxSelectBox',
-						colSpan: 7,
-						editorOptions: {
-							dataSource: entidades,
-							valueExpr: 'CORR_ENTIDAD_FINANCIADORA',
-							displayExpr: (item: AcaBecEntidadFinanciadoraLookup) =>
-								item ? `${item.CODIGO_ENTIDAD} - ${item.NOMBRE_ENTIDAD}` : '',
-							searchEnabled: true,
-							showClearButton: true,
-							placeholder: 'Entidad financiadora...',
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Vigencia',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{
-						dataField: 'FECHA_INICIO',
-						label: { text: 'Fecha inicio' },
-						editorType: 'dxDateBox',
-						colSpan: 3,
-						editorOptions: { displayFormat: 'dd/MM/yyyy', type: 'date', showClearButton: true },
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'FECHA_FIN',
-						label: { text: 'Fecha fin' },
-						editorType: 'dxDateBox',
-						colSpan: 3,
-						editorOptions: { displayFormat: 'dd/MM/yyyy', type: 'date', showClearButton: true },
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Descripcion',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{
-						dataField: 'DESCRIPCION',
-						label: { text: 'Descripcion' },
-						editorType: 'dxTextArea',
-						colSpan: 12,
-						editorOptions: { placeholder: 'Descripcion...', maxLength: 1000, minHeight: 90, autoResizeEnabled: true },
-					},
-				],
-			},
+			{ itemType: 'group', colCount: 4, colCountByScreen: { xs: 1, sm: 2, md: 4, lg: 4 }, items: [
+				{ dataField: 'CORR_CONVENIO', label: { text: 'Corr.' }, editorOptions: { readOnly: true, width: '100%' } },
+				{ dataField: 'CODIGO_CONVENIO', label: { text: 'Codigo del convenio' }, colSpan: 2,
+					editorOptions: { width: '100%', showClearButton: true, maxLength: 50, placeholder: 'Ej.: CONV-ELIM-2027' },
+					validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+				{ dataField: 'ESTADO_CONVENIO', label: { text: 'Estado' }, editorType: 'dxSelectBox',
+					editorOptions: { width: '100%', dataSource: ESTADOS_CONVENIO, searchEnabled: true },
+					validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+			] },
+			{ dataField: 'NOMBRE_CONVENIO', label: { text: 'Nombre del convenio' },
+				editorOptions: { width: '100%', showClearButton: true, maxLength: 200, placeholder: 'Ej.: Convenio de becas Elim 2027' },
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+			{ dataField: 'CORR_ENTIDAD_FINANCIADORA', label: { text: 'Iglesia o institucion' }, editorType: 'dxSelectBox',
+				editorOptions: { width: '100%', dataSource: entidades, valueExpr: 'CORR_ENTIDAD_FINANCIADORA',
+					displayExpr: 'NOMBRE_ENTIDAD', searchEnabled: true, showClearButton: true,
+					placeholder: 'Seleccione la iglesia o institucion' },
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+			{ itemType: 'group', colCount: 2, colCountByScreen: { xs: 1, sm: 2, md: 2, lg: 2 }, items: [
+				{ dataField: 'FECHA_INICIO', label: { text: 'Fecha inicio' }, editorType: 'dxDateBox',
+					editorOptions: { width: '100%', displayFormat: 'dd/MM/yyyy', type: 'date', showClearButton: true },
+					validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+				{ dataField: 'FECHA_FIN', label: { text: 'Fecha fin' }, editorType: 'dxDateBox',
+					editorOptions: { width: '100%', displayFormat: 'dd/MM/yyyy', type: 'date', showClearButton: true } },
+			] },
+			{ dataField: 'DESCRIPCION', label: { text: 'Descripcion' }, editorType: 'dxTextArea',
+				editorOptions: { width: '100%', maxLength: 1000, minHeight: 160, autoResizeEnabled: true } },
 		];
 	}
 

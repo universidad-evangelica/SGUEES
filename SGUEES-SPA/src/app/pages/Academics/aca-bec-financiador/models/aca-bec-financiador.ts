@@ -1,4 +1,5 @@
 export interface AcaBecFinanciador {
+	VERSION_REGISTRO?: string;
 	CORR_EMPRESA?: number;
 	CORR_BECA_FINANCIADOR: number;
 	CORR_BECA: number;

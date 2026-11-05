@@ -1,4 +1,5 @@
 export interface AcaBecTipo {
+	VERSION_REGISTRO?: string;
 	CORR_EMPRESA?: number;
 	CORR_BECA: number;
 	CODIGO_BECA: string;
@@ -25,6 +26,7 @@ export interface AcaBecTipo {
 	DESCRIPCION?: string | null;
 	ESTADO_BECA: string;
 	ACTIVO?: boolean;
+	CANT_FORMULARIOS?: number;
 	CANT_REQUISITOS?: number;
 	CANT_DOCUMENTOS?: number;
 	CANT_FINANCIADORES?: number;

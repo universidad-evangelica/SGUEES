@@ -4,6 +4,7 @@ namespace SGUEES.Models
 {
     public class ACA_BEC_ORIGEN_BECAView
     {
+        public byte[] VERSION_REGISTRO { get; set; }
         public int CORR_EMPRESA { get; set; }
         public int CORR_ORIGEN_BECA { get; set; }
         public string CODIGO_ORIGEN { get; set; }

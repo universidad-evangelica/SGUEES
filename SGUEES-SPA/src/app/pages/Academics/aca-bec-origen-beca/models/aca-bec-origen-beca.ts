@@ -1,4 +1,5 @@
 export interface AcaBecOrigenBeca {
+	VERSION_REGISTRO?: string;
 	CORR_EMPRESA: number;
 	CORR_ORIGEN_BECA: number;
 	CODIGO_ORIGEN: string;

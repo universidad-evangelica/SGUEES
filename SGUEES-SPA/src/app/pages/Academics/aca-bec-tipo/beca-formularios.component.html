@@ -1,0 +1,58 @@
+<app-barra-data-mtto *ngIf="!versionEditorId" tituloVentana="Formularios y versiones" [ocultarEncabezado]="true" [showRibbon]="true" [isBrowse]="!edicion" [isForm]="!!edicion"
+  [permiteAdd]="false" [showExport]="false" [showRefresh]="true" (consultar)="consultar()" (guardar)="guardar()" (cancelar)="cancelar()">
+</app-barra-data-mtto>
+
+<app-beca-cuestionario *ngIf="versionEditorId" [corrBeca]="corrBeca" [versionId]="versionEditorId"
+  (volver)="volverVersiones()" (pendiente)="pendiente.emit($event)" (actualizado)="actualizado.emit()"></app-beca-cuestionario>
+
+<div class="content-block dx-card responsive-paddings" *ngIf="edicion">
+  <h3>{{ tituloEdicion }}</h3>
+  <p class="descripcion" *ngIf="edicion === 'CrearVersion' && datos.CORR_VERSION_ORIGEN">Se copiarán las secciones, preguntas, opciones, dependencias y puntajes de la beca plantilla. El original y las solicitudes existentes se conservan.</p>
+  <p *ngIf="modoSencillo && accionInicial?.tipo === 'copiar'">Elija el cuestionario y la beca de origen. Se abrirá una copia para la beca seleccionada. Revísela, publíquela y después pulse Asignar.</p>
+  <p *ngIf="modoSencillo && edicion === 'CrearFormularioVacio'">Escriba el nombre y guarde. Después podrá agregar las secciones y preguntas. El código y la primera versión se generan automáticamente.</p>
+  <p *ngIf="modoSencillo && edicion === 'AsignarVersion'"><strong>Cuestionario:</strong> {{ versionSeleccionada?.NOMBRE_FORMULARIO }} · {{ versionSeleccionada?.VERSION_FORMULARIO }}</p>
+  <p *ngIf="modoSencillo && edicion === 'AsignarVersion'">{{ mensajeAsignacion }}</p>
+  <dx-form #fData [formData]="datos" [items]="formularioItems" labelLocation="top" [colCount]="2"
+    [colCountByScreen]="{ xs: 1, sm: 1, md: 2, lg: 2 }" [disabled]="loadingVisible"></dx-form>
+</div>
+
+<p class="descripcion" *ngIf="modoSencillo && !edicion && !versionEditorId">Seleccione una acción arriba o abra Historial y opciones de versiones.</p>
+<div *ngIf="!edicion && !versionEditorId && !modoSencillo">
+  <div class="content-block dx-card responsive-paddings">
+    <ol class="descripcion">
+      <li><strong>Desde cero:</strong> pulse «Crear formulario desde cero». Al guardar se abrirá el editor para agregar secciones y preguntas.</li>
+      <li><strong>Para modificar:</strong> seleccione una versión en borrador y pulse «Editar preguntas y opciones». Si está publicada, primero cree una copia.</li>
+      <li><strong>Para habilitar:</strong> revise la vista previa, publique el cuestionario y cree su asignación a la beca y ciclo.</li>
+    </ol>
+    <p class="descripcion">Una versión en borrador no aparece en la postulación. Publique y asigne la versión a esta beca para habilitarla. Las solicitudes existentes conservan su versión y ciclo.</p>
+    <label for="beca-formulario-selector">Formulario</label>
+    <dx-select-box id="beca-formulario-selector" [dataSource]="formularios" valueExpr="CORR_FORMULARIO_BECA" displayExpr="NOMBRE_FORMULARIO"
+      [value]="formularioId" [searchEnabled]="true" [disabled]="loadingVisible" (onValueChanged)="seleccionarFormulario($event.value)"></dx-select-box>
+    <div class="acciones">
+      <dx-button text="Crear formulario desde cero" type="default" icon="add" *ngIf="permiteAdd" [disabled]="loadingVisible" (onClick)="editarFormulario(true)"></dx-button>
+      <dx-button text="Editar formulario" icon="edit" *ngIf="permiteEdit" [disabled]="loadingVisible || !puedeEditarFormulario" (onClick)="editarFormulario(false)"></dx-button>
+      <dx-button text="Crear versión vacía" icon="add" *ngIf="permiteAdd" [disabled]="loadingVisible || !formularioId" (onClick)="editarVersion(true, false)"></dx-button>
+      <dx-button text="Copiar una versión existente" icon="copy" *ngIf="permiteAdd" [disabled]="loadingVisible || !formularioId" (onClick)="editarVersion(true)"></dx-button>
+      <dx-button text="Cambiar nombre y fechas de versión" icon="edit" *ngIf="permiteEdit" [disabled]="loadingVisible || versionSeleccionada?.ESTADO_VERSION !== 'BORRADOR'" (onClick)="editarVersion(false)"></dx-button>
+      <dx-button [text]="versionSeleccionada?.ESTADO_VERSION === 'BORRADOR' ? 'Editar preguntas y opciones' : 'Ver cuestionario'" icon="edit" [disabled]="loadingVisible || !versionSeleccionada" (onClick)="abrirCuestionario()"></dx-button>
+      <dx-button text="Publicar versión" icon="check" type="success" *ngIf="permiteEdit" [disabled]="loadingVisible || versionSeleccionada?.ESTADO_VERSION !== 'BORRADOR'" (onClick)="publicar()"></dx-button>
+    </div>
+    <h3>Versiones del formulario</h3>
+    <app-data-grid-mtto [models]="versionesDelFormulario" [columns]="columnasVersiones" keyExpr="CORR_FORMULARIO_VERSION" [gridHeight]="340"
+      [permiteEditar]="false" [permiteDele]="false" [showAdd]="false" [showRefresh]="false" [showExport]="false" [showSearch]="true"
+      [pageSize]="10" [wordWrapEnabled]="true" [focusedRowKey]="versionSeleccionada?.CORR_FORMULARIO_VERSION" (focusedRowChanged)="seleccionarVersion($event)" (rowDblClick)="abrirCuestionario()"></app-data-grid-mtto>
+  </div>
+  <div class="content-block dx-card responsive-paddings bloque">
+    <h3>Asignaciones de esta beca</h3>
+    <p class="descripcion">La asignación de un ciclo tiene prioridad sobre la general. Retirar una asignación no elimina solicitudes ni respuestas.</p>
+    <div class="acciones" *ngIf="permiteEdit">
+      <dx-button text="Nueva asignación" icon="add" [disabled]="loadingVisible" (onClick)="asignar(true)"></dx-button>
+      <dx-button text="Cambiar asignación" icon="edit" [disabled]="loadingVisible || !asignacionSeleccionada" (onClick)="asignar(false)"></dx-button>
+      <dx-button text="Retirar asignación" icon="remove" [disabled]="loadingVisible || !asignacionSeleccionada?.ACTIVO" (onClick)="retirar()"></dx-button>
+    </div>
+    <app-data-grid-mtto [models]="asignaciones" [columns]="columnasAsignaciones" keyExpr="CORR_TIPO_FORMULARIO" [gridHeight]="300"
+      [permiteEditar]="false" [permiteDele]="false" [showAdd]="false" [showRefresh]="false" [showExport]="false" [showSearch]="true"
+      [pageSize]="10" [wordWrapEnabled]="true" (focusedRowChanged)="seleccionarAsignacion($event)"></app-data-grid-mtto>
+  </div>
+</div>
+<dx-load-panel [(visible)]="loadingVisible" [showIndicator]="true" [shading]="true"></dx-load-panel>

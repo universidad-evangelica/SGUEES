@@ -89,7 +89,7 @@ export class AcaBecOrigenBecaService {
 	}
 
 	delete(model: any): Observable<IResult> {
-		return this.repo.delete([{ Parameter: 'CORR_ORIGEN_BECA', Value: model.CORR_ORIGEN_BECA }]);
+		return this.repo.delete([{ Parameter: 'CORR_ORIGEN_BECA', Value: model.CORR_ORIGEN_BECA }, { Parameter: 'VERSION_REGISTRO', Value: model.VERSION_REGISTRO }]);
 	}
 
 	activarInactivar(model: any): Observable<IResult> {

@@ -4,6 +4,7 @@ namespace SGUEES.Models
 {
     public class ACA_BEC_TIPOView
     {
+        public byte[] VERSION_REGISTRO { get; set; }
         public int CORR_EMPRESA { get; set; }
         public int CORR_BECA { get; set; }
         public string CODIGO_BECA { get; set; }
@@ -30,6 +31,7 @@ namespace SGUEES.Models
         public string DESCRIPCION { get; set; }
         public string ESTADO_BECA { get; set; }
         public bool? ACTIVO { get; set; }
+        public int CANT_FORMULARIOS { get; set; }
         public int CANT_REQUISITOS { get; set; }
         public int CANT_DOCUMENTOS { get; set; }
         public int CANT_FINANCIADORES { get; set; }

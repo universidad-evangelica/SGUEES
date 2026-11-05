@@ -11,8 +11,8 @@ namespace SGUEES.Repositories
 {
     public class ACA_BEC_FINANCIADORRepository : BaseRepository<ACA_BEC_FINANCIADORTable>, IACA_BEC_FINANCIADORRepository
     {
-        private const string _TableName = "ACA_BEC_FINANCIADOR";
-        private const string _ViewName = "V_ACA_BEC_FINANCIADOR";
+        private const string _TableName = "ACA_BECA_FINANCIADOR";
+        private const string _ViewName = "V_ACA_BECA_FINANCIADOR_MTTO";
         private const string _CampoPk = "CORR_BECA_FINANCIADOR";
         private const string _CampoEstado = "ACTIVO";
         private const bool _UsaEmpresa = true;
@@ -119,7 +119,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "ESTADO_BECA", Value = "ACTIVA", DbType = System.Data.DbType.String },
                 };
 
-                var reader = await objData.GetDataReader("V_ACA_BEC_TIPO", p);
+                var reader = await objData.GetDataReader("V_ACA_BECA_FINANCIADOR_TIPO", p);
                 var response = new List<ACA_BEC_FINANCIADOR_TIPOLookup>().FromDataReader(reader)
                     .OrderBy(x => x.NOMBRE_BECA)
                     .ToList();
@@ -157,7 +157,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "ACTIVO", Value = true, DbType = System.Data.DbType.Boolean },
                 };
 
-                var reader = await objData.GetDataReader("V_ACA_BEC_ENTIDAD_FINANCIADORA", p);
+                var reader = await objData.GetDataReader("V_ACA_BECA_FINANCIADOR_ENTIDAD", p);
                 var response = new List<ACA_BEC_FINANCIADOR_ENTIDADLookup>().FromDataReader(reader)
                     .OrderBy(x => x.NOMBRE_ENTIDAD)
                     .ToList();
@@ -235,6 +235,7 @@ namespace SGUEES.Repositories
             try
             {
                 var p = new List<CParameter> {
+                    new() { ParameterName="@VERSION_REGISTRO",Value=(object)Data.VERSION_REGISTRO??DBNull.Value,DbType=System.Data.DbType.Binary,Size=8 },
                     new() { ParameterName="@TIPO_ACTUALIZA",Value=operation,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@ID",Value=Data.CORR_BECA_FINANCIADOR,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput },
@@ -247,7 +248,7 @@ namespace SGUEES.Repositories
                     new() { ParameterName="@MONTO_MAXIMO",Value=(object)Data.MONTO_MAXIMO??DBNull.Value,DbType=System.Data.DbType.Decimal },
                     new() { ParameterName="@ACTIVO",Value=(object)Data.ACTIVO??DBNull.Value,DbType=System.Data.DbType.Boolean }
                 };
-                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BEC_FINANCIADOR", true, p);
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BECA_FINANCIADOR", true, p);
                 Data.CORR_BECA_FINANCIADOR = Convert.ToInt32(objData.objCommand.Parameters["@ID"].Value);
                 objData.objConnection.Close();
                 if (operation == 3) return new CResult { Result = true, CodeHelper = Data.CORR_BECA_FINANCIADOR, RowsAffected = 1 };

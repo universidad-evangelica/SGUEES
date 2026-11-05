@@ -6,7 +6,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-    public class ACA_BEC_TIPOService : IACA_BEC_TIPOService
+    public partial class ACA_BEC_TIPOService : IACA_BEC_TIPOService
     {
         private static readonly HashSet<string> EstadosValidos = new()
         {
@@ -236,6 +236,9 @@ namespace SGUEES.Services
                 return ValidationError("El nombre del tipo de beca no puede superar 200 caracteres.");
             }
 
+            if (!Data.APLICA_NUEVO_INGRESO && !Data.APLICA_ANTIGUO_INGRESO && !Data.APLICA_EMPLEADO && !Data.APLICA_HIJO_EMPLEADO)
+                return ValidationError("Seleccione al menos una poblacion a la que aplica la beca.");
+
             if (Data.CORR_ORIGEN_BECA <= 0)
             {
                 return ValidationError("Debe seleccionar el origen de beca.");
@@ -292,7 +295,7 @@ namespace SGUEES.Services
 
         private async Task<CResult> ValidateConvenioVigenteAsync(ACA_BEC_TIPOTable Data)
         {
-            if (!Data.REQUIERE_CONVENIO || !Data.CORR_CONVENIO.HasValue || Data.CORR_CONVENIO.Value <= 0)
+            if (Data.ESTADO_BECA != "ACTIVA" || !Data.REQUIERE_CONVENIO || !Data.CORR_CONVENIO.HasValue || Data.CORR_CONVENIO.Value <= 0)
             {
                 return null;
             }

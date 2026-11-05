@@ -101,7 +101,7 @@ export class CBaseComponent {
 
 	constructor(public appInfoService: AppInfoService, public router: ActivatedRoute) {
 		this.tituloVentana = router.snapshot.data['titulo'];
-		this.urlOpcion = '/' + router.snapshot.routeConfig?.path;
+		this.urlOpcion = router.snapshot.data['opcionPermiso'] || '/' + router.snapshot.routeConfig?.path;
 		loadMessages(esMessages);
 		locale(this.appInfoService.getLocale);
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));

@@ -1,9 +1,12 @@
+import { BECAS_CONVENIOS_TITULO } from '../becas-convenios/becas-convenios.navigation';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, Observable, of, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AcaBecEntidadFinanciadoraLookup, AcaBecConvenio } from './models/aca-bec-convenio';
@@ -30,6 +33,7 @@ export class AcaBecConvenioComponent extends CBaseComponent implements OnInit {
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
+	readonly tituloGrupo = BECAS_CONVENIOS_TITULO;
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Convenios';
 	private entidades: AcaBecEntidadFinanciadoraLookup[] = [];
 
@@ -67,6 +71,7 @@ export class AcaBecConvenioComponent extends CBaseComponent implements OnInit {
 	override fillData(xModel?: AcaBecConvenio): AcaBecConvenio {
 		if (xModel !== undefined) {
 			return {
+				VERSION_REGISTRO: xModel.VERSION_REGISTRO,
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_CONVENIO: xModel.CORR_CONVENIO,
 				CODIGO_CONVENIO: xModel.CODIGO_CONVENIO,
@@ -114,9 +119,14 @@ export class AcaBecConvenioComponent extends CBaseComponent implements OnInit {
 
 	private cargarInicial(): void {
 		forkJoin({
-			entidades: this.service.getEntidadesFinanciadoras().pipe(catchError(() => of({ Data: [] } as any))),
-			convenios: this.service.getAll(this.fillParam()).pipe(catchError(() => of({ Data: [] } as any))),
+			entidades: this.service.getEntidadesFinanciadoras().pipe(catchError((error) => of({ Result: false, ErrorMessage: getApiErrorMessage(error) || 'No se pudieron cargar los datos del convenio.', Data: [] }))),
+			convenios: this.service.getAll(this.fillParam()).pipe(catchError((error) => of({ Result: false, ErrorMessage: getApiErrorMessage(error) || 'No se pudieron cargar los datos del convenio.', Data: [] }))),
 		}).subscribe(({ entidades, convenios }: any) => {
+			const fallo = [entidades, convenios].find((resultado) => !resultado?.Result);
+			if (fallo) {
+				this.notifyFx(fallo.ErrorMessage || 'No se pudieron cargar los convenios.', NotifyType.Warning);
+				return;
+			}
 			this.entidades = Array.isArray(entidades?.Data) ? entidades.Data : [];
 			this.items = this.service.getItems(this.entidades);
 			this.models = Array.isArray(convenios?.Data) ? convenios.Data : [];
@@ -277,7 +287,7 @@ export class AcaBecConvenioComponent extends CBaseComponent implements OnInit {
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_CONVENIO))),
+			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(e.data)),
 		});
 	}
 

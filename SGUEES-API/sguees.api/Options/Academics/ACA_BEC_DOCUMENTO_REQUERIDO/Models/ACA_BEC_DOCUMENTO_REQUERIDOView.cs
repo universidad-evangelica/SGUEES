@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 
 namespace SGUEES.Models
 {
     public class ACA_BEC_DOCUMENTO_REQUERIDOView
     {
+        public byte[] VERSION_REGISTRO { get; set; }
         public int CORR_EMPRESA { get; set; }
         public int CORR_BECA_DOCUMENTO_REQUERIDO { get; set; }
         public int CORR_BECA { get; set; }

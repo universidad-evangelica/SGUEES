@@ -4,6 +4,7 @@ namespace SGUEES.Models
 {
     public class ACA_BEC_ENTIDAD_FINANCIADORAView
     {
+        public byte[] VERSION_REGISTRO { get; set; }
         public int CORR_EMPRESA { get; set; }
         public int CORR_ENTIDAD_FINANCIADORA { get; set; }
         public string CODIGO_ENTIDAD { get; set; }

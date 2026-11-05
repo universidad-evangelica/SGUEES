@@ -154,6 +154,11 @@ const routes: Routes = [
     loadChildren: () => import('./aca-bec-origen-beca/aca-bec-origen-beca.module').then((m) => m.AcaBecOrigenBecaModule),
   },
   {
+    path: 'aca-bec-tipo/cuestionarios',
+    loadComponent: () => import('./aca-bec-tipo/becas-cuestionarios.component').then(m=>m.BecasCuestionariosComponent),
+    canActivate:[AuthGuardService], canDeactivate:[AppCanDeactivateGuard], data:{titulo:'Cuestionario de becas',opcionPermiso:'/aca-bec-tipo'},
+  },
+  {
     path: 'aca-bec-tipo',
     component: AcaBecTipoComponent,
     canActivate: [AuthGuardService],

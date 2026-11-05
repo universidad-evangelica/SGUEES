@@ -1,3 +1,4 @@
+import { BECAS_CONVENIOS_TITULO } from '../becas-convenios/becas-convenios.navigation';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -30,7 +31,8 @@ export class AcaBecEntidadFinanciadoraComponent extends CBaseComponent implement
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Entidades Financiadoras';
+	readonly tituloGrupo = BECAS_CONVENIOS_TITULO;
+	private readonly maintenanceSubtitulo = 'Iglesias e instituciones financiadoras';
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -66,6 +68,7 @@ export class AcaBecEntidadFinanciadoraComponent extends CBaseComponent implement
 	override fillData(xModel?: AcaBecEntidadFinanciadora): AcaBecEntidadFinanciadora {
 		if (xModel !== undefined) {
 			return {
+				VERSION_REGISTRO: xModel.VERSION_REGISTRO,
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_ENTIDAD_FINANCIADORA: xModel.CORR_ENTIDAD_FINANCIADORA,
 				CODIGO_ENTIDAD: xModel.CODIGO_ENTIDAD,
@@ -255,7 +258,7 @@ export class AcaBecEntidadFinanciadoraComponent extends CBaseComponent implement
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_ENTIDAD_FINANCIADORA))),
+			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(e.data)),
 		});
 	}
 
@@ -264,7 +267,7 @@ export class AcaBecEntidadFinanciadoraComponent extends CBaseComponent implement
 	}
 
 	override bloquear(): void {
-		['CORR_ENTIDAD_FINANCIADORA', 'CODIGO_ENTIDAD', 'NOMBRE_ENTIDAD', 'TIPO_ENTIDAD', 'CONTACTO', 'TELEFONO', 'CORREO', 'ACTIVO'].forEach((field) =>
+		['CORR_ENTIDAD_FINANCIADORA', 'CODIGO_ENTIDAD', 'NOMBRE_ENTIDAD', 'TIPO_ENTIDAD', 'TELEFONO', 'CORREO', 'ACTIVO'].forEach((field) =>
 			this.dataForm.instance.getEditor(field)?.option('readOnly', true)
 		);
 	}
@@ -272,7 +275,7 @@ export class AcaBecEntidadFinanciadoraComponent extends CBaseComponent implement
 	override habilitar(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_ENTIDAD_FINANCIADORA')?.option('readOnly', true);
-			['CODIGO_ENTIDAD', 'NOMBRE_ENTIDAD', 'TIPO_ENTIDAD', 'CONTACTO', 'TELEFONO', 'CORREO', 'ACTIVO'].forEach((field) =>
+			['CODIGO_ENTIDAD', 'NOMBRE_ENTIDAD', 'TIPO_ENTIDAD', 'TELEFONO', 'CORREO', 'ACTIVO'].forEach((field) =>
 				this.dataForm.instance.getEditor(field)?.option('readOnly', false)
 			);
 		});

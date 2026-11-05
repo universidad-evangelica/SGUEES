@@ -94,6 +94,56 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+
+        [HttpGet("Cuestionarios")][Authorize(Policy="/aca-bec-tipo|R")]
+        public Task<CResult> Cuestionarios()=>_service.CuestionariosAsync(GetCorrEmpresa());
+        [HttpGet("PlantillasFormulario")][Authorize(Policy="/aca-bec-tipo|R")]
+        public Task<CResult> PlantillasFormulario()=>_service.PlantillasFormularioAsync(GetCorrEmpresa());
+        [HttpGet("Formularios")][Authorize(Policy="/aca-bec-tipo|R")]
+        public Task<CResult> Formularios()=>_service.FormulariosAsync(GetCorrEmpresa());
+        [HttpGet("Versiones")][Authorize(Policy="/aca-bec-tipo|R")]
+        public Task<CResult> Versiones()=>_service.VersionesAsync(GetCorrEmpresa());
+        [HttpGet("Asignaciones")][Authorize(Policy="/aca-bec-tipo|R")]
+        public Task<CResult> Asignaciones([FromQuery]int CORR_BECA)=>_service.AsignacionesAsync(GetCorrEmpresa(),CORR_BECA);
+        [HttpGet("CiclosFormulario")][Authorize(Policy="/aca-bec-tipo|R")]
+        public Task<CResult> CiclosFormulario()=>_service.CiclosFormularioAsync(GetCorrEmpresa());
+        [HttpPost("CrearFormulario")][Authorize(Policy="/aca-bec-tipo|C")]
+        public Task<IActionResult> CrearFormulario(BecaFormularioCambio data)=>GuardarConfiguracion("CREAR_FORMULARIO",data);
+        [HttpPost("EditarFormulario")][Authorize(Policy="/aca-bec-tipo|U")]
+        public Task<IActionResult> EditarFormulario(BecaFormularioCambio data)=>GuardarConfiguracion("EDITAR_FORMULARIO",data);
+        [HttpPost("CrearVersion")][Authorize(Policy="/aca-bec-tipo|C")]
+        public Task<IActionResult> CrearVersion(BecaFormularioCambio data)=>GuardarConfiguracion("CREAR_VERSION",data);
+        [HttpPost("EditarVersion")][Authorize(Policy="/aca-bec-tipo|U")]
+        public Task<IActionResult> EditarVersion(BecaFormularioCambio data)=>GuardarConfiguracion("EDITAR_VERSION",data);
+        [HttpPost("PublicarVersion")][Authorize(Policy="/aca-bec-tipo|U")]
+        public Task<IActionResult> PublicarVersion(BecaFormularioCambio data)=>GuardarConfiguracion("PUBLICAR",data);
+        [HttpPost("AsignarVersion")][Authorize(Policy="/aca-bec-tipo|U")]
+        public Task<IActionResult> AsignarVersion(BecaFormularioCambio data)=>GuardarConfiguracion("ASIGNAR",data);
+        [HttpPost("RetirarAsignacion")][Authorize(Policy="/aca-bec-tipo|U")]
+        public Task<IActionResult> RetirarAsignacion(BecaFormularioCambio data)=>GuardarConfiguracion("RETIRAR",data);
+        private async Task<IActionResult> GuardarConfiguracion(string operacion,BecaFormularioCambio data) {
+            if(data==null)return BadRequest();
+            data.CORR_EMPRESA=GetCorrEmpresa();
+            var result=await _service.GuardarFormularioAsync(operacion,data,GetUsuario(),ClientInfoHelper.GetClientStation(HttpContext));
+            return result.ErrorCode==0?Ok(result):BadRequest(result);
+        }
+
+        [HttpPost("CrearFormularioVacio")][Authorize(Policy="/aca-bec-tipo|C")]
+        public Task<IActionResult> CrearFormularioVacio(BecaFormularioCambio data)=>GuardarConfiguracion("CREAR_DESDE_CERO",data);
+        [HttpGet("ContenidoCuestionario")][Authorize(Policy="/aca-bec-tipo|R")]
+        public Task<CResult> ContenidoCuestionario([FromQuery]int CORR_BECA,[FromQuery]int CORR_FORMULARIO_VERSION)=>_service.ContenidoCuestionarioAsync(GetCorrEmpresa(),CORR_BECA,CORR_FORMULARIO_VERSION);
+        [HttpPost("AgregarElemento")][Authorize(Policy="/aca-bec-tipo|C")]
+        public Task<IActionResult> AgregarElemento(BecaCuestionarioCambio data)=>GuardarElemento("AGREGAR",data);
+        [HttpPost("EditarElemento")][Authorize(Policy="/aca-bec-tipo|U")]
+        public Task<IActionResult> EditarElemento(BecaCuestionarioCambio data)=>GuardarElemento("EDITAR",data);
+        [HttpPost("QuitarElemento")][Authorize(Policy="/aca-bec-tipo|D")]
+        public Task<IActionResult> QuitarElemento(BecaCuestionarioCambio data)=>GuardarElemento("QUITAR",data);
+        private async Task<IActionResult> GuardarElemento(string operacion,BecaCuestionarioCambio data) {
+            if(data==null)return BadRequest();
+            data.CORR_EMPRESA=GetCorrEmpresa();
+            var result=await _service.GuardarCuestionarioAsync(operacion,data,GetUsuario(),ClientInfoHelper.GetClientStation(HttpContext));
+            return result.ErrorCode==0?Ok(result):BadRequest(result);
+        }
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");

@@ -1,3 +1,4 @@
+import { leerBecaSeleccionada } from '../becas-configuracion/becas-configuracion.navigation';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -30,6 +31,7 @@ export class AcaBecOrigenBecaComponent extends CBaseComponent implements OnInit 
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
+	readonly becaContexto = leerBecaSeleccionada(this.router.snapshot.queryParamMap.get('beca'));
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Origen de Beca';
 
 	constructor(
@@ -68,6 +70,7 @@ export class AcaBecOrigenBecaComponent extends CBaseComponent implements OnInit 
 	override fillData(xModel?: AcaBecOrigenBeca): AcaBecOrigenBeca {
 		if (xModel !== undefined) {
 			return {
+				VERSION_REGISTRO: xModel.VERSION_REGISTRO,
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_ORIGEN_BECA: xModel.CORR_ORIGEN_BECA,
 				CODIGO_ORIGEN: xModel.CODIGO_ORIGEN,
@@ -252,7 +255,7 @@ export class AcaBecOrigenBecaComponent extends CBaseComponent implements OnInit 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
-				this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_ORIGEN_BECA))),
+				this.convertirErrorMttoEnWarning(this.service.delete(e.data)),
 		});
 	}
 

@@ -1,6 +1,6 @@
 <div class="sguees-mtto-view">
 <app-barra-data-mtto
-	[tituloVentana]="tituloVentana"
+	[tituloVentana]="tituloGrupo"
 	[showRibbon]="true"
 	[showExport]="permitePrint"
 	[isBrowse]="isBrowse()"
@@ -19,14 +19,15 @@
 >
 </app-barra-data-mtto>
 
+<app-becas-convenios-tabs activa="financiadores" [bloqueado]="!isBrowse()"></app-becas-convenios-tabs>
+
 <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 	<dx-form
 		#fData
 		id="fData"
 		[formData]="model"
 		[labelLocation]="'top'"
-		[colCount]="mttoFormColCount"
-		[colCountByScreen]="mttoFormColCountByScreen"
+		[colCount]="1"
 		[showRequiredMark]="false"
 		[items]="items"
 	>

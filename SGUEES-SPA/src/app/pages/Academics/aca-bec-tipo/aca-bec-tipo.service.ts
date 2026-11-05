@@ -1,3 +1,6 @@
+import { BecaCuestionarioListado, BecaCuestionarioContenido, BecaCuestionarioCambio, BecaEditorAccion } from './models/beca-formulario';
+import { map } from 'rxjs/operators';
+import { BecaFormulario, BecaVersion, BecaAsignacion, BecaCiclo, BecaPlantilla, BecaFormularioAccion, BecaFormularioCambio } from './models/beca-formulario';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -106,6 +109,10 @@ export class AcaBecTipoService {
 			return false;
 		}
 
+		if (![model.APLICA_NUEVO_INGRESO, model.APLICA_ANTIGUO_INGRESO, model.APLICA_EMPLEADO, model.APLICA_HIJO_EMPLEADO].some(Boolean)) {
+			msg('Seleccione al menos una poblacion a la que aplica la beca.', NotifyType.Warning);
+			return false;
+		}
 		return true;
 	}
 
@@ -134,7 +141,7 @@ export class AcaBecTipoService {
 	}
 
 	delete(model: any): Observable<IResult> {
-		return this.repo.delete([{ Parameter: 'CORR_BECA', Value: model.CORR_BECA }]);
+		return this.repo.delete([{ Parameter: 'CORR_BECA', Value: model.CORR_BECA }, { Parameter: 'VERSION_REGISTRO', Value: model.VERSION_REGISTRO }]);
 	}
 
 	activarInactivar(model: any): Observable<IResult> {
@@ -155,6 +162,7 @@ export class AcaBecTipoService {
 				dataType: 'number',
 				format: '#,##0.##',
 			},
+			{ dataField: 'CANT_FORMULARIOS', caption: 'Formularios vigentes', width: 160, dataType: 'number' },
 			{ dataField: 'CANT_REQUISITOS', caption: 'Req.', width: 85, dataType: 'number' },
 			{ dataField: 'CANT_DOCUMENTOS', caption: 'Docs.', width: 85, dataType: 'number' },
 			{ dataField: 'CANT_FINANCIADORES', caption: 'Fin.', width: 85, dataType: 'number' },
@@ -377,21 +385,24 @@ export class AcaBecTipoService {
 				itemType: 'group',
 				caption: 'Datos generales',
 				colCount: 12,
-				colSpan: 8,
+				colCountByScreen: { xs: 1, sm: 2, md: 12, lg: 12 },
+				colSpan: 1,
 				items: datosGeneralesItems,
 			},
 			{
 				itemType: 'group',
 				caption: 'Convenio',
 				colCount: 12,
-				colSpan: 8,
+				colCountByScreen: { xs: 1, sm: 2, md: 12, lg: 12 },
+				colSpan: 1,
 				items: convenioItems,
 			},
 			{
 				itemType: 'group',
 				caption: 'Reglas',
 				colCount: 12,
-				colSpan: 8,
+				colCountByScreen: { xs: 1, sm: 2, md: 12, lg: 12 },
+				colSpan: 1,
 				items: reglasItems,
 			},
 		];
@@ -411,4 +422,27 @@ export class AcaBecTipoService {
 
 		return xWhere;
 	}
+ private datosFormulario<T>(request: Observable<IResult>): Observable<T[]> { return request.pipe(map(result=> { if(!result.Result) throw result; return result.Data ?? []; })); }
+ cuestionarios():Observable<BecaCuestionarioListado[]> { return this.datosFormulario<BecaCuestionarioListado>(this.repo.cuestionarios()); }
+ formularios(): Observable<BecaFormulario[]> { return this.datosFormulario<BecaFormulario>(this.repo.formularios()); }
+ versiones(): Observable<BecaVersion[]> { return this.datosFormulario<BecaVersion>(this.repo.versiones()); }
+ asignaciones(beca: number): Observable<BecaAsignacion[]> { return this.datosFormulario<BecaAsignacion>(this.repo.asignaciones(beca)); }
+ ciclosFormulario(): Observable<BecaCiclo[]> { return this.datosFormulario<BecaCiclo>(this.repo.ciclosFormulario()); }
+ plantillasFormulario(): Observable<BecaPlantilla[]> { return this.datosFormulario<BecaPlantilla>(this.repo.plantillasFormulario()); }
+ guardarFormulario(accion: BecaFormularioAccion,data: BecaFormularioCambio): Observable<IResult> {
+  return this.repo.guardarFormulario(accion,{...data,FECHA_INICIO:this.fechaFormulario(data.FECHA_INICIO),FECHA_FIN:this.fechaFormulario(data.FECHA_FIN)});
+ }
+ private fechaFormulario(value: Date|string|null|undefined): string|null {
+   if(!value)return null;
+   if(typeof value==='string')return value.substring(0,10);
+   return value.getFullYear()+'-'+String(value.getMonth()+1).padStart(2,'0')+'-'+String(value.getDate()).padStart(2,'0');
+ }
+
+ contenidoCuestionario(beca:number,version:number):Observable<BecaCuestionarioContenido> {
+  return this.repo.contenidoCuestionario(beca,version).pipe(map(result=>{if(!result.Result)throw result;return result.Data as BecaCuestionarioContenido;}));
+ }
+ guardarElemento(accion:BecaEditorAccion,data:BecaCuestionarioCambio):Observable<IResult> {
+  return this.repo.guardarElemento(accion,{...data,FECHA_INICIO:this.fechaFormulario(data.FECHA_INICIO),FECHA_FIN:this.fechaFormulario(data.FECHA_FIN)});
+ }
+
 }

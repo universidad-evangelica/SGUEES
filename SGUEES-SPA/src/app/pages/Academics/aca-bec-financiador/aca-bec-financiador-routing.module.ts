@@ -1,3 +1,4 @@
+import { BecasConfiguracionTabsComponent } from '../becas-configuracion/becas-configuracion-tabs.component';
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -14,11 +15,14 @@ import { ToastModule } from 'primeng/toast';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { AcaBecFinanciadorComponent } from './aca-bec-financiador.component';
+import { BecasConveniosTabsComponent } from '../becas-convenios/becas-convenios-tabs.component';
 
 const routes: Routes = [{ path: '', component: AcaBecFinanciadorComponent }];
 
 @NgModule({
 	imports: [
+		BecasConfiguracionTabsComponent,
+		BecasConveniosTabsComponent,
 		RouterModule.forChild(routes),
 		CommonModule,
 		DxButtonModule,

@@ -9,10 +9,10 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    public class ACA_BEC_TIPORepository : BaseRepository<ACA_BEC_TIPOTable>, IACA_BEC_TIPORepository
+    public partial class ACA_BEC_TIPORepository : BaseRepository<ACA_BEC_TIPOTable>, IACA_BEC_TIPORepository
     {
-        private const string _TableName = "ACA_BEC_TIPO";
-        private const string _ViewName = "V_ACA_BEC_TIPO";
+        private const string _TableName = "ACA_BECA_TIPO";
+        private const string _ViewName = "V_ACA_BECA_TIPO_MTTO";
         private const string _CampoPk = "CORR_BECA";
 
         public ACA_BEC_TIPORepository(IConfiguration config) :
@@ -116,7 +116,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "ACTIVO", Value = true, DbType = System.Data.DbType.Boolean },
                 };
-                var reader = await objData.GetDataReader("V_ACA_BEC_ORIGEN_BECA", p);
+                var reader = await objData.GetDataReader("V_ACA_BECA_ORIGEN_BECA_MTTO", p);
                 var response = new List<ACA_BEC_ORIGEN_BECALookup>().FromDataReader(reader)
                     .OrderBy(x => x.CORR_ORIGEN_BECA)
                     .ToList();
@@ -153,7 +153,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "ESTADO_CONVENIO", Value = "VIGENTE", DbType = System.Data.DbType.String },
                 };
-                var reader = await objData.GetDataReader("V_ACA_BEC_CONVENIO", p);
+                var reader = await objData.GetDataReader("V_ACA_BECA_TIPO_CONVENIO_VIGENTE", p);
                 var response = new List<ACA_BEC_CONVENIOLookup>().FromDataReader(reader)
                     .OrderBy(x => x.CORR_CONVENIO)
                     .ToList();
@@ -190,7 +190,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "ESTADO_CONVENIO", Value = "VIGENTE", DbType = System.Data.DbType.String },
                 };
 
-                var reader = await objData.GetDataReader("V_ACA_BEC_CONVENIO", p);
+                var reader = await objData.GetDataReader("V_ACA_BECA_TIPO_CONVENIO_VIGENTE", p);
                 var response = new List<ACA_BEC_CONVENIOLookup>().FromDataReader(reader).FirstOrDefault();
                 reader.Close();
                 return response != null;
@@ -253,6 +253,7 @@ namespace SGUEES.Repositories
             try
             {
                 var p = new List<CParameter> {
+                    new() { ParameterName="@VERSION_REGISTRO",Value=(object)Data.VERSION_REGISTRO??DBNull.Value,DbType=System.Data.DbType.Binary,Size=8 },
                     new() { ParameterName="@TIPO_ACTUALIZA",Value=operation,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@ID",Value=Data.CORR_BECA,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput },
@@ -278,7 +279,7 @@ namespace SGUEES.Repositories
                     new() { ParameterName="@APLICA_HIJO_EMPLEADO",Value=(object)Data.APLICA_HIJO_EMPLEADO??DBNull.Value,DbType=System.Data.DbType.Boolean },
                     new() { ParameterName="@NIVEL_ACADEMICO_APLICA",Value=(object)Data.NIVEL_ACADEMICO_APLICA??DBNull.Value,DbType=System.Data.DbType.AnsiString }
                 };
-                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BEC_TIPO", true, p);
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BECA_TIPO", true, p);
                 Data.CORR_BECA = Convert.ToInt32(objData.objCommand.Parameters["@ID"].Value);
                 objData.objConnection.Close();
                 if (operation == 3) return new CResult { Result = true, CodeHelper = Data.CORR_BECA, RowsAffected = 1 };

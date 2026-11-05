@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;
@@ -187,6 +188,9 @@ namespace SGUEES.Services
             {
                 return ValidationError("El area receptora no puede superar 40 caracteres.");
             }
+
+            if (!new[] { "BECAS", "CONTRAPARTE", "FINANZAS", "REGISTRO", "TALENTO_HUMANO" }.Contains(Data.AREA_RECEPTORA.Trim().ToUpperInvariant()))
+                return ValidationError("Seleccione un area receptora del catalogo.");
 
             return null;
         }

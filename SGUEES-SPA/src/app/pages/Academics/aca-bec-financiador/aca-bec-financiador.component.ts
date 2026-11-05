@@ -1,3 +1,6 @@
+import { leerBecaSeleccionada } from '../becas-configuracion/becas-configuracion.navigation';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, Observable, of, throwError } from 'rxjs';
@@ -8,6 +11,7 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AcaBecEntidadFinanciadoraLookup, AcaBecFinanciador, AcaBecTipoLookup } from './models/aca-bec-financiador';
 import { AcaBecFinanciadorService } from './aca-bec-financiador.service';
+import { BECAS_CONVENIOS_TITULO } from '../becas-convenios/becas-convenios.navigation';
 
 const ESTADO_FIELD = 'ACTIVO';
 
@@ -30,6 +34,8 @@ export class AcaBecFinanciadorComponent extends CBaseComponent implements OnInit
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
+	readonly tituloGrupo = BECAS_CONVENIOS_TITULO;
+	readonly becaContexto = leerBecaSeleccionada(this.router.snapshot.queryParamMap.get('beca'));
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Financiadores';
 	private tiposBeca: AcaBecTipoLookup[] = [];
 	private entidadesFinanciadoras: AcaBecEntidadFinanciadoraLookup[] = [];
@@ -63,12 +69,13 @@ export class AcaBecFinanciadorComponent extends CBaseComponent implements OnInit
 	}
 
 	fillParam(xCorrFinanciador?: number): any {
-		return { CORR_BECA_FINANCIADOR: xCorrFinanciador ?? 0 };
+		return { CORR_BECA_FINANCIADOR: xCorrFinanciador ?? 0, CORR_BECA: this.becaContexto || undefined };
 	}
 
 	override fillData(xModel?: AcaBecFinanciador): AcaBecFinanciador {
 		if (xModel !== undefined) {
 			return {
+				VERSION_REGISTRO: xModel.VERSION_REGISTRO,
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_BECA_FINANCIADOR: xModel.CORR_BECA_FINANCIADOR,
 				CORR_BECA: xModel.CORR_BECA,
@@ -94,7 +101,7 @@ export class AcaBecFinanciadorComponent extends CBaseComponent implements OnInit
 		return {
 			CORR_EMPRESA: 1,
 			CORR_BECA_FINANCIADOR: 0,
-			CORR_BECA: 0,
+			CORR_BECA: this.becaContexto || 0,
 			CORR_ENTIDAD_FINANCIADORA: 0,
 			CONCEPTO_COBERTURA: 'ARANCELES',
 			PORCENTAJE_COBERTURA: 100,
@@ -122,13 +129,18 @@ export class AcaBecFinanciadorComponent extends CBaseComponent implements OnInit
 	private cargarCatalogos(): void {
 		this.loadingVisible = true;
 		forkJoin({
-			tiposBeca: this.service.getTiposBeca().pipe(catchError(() => of({ Data: [] } as any))),
-			entidadesFinanciadoras: this.service.getEntidadesFinanciadoras().pipe(catchError(() => of({ Data: [] } as any))),
+			tiposBeca: this.service.getTiposBeca().pipe(catchError(error => of({ Result: false, ErrorMessage: getApiErrorMessage(error), Data: [] }))),
+			entidadesFinanciadoras: this.service.getEntidadesFinanciadoras().pipe(catchError(error => of({ Result: false, ErrorMessage: getApiErrorMessage(error), Data: [] }))),
 		})
 			.pipe(
 				finalize(() => (this.loadingVisible = false))
 			)
 			.subscribe((result: any) => {
+				const fallo = [result?.tiposBeca, result?.entidadesFinanciadoras].find(catalogo => !catalogo?.Result);
+				if (fallo) {
+					this.notifyFx(fallo.ErrorMessage || 'No se pudieron cargar los catalogos de financiadores.', NotifyType.Warning);
+					return;
+				}
 				this.tiposBeca = result?.tiposBeca?.Data ?? [];
 				this.entidadesFinanciadoras = result?.entidadesFinanciadoras?.Data ?? [];
 				this.items = this.service.getItems({
@@ -227,6 +239,7 @@ export class AcaBecFinanciadorComponent extends CBaseComponent implements OnInit
 			this.model = { ...this.model, ...formData };
 		}
 		this.model = this.service.normalizar(this.model);
+		if (this.becaContexto > 0) this.model.CORR_BECA = this.becaContexto;
 		this.dataForm?.instance?.option('formData', this.model);
 
 		const formValidation = this.dataForm?.instance?.validate();
@@ -280,7 +293,7 @@ export class AcaBecFinanciadorComponent extends CBaseComponent implements OnInit
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_BECA_FINANCIADOR))),
+			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(e.data)),
 		});
 	}
 
@@ -308,7 +321,12 @@ export class AcaBecFinanciadorComponent extends CBaseComponent implements OnInit
 			['CORR_BECA', 'CORR_ENTIDAD_FINANCIADORA', 'CONCEPTO_COBERTURA', 'PORCENTAJE_COBERTURA', 'MONTO_MAXIMO', 'ACTIVO'].forEach((field) =>
 				this.dataForm.instance.getEditor(field)?.option('readOnly', false)
 			);
+			this.bloquearBecaContexto();
 		});
+	}
+
+	private bloquearBecaContexto(): void {
+		if (this.becaContexto > 0) this.dataForm?.instance?.getEditor('CORR_BECA')?.option('readOnly', true);
 	}
 
 	override setFocus(): void {

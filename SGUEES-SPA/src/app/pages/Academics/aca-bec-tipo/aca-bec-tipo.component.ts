@@ -1,7 +1,10 @@
+import { leerBecaSeleccionada } from '../becas-configuracion/becas-configuracion.navigation';
+import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, Observable, of, throwError } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { catchError, finalize, map } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -30,6 +33,8 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
+	get becaSeleccionada(): number { return this.isBrowse() ? Number(this.model?.CORR_BECA) || 0 : 0; }
+
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Tipos de Beca';
 	private origenes: AcaBecOrigenBecaLookup[] = [];
 	private convenios: AcaBecConvenioLookup[] = [];
@@ -37,7 +42,8 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: AcaBecTipoService
+		private service: AcaBecTipoService,
+        private navigation: Router
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -50,6 +56,7 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 	}
 
 	ngOnInit(): void {
+		if(this.router.snapshot.queryParamMap.get('seccion')==='formularios'){void this.navigation.navigate(['/aca-bec-tipo/cuestionarios'],{queryParams:{beca:this.router.snapshot.queryParamMap.get('beca')},replaceUrl:true});return;}
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.cargarCatalogos();
 		this.consultar();
@@ -69,6 +76,7 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 	override fillData(xModel?: AcaBecTipo): AcaBecTipo {
 		if (xModel !== undefined) {
 			return {
+				VERSION_REGISTRO: xModel.VERSION_REGISTRO,
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_BECA: xModel.CORR_BECA,
 				CODIGO_BECA: xModel.CODIGO_BECA,
@@ -95,6 +103,7 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 				DESCRIPCION: xModel.DESCRIPCION ?? null,
 				ESTADO_BECA: xModel.ESTADO_BECA ?? 'ACTIVA',
 				ACTIVO: xModel.ACTIVO ?? xModel.ESTADO_BECA === 'ACTIVA',
+				CANT_FORMULARIOS: xModel.CANT_FORMULARIOS ?? 0,
 				CANT_REQUISITOS: xModel.CANT_REQUISITOS ?? 0,
 				CANT_DOCUMENTOS: xModel.CANT_DOCUMENTOS ?? 0,
 				CANT_FINANCIADORES: xModel.CANT_FINANCIADORES ?? 0,
@@ -147,6 +156,9 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 			load: () => this.service.getAll(this.fillParam()),
 			onData: () => {
 				this.ordenarModelsPorCorr();
+				const id = leerBecaSeleccionada(this.router.snapshot.queryParamMap.get('beca'));
+				const seleccionada = this.models.find((item: AcaBecTipo) => item.CORR_BECA === id);
+				if (seleccionada) this.model = this.fillData(seleccionada);
 				this.refrescarGridTrasCarga(resetPage);
 			},
 		});
@@ -155,8 +167,8 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 	private cargarCatalogos(): void {
 		this.loadingVisible = true;
 		forkJoin({
-			origenes: this.service.getOrigenes().pipe(catchError(() => of({ Data: [] } as any))),
-			convenios: this.service.getConvenios().pipe(catchError(() => of({ Data: [] } as any))),
+			origenes: this.service.getOrigenes().pipe(map((result: any) => { if (result?.Result !== true) throw result; return result; }), catchError((error: unknown) => { this.notifyFx(getApiErrorMessage(error) || 'No se pudieron cargar los catalogos de becas.', NotifyType.Warning); return of({ Data: [] } as any); })),
+			convenios: this.service.getConvenios().pipe(map((result: any) => { if (result?.Result !== true) throw result; return result; }), catchError((error: unknown) => { this.notifyFx(getApiErrorMessage(error) || 'No se pudieron cargar los catalogos de becas.', NotifyType.Warning); return of({ Data: [] } as any); })),
 		})
 			.pipe(finalize(() => (this.loadingVisible = false)))
 			.subscribe((result: any) => {
@@ -313,7 +325,7 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_BECA))),
+			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(e.data)),
 		});
 	}
 

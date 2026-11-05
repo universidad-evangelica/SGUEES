@@ -1,4 +1,5 @@
 export interface AcaBecDocumentoRequerido {
+	VERSION_REGISTRO?: string;
 	CORR_EMPRESA?: number;
 	CORR_BECA_DOCUMENTO_REQUERIDO: number;
 	CORR_BECA: number;

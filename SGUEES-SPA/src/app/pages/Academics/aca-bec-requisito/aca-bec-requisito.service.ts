@@ -12,6 +12,7 @@ const ESTADO_FIELD = 'ACTIVO';
 
 type AcaBecRequisitoFormOptions = {
 	tiposBeca?: AcaBecTipoLookup[];
+    becaContexto?:number;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -75,7 +76,7 @@ export class AcaBecRequisitoService {
 	}
 
 	delete(model: any): Observable<IResult> {
-		return this.repo.delete([{ Parameter: 'CORR_BECA_REQUISITO', Value: model.CORR_BECA_REQUISITO }]);
+		return this.repo.delete([{ Parameter: 'CORR_BECA_REQUISITO', Value: model.CORR_BECA_REQUISITO }, { Parameter: 'VERSION_REGISTRO', Value: model.VERSION_REGISTRO }]);
 	}
 
 	activarInactivar(model: any): Observable<IResult> {
@@ -108,71 +109,18 @@ export class AcaBecRequisitoService {
 	}
 
 	getItems(options?: AcaBecRequisitoFormOptions): any {
-		const tiposBeca = options?.tiposBeca ?? [];
-
-		return [
-			{
-				itemType: 'group',
-				caption: 'Datos generales',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{ dataField: 'CORR_BECA_REQUISITO', label: { text: 'Corr.' }, colSpan: 2, editorOptions: { readOnly: true } },
-					{
-						dataField: 'CORR_BECA',
-						label: { text: 'Tipo de beca' },
-						editorType: 'dxSelectBox',
-						colSpan: 10,
-						editorOptions: {
-							dataSource: tiposBeca,
-							valueExpr: 'CORR_BECA',
-							displayExpr: 'NOMBRE_BECA',
-							searchEnabled: true,
-							showClearButton: true,
-							placeholder: 'Tipo de beca...',
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'NOMBRE_REQUISITO',
-						label: { text: 'Requisito' },
-						colSpan: 12,
-						editorOptions: { placeholder: 'Requisito...', showClearButton: true, maxLength: 200 },
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'DESCRIPCION',
-						label: { text: 'Descripcion' },
-						editorType: 'dxTextArea',
-						colSpan: 12,
-						editorOptions: { placeholder: 'Descripcion...', maxLength: 1000, minHeight: 120 },
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Configuracion',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{
-						dataField: 'OBLIGATORIO',
-						label: { visible: false },
-						editorType: 'dxCheckBox',
-						colSpan: 4,
-						editorOptions: { text: 'Obligatorio' },
-					},
-					{
-						dataField: 'ACTIVO',
-						label: { visible: false },
-						editorType: 'dxCheckBox',
-						colSpan: 4,
-						editorOptions: { text: 'Activo' },
-					},
-				],
-			},
-		];
-	}
+    return [
+      {itemType:'group',caption:'Datos del requisito',colCount:1,colSpan:1,items:[
+        {dataField:'CORR_BECA',label:{text:'Beca'},editorType:'dxSelectBox',editorOptions:{dataSource:options?.tiposBeca??[],valueExpr:'CORR_BECA',displayExpr:'NOMBRE_BECA',searchEnabled:true,readOnly:!!options?.becaContexto,showClearButton:false,width:'100%'},validationRules:[{type:'required',message:'Seleccione la beca'}]},
+        {dataField:'NOMBRE_REQUISITO',label:{text:'Requisito'},editorOptions:{width:'100%',maxLength:200},validationRules:[{type:'required',message:'Ingrese el nombre'}]},
+        {dataField:'DESCRIPCION',label:{text:'Descripción'},editorType:'dxTextArea',editorOptions:{width:'100%',minHeight:140,autoResizeEnabled:true,maxLength:1000}},
+      ]},
+      {itemType:'group',caption:'Configuración',colCount:2,colCountByScreen:{xs:1,sm:1,md:2,lg:2},colSpan:1,items:[
+        {dataField:'OBLIGATORIO',label:{visible:false},editorType:'dxCheckBox',editorOptions:{text:'Obligatorio'}},
+        {dataField:'ACTIVO',label:{visible:false},editorType:'dxCheckBox',editorOptions:{text:'Activo'}},
+      ]},
+    ];
+  }
 
 	private normalizarOpcional(value: string | null | undefined): string | null {
 		const normalizado = `${value ?? ''}`.trim();

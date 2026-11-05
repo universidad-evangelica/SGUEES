@@ -11,8 +11,8 @@ namespace SGUEES.Repositories
 {
     public class ACA_BEC_ENTIDAD_FINANCIADORARepository : BaseRepository<ACA_BEC_ENTIDAD_FINANCIADORATable>, IACA_BEC_ENTIDAD_FINANCIADORARepository
     {
-        private const string _TableName = "ACA_BEC_ENTIDAD_FINANCIADORA";
-        private const string _ViewName = "V_ACA_BEC_ENTIDAD_FINANCIADORA";
+        private const string _TableName = "ACA_BECA_ENTIDAD_FINANCIADORA";
+        private const string _ViewName = "V_ACA_BECA_ENTIDAD_FINANCIADORA_MTTO";
         private const string _CampoPk = "CORR_ENTIDAD_FINANCIADORA";
         private const string _CampoEstado = "ACTIVO";
         private const bool _UsaEmpresa = true;
@@ -158,6 +158,7 @@ namespace SGUEES.Repositories
             try
             {
                 var p = new List<CParameter> {
+                    new() { ParameterName="@VERSION_REGISTRO",Value=(object)Data.VERSION_REGISTRO??DBNull.Value,DbType=System.Data.DbType.Binary,Size=8 },
                     new() { ParameterName="@TIPO_ACTUALIZA",Value=operation,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@ID",Value=Data.CORR_ENTIDAD_FINANCIADORA,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput },
@@ -171,7 +172,7 @@ namespace SGUEES.Repositories
                     new() { ParameterName="@CORREO",Value=(object)Data.CORREO??DBNull.Value,DbType=System.Data.DbType.AnsiString },
                     new() { ParameterName="@ACTIVO",Value=(object)Data.ACTIVO??DBNull.Value,DbType=System.Data.DbType.Boolean }
                 };
-                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BEC_ENTIDAD_FINANCIADORA", true, p);
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BECA_ENTIDAD_FINANCIADORA", true, p);
                 Data.CORR_ENTIDAD_FINANCIADORA = Convert.ToInt32(objData.objCommand.Parameters["@ID"].Value);
                 objData.objConnection.Close();
                 if (operation == 3) return new CResult { Result = true, CodeHelper = Data.CORR_ENTIDAD_FINANCIADORA, RowsAffected = 1 };

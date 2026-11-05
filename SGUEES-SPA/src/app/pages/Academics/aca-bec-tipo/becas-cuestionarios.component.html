@@ -1,0 +1,46 @@
+<div class="sguees-mtto-view">
+  <app-barra-data-mtto tituloVentana="Cuestionario de becas" [showRibbon]="false"></app-barra-data-mtto>
+  <app-becas-configuracion-tabs activa="formularios" [corrBeca]="seleccionada?.CORR_BECA || 0"
+    [nombreBeca]="seleccionada?.NOMBRE_BECA || ''" [mostrarContexto]="false" [bloqueado]="cambiosPendientes || loadingVisible"></app-becas-configuracion-tabs>
+
+  <div class="content-block dx-card responsive-paddings">
+    <label for="beca-cuestionario-selector">Beca y cuestionario</label>
+    <div class="selector-fila">
+    <div class="selector-control">
+    <dx-select-box id="beca-cuestionario-selector" [dataSource]="filas" valueExpr="CLAVE" displayExpr="ETIQUETA"
+      [value]="seleccionada?.CLAVE" [searchEnabled]="true" [searchExpr]="camposBusqueda" [wrapItemText]="true"
+      [showClearButton]="false" [disabled]="loadingVisible || cambiosPendientes" width="100%"
+      placeholder="Seleccione la beca y su cuestionario" (onValueChanged)="seleccionarClave($event.value)"></dx-select-box>
+    </div>
+      <dx-button icon="refresh" hint="Actualizar opciones" [elementAttr]="etiquetaActualizar"
+        [disabled]="loadingVisible || cambiosPendientes" (onClick)="consultar()"></dx-button>
+    </div>
+    <ng-container *ngIf="seleccionada as fila">
+    <p class="resumen"><strong>Estado:</strong> {{ fila.ESTADO_USO }} · <strong>Preguntas:</strong> {{ fila.CANT_PREGUNTAS }}</p>
+    <details *ngIf="!mostrarVersiones && fila.CORR_FORMULARIO_VERSION">
+      <summary>Becas que usan este cuestionario</summary>
+      <p>{{ becasAsignadas }}</p>
+    </details>
+    <div class="acciones" *ngIf="!cambiosPendientes">
+      <dx-button text="Crear cuestionario" icon="add" type="default" *ngIf="permiteAdd" [disabled]="loadingVisible" (onClick)="iniciarAccion('crear')"></dx-button>
+      <dx-button text="Modificar cuestionario" icon="edit" *ngIf="fila.ESTADO_VERSION === 'BORRADOR' ? permiteEdit : permiteAdd"
+        [disabled]="loadingVisible || !fila.CORR_FORMULARIO_VERSION" (onClick)="iniciarAccion('modificar')"></dx-button>
+      <dx-button text="Asignar a esta beca" icon="check" type="success" *ngIf="permiteEdit"
+        [disabled]="loadingVisible || fila.ESTADO_VERSION !== 'PUBLICADA'" (onClick)="iniciarAccion('asignar')"></dx-button>
+    </div>
+    <p *ngIf="fila.ESTADO_VERSION === 'BORRADOR'">Para asignarlo, termine las preguntas, revise la vista previa y publique el cuestionario.</p>
+    <div class="acciones" *ngIf="!cambiosPendientes">
+      <dx-button text="Ver preguntas" icon="find" type="normal"
+        [disabled]="loadingVisible || !fila.CORR_FORMULARIO_VERSION" (onClick)="cambiarVista(false)"></dx-button>
+      <dx-button text="Usar otro cuestionario como base" icon="copy" *ngIf="permiteAdd" [disabled]="loadingVisible" (onClick)="iniciarAccion('copiar')"></dx-button>
+      <dx-button text="Historial y opciones de versiones" icon="copy"
+        [disabled]="loadingVisible" (onClick)="cambiarVista(true)"></dx-button>
+    </div>
+    <app-beca-cuestionario *ngIf="!mostrarVersiones && fila.CORR_FORMULARIO_VERSION" [corrBeca]="fila.CORR_BECA"
+      [versionId]="fila.CORR_FORMULARIO_VERSION" (pendiente)="cambiosPendientes=$event" (volver)="cambiarVista(true)" (actualizado)="consultar()"></app-beca-cuestionario>
+    <app-beca-formularios *ngIf="mostrarVersiones" [corrBeca]="fila.CORR_BECA" [formularioInicialId]="contextoGestor?.formulario || 0"
+      [versionInicialId]="contextoGestor?.version || 0" [accionInicial]="accionInicial" (versionActiva)="registrarVersion($event)" (pendiente)="cambiosPendientes=$event" (actualizado)="consultar()"></app-beca-formularios>
+    </ng-container>
+  </div>
+  <dx-load-panel [(visible)]="loadingVisible" [showIndicator]="true" [shading]="true"></dx-load-panel>
+</div>

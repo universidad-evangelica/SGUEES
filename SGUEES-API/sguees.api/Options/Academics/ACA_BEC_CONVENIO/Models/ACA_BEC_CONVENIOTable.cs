@@ -5,6 +5,7 @@ namespace SGUEES.Models
 {
     public class ACA_BEC_CONVENIOTable : BaseEntity
     {
+        public byte[] VERSION_REGISTRO { get; set; }
         public int CORR_EMPRESA { get; set; }
         public int CORR_CONVENIO { get; set; }
         public string CODIGO_CONVENIO { get; set; }

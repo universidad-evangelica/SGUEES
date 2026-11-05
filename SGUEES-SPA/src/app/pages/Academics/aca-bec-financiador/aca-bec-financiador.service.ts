@@ -92,7 +92,7 @@ export class AcaBecFinanciadorService {
 	}
 
 	delete(model: any): Observable<IResult> {
-		return this.repo.delete([{ Parameter: 'CORR_BECA_FINANCIADOR', Value: model.CORR_BECA_FINANCIADOR }]);
+		return this.repo.delete([{ Parameter: 'CORR_BECA_FINANCIADOR', Value: model.CORR_BECA_FINANCIADOR }, { Parameter: 'VERSION_REGISTRO', Value: model.VERSION_REGISTRO }]);
 	}
 
 	activarInactivar(model: any): Observable<IResult> {
@@ -130,110 +130,34 @@ export class AcaBecFinanciadorService {
 		const entidadesFinanciadoras = options?.entidadesFinanciadoras ?? [];
 
 		return [
-			{
-				itemType: 'group',
-				caption: 'Datos generales',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{ dataField: 'CORR_BECA_FINANCIADOR', label: { text: 'Corr.' }, colSpan: 2, editorOptions: { readOnly: true } },
-					{
-						dataField: 'CORR_BECA',
-						label: { text: 'Tipo de beca' },
-						editorType: 'dxSelectBox',
-						colSpan: 10,
-						editorOptions: {
-							dataSource: tiposBeca,
-							valueExpr: 'CORR_BECA',
-							displayExpr: 'NOMBRE_BECA',
-							searchEnabled: true,
-							showClearButton: true,
-							placeholder: 'Tipo de beca...',
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'CORR_ENTIDAD_FINANCIADORA',
-						label: { text: 'Entidad financiadora' },
-						editorType: 'dxSelectBox',
-						colSpan: 12,
-						editorOptions: {
-							dataSource: entidadesFinanciadoras,
-							valueExpr: 'CORR_ENTIDAD_FINANCIADORA',
-							displayExpr: 'NOMBRE_ENTIDAD',
-							searchEnabled: true,
-							showClearButton: true,
-							placeholder: 'Entidad financiadora...',
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Cobertura',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{
-						dataField: 'CONCEPTO_COBERTURA',
-						label: { text: 'Concepto cobertura' },
-						editorType: 'dxSelectBox',
-						colSpan: 6,
-						editorOptions: {
-							dataSource: this.conceptosCobertura,
-							acceptCustomValue: true,
-							searchEnabled: true,
-							showClearButton: true,
-							placeholder: 'Concepto...',
-							maxLength: 50,
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'PORCENTAJE_COBERTURA',
-						label: { text: 'Cobertura %' },
-						editorType: 'dxNumberBox',
-						colSpan: 3,
-						editorOptions: {
-							min: 0,
-							max: 100,
-							format: '#,##0.##',
-							showSpinButtons: true,
-							placeholder: '0.00',
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'MONTO_MAXIMO',
-						label: { text: 'Monto maximo' },
-						editorType: 'dxNumberBox',
-						colSpan: 3,
-						editorOptions: {
-							min: 0,
-							format: '#,##0.00',
-							showSpinButtons: true,
-							showClearButton: true,
-							placeholder: 'Sin limite',
-						},
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Configuracion',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{
-						dataField: 'ACTIVO',
-						label: { visible: false },
-						editorType: 'dxCheckBox',
-						colSpan: 4,
-						editorOptions: { text: 'Activo' },
-					},
-				],
-			},
+			{ itemType: 'group', caption: 'Datos generales', colCount: 1, items: [
+				{ itemType: 'group', colCount: 4, colCountByScreen: { xs: 1, sm: 1, md: 4, lg: 4 }, items: [
+					{ dataField: 'CORR_BECA_FINANCIADOR', label: { text: 'Corr.' },
+						editorOptions: { width: '100%', readOnly: true } },
+					{ dataField: 'CORR_BECA', label: { text: 'Tipo de beca' }, editorType: 'dxSelectBox', colSpan: 3,
+						editorOptions: { width: '100%', dataSource: tiposBeca, valueExpr: 'CORR_BECA', displayExpr: 'NOMBRE_BECA',
+							searchEnabled: true, showClearButton: true, placeholder: 'Seleccione el tipo de beca' },
+						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+				] },
+				{ dataField: 'CORR_ENTIDAD_FINANCIADORA', label: { text: 'Entidad financiadora' }, editorType: 'dxSelectBox',
+					editorOptions: { width: '100%', dataSource: entidadesFinanciadoras, valueExpr: 'CORR_ENTIDAD_FINANCIADORA',
+						displayExpr: 'NOMBRE_ENTIDAD', searchEnabled: true, showClearButton: true, placeholder: 'Seleccione la entidad financiadora' },
+					validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+			] },
+			{ itemType: 'group', caption: 'Cobertura', colCount: 1, items: [
+				{ dataField: 'CONCEPTO_COBERTURA', label: { text: 'Concepto de cobertura' }, editorType: 'dxSelectBox',
+					editorOptions: { width: '100%', dataSource: this.conceptosCobertura, acceptCustomValue: true, searchEnabled: true,
+						showClearButton: true, placeholder: 'Seleccione el concepto de cobertura', maxLength: 50 },
+					validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+				{ itemType: 'group', colCount: 2, colCountByScreen: { xs: 1, sm: 2, md: 2, lg: 2 }, items: [
+					{ dataField: 'PORCENTAJE_COBERTURA', label: { text: 'Cobertura (%)' }, editorType: 'dxNumberBox',
+						editorOptions: { width: '100%', min: 0, max: 100, format: '#,##0.##', showSpinButtons: true, placeholder: '0.00' },
+						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+					{ dataField: 'MONTO_MAXIMO', label: { text: 'Monto maximo' }, editorType: 'dxNumberBox',
+						editorOptions: { width: '100%', min: 0, format: '#,##0.00', showSpinButtons: true, showClearButton: true, placeholder: 'Sin limite' } },
+				] },
+			] },
+			{ dataField: 'ACTIVO', label: { visible: false }, editorType: 'dxCheckBox', editorOptions: { text: 'Activo' } },
 		];
 	}
 

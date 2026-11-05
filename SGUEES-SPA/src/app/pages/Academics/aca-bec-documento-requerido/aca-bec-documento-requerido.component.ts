@@ -1,7 +1,10 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { leerBecaSeleccionada } from '../becas-configuracion/becas-configuracion.navigation';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, Subscription, of, throwError } from 'rxjs';
+import { catchError, filter, finalize, map } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -17,7 +20,7 @@ const ESTADO_FIELD = 'ACTIVO';
 	templateUrl: './aca-bec-documento-requerido.component.html',
 	styleUrls: ['./aca-bec-documento-requerido.component.scss'],
 })
-export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements OnInit {
+export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	protected override etiquetaRegistro = 'el documento requerido de beca';
@@ -30,13 +33,26 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
+	becaContexto = leerBecaSeleccionada(this.router.snapshot.queryParamMap.get('beca'));
+  private contextoSub?:Subscription;
+  private catalogosCargados=false;
+  get nombreBecaContexto():string {
+    return this.tiposBeca.find(b=>b.CORR_BECA===this.becaContexto)?.NOMBRE_BECA
+      ?? (this.catalogosCargados?'Beca no disponible en el catálogo':'Cargando nombre de la beca...');
+  }
+  seleccionarBeca(id:number):void {
+    if(!this.isBrowse()||this.loadingVisible||!id||id===this.becaContexto)return;
+    void this.navigation.navigate([],{relativeTo:this.router,queryParams:{beca:id},queryParamsHandling:'merge'});
+  }
+  ngOnDestroy():void {this.contextoSub?.unsubscribe();}
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Documentos Requeridos';
-	private tiposBeca: AcaBecTipoLookup[] = [];
+	tiposBeca: AcaBecTipoLookup[] = [];
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: AcaBecDocumentoRequeridoService
+		private service: AcaBecDocumentoRequeridoService,
+        private navigation:Router
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -51,7 +67,13 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.cargarCatalogos();
-		this.consultar();
+    this.contextoSub=this.router.queryParamMap.subscribe(params=>{
+      if(!this.isBrowse())return;
+      const beca=leerBecaSeleccionada(params.get('beca'));
+      this.becaContexto=beca;this.models=[];this.model=this.fillData();
+      this.items=this.service.getItems({tiposBeca:this.tiposBeca,becaContexto:beca});
+      this.consultar(true);
+    });
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -62,12 +84,13 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 	}
 
 	fillParam(xCorrDocumentoRequerido?: number): any {
-		return { CORR_BECA_DOCUMENTO_REQUERIDO: xCorrDocumentoRequerido ?? 0 };
+		return { CORR_BECA_DOCUMENTO_REQUERIDO: xCorrDocumentoRequerido ?? 0, CORR_BECA:this.becaContexto || undefined };
 	}
 
 	override fillData(xModel?: AcaBecDocumentoRequerido): AcaBecDocumentoRequerido {
 		if (xModel !== undefined) {
 			return {
+				VERSION_REGISTRO: xModel.VERSION_REGISTRO,
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_BECA_DOCUMENTO_REQUERIDO: xModel.CORR_BECA_DOCUMENTO_REQUERIDO,
 				CORR_BECA: xModel.CORR_BECA,
@@ -89,7 +112,7 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 		return {
 			CORR_EMPRESA: 1,
 			CORR_BECA_DOCUMENTO_REQUERIDO: 0,
-			CORR_BECA: 0,
+			CORR_BECA: this.becaContexto || 0,
 			NOMBRE_DOCUMENTO: '',
 			AREA_RECEPTORA: 'REGISTRO',
 			OBLIGATORIO: true,
@@ -104,8 +127,10 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 	}
 
 	consultar(resetPage = false): void {
-		this.consultarMtto({
-			load: () => this.service.getAll(this.fillParam()),
+    if(this.becaContexto<=0){this.models=[];this.loadingVisible=false;return;}
+    const beca=this.becaContexto;
+    this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()).pipe(filter(()=>beca===this.becaContexto),finalize(()=>{if(beca===this.becaContexto)this.loadingVisible=false;})),
 			onData: () => {
 				this.ordenarModels();
 				this.refrescarGridTrasCarga(resetPage);
@@ -118,12 +143,13 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 		this.service
 			.getTiposBeca()
 			.pipe(
-				catchError(() => of({ Data: [] } as any)),
+				map((result: any) => { if (result?.Result !== true) throw result; return result; }), catchError((error: unknown) => { this.notifyFx(getApiErrorMessage(error) || 'No se pudieron cargar los catalogos de becas.', NotifyType.Warning); return of({ Data: [] } as any); }),
 				finalize(() => (this.loadingVisible = false))
 			)
 			.subscribe((result: any) => {
-				this.tiposBeca = result?.Data ?? [];
-				this.items = this.service.getItems({ tiposBeca: this.tiposBeca });
+				this.catalogosCargados=true;
+                this.tiposBeca = result?.Data ?? [];
+				this.items = this.service.getItems({ tiposBeca: this.tiposBeca,becaContexto:this.becaContexto });
 			});
 	}
 
@@ -176,6 +202,7 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
+        if(rowData?.CORR_BECA!==this.becaContexto)return;
 		if (rowData) {
 			this.model = this.fillData(rowData);
 			this.modelUpdate = this.fillData(rowData);
@@ -188,7 +215,7 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 	}
 
 	onEditClick(e: any): void {
-		if (!e?.row?.data) {
+		if (!e?.row?.data || e.row.data.CORR_BECA!==this.becaContexto) {
 			return;
 		}
 
@@ -201,6 +228,7 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 	}
 
 	override nuevo(): void {
+        if(this.becaContexto<=0||this.loadingVisible)return;
 		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
@@ -216,6 +244,7 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 			this.model = { ...this.model, ...formData };
 		}
 		this.model = this.service.normalizar(this.model);
+		if (this.becaContexto > 0) this.model.CORR_BECA = this.becaContexto;
 		this.dataForm?.instance?.option('formData', this.model);
 
 		const formValidation = this.dataForm?.instance?.validate();
@@ -268,12 +297,14 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 	}
 
 	rowRemoving(e: any): void {
+        if(e?.data?.CORR_BECA!==this.becaContexto){e.cancel=true;return;}
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_BECA_DOCUMENTO_REQUERIDO))),
+			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(e.data)),
 		});
 	}
 
 	activar_inactivar(): void {
+        if(this.model?.CORR_BECA!==this.becaContexto)return;
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
@@ -289,12 +320,17 @@ export class AcaBecDocumentoRequeridoComponent extends CBaseComponent implements
 			['CORR_BECA', 'NOMBRE_DOCUMENTO', 'AREA_RECEPTORA', 'OBLIGATORIO', 'ACTIVO'].forEach((field) =>
 				this.dataForm.instance.getEditor(field)?.option('readOnly', false)
 			);
+			this.bloquearBecaContexto();
 		});
+	}
+
+	private bloquearBecaContexto(): void {
+		if (this.becaContexto > 0) this.dataForm?.instance?.getEditor('CORR_BECA')?.option('readOnly', true);
 	}
 
 	override setFocus(): void {
 		setTimeout(() => {
-			this.dataForm.instance.getEditor('CORR_BECA')?.focus();
+			this.dataForm.instance.getEditor(this.becaContexto>0?'NOMBRE_DOCUMENTO':'CORR_BECA')?.focus();
 		});
 	}
 }

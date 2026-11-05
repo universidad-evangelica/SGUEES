@@ -5,6 +5,7 @@ namespace SGUEES.Models
 {
     public class ACA_BEC_REQUISITOTable : BaseEntity
     {
+        public byte[] VERSION_REGISTRO { get; set; }
         public int CORR_EMPRESA { get; set; }
         public int CORR_BECA_REQUISITO { get; set; }
         public int CORR_BECA { get; set; }

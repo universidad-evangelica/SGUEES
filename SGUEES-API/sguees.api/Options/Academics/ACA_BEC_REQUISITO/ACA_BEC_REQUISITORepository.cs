@@ -11,8 +11,8 @@ namespace SGUEES.Repositories
 {
     public class ACA_BEC_REQUISITORepository : BaseRepository<ACA_BEC_REQUISITOTable>, IACA_BEC_REQUISITORepository
     {
-        private const string _TableName = "ACA_BEC_REQUISITO";
-        private const string _ViewName = "V_ACA_BEC_REQUISITO";
+        private const string _TableName = "ACA_BECA_REQUISITO";
+        private const string _ViewName = "V_ACA_BECA_REQUISITO_MTTO";
         private const string _CampoPk = "CORR_BECA_REQUISITO";
         private const string _CampoEstado = "ACTIVO";
         private const bool _UsaEmpresa = true;
@@ -116,10 +116,9 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "ESTADO_BECA", Value = "ACTIVA", DbType = System.Data.DbType.String },
                 };
 
-                var reader = await objData.GetDataReader("V_ACA_BEC_TIPO", p);
+                var reader = await objData.GetDataReader("V_ACA_BECA_TIPO_MTTO", p);
                 var response = new List<ACA_BEC_TIPOLookup>().FromDataReader(reader)
                     .OrderBy(x => x.NOMBRE_BECA)
                     .ToList();
@@ -197,6 +196,7 @@ namespace SGUEES.Repositories
             try
             {
                 var p = new List<CParameter> {
+                    new() { ParameterName="@VERSION_REGISTRO",Value=(object)Data.VERSION_REGISTRO??DBNull.Value,DbType=System.Data.DbType.Binary,Size=8 },
                     new() { ParameterName="@TIPO_ACTUALIZA",Value=operation,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@ID",Value=Data.CORR_BECA_REQUISITO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput },
@@ -208,7 +208,7 @@ namespace SGUEES.Repositories
                     new() { ParameterName="@OBLIGATORIO",Value=(object)Data.OBLIGATORIO??DBNull.Value,DbType=System.Data.DbType.Boolean },
                     new() { ParameterName="@ACTIVO",Value=(object)Data.ACTIVO??DBNull.Value,DbType=System.Data.DbType.Boolean }
                 };
-                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BEC_REQUISITO", true, p);
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BECA_REQUISITO", true, p);
                 Data.CORR_BECA_REQUISITO = Convert.ToInt32(objData.objCommand.Parameters["@ID"].Value);
                 objData.objConnection.Close();
                 if (operation == 3) return new CResult { Result = true, CodeHelper = Data.CORR_BECA_REQUISITO, RowsAffected = 1 };

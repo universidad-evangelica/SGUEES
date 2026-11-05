@@ -11,8 +11,8 @@ namespace SGUEES.Repositories
 {
     public class ACA_BEC_CONVENIORepository : BaseRepository<ACA_BEC_CONVENIOTable>, IACA_BEC_CONVENIORepository
     {
-        private const string _TableName = "ACA_BEC_CONVENIO";
-        private const string _ViewName = "V_ACA_BEC_CONVENIO";
+        private const string _TableName = "ACA_BECA_CONVENIO";
+        private const string _ViewName = "V_ACA_BECA_CONVENIO_MTTO";
         private const string _CampoPk = "CORR_CONVENIO";
 
         public ACA_BEC_CONVENIORepository(IConfiguration config) :
@@ -113,10 +113,9 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "ACTIVO", Value = true, DbType = System.Data.DbType.Boolean },
                 };
 
-                var reader = await objData.GetDataReader("V_ACA_BEC_ENTIDAD_FINANCIADORA", p);
+                var reader = await objData.GetDataReader("V_ACA_BECA_ENTIDAD_FINANCIADORA_MTTO", p);
                 var response = new List<ACA_BEC_ENTIDAD_FINANCIADORALookup>().FromDataReader(reader)
                     .OrderBy(x => x.NOMBRE_ENTIDAD)
                     .ToList();
@@ -194,6 +193,7 @@ namespace SGUEES.Repositories
             try
             {
                 var p = new List<CParameter> {
+                    new() { ParameterName="@VERSION_REGISTRO",Value=(object)Data.VERSION_REGISTRO??DBNull.Value,DbType=System.Data.DbType.Binary,Size=8 },
                     new() { ParameterName="@TIPO_ACTUALIZA",Value=operation,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@ID",Value=Data.CORR_CONVENIO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput },
@@ -207,7 +207,7 @@ namespace SGUEES.Repositories
                     new() { ParameterName="@DESCRIPCION",Value=(object)Data.DESCRIPCION??DBNull.Value,DbType=System.Data.DbType.AnsiString },
                     new() { ParameterName="@ESTADO_CONVENIO",Value=(object)Data.ESTADO_CONVENIO??DBNull.Value,DbType=System.Data.DbType.AnsiString }
                 };
-                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BEC_CONVENIO", true, p);
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BECA_CONVENIO", true, p);
                 Data.CORR_CONVENIO = Convert.ToInt32(objData.objCommand.Parameters["@ID"].Value);
                 objData.objConnection.Close();
                 if (operation == 3) return new CResult { Result = true, CodeHelper = Data.CORR_CONVENIO, RowsAffected = 1 };

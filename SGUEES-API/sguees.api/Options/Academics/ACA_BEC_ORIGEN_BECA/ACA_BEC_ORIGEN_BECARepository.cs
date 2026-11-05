@@ -11,8 +11,8 @@ namespace SGUEES.Repositories
 {
     public class ACA_BEC_ORIGEN_BECARepository : BaseRepository<ACA_BEC_ORIGEN_BECATable>, IACA_BEC_ORIGEN_BECARepository
     {
-        private const string _TableName = "ACA_BEC_ORIGEN_BECA";
-        private const string _ViewName = "V_ACA_BEC_ORIGEN_BECA";
+        private const string _TableName = "ACA_BECA_ORIGEN_BECA";
+        private const string _ViewName = "V_ACA_BECA_ORIGEN_BECA_MTTO";
         private const string _CampoPk = "CORR_ORIGEN_BECA";
         private const string _CampoEstado = "ACTIVO";
         private const bool _UsaEmpresa = true;
@@ -132,6 +132,7 @@ namespace SGUEES.Repositories
             try
             {
                 var p = new List<CParameter> {
+                    new() { ParameterName="@VERSION_REGISTRO",Value=(object)Data.VERSION_REGISTRO??DBNull.Value,DbType=System.Data.DbType.Binary,Size=8 },
                     new() { ParameterName="@TIPO_ACTUALIZA",Value=operation,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32 },
                     new() { ParameterName="@ID",Value=Data.CORR_ORIGEN_BECA,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput },
@@ -142,7 +143,7 @@ namespace SGUEES.Repositories
                     new() { ParameterName="@DESCRIPCION",Value=(object)Data.DESCRIPCION??DBNull.Value,DbType=System.Data.DbType.AnsiString },
                     new() { ParameterName="@ACTIVO",Value=(object)Data.ACTIVO??DBNull.Value,DbType=System.Data.DbType.Boolean }
                 };
-                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BEC_ORIGEN_BECA", true, p);
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BECA_ORIGEN_BECA", true, p);
                 Data.CORR_ORIGEN_BECA = Convert.ToInt32(objData.objCommand.Parameters["@ID"].Value);
                 objData.objConnection.Close();
                 if (operation == 3) return new CResult { Result = true, CodeHelper = Data.CORR_ORIGEN_BECA, RowsAffected = 1 };

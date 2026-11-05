@@ -12,6 +12,7 @@ const ESTADO_FIELD = 'ACTIVO';
 
 type AcaBecDocumentoRequeridoFormOptions = {
 	tiposBeca?: AcaBecTipoLookup[];
+    becaContexto?:number;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -58,6 +59,10 @@ export class AcaBecDocumentoRequeridoService {
 			return false;
 		}
 
+		if (!this.areasReceptoras.includes(model.AREA_RECEPTORA)) {
+			msg('Seleccione un area receptora del catalogo.', NotifyType.Warning);
+			return false;
+		}
 		return true;
 	}
 
@@ -82,7 +87,7 @@ export class AcaBecDocumentoRequeridoService {
 	}
 
 	delete(model: any): Observable<IResult> {
-		return this.repo.delete([{ Parameter: 'CORR_BECA_DOCUMENTO_REQUERIDO', Value: model.CORR_BECA_DOCUMENTO_REQUERIDO }]);
+		return this.repo.delete([{ Parameter: 'CORR_BECA_DOCUMENTO_REQUERIDO', Value: model.CORR_BECA_DOCUMENTO_REQUERIDO }, { Parameter: 'VERSION_REGISTRO', Value: model.VERSION_REGISTRO }]);
 	}
 
 	activarInactivar(model: any): Observable<IResult> {
@@ -115,79 +120,18 @@ export class AcaBecDocumentoRequeridoService {
 	}
 
 	getItems(options?: AcaBecDocumentoRequeridoFormOptions): any {
-		const tiposBeca = options?.tiposBeca ?? [];
-
-		return [
-			{
-				itemType: 'group',
-				caption: 'Datos generales',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{ dataField: 'CORR_BECA_DOCUMENTO_REQUERIDO', label: { text: 'Corr.' }, colSpan: 2, editorOptions: { readOnly: true } },
-					{
-						dataField: 'CORR_BECA',
-						label: { text: 'Tipo de beca' },
-						editorType: 'dxSelectBox',
-						colSpan: 10,
-						editorOptions: {
-							dataSource: tiposBeca,
-							valueExpr: 'CORR_BECA',
-							displayExpr: 'NOMBRE_BECA',
-							searchEnabled: true,
-							showClearButton: true,
-							placeholder: 'Tipo de beca...',
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'NOMBRE_DOCUMENTO',
-						label: { text: 'Documento requerido' },
-						colSpan: 8,
-						editorOptions: { placeholder: 'Documento requerido...', showClearButton: true, maxLength: 200 },
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'AREA_RECEPTORA',
-						label: { text: 'Area receptora' },
-						editorType: 'dxSelectBox',
-						colSpan: 4,
-						editorOptions: {
-							dataSource: this.areasReceptoras,
-							acceptCustomValue: true,
-							searchEnabled: true,
-							showClearButton: true,
-							placeholder: 'Area receptora...',
-							maxLength: 40,
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Configuracion',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{
-						dataField: 'OBLIGATORIO',
-						label: { visible: false },
-						editorType: 'dxCheckBox',
-						colSpan: 4,
-						editorOptions: { text: 'Obligatorio' },
-					},
-					{
-						dataField: 'ACTIVO',
-						label: { visible: false },
-						editorType: 'dxCheckBox',
-						colSpan: 4,
-						editorOptions: { text: 'Activo' },
-					},
-				],
-			},
-		];
-	}
+    return [
+      {itemType:'group',caption:'Datos del documento',colCount:1,colSpan:1,items:[
+        {dataField:'CORR_BECA',label:{text:'Beca'},editorType:'dxSelectBox',editorOptions:{dataSource:options?.tiposBeca??[],valueExpr:'CORR_BECA',displayExpr:'NOMBRE_BECA',searchEnabled:true,readOnly:!!options?.becaContexto,showClearButton:false,width:'100%'},validationRules:[{type:'required',message:'Seleccione la beca'}]},
+        {dataField:'NOMBRE_DOCUMENTO',label:{text:'Documento requerido'},editorOptions:{width:'100%',maxLength:200},validationRules:[{type:'required',message:'Ingrese el nombre'}]},
+        {dataField:'AREA_RECEPTORA',label:{text:'Área receptora'},editorType:'dxSelectBox',editorOptions:{dataSource:this.areasReceptoras,searchEnabled:true,acceptCustomValue:false,width:'100%'},validationRules:[{type:'required',message:'Seleccione el área receptora'}]},
+      ]},
+      {itemType:'group',caption:'Configuración',colCount:2,colCountByScreen:{xs:1,sm:1,md:2,lg:2},colSpan:1,items:[
+        {dataField:'OBLIGATORIO',label:{visible:false},editorType:'dxCheckBox',editorOptions:{text:'Obligatorio'}},
+        {dataField:'ACTIVO',label:{visible:false},editorType:'dxCheckBox',editorOptions:{text:'Activo'}},
+      ]},
+    ];
+  }
 
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];

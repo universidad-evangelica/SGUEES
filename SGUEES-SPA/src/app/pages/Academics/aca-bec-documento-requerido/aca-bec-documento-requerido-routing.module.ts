@@ -1,4 +1,5 @@
-﻿import { CommonModule } from '@angular/common';
+import { BecasConfiguracionTabsComponent } from '../becas-configuracion/becas-configuracion-tabs.component';
+import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
@@ -18,6 +19,7 @@ const routes: Routes = [{ path: '', component: AcaBecDocumentoRequeridoComponent
 
 @NgModule({
 	imports: [
+		BecasConfiguracionTabsComponent,
 		RouterModule.forChild(routes),
 		CommonModule,
 		DxButtonModule,

@@ -107,7 +107,7 @@ export class AcaBecEntidadFinanciadoraService {
 	}
 
 	delete(model: any): Observable<IResult> {
-		return this.repo.delete([{ Parameter: 'CORR_ENTIDAD_FINANCIADORA', Value: model.CORR_ENTIDAD_FINANCIADORA }]);
+		return this.repo.delete([{ Parameter: 'CORR_ENTIDAD_FINANCIADORA', Value: model.CORR_ENTIDAD_FINANCIADORA }, { Parameter: 'VERSION_REGISTRO', Value: model.VERSION_REGISTRO }]);
 	}
 
 	activarInactivar(model: any): Observable<IResult> {
@@ -126,7 +126,7 @@ export class AcaBecEntidadFinanciadoraService {
 			{ dataField: 'CODIGO_ENTIDAD', caption: 'Codigo', width: 150 },
 			{ dataField: 'NOMBRE_ENTIDAD', caption: 'Entidad financiadora', minWidth: 320 },
 			{ dataField: 'TIPO_ENTIDAD', caption: 'Tipo', width: 140 },
-			{ dataField: 'CONTACTO', caption: 'Contacto', width: 200 },
+			{ dataField: 'TELEFONO', caption: 'Telefono', width: 160 },
 			{ dataField: 'CORREO', caption: 'Correo', width: 220 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			...buildAuditGridColumns({ withDateTimeFilter: true }),
@@ -148,85 +148,22 @@ export class AcaBecEntidadFinanciadoraService {
 
 	getItems(): any {
 		return [
-			{
-				itemType: 'group',
-				caption: 'Datos generales',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{ dataField: 'CORR_ENTIDAD_FINANCIADORA', label: { text: 'Corr.' }, colSpan: 2, editorOptions: { readOnly: true } },
-					{
-						dataField: 'CODIGO_ENTIDAD',
-						label: { text: 'Codigo' },
-						colSpan: 3,
-						editorOptions: { placeholder: 'Codigo...', showClearButton: true, maxLength: 30 },
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'TIPO_ENTIDAD',
-						label: { text: 'Tipo entidad' },
-						editorType: 'dxSelectBox',
-						colSpan: 3,
-						editorOptions: {
-							dataSource: this.tiposEntidad,
-							acceptCustomValue: true,
-							searchEnabled: true,
-							showClearButton: true,
-							placeholder: 'Tipo...',
-							maxLength: 30,
-						},
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-					{
-						dataField: 'NOMBRE_ENTIDAD',
-						label: { text: 'Entidad financiadora' },
-						colSpan: 12,
-						editorOptions: { placeholder: 'Entidad financiadora...', showClearButton: true, maxLength: 200 },
-						validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Contacto',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{
-						dataField: 'CONTACTO',
-						label: { text: 'Contacto' },
-						colSpan: 5,
-						editorOptions: { placeholder: 'Contacto...', showClearButton: true, maxLength: 150 },
-					},
-					{
-						dataField: 'TELEFONO',
-						label: { text: 'Telefono' },
-						colSpan: 3,
-						editorOptions: { placeholder: 'Telefono...', showClearButton: true, maxLength: 30 },
-					},
-					{
-						dataField: 'CORREO',
-						label: { text: 'Correo' },
-						colSpan: 4,
-						editorOptions: { placeholder: 'Correo...', showClearButton: true, maxLength: 150 },
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Configuracion',
-				colCount: 12,
-				colSpan: 8,
-				items: [
-					{
-						dataField: 'ACTIVO',
-						label: { visible: false },
-						editorType: 'dxCheckBox',
-						colSpan: 4,
-						editorOptions: { text: 'Activo' },
-					},
-				],
-			},
+			{ dataField: 'CORR_ENTIDAD_FINANCIADORA', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
+			{ dataField: 'CODIGO_ENTIDAD', label: { text: 'Codigo' }, colSpan: 3,
+				editorOptions: { showClearButton: true, maxLength: 30 },
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+			{ dataField: 'TIPO_ENTIDAD', label: { text: 'Tipo de entidad' }, editorType: 'dxSelectBox', colSpan: 4,
+				editorOptions: { dataSource: this.tiposEntidad, searchEnabled: true, acceptCustomValue: false },
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+			{ dataField: 'NOMBRE_ENTIDAD', label: { text: 'Iglesia o institucion' }, colSpan: 8,
+				editorOptions: { showClearButton: true, maxLength: 200 },
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }] },
+			{ dataField: 'TELEFONO', label: { text: 'Telefono' }, colSpan: 4,
+				editorOptions: { showClearButton: true, maxLength: 30 } },
+			{ dataField: 'CORREO', label: { text: 'Correo' }, colSpan: 4,
+				editorOptions: { showClearButton: true, maxLength: 150 },
+				validationRules: [{ type: 'email', message: 'Debe ingresar un correo valido' }] },
+			{ dataField: 'ACTIVO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
 

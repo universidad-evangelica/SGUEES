@@ -1,4 +1,5 @@
 export interface AcaBecConvenio {
+	VERSION_REGISTRO?: string;
 	CORR_EMPRESA?: number;
 	CORR_CONVENIO: number;
 	CODIGO_CONVENIO: string;

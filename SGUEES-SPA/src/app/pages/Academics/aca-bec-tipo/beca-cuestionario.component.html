@@ -1,0 +1,87 @@
+<app-barra-data-mtto *ngIf="edicion" tituloVentana="Editor de cuestionario" [ocultarEncabezado]="true" [showRibbon]="false" [isBrowse]="false" [isForm]="true"
+  [permiteAdd]="false" [showExport]="false" [showRefresh]="false" (guardar)="guardar()" (cancelar)="cancelar()">
+</app-barra-data-mtto>
+
+<div class="content-block dx-card responsive-paddings" *ngIf="contenido">
+  <h3>{{ contenido.VERSION.NOMBRE_FORMULARIO }} · Versión {{ contenido.VERSION.VERSION_FORMULARIO }}</h3>
+  <p class="guia" *ngIf="soloLectura">Versión publicada: puede consultar y probar el cuestionario. Para cambiarlo, vuelva a Versiones y cree una copia en borrador.</p>
+  <p class="guia" *ngIf="!soloLectura">Borrador. Agregue una sección, escriba sus preguntas y defina las opciones cuando corresponda. Revise la vista previa antes de publicar.</p>
+  <div class="acciones" *ngIf="!edicion">
+    <dx-button text="Volver a versiones y asignación" icon="back" [disabled]="loadingVisible" (onClick)="salir()"></dx-button>
+    <dx-button text="Publicar cuestionario" type="success" icon="check" *ngIf="!soloLectura && permiteEdit" [disabled]="loadingVisible" (onClick)="publicar()"></dx-button>
+  </div>
+  <dx-tabs [items]="tabs" [selectedIndex]="paso" [disabled]="!!edicion || loadingVisible" [showNavButtons]="true" [scrollByContent]="true"
+    width="100%" (onItemClick)="cambiarPaso($event)"></dx-tabs>
+
+  <div class="contexto" *ngIf="paso > 0 && paso < 5 && !edicion">
+    <div>
+      <label>Sección</label>
+      <dx-select-box [dataSource]="secciones" valueExpr="CORR_SECCION_BECA" displayExpr="NOMBRE_SECCION" [value]="seccionId"
+        [searchEnabled]="true" [disabled]="loadingVisible" (onValueChanged)="cambiarSeccion($event.value)"></dx-select-box>
+    </div>
+    <div>
+      <label>Pregunta</label>
+      <dx-select-box [dataSource]="preguntas" valueExpr="CORR_PREGUNTA_BECA" displayExpr="TEXTO_PREGUNTA" [value]="preguntaId"
+        [searchEnabled]="true" [disabled]="loadingVisible || !preguntas.length" [showClearButton]="false"
+        [placeholder]="preguntas.length ? 'Seleccione la pregunta' : 'Esta sección no tiene preguntas'"
+        (onValueChanged)="cambiarPregunta($event.value)"></dx-select-box>
+    </div>
+  </div>
+
+  <div *ngIf="edicion && datos">
+    <h3>{{ tituloEditor }}</h3>
+    <p class="guia" *ngIf="datos.ELEMENTO === 2">El tipo de respuesta determina lo que verá el aspirante. «Seleccionar una respuesta» y «Seleccionar varias respuestas» permiten agregar alternativas en el paso 3. «Sí / No» crea esas dos alternativas automáticamente.</p>
+    <p class="guia" *ngIf="datos.ELEMENTO === 4">Configure un puntaje fijo y su vigencia. En preguntas de selección, el puntaje corresponde a la opción elegida.</p>
+    <p class="guia" *ngIf="datos.ELEMENTO === 5">Esta condición muestra la pregunta actual según una respuesta anterior. Si agrega varias condiciones, bastará que se cumpla una.</p>
+    <dx-form #fData [formData]="datos" [items]="itemsEditor" labelLocation="top" [colCount]="2"
+      [colCountByScreen]="{ xs: 1, sm: 1, md: 2, lg: 2 }" [disabled]="loadingVisible"></dx-form>
+  </div>
+
+  <div *ngIf="!edicion && paso < 5">
+    <p class="guia" *ngIf="paso === 0">Las secciones agrupan las preguntas, por ejemplo «Datos personales» o «Situación económica». Seleccione una sección y continúe a Preguntas.</p>
+    <p class="guia" *ngIf="paso === 1">Agregue el texto de cada pregunta, el tipo de respuesta y si es obligatoria. Seleccione una pregunta para configurar sus opciones, puntajes o condiciones.</p>
+    <p *ngIf="paso === 1 && preguntaActual && !usaOpciones">Este tipo de pregunta no utiliza opciones de selección.</p>
+    <p class="guia" *ngIf="paso === 2">Cada opción es una respuesta que el aspirante podrá seleccionar, por ejemplo «Trabaja», «Estudia» u «Otro». Los puntajes se configuran en el paso 4.</p>
+    <p class="guia" *ngIf="paso === 3">Asigne puntos a la respuesta general o a cada opción. Si la pregunta no califica, puede dejarla sin reglas de puntaje.</p>
+    <p class="guia" *ngIf="paso === 4">Sin condiciones, la pregunta siempre aparece. Agregue una condición solo si depende de una respuesta anterior.</p>
+    <div class="acciones" *ngIf="!soloLectura">
+      <dx-button [text]="'Agregar ' + nombreElemento" icon="add" type="default" *ngIf="permiteAdd" [disabled]="loadingVisible" (onClick)="abrirEditor(true)"></dx-button>
+      <dx-button [text]="'Editar ' + nombreElemento" icon="edit" *ngIf="permiteEdit" [disabled]="loadingVisible || !filaSeleccionada" (onClick)="abrirEditor(false)"></dx-button>
+      <dx-button [text]="'Quitar ' + nombreElemento" icon="remove" *ngIf="permiteDele" [disabled]="loadingVisible || !filaSeleccionada" (onClick)="quitar()"></dx-button>
+    </div>
+    <app-data-grid-mtto [models]="filas" [columns]="columnas" [keyExpr]="clave" [gridHeight]="390" [wordWrapEnabled]="true"
+      [permiteEditar]="false" [permiteDele]="false" [showAdd]="false" [showRefresh]="false" [showExport]="false" [showSearch]="true"
+      [pageSize]="10" [focusedRowKey]="filaClave" (focusedRowChanged)="seleccionarFila($event)" (rowDblClick)="abrirFila($event)"></app-data-grid-mtto>
+    <div class="acciones">
+      <dx-button text="Continuar a preguntas" icon="chevronright" *ngIf="paso === 0" [disabled]="!seccionId || loadingVisible" (onClick)="irPaso(1)"></dx-button>
+      <dx-button text="Configurar opciones de esta pregunta" icon="chevronright" *ngIf="paso === 1 && usaOpciones" [disabled]="loadingVisible" (onClick)="irPaso(2)"></dx-button>
+    </div>
+  </div>
+
+  <div *ngIf="!edicion && paso === 5">
+    <p class="guia">Pruebe cómo responderá el aspirante. Esta vista previa no guarda respuestas ni carga archivos al servidor.</p>
+    <p *ngIf="!contenido.PREGUNTAS.length">Agregue preguntas para visualizar el formulario.</p>
+    <section *ngFor="let s of secciones">
+      <ng-container *ngIf="preguntasDe(s.CORR_SECCION_BECA).length">
+        <h3>{{ s.NOMBRE_SECCION }}</h3><p *ngIf="s.DESCRIPCION">{{ s.DESCRIPCION }}</p>
+        <ng-container *ngFor="let p of preguntasDe(s.CORR_SECCION_BECA)">
+          <div class="pregunta-vista" *ngIf="visible(p)" [ngSwitch]="p.TIPO_RESPUESTA">
+            <label>{{ p.TEXTO_PREGUNTA }}{{ p.REQUERIDO ? ' *' : '' }}</label>
+            <p *ngIf="p.AYUDA">{{ p.AYUDA }}</p>
+            <dx-text-box *ngSwitchCase="'TEXTO'" [value]="textoVista(p.CORR_PREGUNTA_BECA)" (onValueChanged)="responder(p.CORR_PREGUNTA_BECA,$event.value)"></dx-text-box>
+            <dx-text-area *ngSwitchCase="'TEXTO_LARGO'" [minHeight]="100" [value]="textoVista(p.CORR_PREGUNTA_BECA)" (onValueChanged)="responder(p.CORR_PREGUNTA_BECA,$event.value)"></dx-text-area>
+            <dx-number-box *ngSwitchCase="'NUMERO'" [min]="0" [format]="'0'" [value]="numeroVista(p.CORR_PREGUNTA_BECA)" (onValueChanged)="responder(p.CORR_PREGUNTA_BECA,$event.value)"></dx-number-box>
+            <dx-number-box *ngSwitchCase="'DECIMAL'" [min]="0" [value]="numeroVista(p.CORR_PREGUNTA_BECA)" (onValueChanged)="responder(p.CORR_PREGUNTA_BECA,$event.value)"></dx-number-box>
+            <dx-date-box *ngSwitchCase="'FECHA'" type="date" displayFormat="dd/MM/yyyy" [value]="fechaVista(p.CORR_PREGUNTA_BECA)" (onValueChanged)="responder(p.CORR_PREGUNTA_BECA,$event.value)"></dx-date-box>
+            <dx-select-box *ngSwitchCase="'OPCION_UNICA'" [dataSource]="opcionesDe(p.CORR_PREGUNTA_BECA)" displayExpr="TEXTO_OPCION" valueExpr="CORR_OPCION_BECA" [value]="numeroVista(p.CORR_PREGUNTA_BECA)" (onValueChanged)="responder(p.CORR_PREGUNTA_BECA,$event.value)"></dx-select-box>
+            <dx-select-box *ngSwitchCase="'SI_NO'" [dataSource]="opcionesDe(p.CORR_PREGUNTA_BECA)" displayExpr="TEXTO_OPCION" valueExpr="CORR_OPCION_BECA" [value]="numeroVista(p.CORR_PREGUNTA_BECA)" (onValueChanged)="responder(p.CORR_PREGUNTA_BECA,$event.value)"></dx-select-box>
+            <dx-tag-box *ngSwitchCase="'OPCION_MULTIPLE'" [dataSource]="opcionesDe(p.CORR_PREGUNTA_BECA)" displayExpr="TEXTO_OPCION" valueExpr="CORR_OPCION_BECA" [value]="multiplesVista(p.CORR_PREGUNTA_BECA)" (onValueChanged)="responder(p.CORR_PREGUNTA_BECA,$event.value)"></dx-tag-box>
+            <dx-check-box *ngSwitchCase="'ACEPTACION'" text="Acepto" [value]="booleanVista(p.CORR_PREGUNTA_BECA)" (onValueChanged)="responder(p.CORR_PREGUNTA_BECA,$event.value)"></dx-check-box>
+            <input *ngSwitchCase="'DOCUMENTO'" type="file" accept=".pdf,.jpg,.jpeg,.png" aria-label="Archivo de prueba de la vista previa">
+          </div>
+        </ng-container>
+      </ng-container>
+    </section>
+  </div>
+</div>
+<dx-load-panel [(visible)]="loadingVisible" [shading]="true" [showIndicator]="true"></dx-load-panel>

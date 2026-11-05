@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
     public class ACA_BEC_DOCUMENTO_REQUERIDOTable : BaseEntity
     {
+        public byte[] VERSION_REGISTRO { get; set; }
         public int CORR_EMPRESA { get; set; }
         public int CORR_BECA_DOCUMENTO_REQUERIDO { get; set; }
         public int CORR_BECA { get; set; }

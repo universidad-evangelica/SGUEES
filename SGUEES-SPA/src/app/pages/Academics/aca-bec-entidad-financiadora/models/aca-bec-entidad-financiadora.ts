@@ -1,4 +1,5 @@
 export interface AcaBecEntidadFinanciadora {
+	VERSION_REGISTRO?: string;
 	CORR_EMPRESA?: number;
 	CORR_ENTIDAD_FINANCIADORA: number;
 	CODIGO_ENTIDAD: string;
