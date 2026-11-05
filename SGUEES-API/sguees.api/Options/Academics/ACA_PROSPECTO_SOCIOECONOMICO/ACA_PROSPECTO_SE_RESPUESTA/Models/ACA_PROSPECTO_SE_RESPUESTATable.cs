@@ -10,6 +10,7 @@ namespace sguees.Models
         public int CORR_RESPUESTA { get; set; }
         public int CORR_PROSPECTO_SOCIOECONOMICO { get; set; }
         public int CORR_PREGUNTA { get; set; }
+        public int? CORR_SECCION_SE { get; set; }
         public string VALOR_TEXTO { get; set; }
         public decimal? VALOR_NUMERO { get; set; }
         public bool? VALOR_BIT { get; set; }
