@@ -1,11 +1,11 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import CustomStore from 'devextreme/data/custom_store';
 import { confirm } from 'devextreme/ui/dialog';
-import { lastValueFrom } from 'rxjs';
+import { Observable, lastValueFrom } from 'rxjs';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 
@@ -26,7 +26,7 @@ import { BANDEJA_ESTADOS_REQUISICION, ScBandejaThService } from './sc-bandeja-th
 export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	@ViewChild('gridBandeja', { static: false }) gridBandeja?: DxDataGridComponent;
 
-	/** DataSource del grid: CustomStore (API). */
+	/** DataSource del grid en memoria. */
 	models: any = [];
 
 	selectedItem: ScBandejaItem | null = null;
@@ -45,6 +45,10 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	// Qué hace: Variable de fecha para el popup de confirmación de movimiento.
 	// Cómo lo hace: Se define como any para ser compatible con [(value)] de dx-date-box bajo strictTemplates.
 	popupFechaEfectiva: any = null;
+	// Qué hace: Variable de fecha de ingreso propuesta para contrataciones eventuales en el popup.
+	// Cómo lo hace: Se define como any para ser compatible con [(value)] de dx-date-box bajo strictTemplates.
+	popupFechaIngresoPropuesta: any = null;
+	popupDetalleVisible = false;
 
 	activeTab: ScBandejaTab = 'REQUISICIONES';
 
@@ -104,14 +108,8 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 	unidadesFiltro: Array<{ VALUE: string; TEXT: string }> = [{ VALUE: 'TODOS', TEXT: 'Todas' }];
 
-	readonly remoteOperations = { paging: true, sorting: true, filtering: false };
-	readonly pageSize = 10;
-	readonly allowedPageSizes: (number | 'all')[] = [10, 15, 30, 'all'];
-
-	private todasStore: CustomStore | null = null;
-	private requisicionesStore: CustomStore | null = null;
-	private candidatosStore: CustomStore | null = null;
-	private contratacionesStore: CustomStore | null = null;
+	readonly pageSize = 15;
+	readonly allowedPageSizes: (number | 'all')[] = [10, 15, 25, 50, 'all'];
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -206,6 +204,16 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 	// Qué hace: Determina si se puede confirmar el movimiento de personal en contrataciones.
 	// Cómo lo hace: Valida que pertenezca a contrataciones y que aún no esté confirmado ni tenga empleado.
+	// Qué hace: Identifica si la contratación seleccionada para confirmación es de tipo eventual.
+	// Cómo lo hace: Evalúa el tipo de contratación por correlativo (2) o nombre ('EVENTUAL').
+	get esEventualConfirmacion(): boolean {
+		const item = this.selectedItem;
+		if (!item) return false;
+		if (item.CORR_TIPO_CONTRATACION === 2) return true;
+		const nombre = `${item.NOMBRE_TIPO_CONTRATACION || ''}`.trim().toUpperCase();
+		return nombre.includes('EVENTUAL');
+	}
+
 	get puedeConfirmarMovimiento(): boolean {
 		const item = this.selectedItem;
 		if (!item) return false;
@@ -229,69 +237,21 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
+	// Qué hace: Cambia la pestaña activa de la bandeja de TH y recarga los datos correspondientes.
+	// Cómo lo hace: Actualiza activeTab, limpia los filtros de la grilla y consulta los registros del tab seleccionado.
 	seleccionarTab(tab: ScBandejaTab): void {
 		this.activeTab = tab;
-		this.filtroEstado = 'TODOS';
-		if (tab === 'TODAS') {
-			this.filtroTipo = 'TODOS';
-			this.estadosFiltro = [{ VALUE: 'TODOS', TEXT: 'Todos' }];
-		} else if (tab === 'REQUISICIONES') {
-			this.filtroTipo = 'REQUISICION';
-			this.estadosFiltro = this.estadosFiltroRequisicion;
-		} else if (tab === 'CANDIDATOS') {
-			this.filtroTipo = 'CANDIDATO';
-			this.estadosFiltro = this.estadosFiltroCandidato;
-		} else {
-			this.filtroTipo = 'CONTRATACION';
-			this.estadosFiltro = this.estadosFiltroContratacion;
-		}
+		this.gridBandeja?.instance?.clearFilter();
 		this.configurarDataSource();
 	}
 
-	// Qué hace: Sincroniza dinámicamente los estados disponibles según el tipo de solicitud seleccionado.
-	// Cómo lo hace: Actualiza estadosFiltro al catálogo del tipo elegido, reinicia filtroEstado a TODOS y ejecuta buscar().
-	onTipoSolicitudChanged(): void {
-		this.filtroEstado = 'TODOS';
-		switch (this.filtroTipo) {
-			case 'REQUISICION':
-				this.estadosFiltro = this.estadosFiltroRequisicion;
-				break;
-			case 'CANDIDATO':
-				this.estadosFiltro = this.estadosFiltroCandidato;
-				break;
-			case 'CONTRATACION':
-				this.estadosFiltro = this.estadosFiltroContratacion;
-				break;
-			default:
-				this.estadosFiltro = [{ VALUE: 'TODOS', TEXT: 'Todos' }];
-				break;
-		}
-		this.buscar();
+	// Qué hace: Limpia todos los filtros y búsquedas aplicados en la grilla.
+	// Cómo lo hace: Invoca clearFilter() en la instancia de dx-data-grid.
+	limpiarFiltros(): void {
+		this.gridBandeja?.instance?.clearFilter();
 	}
 
 	buscar(): void {
-		this.configurarDataSource();
-	}
-
-	limpiarFiltros(): void {
-		this.filtroEstado = 'TODOS';
-		this.filtroUnidad = 'TODOS';
-		this.filtroBusqueda = '';
-		this.fechaDesde = null;
-		this.fechaHasta = null;
-		if (this.activeTab === 'TODAS') {
-			this.filtroTipo = 'TODOS';
-			this.estadosFiltro = [{ VALUE: 'TODOS', TEXT: 'Todos' }];
-		} else if (this.activeTab === 'REQUISICIONES') {
-			this.filtroTipo = 'REQUISICION';
-			this.estadosFiltro = this.estadosFiltroRequisicion;
-		} else if (this.activeTab === 'CANDIDATOS') {
-			this.filtroTipo = 'CANDIDATO';
-			this.estadosFiltro = this.estadosFiltroCandidato;
-		} else {
-			this.filtroTipo = 'CONTRATACION';
-			this.estadosFiltro = this.estadosFiltroContratacion;
-		}
 		this.configurarDataSource();
 	}
 
@@ -335,50 +295,13 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		this.panelTab = tab;
 	}
 
-	/**
-	 * Deep link a la pantalla oficial según tipo.
-	 * Requisición → /sc-requisicion-personal?corr=CORR_REQUISICION_PERSONAL (requiere permiso R).
-	 */
+	// Qué hace: Despliega el modal interactivo con el detalle completo de la solicitud/candidato.
+	// Cómo lo hace: Activa la bandera popupDetalleVisible en true para el registro seleccionado.
 	accionVerDetalle(): void {
 		if (!this.selectedItem) {
 			return;
 		}
-
-		const corrReq = Number(this.selectedItem.CORR_REQUISICION_PERSONAL) || 0;
-		if (this.selectedItem.TIPO === 'REQUISICION' && corrReq > 0) {
-			if (!this.tienePermisoLectura('/sc-requisicion-personal')) {
-				this.notifyFx(
-					'No tiene permiso de lectura en Requisición de personal.',
-					NotifyType.Warning,
-					{ raw: true }
-				);
-				return;
-			}
-			void this.navRouter.navigate(['/sc-requisicion-personal'], {
-				queryParams: { corr: corrReq },
-			});
-			return;
-		}
-
-		const corrExp = Number(this.selectedItem.CORR_EXPEDIENTE_CANDIDATO) || 0;
-		if (corrExp > 0) {
-			if (!this.tienePermisoLectura('/sc-expediente-candidato')) {
-				this.notifyFx(
-					'No tiene permiso de lectura en Expediente de candidato.',
-					NotifyType.Warning,
-					{ raw: true }
-				);
-				return;
-			}
-			void this.navRouter.navigate(['/sc-expediente-candidato'], {
-				queryParams: { corr: corrExp },
-			});
-			return;
-		}
-
-		this.notifyFx('No hay ruta de detalle disponible para este ítem.', NotifyType.Warning, {
-			raw: true,
-		});
+		this.popupDetalleVisible = true;
 	}
 
 	/** JWT / menú: la opción destino debe incluir permiso R (AuthGuard también valida). */
@@ -389,6 +312,33 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 	accionVerFlujo(): void {
 		this.panelTab = 'HISTORIAL';
+	}
+
+	// Qué hace: Calcula el texto de plazas disponibles para el modal de detalle.
+	// Cómo lo hace: Resta plazas cubiertas del total de plazas de la solicitud.
+	getPlazasDisponiblesText(): string {
+		const total = Number(this.selectedItem?.CANTIDAD_PLAZAS) || 0;
+		const cubiertas = Number(this.selectedItem?.PLAZAS_CUBIERTAS) || 0;
+		const disponibles = Math.max(0, total - cubiertas);
+		if (disponibles === 1) return '1 plaza disponible';
+		if (disponibles > 1) return `${disponibles} plazas disponibles`;
+		return total > 0 ? 'Plazas cubiertas' : '—';
+	}
+
+	// Qué hace: Calcula el porcentaje de plazas cubiertas para la barra de progreso del modal.
+	// Cómo lo hace: Retorna el ratio cubiertas / total limitado entre 0 y 100.
+	getPorcentajePlazas(): number {
+		const total = Number(this.selectedItem?.CANTIDAD_PLAZAS) || 0;
+		const cubiertas = Number(this.selectedItem?.PLAZAS_CUBIERTAS) || 0;
+		if (total <= 0) return 0;
+		return Math.min(100, Math.round((cubiertas / total) * 100));
+	}
+
+	// Qué hace: Cierra el modal y abre la pestaña de historial en el panel lateral.
+	// Cómo lo hace: Oculta el popup de detalle y conmuta panelTab a 'HISTORIAL'.
+	verFlujoDesdeModal(): void {
+		this.popupDetalleVisible = false;
+		this.accionVerFlujo();
 	}
 
 	/**
@@ -566,6 +516,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 		// Precargar fecha si ya existe en base de datos
 		this.popupFechaEfectiva = item.FECHA_EFECTIVA ?? null;
+		this.popupFechaIngresoPropuesta = item.FECHA_INGRESO_PROPUESTA ?? item.FECHA_EFECTIVA ?? null;
 		this.popupConfirmarMovVisible = true;
 	}
 
@@ -574,6 +525,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	cancelarPopupConfirmarMov(): void {
 		this.popupConfirmarMovVisible = false;
 		this.popupFechaEfectiva = null;
+		this.popupFechaIngresoPropuesta = null;
 	}
 
 	// Qué hace: Ejecuta la confirmación del movimiento de personal con la fecha efectiva indicada en el modal.
@@ -581,6 +533,16 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	async confirmarPopupConfirmarMov(): Promise<void> {
 		const item = this.selectedItem;
 		if (!item || this.accionEnCurso) {
+			return;
+		}
+
+		// Alerta obligatoria si es eventual y no tiene fecha de ingreso propuesta
+		if (this.esEventualConfirmacion && !this.popupFechaIngresoPropuesta) {
+			this.notifyFx(
+				'Debe indicar la fecha de ingreso propuesta para la contratación eventual.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
 			return;
 		}
 
@@ -601,6 +563,9 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				this.service.confirmarMovimientoPersonal({
 					CORR_MOVIMIENTO_PERSONAL: corrMov,
 					FECHA_EFECTIVA: this.popupFechaEfectiva,
+					FECHA_INGRESO_PROPUESTA: this.esEventualConfirmacion
+						? this.popupFechaIngresoPropuesta
+						: undefined,
 				})
 			);
 
@@ -619,7 +584,32 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				{ raw: true }
 			);
 
+			// Qué hace: Actualiza la fila en el array models y el panel lateral en memoria tras confirmar.
+			// Cómo lo hace: Busca el índice en this.models por ID o CORR_MOVIMIENTO_PERSONAL, reemplaza sus propiedades y reasigna el arreglo para refrescar la grilla sin GetAll.
+			const idx = this.models.findIndex(
+				(m) => m.ID === item.ID || (m.CORR_MOVIMIENTO_PERSONAL && m.CORR_MOVIMIENTO_PERSONAL === corrMov)
+			);
+			if (idx !== -1) {
+				this.models[idx] = {
+					...this.models[idx],
+					FECHA_EFECTIVA: this.popupFechaEfectiva,
+					FECHA_INGRESO_PROPUESTA: this.esEventualConfirmacion
+						? this.popupFechaIngresoPropuesta
+						: this.models[idx].FECHA_INGRESO_PROPUESTA,
+					CONFIRMADO: true,
+					ESTADO: 'Listo para crear empleado',
+					ESTADO_TONE: 'listo-usuario',
+					ESTADO_CICLO_CANDIDATO: 'LISTO_CREAR_USUARIO',
+					CORR_ESTADO_EXPEDIENTE: 4,
+					LISTO_CONTRATACION: false,
+				};
+				this.models = [...this.models];
+			}
+
 			item.FECHA_EFECTIVA = this.popupFechaEfectiva;
+			if (this.esEventualConfirmacion) {
+				item.FECHA_INGRESO_PROPUESTA = this.popupFechaIngresoPropuesta;
+			}
 			item.CONFIRMADO = true;
 			item.ESTADO = 'Listo para crear empleado';
 			item.ESTADO_TONE = 'listo-usuario';
@@ -629,6 +619,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 			this.popupConfirmarMovVisible = false;
 			this.popupFechaEfectiva = null;
+			this.popupFechaIngresoPropuesta = null;
 
 			// Si el filtro de estado estaba en 'APLICA', cambiarlo a 'TODOS' para que el registro se mantenga visible
 			if (this.filtroEstado === 'APLICA') {
@@ -637,6 +628,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 			this.prefetchTotales();
 			// Refrescar grilla sin cerrar panel ni perder selección
+			this.gridBandeja?.instance?.repaint();
 			this.gridBandeja?.instance?.refresh();
 		} catch (error: any) {
 			const msg =
@@ -691,6 +683,26 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			const data = response.Data;
 			const corrEmpleado = Number(data?.CORR_EMPLEADO) || 1;
 			const corrBase = item.CORR_EXPEDIENTE_CANDIDATO || item.CORR_SOLICITUD_EMPLEO || 0;
+
+			// Qué hace: Actualiza la fila en el array models y el panel lateral tras crear empleado.
+			// Cómo lo hace: Busca el índice en this.models, actualiza código y estados y reasigna el arreglo para reflejar 'Contratado' sin GetAll.
+			const idx = this.models.findIndex(
+				(m) => m.ID === item.ID || (m.CORR_MOVIMIENTO_PERSONAL && m.CORR_MOVIMIENTO_PERSONAL === corrMov)
+			);
+			if (idx !== -1) {
+				this.models[idx] = {
+					...this.models[idx],
+					CORR_EMPLEADO: corrEmpleado,
+					CODIGO: `CON-${corrBase}`,
+					ESTADO: 'Contratado',
+					ESTADO_TONE: 'cerrada',
+					ESTADO_CICLO_CANDIDATO: 'CONTRATADO',
+					CORR_ESTADO_EXPEDIENTE: 5,
+					REQUIERE_ATENCION: false,
+				};
+				this.models = [...this.models];
+			}
+
 			item.CORR_EMPLEADO = corrEmpleado;
 			// Qué hace: actualiza el código visible al prefijo de contratación sin CAN al oficializarse como contratado.
 			// Cómo lo hace: concatena 'CON-' con el correlativo base del expediente/solicitud.
@@ -706,6 +718,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			}
 
 			this.prefetchTotales();
+			this.gridBandeja?.instance?.repaint();
 			this.gridBandeja?.instance?.refresh();
 		} catch (error: any) {
 			const msg =
@@ -716,7 +729,9 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	tipoLabel(tipo: ScBandejaTipo, item?: ScBandejaItem | null): string {
+	// Qué hace: Devuelve el texto legible del tipo de registro.
+	// Cómo lo hace: Evalúa el tipo de elemento soportando null o undefined de forma segura.
+	tipoLabel(tipo?: ScBandejaTipo | null, item?: ScBandejaItem | null): string {
 		if (tipo === 'CANDIDATO' && item?.ESTADO_CICLO_CANDIDATO === 'POSTULANTE') {
 			return 'Postulante';
 		}
@@ -728,11 +743,13 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			case 'CONTRATACION':
 				return 'Contratación';
 			default:
-				return tipo;
+				return tipo || '';
 		}
 	}
 
-	tipoIcon(tipo: ScBandejaTipo, item?: ScBandejaItem | null): string {
+	// Qué hace: Devuelve el identificador del icono según el tipo de registro.
+	// Cómo lo hace: Evalúa el tipo de elemento soportando null o undefined de forma segura.
+	tipoIcon(tipo?: ScBandejaTipo | null, item?: ScBandejaItem | null): string {
 		if (tipo === 'CANDIDATO' && item?.ESTADO_CICLO_CANDIDATO === 'POSTULANTE') {
 			return 'user';
 		}
@@ -748,7 +765,10 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	estadoChipClass(item: ScBandejaItem): string {
+	// Qué hace: Devuelve las clases CSS del chip de estado según el tipo de solicitud.
+	// Cómo lo hace: Evalúa si es requisición o candidato/contratación y retorna la clase correspondiente, soportando null de forma segura.
+	estadoChipClass(item?: ScBandejaItem | null): string {
+		if (!item) return 'bandeja-estado-chip';
 		if (item.TIPO === 'REQUISICION') {
 			return `estado-req-chip ${this.service.getEstadoRequisicionBadgeClass(item.CORR_ESTADO_REQUISICION)}`;
 		}
@@ -785,415 +805,58 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
 	}
 
+	// Qué hace: Carga los registros del tab activo en memoria y activa el filtrado y búsqueda nativos de DevExtreme.
+	// Cómo lo hace: Consulta el servicio con el tab actual, mapea las filas a ScBandejaItem y actualiza this.models.
 	private configurarDataSource(): void {
 		this.cerrarPanel();
+		this.gridBandeja?.instance?.beginCustomLoading('Cargando registros...');
 
-		// Qué hace: Configura la fuente de datos para la pestaña consolidada 'Todas'.
-		// Cómo lo hace: Inicializa un CustomStore que consume el endpoint GetTodas y anula los demás stores.
-		if (this.usaApiTodas) {
-			this.requisicionesStore = null;
-			this.candidatosStore = null;
-			this.contratacionesStore = null;
-			this.todasStore = this.crearTodasStore();
-			this.models = this.todasStore;
-			this.recalcularKpis();
-			return;
+		let peticion: Observable<IResult>;
+		switch (this.activeTab) {
+			case 'TODAS':
+				peticion = this.service.getTodas({ PAGE: 1, PAGE_SIZE: 500, SORT_DESC: true });
+				break;
+			case 'REQUISICIONES':
+				peticion = this.service.getRequisiciones({ PAGE: 1, PAGE_SIZE: 500, SORT_DESC: true });
+				break;
+			case 'CANDIDATOS':
+				peticion = this.service.getCandidatos({ PAGE: 1, PAGE_SIZE: 500, SORT_DESC: true });
+				break;
+			case 'CONTRATACIONES':
+				peticion = this.service.getContrataciones({ PAGE: 1, PAGE_SIZE: 500, SORT_DESC: true });
+				break;
 		}
 
-		if (this.usaApiRequisiciones) {
-			this.todasStore = null;
-			this.candidatosStore = null;
-			this.contratacionesStore = null;
-			this.requisicionesStore = this.crearRequisicionesStore();
-			this.models = this.requisicionesStore;
-			this.recalcularKpis();
-			return;
-		}
-
-		if (this.usaApiCandidatos) {
-			this.todasStore = null;
-			this.requisicionesStore = null;
-			this.contratacionesStore = null;
-			this.candidatosStore = this.crearCandidatosStore();
-			this.models = this.candidatosStore;
-			this.recalcularKpis();
-			return;
-		}
-
-		if (this.usaApiContrataciones) {
-			this.todasStore = null;
-			this.requisicionesStore = null;
-			this.candidatosStore = null;
-			this.contratacionesStore = this.crearContratacionesStore();
-			this.models = this.contratacionesStore;
-			this.recalcularKpis();
-			return;
-		}
-
-		this.todasStore = null;
-		this.requisicionesStore = null;
-		this.candidatosStore = null;
-		this.contratacionesStore = null;
-		this.models = [];
-		this.recalcularKpis();
-	}
-
-	// Qué hace: Configura el CustomStore remoto de DevExtreme para la pestaña consolidada 'Todas'.
-	// Cómo lo hace: Invoca el endpoint GetTodas del servicio con paginación, filtros de tipo, unidad, rango de fechas y búsqueda.
-	private crearTodasStore(): CustomStore {
-		return new CustomStore({
-			key: 'ID',
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				try {
-					const { page, pageSize, sortField, sortDesc } = this.parseLoadOptions(
-						loadOptions,
-						'FECHA_ORDEN',
-						(sel) => this.mapSortFieldTodas(sel)
-					);
-
-					const response = await lastValueFrom(
-						this.service.getTodas({
-							PAGE: page,
-							PAGE_SIZE: pageSize,
-							SORT_FIELD: sortField,
-							SORT_DESC: sortDesc,
-							TIPO:
-								this.filtroTipo !== 'TODOS'
-									? this.filtroTipo
-									: undefined,
-							ESTADO:
-								this.filtroEstado !== 'TODOS'
-									? this.filtroEstado
-									: undefined,
-							NOMBRE_UNIDAD:
-								this.filtroUnidad !== 'TODOS' ? this.filtroUnidad : undefined,
-							FECHA_DESDE: this.fechaDesde,
-							FECHA_HASTA: this.fechaHasta,
-							BUSQUEDA: this.filtroBusqueda?.trim() || undefined,
-						})
-					);
-
-					if (!response.Result) {
-						throw new Error(
-							response.ErrorMessage || 'No se pudieron cargar los registros de la bandeja.'
-						);
-					}
-
-					const rows = (response.Data || []).map((r: any) =>
-						this.service.mapTodasToBandejaItem(r)
-					);
-					this.syncUnidadesFromRows(rows);
+		peticion.subscribe({
+			next: (res) => {
+				this.gridBandeja?.instance?.endCustomLoading();
+				if (!res?.Result) {
+					this.models = [];
 					this.recalcularKpis();
-
-					return {
-						data: rows,
-						totalCount: response.RowsAffected || rows.length,
-					};
-				} catch (error: any) {
-					this.notifyFx(
-						error?.message || 'Error al consultar registros de la bandeja.',
-						NotifyType.Error,
-						{ raw: true }
-					);
-					throw error;
+					return;
 				}
-			},
-		});
-	}
-
-	private crearRequisicionesStore(): CustomStore {
-		return new CustomStore({
-			key: 'ID',
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				try {
-					const { page, pageSize, sortField, sortDesc } = this.parseLoadOptions(
-						loadOptions,
-						'FECHA_REQUISICION',
-						(sel) => this.mapSortFieldRequisicion(sel)
-					);
-
-					const corrEstado =
-						this.filtroEstado !== 'TODOS' && !isNaN(Number(this.filtroEstado))
-							? Number(this.filtroEstado)
-							: 0;
-
-					const response = await lastValueFrom(
-						this.service.getRequisiciones({
-							PAGE: page,
-							PAGE_SIZE: pageSize,
-							SORT_FIELD: sortField,
-							SORT_DESC: sortDesc,
-							CORR_ESTADO_REQUISICION: corrEstado > 0 ? corrEstado : undefined,
-							// Qué hace: Pasa el área solicitante seleccionada para filtrar las requisiciones.
-							// Cómo lo hace: Evalúa que no sea 'TODOS' y envía la cadena de texto de la unidad.
-							NOMBRE_UNIDAD:
-								this.filtroUnidad !== 'TODOS' ? this.filtroUnidad : undefined,
-							FECHA_DESDE: this.fechaDesde,
-							FECHA_HASTA: this.fechaHasta,
-							BUSQUEDA: this.filtroBusqueda?.trim() || undefined,
-						})
-					);
-
-					if (!response.Result) {
-						throw new Error(response.ErrorMessage || 'No se pudieron cargar las requisiciones.');
-					}
-
-					const rows = (response.Data || []).map((r: any) =>
-						this.service.mapRequisicionToBandejaItem(r)
-					);
-					this.totalRequisicionesApi = response.RowsAffected || rows.length;
-					this.syncUnidadesFromRows(rows);
-					this.recalcularKpis();
-
-					return {
-						data: rows,
-						totalCount: response.RowsAffected || rows.length,
-					};
-				} catch (error: any) {
-					this.notifyFx(
-						error?.message || 'Error al consultar requisiciones de la bandeja.',
-						NotifyType.Error,
-						{ raw: true }
-					);
-					throw error;
+				const data = res.Data || [];
+				if (this.activeTab === 'TODAS') {
+					this.models = data.map((r: any) => this.service.mapTodasToBandejaItem(r));
+				} else if (this.activeTab === 'REQUISICIONES') {
+					this.models = data.map((r: any) => this.service.mapRequisicionToBandejaItem(r));
+					this.totalRequisicionesApi = res.RowsAffected || this.models.length;
+				} else if (this.activeTab === 'CANDIDATOS') {
+					this.models = data.map((r: any) => this.service.mapCandidatoToBandejaItem(r));
+					this.totalCandidatosApi = res.RowsAffected || this.models.length;
+				} else {
+					this.models = data.map((r: any) => this.service.mapContratacionToBandejaItem(r));
+					this.totalContratacionesApi = res.RowsAffected || this.models.length;
 				}
+				this.recalcularKpis();
 			},
-		});
-	}
-
-	private crearCandidatosStore(): CustomStore {
-		return new CustomStore({
-			key: 'ID',
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				try {
-					const { page, pageSize, sortField, sortDesc } = this.parseLoadOptions(
-						loadOptions,
-						'FECHA_GENERACION',
-						(sel) => this.mapSortFieldCandidato(sel)
-					);
-
-					const response = await lastValueFrom(
-						this.service.getCandidatos({
-							PAGE: page,
-							PAGE_SIZE: pageSize,
-							SORT_FIELD: sortField,
-							SORT_DESC: sortDesc,
-							ESTADO_CICLO:
-								this.filtroEstado !== 'TODOS' ? this.filtroEstado : undefined,
-							NOMBRE_UNIDAD:
-								this.filtroUnidad !== 'TODOS' ? this.filtroUnidad : undefined,
-							FECHA_DESDE: this.fechaDesde,
-							FECHA_HASTA: this.fechaHasta,
-							BUSQUEDA: this.filtroBusqueda?.trim() || undefined,
-						})
-					);
-
-					if (!response.Result) {
-						throw new Error(response.ErrorMessage || 'No se pudieron cargar los candidatos.');
-					}
-
-					const rows = (response.Data || []).map((r: any) =>
-						this.service.mapCandidatoToBandejaItem(r)
-					);
-					this.totalCandidatosApi = response.RowsAffected || rows.length;
-					this.syncUnidadesFromRows(rows);
-					this.recalcularKpis();
-
-					return {
-						data: rows,
-						totalCount: response.RowsAffected || rows.length,
-					};
-				} catch (error: any) {
-					this.notifyFx(
-						error?.message || 'Error al consultar candidatos de la bandeja.',
-						NotifyType.Error,
-						{ raw: true }
-					);
-					throw error;
-				}
+			error: (err) => {
+				this.gridBandeja?.instance?.endCustomLoading();
+				this.models = [];
+				this.notifyFx(err?.message || 'Error al cargar los registros.', NotifyType.Error, {
+					raw: true,
+				});
 			},
-		});
-	}
-
-	private crearContratacionesStore(): CustomStore {
-		return new CustomStore({
-			key: 'ID',
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				try {
-					const { page, pageSize, sortField, sortDesc } = this.parseLoadOptions(
-						loadOptions,
-						'FECHA_DECISION',
-						(sel) => this.mapSortFieldContratacion(sel)
-					);
-
-					const response = await lastValueFrom(
-						this.service.getContrataciones({
-							PAGE: page,
-							PAGE_SIZE: pageSize,
-							SORT_FIELD: sortField,
-							SORT_DESC: sortDesc,
-							NOMBRE_UNIDAD:
-								this.filtroUnidad !== 'TODOS' ? this.filtroUnidad : undefined,
-							FECHA_DESDE: this.fechaDesde,
-							FECHA_HASTA: this.fechaHasta,
-							BUSQUEDA: this.filtroBusqueda?.trim() || undefined,
-							ESTADO_CICLO_CANDIDATO:
-								this.filtroEstado !== 'TODOS' ? this.filtroEstado : undefined,
-						})
-					);
-
-					if (!response.Result) {
-						throw new Error(
-							response.ErrorMessage || 'No se pudieron cargar las contrataciones.'
-						);
-					}
-
-					const rows = (response.Data || []).map((r: any) =>
-						this.service.mapContratacionToBandejaItem(r)
-					);
-					this.totalContratacionesApi = response.RowsAffected || rows.length;
-					this.syncUnidadesFromRows(rows);
-					this.recalcularKpis();
-
-					return {
-						data: rows,
-						totalCount: response.RowsAffected || rows.length,
-					};
-				} catch (error: any) {
-					this.notifyFx(
-						error?.message || 'Error al consultar contrataciones de la bandeja.',
-						NotifyType.Error,
-						{ raw: true }
-					);
-					throw error;
-				}
-			},
-		});
-	}
-
-	private parseLoadOptions(
-		loadOptions: any,
-		defaultSort: string,
-		mapSort: (selector: string | undefined) => string
-	): { page: number; pageSize: number; sortField: string; sortDesc: boolean } {
-		const take = loadOptions?.take;
-		const skip = loadOptions?.skip ?? 0;
-		const pageSize = take == null ? 0 : take;
-		const page = pageSize > 0 ? Math.floor(skip / pageSize) + 1 : 1;
-
-		let sortField = defaultSort;
-		let sortDesc = true;
-		const sort = loadOptions?.sort;
-		if (Array.isArray(sort) && sort.length > 0) {
-			const s0 = sort[0];
-			const selector = typeof s0 === 'string' ? s0 : s0?.selector;
-			sortField = mapSort(selector);
-			sortDesc = typeof s0 === 'object' ? !!s0.desc : false;
-		}
-
-		return { page, pageSize, sortField, sortDesc };
-	}
-
-	private mapSortFieldRequisicion(selector: string | undefined): string {
-		switch (selector) {
-			case 'CODIGO':
-			case 'ID':
-				return 'CORR_REQUISICION_PERSONAL';
-			case 'DESCRIPCION':
-				return 'NOMBRE_PUESTO';
-			case 'SUBTITULO':
-				return 'NOMBRE_UNIDAD';
-			case 'SOLICITANTE':
-				return 'NOMBRE_SOLICITANTE';
-			case 'ESTADO':
-				return 'CORR_ESTADO_REQUISICION';
-			case 'FECHA':
-				return 'FECHA_REQUISICION';
-			default:
-				return 'FECHA_REQUISICION';
-		}
-	}
-
-	private mapSortFieldCandidato(selector: string | undefined): string {
-		switch (selector) {
-			case 'CODIGO':
-			case 'ID':
-				return 'CORR_SOLICITUD_EMPLEO';
-			case 'DESCRIPCION':
-			case 'NOMBRE_CANDIDATO':
-				return 'NOMBRE_PERSONA';
-			case 'SUBTITULO':
-				return 'NOMBRE_UNIDAD';
-			case 'SOLICITANTE':
-				return 'NOMBRE_SOLICITANTE';
-			case 'ESTADO':
-				return 'ESTADO_CICLO_CANDIDATO';
-			case 'FECHA':
-				return 'FECHA_GENERACION';
-			default:
-				return 'FECHA_GENERACION';
-		}
-	}
-
-	private mapSortFieldContratacion(selector: string | undefined): string {
-		switch (selector) {
-			case 'CODIGO':
-			case 'ID':
-				return 'CORR_EXPEDIENTE_CANDIDATO';
-			case 'DESCRIPCION':
-			case 'NOMBRE_CANDIDATO':
-				return 'NOMBRE_PERSONA';
-			case 'SUBTITULO':
-				return 'NOMBRE_UNIDAD';
-			case 'SOLICITANTE':
-				return 'NOMBRE_SOLICITANTE';
-			case 'FECHA':
-				return 'FECHA_DECISION';
-			default:
-				return 'FECHA_DECISION';
-		}
-	}
-
-	// Qué hace: Mapea la columna de ordenamiento de la grilla a la columna SQL de la consulta unificada de Todas.
-	// Cómo lo hace: Traduce los nombres de columna del grid a las columnas correspondientes del CTE unificado.
-	private mapSortFieldTodas(selector: string | undefined): string {
-		switch (selector) {
-			case 'CODIGO':
-			case 'ID':
-				return 'CORR_REQUISICION_PERSONAL';
-			case 'TIPO':
-				return 'TIPO';
-			case 'DESCRIPCION':
-				return 'NOMBRE_PUESTO';
-			case 'SUBTITULO':
-				return 'NOMBRE_UNIDAD';
-			case 'SOLICITANTE':
-				return 'NOMBRE_SOLICITANTE';
-			case 'FECHA':
-				return 'FECHA_ORDEN';
-			default:
-				return 'FECHA_ORDEN';
-		}
-	}
-
-	private syncUnidadesFromRows(rows: ScBandejaItem[]): void {
-		const known = new Set(this.unidadesFiltro.map((x) => x.VALUE));
-		rows.forEach((r) => {
-			if (r.NOMBRE_UNIDAD && !known.has(r.NOMBRE_UNIDAD)) {
-				known.add(r.NOMBRE_UNIDAD);
-				this.unidadesFiltro = [
-					...this.unidadesFiltro,
-					{ VALUE: r.NOMBRE_UNIDAD, TEXT: r.NOMBRE_UNIDAD },
-				];
-			}
 		});
 	}
 

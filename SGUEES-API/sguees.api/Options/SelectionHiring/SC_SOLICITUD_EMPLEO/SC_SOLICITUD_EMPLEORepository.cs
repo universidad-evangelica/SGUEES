@@ -189,11 +189,10 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
 				};
 
-				if ((Data.CORR_PERSONA_DATOS ?? 0) <= 0)
-				{
-					p.Insert(2, new CParameter() { ParameterName = "DUI", Value = Data.DUI, DbType = System.Data.DbType.String });
-					p.Insert(3, new CParameter() { ParameterName = "NOMBRE", Value = Data.NOMBRE, DbType = System.Data.DbType.String });
-				}
+				// Qué hace: Permite actualizar el documento de identidad y nombre en la solicitud.
+				// Cómo lo hace: Incluye los parámetros DUI y NOMBRE en la actualización mientras la solicitud no esté asociada al expediente.
+				p.Insert(2, new CParameter() { ParameterName = "DUI", Value = Data.DUI, DbType = System.Data.DbType.String });
+				p.Insert(3, new CParameter() { ParameterName = "NOMBRE", Value = Data.NOMBRE, DbType = System.Data.DbType.String });
 				
 				var pWhere = new List<CParameter>
 				{

@@ -58,20 +58,21 @@ namespace SGUEES.Services
             return await _repo.GetAllVisibleAsync(p);
         }
 
-        // Qué hace: Retorna únicamente las requisiciones aprobadas (estado final / Aprobado GG = 5) para el selector de solicitud de empleo, ordenadas de la más reciente a la más antigua.
-        // Cómo lo hace: Filtra por CORR_ESTADO_REQUISICION = 5 y ordena la lista resultante por FECHA_REQUISICION DESC y CORR_REQUISICION_PERSONAL DESC.
+        // Qué hace: Retorna las requisiciones disponibles (Aprobadas a Parcial Cubierta: 5..10) con vacantes pendientes de cubrir para el selector de solicitud de empleo.
+        // Cómo lo hace: Consulta las requisiciones de la empresa, filtra aquellas con CORR_ESTADO_REQUISICION entre 5 y 10 y donde PLAZAS_CUBIERTAS sea menor a CANTIDAD_PLAZAS, ordenándolas por fecha descendente.
         public async Task<CResult> GetAllForSolicitudEmpleoAsync(SC_REQUISICION_PERSONALParam xWhere)
         {
             var p = new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_ESTADO_REQUISICION", Value = 5, DbType = System.Data.DbType.Int32 },
             };
 
             var resultado = await _repo.GetAllAsync(p);
             if (resultado.Result && resultado.Data is IEnumerable<SC_REQUISICION_PERSONALView> lista)
             {
                 resultado.Data = lista
+                    .Where(r => (r.CORR_ESTADO_REQUISICION >= 5 && r.CORR_ESTADO_REQUISICION <= 10)
+                             && (r.CANTIDAD_PLAZAS <= 0 || r.PLAZAS_CUBIERTAS < r.CANTIDAD_PLAZAS))
                     .OrderByDescending(r => r.FECHA_REQUISICION)
                     .ThenByDescending(r => r.CORR_REQUISICION_PERSONAL)
                     .ToList();

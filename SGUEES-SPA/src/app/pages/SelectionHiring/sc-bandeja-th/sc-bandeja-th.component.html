@@ -20,116 +20,6 @@
 		</div>
 	</div>
 
-	<div class="bandeja-filtros-card">
-		<div class="bandeja-filtros">
-			<div class="bandeja-filtro">
-				<div class="bandeja-filtro__label">Tipo de solicitud</div>
-				<!-- motivo: Selector de tipo de solicitud con menú desplegable autoajustable -->
-				<dx-select-box
-					[items]="tiposFiltro"
-					displayExpr="TEXT"
-					valueExpr="VALUE"
-					[(value)]="filtroTipo"
-					[wrapItemText]="true"
-					[dropDownOptions]="{ width: 'auto', minWidth: 240 }"
-					[width]="'100%'"
-					[height]="32"
-					(onValueChanged)="onTipoSolicitudChanged()"
-				></dx-select-box>
-			</div>
-			<div class="bandeja-filtro">
-				<div class="bandeja-filtro__label">Estado</div>
-				<!-- motivo: Selector de estado condicional con menú desplegable ampliado para evitar nombres cortados -->
-				<dx-select-box
-					[items]="estadosFiltro"
-					displayExpr="TEXT"
-					valueExpr="VALUE"
-					[(value)]="filtroEstado"
-					[disabled]="filtroTipo === 'TODOS'"
-					[placeholder]="filtroTipo === 'TODOS' ? 'Selecciona un tipo para filtrar por estado' : 'Todos'"
-					[wrapItemText]="true"
-					[dropDownOptions]="{ width: 'auto', minWidth: 260 }"
-					[width]="'100%'"
-					[height]="32"
-					(onValueChanged)="buscar()"
-				></dx-select-box>
-			</div>
-			<div class="bandeja-filtro">
-				<div class="bandeja-filtro__label">Área solicitante</div>
-				<!-- motivo: Selector de área solicitante con búsqueda y menú desplegable amplio para nombres institucionales completos -->
-				<dx-select-box
-					[items]="unidadesFiltro"
-					displayExpr="TEXT"
-					valueExpr="VALUE"
-					[(value)]="filtroUnidad"
-					[searchEnabled]="true"
-					[wrapItemText]="true"
-					[dropDownOptions]="{ width: 'auto', minWidth: 320 }"
-					[width]="'100%'"
-					[height]="32"
-					(onValueChanged)="buscar()"
-				></dx-select-box>
-			</div>
-			<div class="bandeja-filtro">
-				<div class="bandeja-filtro__label">Fecha desde</div>
-				<dx-date-box
-					[(value)]="fechaDesde"
-					type="date"
-					displayFormat="dd/MM/yyyy"
-					[useMaskBehavior]="true"
-					[showClearButton]="true"
-					[width]="'100%'"
-					[height]="32"
-					(onValueChanged)="buscar()"
-				></dx-date-box>
-			</div>
-			<div class="bandeja-filtro">
-				<div class="bandeja-filtro__label">Fecha hasta</div>
-				<dx-date-box
-					[(value)]="fechaHasta"
-					type="date"
-					displayFormat="dd/MM/yyyy"
-					[useMaskBehavior]="true"
-					[showClearButton]="true"
-					[width]="'100%'"
-					[height]="32"
-					(onValueChanged)="buscar()"
-				></dx-date-box>
-			</div>
-			<!-- motivo: Campo de búsqueda para código, puesto o candidato -->
-			<div class="bandeja-filtro bandeja-filtro--search">
-				<div class="bandeja-filtro__label">Buscar</div>
-				<dx-text-box
-					[(value)]="filtroBusqueda"
-					placeholder="Código, puesto, candidato…"
-					[width]="'100%'"
-					[height]="32"
-					(onEnterKey)="buscar()"
-				></dx-text-box>
-			</div>
-		</div>
-
-		<!-- motivo: Segunda fila de acciones en la tarjeta de filtros con botones alineados a la derecha -->
-		<div class="bandeja-filtros-actions">
-			<dx-button
-				text="Limpiar"
-				type="normal"
-				stylingMode="outlined"
-				icon="revert"
-				[height]="32"
-				hint="Limpiar filtros de búsqueda"
-				(onClick)="limpiarFiltros()"
-			></dx-button>
-			<dx-button
-				text="Buscar"
-				type="default"
-				icon="search"
-				[height]="32"
-				(onClick)="buscar()"
-			></dx-button>
-		</div>
-	</div>
-
 	<div class="bandeja-body" [class.bandeja-body--panel-open]="panelOpen">
 		<div class="bandeja-main">
 			<div class="bandeja-tabs">
@@ -174,7 +64,7 @@
 					[hoverStateEnabled]="true"
 					[focusedRowEnabled]="true"
 					[focusedRowKey]="selectedItem?.ID"
-					[remoteOperations]="usaApiGrid ? remoteOperations : false"
+					[remoteOperations]="false"
 					[height]="'100%'"
 					(onFocusedRowChanged)="onFocusedRowChanged($event)"
 					(onRowClick)="onRowClick($event)"
@@ -188,8 +78,10 @@
 						[allowedPageSizes]="allowedPageSizes"
 						[showInfo]="true"
 					></dxo-pager>
-					<dxo-filter-row [visible]="!usaApiGrid"></dxo-filter-row>
-					<dxo-sorting mode="single"></dxo-sorting>
+					<!-- motivo: Fila de filtros por columna y cabeceras de filtrado -->
+					<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+					<dxo-header-filter [visible]="true"></dxo-header-filter>
+					<dxo-sorting mode="multiple"></dxo-sorting>
 
 					<dxi-column
 						dataField="TIPO"
@@ -217,6 +109,8 @@
 					<dxi-column
 						dataField="FECHA"
 						caption="Fecha"
+						dataType="date"
+						format="dd/MM/yyyy"
 						[width]="140"
 						[minWidth]="130"
 						cellTemplate="fechaCell"
@@ -302,15 +196,20 @@
 			<dx-scroll-view class="bandeja-panel__scroll" [showScrollbar]="'onHover'">
 				<!-- Detalle resumido del elemento seleccionado con navegación segura -->
 				<div class="bandeja-panel__body" *ngIf="panelTab === 'RESUMEN'">
+					<!-- motivo: Encabezado con icono y texto en fila superior y estado alineado a la izquierda abajo -->
 					<div class="bandeja-panel__identity">
-						<div class="bandeja-panel__identity-icon" [attr.title]="tipoLabel(selectedItem?.TIPO, selectedItem)">
-							<i class="dx-icon dx-icon-{{ tipoIcon(selectedItem?.TIPO, selectedItem) }}"></i>
+						<div class="bandeja-panel__identity-main">
+							<div class="bandeja-panel__identity-icon" [attr.title]="tipoLabel(selectedItem?.TIPO, selectedItem)">
+								<i class="dx-icon dx-icon-{{ tipoIcon(selectedItem?.TIPO, selectedItem) }}"></i>
+							</div>
+							<div class="bandeja-panel__identity-text">
+								<div class="bandeja-panel__code">{{ selectedItem?.CODIGO }}</div>
+								<div class="bandeja-panel__title">{{ selectedItem?.DESCRIPCION }}</div>
+							</div>
 						</div>
-						<div class="bandeja-panel__identity-text">
-							<div class="bandeja-panel__code">{{ selectedItem?.CODIGO }}</div>
-							<div class="bandeja-panel__title">{{ selectedItem?.DESCRIPCION }}</div>
+						<div class="bandeja-panel__identity-status">
+							<span [class]="estadoChipClass(selectedItem)">{{ selectedItem?.ESTADO }}</span>
 						</div>
-						<span [class]="estadoChipClass(selectedItem)">{{ selectedItem?.ESTADO }}</span>
 					</div>
 
 					<div class="bandeja-meta-grid">
@@ -332,96 +231,6 @@
 								{{ selectedItem?.NOMBRE_CANDIDATO }}
 								<small *ngIf="selectedItem?.DUI_CANDIDATO"> · DUI {{ selectedItem?.DUI_CANDIDATO }}</small>
 							</span>
-						</div>
-					</div>
-
-					<div class="bandeja-section" *ngIf="selectedItem?.JUSTIFICACION">
-						<div class="bandeja-section__title">Descripción</div>
-						<p class="bandeja-section__text">{{ selectedItem?.JUSTIFICACION }}</p>
-					</div>
-
-					<div class="bandeja-section" *ngIf="selectedItem?.OBSERVACION_DECISION">
-						<div class="bandeja-section__title">Observación del dictamen</div>
-						<p class="bandeja-section__text">{{ selectedItem?.OBSERVACION_DECISION }}</p>
-					</div>
-
-					<div class="bandeja-fields">
-						<div class="bandeja-field" *ngIf="selectedItem?.NOMBRE_PUESTO">
-							<span class="bandeja-field__label">Puesto</span>
-							<span class="bandeja-field__value">{{ selectedItem?.NOMBRE_PUESTO }}</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.NOMBRE_TIPO_CONTRATACION">
-							<span class="bandeja-field__label">Tipo de contratación</span>
-							<span class="bandeja-field__value">{{ selectedItem?.NOMBRE_TIPO_CONTRATACION }}</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.NOMBRE_TIPO_MODALIDAD">
-							<span class="bandeja-field__label">Tipo de modalidad</span>
-							<span class="bandeja-field__value">{{ selectedItem?.NOMBRE_TIPO_MODALIDAD }}</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.NOMBRE_TIPO_VACANTE">
-							<span class="bandeja-field__label">Tipo de vacante</span>
-							<span class="bandeja-field__value">{{ selectedItem?.NOMBRE_TIPO_VACANTE }}</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.CANTIDAD_PLAZAS !== null && selectedItem?.CANTIDAD_PLAZAS !== undefined">
-							<span class="bandeja-field__label">Cantidad de plazas</span>
-							<span class="bandeja-field__value">
-								{{ selectedItem?.CANTIDAD_PLAZAS }}
-								<span *ngIf="selectedItem?.PLAZAS_CUBIERTAS !== null && selectedItem?.PLAZAS_CUBIERTAS !== undefined">
-									/ {{ selectedItem?.PLAZAS_CUBIERTAS }} cubiertas
-								</span>
-							</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.SALARIO !== null && selectedItem?.SALARIO !== undefined">
-							<span class="bandeja-field__label">Salario</span>
-							<span class="bandeja-field__value">{{ formatSalario(selectedItem?.SALARIO) }}</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.HORARIO">
-							<span class="bandeja-field__label">Horario</span>
-							<span class="bandeja-field__value">{{ selectedItem?.HORARIO }}</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.TIEMPO_CONTRATO">
-							<span class="bandeja-field__label">Tiempo de contrato</span>
-							<span class="bandeja-field__value">{{ selectedItem?.TIEMPO_CONTRATO }} meses</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.CANTIDAD_CANDIDATOS !== null && selectedItem?.CANTIDAD_CANDIDATOS !== undefined">
-							<span class="bandeja-field__label">Candidatos</span>
-							<span class="bandeja-field__value">
-								{{ selectedItem?.CANTIDAD_CANDIDATOS }}
-								<span *ngIf="selectedItem?.CANTIDAD_PENDIENTES">
-									· {{ selectedItem?.CANTIDAD_PENDIENTES }} pendientes
-								</span>
-							</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.CANTIDAD_ENTREVISTAS !== null && selectedItem?.CANTIDAD_ENTREVISTAS !== undefined">
-							<span class="bandeja-field__label">Entrevistas</span>
-							<span class="bandeja-field__value">
-								{{ selectedItem?.CANTIDAD_ENTREVISTAS }}
-								<span *ngIf="selectedItem?.ULTIMA_ENTREVISTA">
-									· {{ selectedItem?.ULTIMA_ENTREVISTA }}
-								</span>
-							</span>
-						</div>
-						<!-- Muestra la etiqueta descriptiva amigable del estado o ciclo -->
-						<div class="bandeja-field" *ngIf="selectedItem?.ESTADO_CICLO_CANDIDATO">
-							<span class="bandeja-field__label">Etapa del ciclo</span>
-							<span class="bandeja-field__value">{{ selectedItem?.ESTADO || selectedItem?.ESTADO_CICLO_CANDIDATO }}</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.CORR_PERSONA_DATOS">
-							<span class="bandeja-field__label">Persona datos</span>
-							<span class="bandeja-field__value">{{ selectedItem?.CORR_PERSONA_DATOS }}</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.CORR_EXPEDIENTE_CANDIDATO">
-							<span class="bandeja-field__label">Expediente</span>
-							<span class="bandeja-field__value">{{ selectedItem?.CORR_EXPEDIENTE_CANDIDATO }}</span>
-						</div>
-						<div class="bandeja-field" *ngIf="selectedItem?.ESTADO_DECISION">
-							<span class="bandeja-field__label">Dictamen</span>
-							<span class="bandeja-field__value">{{ selectedItem?.ESTADO_DECISION }}</span>
-						</div>
-						<!-- Fecha efectiva en contrataciones (visualización en ficha) -->
-						<div class="bandeja-field" *ngIf="selectedItem?.TIPO === 'CONTRATACION' && selectedItem?.FECHA_EFECTIVA">
-							<span class="bandeja-field__label">Fecha efectiva</span>
-							<span class="bandeja-field__value">{{ formatFecha(selectedItem?.FECHA_EFECTIVA) }}</span>
 						</div>
 					</div>
 				</div>
@@ -603,7 +412,22 @@
 			Indique la fecha efectiva para oficializar el movimiento de personal de
 			<strong>{{ selectedItem?.NOMBRE_CANDIDATO || selectedItem?.DESCRIPCION }}</strong>.
 		</p>
-		<label class="bandeja-obs-popup__label">Fecha efectiva <span style="color: #ef4444">*</span></label>
+		<!-- Campo de fecha de ingreso propuesta condicional solo para contratación eventual -->
+		<ng-container *ngIf="esEventualConfirmacion">
+			<label class="bandeja-obs-popup__label">
+				Fecha de ingreso propuesta <span style="color: #ef4444">*</span>
+			</label>
+			<dx-date-box
+				[(value)]="popupFechaIngresoPropuesta"
+				displayFormat="dd/MM/yyyy"
+				[width]="'100%'"
+				[openOnFieldClick]="true"
+				[showClearButton]="true"
+				placeholder="Seleccione fecha de ingreso propuesta…"
+			></dx-date-box>
+		</ng-container>
+
+		<label class="bandeja-obs-popup__label" [style.margin-top.px]="esEventualConfirmacion ? 12 : 0">Fecha efectiva <span style="color: #ef4444">*</span></label>
 		<dx-date-box
 			[(value)]="popupFechaEfectiva"
 			displayFormat="dd/MM/yyyy"
@@ -634,3 +458,192 @@
 	</div>
 </dx-popup>
 
+
+<!-- motivo: Modal moderno de detalle completo de la solicitud/candidato según diseño de referencia -->
+<dx-popup
+	[(visible)]="popupDetalleVisible"
+	[width]="720"
+	[maxWidth]="'calc(100vw - 32px)'"
+	[height]="'auto'"
+	[maxHeight]="'90vh'"
+	[showCloseButton]="false"
+	[showTitle]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="true"
+	[wrapperAttr]="{ class: 'bandeja-detalle-popup' }"
+>
+	<!-- motivo: Cabecera personalizada del modal con icono, título, badge de código y botón cerrar -->
+	<div *dxTemplate="let data of 'title'" class="modal-custom-header">
+		<div class="modal-custom-header__left">
+			<div class="modal-custom-header__icon">
+				<i class="dx-icon dx-icon-{{ tipoIcon(selectedItem?.TIPO, selectedItem) }}"></i>
+			</div>
+			<span class="modal-custom-header__title">Detalle de la solicitud:</span>
+			<span class="modal-custom-header__code">{{ selectedItem?.CODIGO }}</span>
+		</div>
+		<button type="button" class="modal-custom-header__close" (click)="popupDetalleVisible = false" title="Cerrar">
+			✕
+		</button>
+	</div>
+
+	<!-- motivo: Contenido estructurado del modal -->
+	<div *dxTemplate="let data of 'content'" class="bandeja-detalle-popup__body">
+		<dx-scroll-view [height]="'auto'" [showScrollbar]="'onHover'">
+			<div class="bandeja-detalle-popup__content">
+				
+				<!-- motivo: Tarjeta superior de identidad (Hero Card) -->
+				<div class="modal-hero-card">
+					<div class="modal-hero-card__icon">
+						<i class="dx-icon dx-icon-{{ tipoIcon(selectedItem?.TIPO, selectedItem) }}"></i>
+					</div>
+					<div class="modal-hero-card__main">
+						<div class="modal-hero-card__sub">
+							{{ selectedItem?.CODIGO }} · Creada el {{ formatFecha(selectedItem?.FECHA) }}
+						</div>
+						<div class="modal-hero-card__title">{{ selectedItem?.DESCRIPCION }}</div>
+					</div>
+					<div class="modal-hero-card__badge">
+						<span [class]="estadoChipClass(selectedItem)">
+							<span class="chip-dot">●</span> {{ selectedItem?.ESTADO }}
+						</span>
+					</div>
+				</div>
+
+				<!-- motivo: Sección Condiciones del puesto / plaza -->
+				<div class="modal-section-header">
+					<span class="modal-section-header__title">CONDICIONES DEL PUESTO</span>
+					<div class="modal-section-header__line"></div>
+				</div>
+
+				<div class="modal-condiciones-grid">
+					<!-- Tipo de contratación -->
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">TIPO DE CONTRATACIÓN</div>
+						<div class="modal-mini-card__value">{{ selectedItem?.NOMBRE_TIPO_CONTRATACION || '—' }}</div>
+					</div>
+
+					<!-- Modalidad -->
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">MODALIDAD</div>
+						<div class="modal-mini-card__value">{{ selectedItem?.NOMBRE_TIPO_MODALIDAD || '—' }}</div>
+					</div>
+
+					<!-- Tipo de vacante -->
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">TIPO DE VACANTE</div>
+						<div class="modal-mini-card__value">
+							{{ selectedItem?.NOMBRE_TIPO_VACANTE || (selectedItem?.TIEMPO_CONTRATO ? selectedItem?.TIEMPO_CONTRATO + ' meses' : '—') }}
+						</div>
+					</div>
+
+					<!-- Plazas con barra de progreso -->
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__row">
+							<span class="modal-mini-card__label">PLAZAS</span>
+							<span class="modal-mini-badge warning" *ngIf="selectedItem?.CANTIDAD_PLAZAS">
+								{{ selectedItem?.PLAZAS_CUBIERTAS || 0 }} de {{ selectedItem?.CANTIDAD_PLAZAS }} cubiertas
+							</span>
+						</div>
+						<div class="modal-mini-card__value">{{ getPlazasDisponiblesText() }}</div>
+						<div class="modal-progress-bar" *ngIf="selectedItem?.CANTIDAD_PLAZAS">
+							<div class="modal-progress-bar__fill" [style.width.%]="getPorcentajePlazas()"></div>
+						</div>
+					</div>
+
+					<!-- Salario ofrecido -->
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">SALARIO OFRECIDO</div>
+						<div class="modal-mini-card__value">
+							<span class="modal-salario-num" *ngIf="selectedItem?.SALARIO !== null && selectedItem?.SALARIO !== undefined">
+								{{ formatSalario(selectedItem?.SALARIO) }}
+							</span>
+							<span class="modal-salario-num" *ngIf="selectedItem?.SALARIO === null || selectedItem?.SALARIO === undefined">—</span>
+							<span class="modal-salario-currency" *ngIf="selectedItem?.SALARIO !== null && selectedItem?.SALARIO !== undefined">USD</span>
+						</div>
+					</div>
+
+					<!-- Horario -->
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">HORARIO</div>
+						<div class="modal-mini-card__value modal-mini-card__value--horario">
+							<i class="dx-icon dx-icon-clock" *ngIf="selectedItem?.HORARIO"></i>
+							<span>{{ selectedItem?.HORARIO || 'No especificado' }}</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- motivo: Sección Origen de la solicitud -->
+				<div class="modal-section-header">
+					<span class="modal-section-header__title">ORIGEN DE LA SOLICITUD</span>
+					<div class="modal-section-header__line"></div>
+				</div>
+
+				<div class="modal-origen-card">
+					<div class="modal-origen-col">
+						<div class="modal-origen-icon">
+							<i class="dx-icon dx-icon-home"></i>
+						</div>
+						<div class="modal-origen-info">
+							<span class="modal-origen-label">ÁREA SOLICITANTE</span>
+							<span class="modal-origen-value">{{ selectedItem?.NOMBRE_UNIDAD || '—' }}</span>
+						</div>
+					</div>
+					<div class="modal-origen-col">
+						<div class="modal-origen-icon">
+							<i class="dx-icon dx-icon-user"></i>
+						</div>
+						<div class="modal-origen-info">
+							<span class="modal-origen-label">SOLICITADO POR</span>
+							<span class="modal-origen-value">{{ selectedItem?.SOLICITANTE || '—' }}</span>
+						</div>
+					</div>
+					<div class="modal-origen-col" *ngIf="selectedItem?.NOMBRE_CANDIDATO">
+						<div class="modal-origen-icon">
+							<i class="dx-icon dx-icon-card"></i>
+						</div>
+						<div class="modal-origen-info">
+							<span class="modal-origen-label">CANDIDATO</span>
+							<span class="modal-origen-value">
+								{{ selectedItem?.NOMBRE_CANDIDATO }}
+								<small *ngIf="selectedItem?.DUI_CANDIDATO"> · DUI {{ selectedItem?.DUI_CANDIDATO }}</small>
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- motivo: Justificación si existe -->
+				<ng-container *ngIf="selectedItem?.JUSTIFICACION">
+					<div class="modal-section-header">
+						<span class="modal-section-header__title">DESCRIPCIÓN / JUSTIFICACIÓN</span>
+						<div class="modal-section-header__line"></div>
+					</div>
+					<div class="modal-info-box">
+						<p>{{ selectedItem?.JUSTIFICACION }}</p>
+					</div>
+				</ng-container>
+
+				<!-- motivo: Observación del dictamen si existe -->
+				<ng-container *ngIf="selectedItem?.OBSERVACION_DECISION">
+					<div class="modal-section-header">
+						<span class="modal-section-header__title">OBSERVACIÓN DEL DICTAMEN</span>
+						<div class="modal-section-header__line"></div>
+					</div>
+					<div class="modal-info-box">
+						<p>{{ selectedItem?.OBSERVACION_DECISION }}</p>
+					</div>
+				</ng-container>
+
+			</div>
+		</dx-scroll-view>
+
+		<!-- motivo: Pie del modal con botón Cerrar alineado a la derecha -->
+		<div class="bandeja-detalle-popup__footer">
+			<dx-button
+				text="Cerrar"
+				stylingMode="outlined"
+				[height]="36"
+				(onClick)="popupDetalleVisible = false"
+			></dx-button>
+		</div>
+	</div>
+</dx-popup>

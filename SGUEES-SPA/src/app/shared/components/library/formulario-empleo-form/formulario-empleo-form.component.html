@@ -253,9 +253,17 @@
 						<div class="wizard-section">
 							<h3 class="wizard-section__title">Documentación</h3>
 							<div class="wizard-grid wizard-grid--2">
+								<!-- motivo: Campo DUI con formateo automático 00000000-0 que inserta el guión solo y permite escribir los 9 dígitos sin bloqueos -->
 								<div class="wizard-field">
 									<label class="wizard-label">DUI <span class="campo-required">*</span></label>
-									<dx-text-box stylingMode="outlined" [(value)]="formData.DUI"></dx-text-box>
+									<dx-text-box
+										stylingMode="outlined"
+										[(value)]="formData.DUI"
+										(onInput)="onDuiInput($event)"
+										(onValueChanged)="onDuiValueChanged($event)"
+										placeholder="00000000-0"
+										[maxLength]="10"
+									></dx-text-box>
 								</div>
 								<div class="wizard-field">
 									<label class="wizard-label">Pasaporte (si es extranjero)</label>

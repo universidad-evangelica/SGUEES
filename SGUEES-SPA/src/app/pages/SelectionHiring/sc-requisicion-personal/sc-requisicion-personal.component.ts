@@ -1389,9 +1389,24 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			});
 	}
 
+	// Qué hace: Mapea y filtra las unidades disponibles para el usuario en la requisición.
+	// Cómo lo hace: Si el usuario tiene unidades hijas a cargo, excluye su propia unidad directa (padre) para que solo solicite en las dependencias operativas, manteniendo su unidad si no tiene hijas a cargo o si fue configurada manualmente.
 	private mapUnidadesUsuarioLookup(data: any[]): any[] {
 		const vistos = new Set<number>();
-		return data
+		const tieneHijasACargo = (data ?? []).some(
+			(x: any) => x.ES_HIJA_A_CARGO === true || x.ES_HIJA_A_CARGO === 1
+		);
+
+		return (data ?? [])
+			.filter((item: any) => {
+				const esHijaACargo = item.ES_HIJA_A_CARGO === true || item.ES_HIJA_A_CARGO === 1;
+				const esConfigurada = item.ES_CONFIGURADA === true || item.ES_CONFIGURADA === 1;
+				// Si el usuario tiene hijas a cargo, se omite su unidad directa padre para solicitar personal solo en sus unidades operativas
+				if (tieneHijasACargo && !esHijaACargo && !esConfigurada) {
+					return false;
+				}
+				return true;
+			})
 			.map((item: any) => {
 				const nombre = (item.NOMBRE_UNIDAD ?? '').trim();
 				const esHijaACargo = item.ES_HIJA_A_CARGO === true || item.ES_HIJA_A_CARGO === 1;

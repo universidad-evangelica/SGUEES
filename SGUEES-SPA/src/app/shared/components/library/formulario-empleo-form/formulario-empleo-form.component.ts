@@ -79,6 +79,56 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	readonly steps: PortalStepMeta[] = PORTAL_STEPS;
 	readonly totalPasos = 6;
 	readonly hoy = new Date();
+	// Qué hace: Formatea un valor de DUI con su guión reglamentario (00000000-0).
+	// Cómo lo hace: Extrae únicamente caracteres numéricos hasta 9 dígitos e inserta el guión en la novena posición.
+	formatearDui(valor: string): string {
+		const digits = `${valor ?? ''}`.replace(/[^0-9]/g, '').slice(0, 9);
+		if (digits.length > 8) {
+			return `${digits.slice(0, 8)}-${digits.slice(8)}`;
+		}
+		return digits;
+	}
+
+	// Qué hace: Formatea automáticamente el DUI con su guión reglamentario mientras el usuario escribe en tiempo real.
+	// Cómo lo hace: Extrae los dígitos (máximo 9), agrega el guión al llegar a 8 dígitos y permite ingresar el 9no dígito sin bloqueos.
+	onDuiInput(e: any): void {
+		const target = e.event?.target as HTMLInputElement;
+		const rawValue = target ? target.value : `${e.component?.option('value') ?? ''}`;
+		const isDelete = (e.event as InputEvent)?.inputType?.startsWith('delete');
+		const digits = rawValue.replace(/[^0-9]/g, '').slice(0, 9);
+
+		let formatted = digits;
+		if (digits.length > 8) {
+			formatted = `${digits.slice(0, 8)}-${digits.slice(8)}`;
+		} else if (digits.length === 8 && !isDelete && !rawValue.endsWith('-')) {
+			formatted = `${digits}-`;
+		}
+
+		this.formData.DUI = formatted;
+		if (target && target.value !== formatted) {
+			target.value = formatted;
+		}
+		if (e.component && e.component.option('value') !== formatted) {
+			e.component.option('value', formatted);
+		}
+	}
+
+	// Qué hace: Normaliza el formato del DUI ante eventos de pegado o cambio de valor.
+	// Cómo lo hace: Aplica formatearDui() y actualiza el modelo y la opción value del componente.
+	onDuiValueChanged(e: any): void {
+		const raw = `${e.value ?? ''}`.trim();
+		if (!raw) {
+			this.formData.DUI = '';
+			return;
+		}
+		const formatted = this.formatearDui(raw);
+		if (this.formData.DUI !== formatted) {
+			this.formData.DUI = formatted;
+		}
+		if (e.component && e.component.option('value') !== formatted) {
+			e.component.option('value', formatted);
+		}
+	}
 
 	// Qué hace: Define la fecha límite superior para la fecha de nacimiento como propiedad fija.
 	// Cómo lo hace: Calcula 'hoy - 18 años' en una propiedad de solo lectura para estabilizar el componente de fecha.
@@ -549,7 +599,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 
 		const dui = `${data?.DUI ?? ''}`.trim();
 		if (dui && !`${this.formData.DUI ?? ''}`.trim()) {
-			this.formData.DUI = dui;
+			this.formData.DUI = this.formatearDui(dui);
 		}
 
 		const plaza = `${data?.PLAZA_SOLICITADA ?? ''}`.trim();
@@ -595,7 +645,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			CELULAR: `${p.CELULAR ?? ''}`.trim(),
 			TELEFONO: `${p.TELEFONO ?? ''}`.trim(),
 			DIRECCION: `${p.DIRECCION ?? ''}`.trim(),
-			DUI: `${p.DUI ?? ''}`.trim() || `${this.formData.DUI ?? ''}`.trim(),
+			DUI: this.formatearDui(`${p.DUI ?? ''}`.trim() || `${this.formData.DUI ?? ''}`.trim()),
 			PASAPORTE: `${p.PASAPORTE ?? ''}`.trim(),
 			ISSS: `${p.ISSS ?? ''}`.trim(),
 			AFP: `${p.AFP ?? ''}`.trim(),
@@ -1025,8 +1075,15 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		if (!`${this.formData.DIRECCION ?? ''}`.trim()) {
 			return { mensaje: 'La dirección es requerida.', paso: 1 };
 		}
-		if (!`${this.formData.DUI ?? ''}`.trim()) {
+		// Qué hace: Valida que el DUI sea obligatorio y contenga exactamente 9 dígitos numéricos.
+		// Cómo lo hace: Remueve guiones y espacios y comprueba que la cantidad de dígitos sea exactamente 9.
+		const duiTexto = `${this.formData.DUI ?? ''}`.trim();
+		const duiNumeros = duiTexto.replace(/[^0-9]/g, '');
+		if (!duiTexto || duiNumeros.length === 0) {
 			return { mensaje: 'El DUI es requerido.', paso: 1 };
+		}
+		if (duiNumeros.length !== 9) {
+			return { mensaje: 'El DUI debe contener 9 dígitos completos (formato 00000000-0).', paso: 1 };
 		}
 
 		// if (!`${this.formData.AFP ?? ''}`.trim()) {

@@ -24,11 +24,6 @@ export class ScSolicitudEmpleoService {
 			return false;
 		}
 
-		// if (!`${model.DUI ?? ''}`.trim()) {
-		// 	msg('Debe digitar el DUI', NotifyType.Warning);
-		// 	return false;
-		// }
-
 		if (!`${model.NOMBRE ?? ''}`.trim()) {
 			msg('Debe digitar el nombre', NotifyType.Warning);
 			return false;
@@ -53,6 +48,12 @@ export class ScSolicitudEmpleoService {
 		let xWhere: IParam[] = [{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: param.CORR_SOLICITUD_EMPLEO }];
 
 		return this.repo.get(xWhere);
+	}
+
+	// Qué hace: Consulta puntualmente una solicitud de empleo por su correlativo para el refresco del participante.
+	// Cómo lo hace: Delega la consulta individual en el repositorio mediante getSolicitudPorId.
+	getSolicitudPorId(corrSolicitud: number): Observable<IResult> {
+		return this.repo.getSolicitudPorId(corrSolicitud);
 	}
 
 	insert(model: any): Observable<IResult> {

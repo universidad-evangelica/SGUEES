@@ -56,6 +56,7 @@ export interface ScBandejaItem {
 	DUI_CANDIDATO?: string;
 	NOMBRE_TIPO_VACANTE?: string;
 	NOMBRE_TIPO_MODALIDAD?: string;
+	CORR_TIPO_CONTRATACION?: number;
 	NOMBRE_TIPO_CONTRATACION?: string;
 	CANTIDAD_PLAZAS?: number;
 	PLAZAS_CUBIERTAS?: number;
@@ -79,6 +80,7 @@ export interface ScBandejaItem {
 	CONFIRMADO?: number | boolean;
 	CORR_EMPLEADO?: number;
 	FECHA_EFECTIVA?: Date | string | null;
+	FECHA_INGRESO_PROPUESTA?: Date | string | null;
 	REQUIERE_ATENCION?: boolean;
 	/** Standby: movimiento personal / contrato aún no conectados. */
 	LISTO_CONTRATACION?: boolean;

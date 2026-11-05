@@ -304,11 +304,29 @@ namespace SGUEES.Services
 				});
 
 				if (ligada.Data is SC_MOVIMIENTO_REQUISICION_CARDView card
-					&& card.CORR_TIPO_CONTRATACION == 2
-					&& !row.FECHA_INGRESO_PROPUESTA.HasValue)
+					&& card.CORR_TIPO_CONTRATACION == 2)
 				{
-					return ValidationError(
-						"Registre la fecha de ingreso propuesta para calcular la fecha de finalización antes de confirmar.");
+					// Qué hace: Si viene la fecha de ingreso propuesta desde el modal, se registra y calcula la finalización.
+					// Cómo lo hace: Invoca RegistrarFechaIngresoAsync con la fecha enviada antes de proceder con la confirmación.
+					if (Data.FECHA_INGRESO_PROPUESTA.HasValue && Data.FECHA_INGRESO_PROPUESTA.Value.Year >= 1753)
+					{
+						var regIngreso = await RegistrarFechaIngresoAsync(new SC_MOVIMIENTO_FECHA_INGRESOParam
+						{
+							CORR_EMPRESA = Data.CORR_EMPRESA,
+							CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+							FECHA_INGRESO_PROPUESTA = Data.FECHA_INGRESO_PROPUESTA.Value.Date,
+						}, vLOGIN_SISTEMA, vESTACION);
+
+						if (!regIngreso.Result)
+						{
+							return regIngreso;
+						}
+					}
+					else if (!row.FECHA_INGRESO_PROPUESTA.HasValue)
+					{
+						return ValidationError(
+							"Registre la fecha de ingreso propuesta para calcular la fecha de finalización antes de confirmar.");
+					}
 				}
 			}
 

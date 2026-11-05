@@ -76,6 +76,7 @@ export class ScBandejaThRepository {
 	confirmarMovimientoPersonal(model: {
 		CORR_MOVIMIENTO_PERSONAL: number;
 		FECHA_EFECTIVA?: Date | string | null;
+		FECHA_INGRESO_PROPUESTA?: Date | string | null;
 	}): Observable<IResult> {
 		return this.objData.Put(
 			model,

@@ -1427,6 +1427,7 @@ SELECT
 				if (corrEmpleado > 0)
 				{
 					await ActualizarExpedienteAContratadoAsync(Data.CORR_EMPRESA, Data.CORR_MOVIMIENTO_PERSONAL, vLOGIN_SISTEMA, vESTACION);
+					await ActualizarEstadoRequisicionPostContratacionAsync(Data.CORR_EMPRESA, Data.CORR_MOVIMIENTO_PERSONAL, vLOGIN_SISTEMA, vESTACION);
 				}
 
 				objResultado.Data = response;
@@ -1446,6 +1447,73 @@ SELECT
 			}
 
 			return objResultado;
+		}
+
+		// Qué hace: Actualiza la requisición vinculada a Parcial Cubierta (10) o Cerrada (11) tras la contratación del empleado.
+		// Cómo lo hace: Cuenta plazas cubiertas en tiempo real; si alcanza el total de plazas la cierra (11), si quedan vacantes la pasa a Parcial Cubierta (10).
+		private async Task ActualizarEstadoRequisicionPostContratacionAsync(
+			int corrEmpresa,
+			int corrMovimiento,
+			string login,
+			string estacion)
+		{
+			if (corrMovimiento <= 0) return;
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new() { ParameterName = "@CORR_MOVIMIENTO_PERSONAL", Value = corrMovimiento, DbType = DbType.Int32 },
+					new() { ParameterName = "@USUARIO_ACTU", Value = login ?? string.Empty, DbType = DbType.String },
+					new() { ParameterName = "@ESTACION_ACTU", Value = estacion ?? string.Empty, DbType = DbType.String },
+				};
+
+				const string updateReqSql = @"
+UPDATE R
+SET R.CORR_ESTADO_REQUISICION = CASE
+        WHEN CUBIERTAS.TOTAL >= ISNULL(R.CANTIDAD_PLAZAS, 1) THEN 11
+        ELSE 10
+    END,
+    R.FECHA_CIERRE = CASE 
+        WHEN CUBIERTAS.TOTAL >= ISNULL(R.CANTIDAD_PLAZAS, 1) THEN GETDATE() 
+        ELSE R.FECHA_CIERRE 
+    END,
+    R.USUARIO_ACTU = @USUARIO_ACTU,
+    R.ESTACION_ACTU = @ESTACION_ACTU,
+    R.FECHA_ACTU = GETDATE()
+FROM dbo.SC_REQUISICION_PERSONAL R
+INNER JOIN dbo.SC_MOVIMIENTO_REQUISICION MR
+    ON MR.CORR_EMPRESA = R.CORR_EMPRESA
+   AND MR.CORR_REQUISICION_PERSONAL = R.CORR_REQUISICION_PERSONAL
+CROSS APPLY (
+    SELECT COUNT(DISTINCT EC.CORR_EXPEDIENTE_CANDIDATO) AS TOTAL
+    FROM dbo.SC_SOLICITUD_REQUISICION AS SR
+    INNER JOIN dbo.SC_EXPEDIENTE_SOLICITUD AS ES
+        ON ES.CORR_EMPRESA = SR.CORR_EMPRESA
+       AND ES.CORR_SOLICITUD_EMPLEO = SR.CORR_SOLICITUD_EMPLEO
+    INNER JOIN dbo.SC_EXPEDIENTE_CANDIDATO AS EC
+        ON EC.CORR_EMPRESA = ES.CORR_EMPRESA
+       AND EC.CORR_EXPEDIENTE_CANDIDATO = ES.CORR_EXPEDIENTE_CANDIDATO
+    LEFT JOIN dbo.SC_REQUISICION_CANDIDATO AS RC
+        ON RC.CORR_EMPRESA = SR.CORR_EMPRESA
+       AND RC.CORR_REQUISICION_PERSONAL = SR.CORR_REQUISICION_PERSONAL
+       AND RC.CORR_EXPEDIENTE_CANDIDATO = EC.CORR_EXPEDIENTE_CANDIDATO
+       AND RC.CORR_SOLICITUD_EMPLEO = SR.CORR_SOLICITUD_EMPLEO
+    WHERE SR.CORR_EMPRESA = R.CORR_EMPRESA
+      AND SR.CORR_REQUISICION_PERSONAL = R.CORR_REQUISICION_PERSONAL
+      AND (RC.ESTADO_DECISION = 'APLICA' OR EC.CORR_ESTADO_EXPEDIENTE = 5)
+      AND EC.ACTIVO = 1
+) AS CUBIERTAS
+WHERE MR.CORR_EMPRESA = @CORR_EMPRESA
+  AND MR.CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL;";
+
+				await objData.ExecCmd(CommandType.Text, updateReqSql, true, p);
+			}
+			catch (Exception)
+			{
+				// Log o supresión controlada para no interrumpir la transacción del movimiento
+			}
 		}
 
 		// Qué hace: Actualiza el estado del expediente a 5 (Contratado) para el candidato vinculado al movimiento.
