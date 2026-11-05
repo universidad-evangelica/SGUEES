@@ -512,7 +512,7 @@ namespace sguees.Repositories
 			if (msg.Contains("UQ_ACA_SE_VP_DESC_USO", StringComparison.OrdinalIgnoreCase))
 				return "Esa pregunta descuento ya está asociada a otro líquido en esta sección.";
 			if (dup)
-				return "Ya existe esa pregunta en la versión seleccionada.";
+				return "Ya existe esa pregunta en la versión y sección seleccionadas.";
 			return msg;
 		}
 	}
