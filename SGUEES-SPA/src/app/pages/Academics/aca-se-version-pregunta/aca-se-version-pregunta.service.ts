@@ -32,7 +32,7 @@ export class AcaSeVersionPreguntaService {
 	esValido(
 		model: AcaSeVersionPregunta,
 		msg: Function,
-		ctx?: { mostrarRolMonto?: boolean }
+		ctx?: { mostrarRolMonto?: boolean; models?: AcaSeVersionPregunta[] }
 	): boolean {
 		if (!model.CORR_VERSION || model.CORR_VERSION <= 0) {
 			msg('Debe seleccionar la versión.', NotifyType.Warning);
@@ -44,6 +44,19 @@ export class AcaSeVersionPreguntaService {
 		}
 		if (!model.CORR_PREGUNTA || model.CORR_PREGUNTA <= 0) {
 			msg('Debe seleccionar la pregunta.', NotifyType.Warning);
+			return false;
+		}
+		// Qué hace: misma pregunta no puede repetirse en la misma versión+sección.
+		const corrActual = Number(model.CORR_VERSION_PREGUNTA ?? 0);
+		const duplicada = (ctx?.models ?? []).some(
+			(m) =>
+				Number(m.CORR_VERSION) === Number(model.CORR_VERSION) &&
+				Number(m.CORR_SECCION_SE) === Number(model.CORR_SECCION_SE) &&
+				Number(m.CORR_PREGUNTA) === Number(model.CORR_PREGUNTA) &&
+				Number(m.CORR_VERSION_PREGUNTA) !== corrActual
+		);
+		if (duplicada) {
+			msg('Ya existe esa pregunta en la versión y sección seleccionadas.', NotifyType.Warning);
 			return false;
 		}
 		if (model.ORDEN === null || model.ORDEN === undefined || Number(model.ORDEN) < 0) {

@@ -104,8 +104,16 @@ namespace sguees.Repositories
 				if (!rolOk.Result)
 					return rolOk;
 
+				var unica = await ValidarPreguntaUnicaEnSeccionAsync(
+					Data.CORR_VERSION,
+					Data.CORR_SECCION_SE,
+					Data.CORR_PREGUNTA,
+					excluirCorrVersionPregunta: null);
+				if (!unica.Result)
+					return unica;
+
 				// Qué hace: inserta sin CORR_VERSION_PREGUNTA porque la PK es IDENTITY.
-				// Cómo lo hace: Insert sin CampoPk y relee por versión+pregunta (UQ).
+				// Cómo lo hace: Insert sin CampoPk y relee por versión+sección+pregunta (UQ).
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
@@ -128,6 +136,7 @@ namespace sguees.Repositories
 				var pWhere = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_SECCION_SE", Value = Data.CORR_SECCION_SE, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
 				};
 				var reader = await objData.Insert(_TableName, p, string.Empty, pWhere);
@@ -171,6 +180,14 @@ namespace sguees.Repositories
 				var rolOk = await NormalizarYValidarRolMontoAsync(Data, validacion);
 				if (!rolOk.Result)
 					return rolOk;
+
+				var unica = await ValidarPreguntaUnicaEnSeccionAsync(
+					Data.CORR_VERSION,
+					Data.CORR_SECCION_SE,
+					Data.CORR_PREGUNTA,
+					excluirCorrVersionPregunta: Data.CORR_VERSION_PREGUNTA);
+				if (!unica.Result)
+					return unica;
 
 				var p = new List<CParameter>
 				{
@@ -311,6 +328,42 @@ namespace sguees.Repositories
 			var response = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(readerGet).FirstOrDefault();
 			readerGet.Close();
 			return response;
+		}
+
+		// Qué hace: no permite la misma pregunta dos veces en la misma versión+sección.
+		// Cómo lo hace: busca en la vista otra fila con esos tres campos (excluye la PK en update).
+		private async Task<CResult> ValidarPreguntaUnicaEnSeccionAsync(
+			int corrVersion,
+			int? corrSeccion,
+			int corrPregunta,
+			int? excluirCorrVersionPregunta)
+		{
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			if (corrVersion <= 0 || !corrSeccion.HasValue || corrSeccion.Value <= 0 || corrPregunta <= 0)
+				return ok;
+
+			var reader = await objData.GetDataReader(_ViewName, new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_VERSION", Value = corrVersion, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_SECCION_SE", Value = corrSeccion.Value, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_PREGUNTA", Value = corrPregunta, DbType = System.Data.DbType.Int32 },
+			});
+			var lista = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(reader).ToList();
+			reader.Close();
+
+			var otra = lista.FirstOrDefault(x =>
+				!excluirCorrVersionPregunta.HasValue ||
+				excluirCorrVersionPregunta.Value <= 0 ||
+				x.CORR_VERSION_PREGUNTA != excluirCorrVersionPregunta.Value);
+
+			if (otra != null)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 2627;
+				ok.ErrorMessage = "Ya existe esa pregunta en la versión y sección seleccionadas.";
+			}
+
+			return ok;
 		}
 
 		// Qué hace: exige sección y que pertenezca a la versión elegida.

@@ -330,6 +330,14 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			helpTextPuntaje: ayuda.helpText,
 			hintPuntaje: ayuda.hint,
 		});
+
+		// Qué hace: fuerza dataSource de bruto/descuento (dx-form a veces no refresca editorOptions).
+		if (mostrarAsoc) {
+			setTimeout(() => {
+				this.dataForm?.instance?.getEditor('CORR_PREGUNTA_BRUTO')?.option('dataSource', preguntasBruto);
+				this.dataForm?.instance?.getEditor('CORR_PREGUNTA_DESCUENTO')?.option('dataSource', preguntasDescuento);
+			});
+		}
 	}
 
 	private sincronizarEditorPuntaje(): void {
@@ -413,6 +421,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		}
 
 		if (e?.dataField === 'ROL_MONTO') {
+			this.model.ROL_MONTO = e.value ?? null;
 			if (!this.service.esRolLiquido(e.value)) {
 				this.limpiarAsociacionesLiquido();
 			}
@@ -447,14 +456,13 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 
 		const record = this.fillData(data as AcaSeVersionPregunta);
 		const key = this.mttoGridKeyExpr as keyof AcaSeVersionPregunta;
+		const index = this.models.findIndex((item) => item?.[key] === record[key]);
 
-		if (isAdd) {
+		// Qué hace: si ya está la PK en memoria (relectura vieja versión+pregunta), reemplaza; no duplica fila.
+		if (index >= 0) {
+			this.models = this.models.map((item, i) => (i === index ? this.fillData({ ...item, ...record }) : item));
+		} else if (isAdd) {
 			this.models = [...this.models, record];
-		} else {
-			const index = this.models.findIndex((item) => item?.[key] === record[key]);
-			if (index >= 0) {
-				this.models = this.models.map((item, i) => (i === index ? this.fillData({ ...item, ...record }) : item));
-			}
 		}
 
 		this.ordenarModels();
@@ -532,14 +540,15 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.model.CORR_PREGUNTA_DESCUENTO = null;
 		}
 
+		const ctxValidacion = { mostrarRolMonto: mostrarRol, models: this.models ?? [] };
 		const formValidation = this.dataForm?.instance?.validate();
 		if (formValidation && !formValidation.isValid) {
-			this.service.esValido(this.model, this.notifyFx.bind(this), { mostrarRolMonto: mostrarRol });
+			this.service.esValido(this.model, this.notifyFx.bind(this), ctxValidacion);
 			return;
 		}
 
 		this.guardarMtto({
-			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), { mostrarRolMonto: mostrarRol }),
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), ctxValidacion),
 			insert: () => this.service.insert(this.model, mostrarRol),
 			update: () => this.service.update(this.model, mostrarRol),
 		});
