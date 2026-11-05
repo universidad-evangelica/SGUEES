@@ -317,7 +317,7 @@ namespace SGUEES.Services
                     estacionCrea: "API");
             }
 
-            // Solo JU → GG: aviso informativo a observadores (documento + corr).
+            // Solo JU → GG: aviso a observadores (defecto + req) → siempre bandeja TH.
             if (data.OPERACION == 3 && EsEstadoAprobadoJu(nombreEstado))
             {
                 await NotificarObservadoresJuAGgAsync(
@@ -331,7 +331,8 @@ namespace SGUEES.Services
         }
 
         /// <summary>
-        /// Observadores defecto + de la requisición. Excluye actor y aprobadores GG (ya notificados a bandeja).
+        /// Observadores defecto + de la requisición → bandeja TH (no documento).
+        /// Excluye actor y aprobadores GG (ya notificados por el flujo estándar).
         /// </summary>
         private async Task NotificarObservadoresJuAGgAsync(
             int corrEmpresa,
@@ -387,14 +388,7 @@ namespace SGUEES.Services
                 return;
             }
 
-            // Documento (no bandeja): menú SC_REQUISICION_PERSONAL + ?corr=; fallback si menú no resuelve.
-            var urlDocumento = await _notificacion.ResolverUrlDestinoAsync(
-                GEN_NOTIFICACIONService.CodigoOpcionRequisicionPersonal,
-                corrReq);
-            if (string.IsNullOrWhiteSpace(urlDocumento) && corrReq > 0)
-            {
-                urlDocumento = $"/sc-requisicion-personal?corr={corrReq}";
-            }
+            var urlBandejaTh = await _notificacion.ResolverUrlBandejaThAsync(corrReq, "REQUISICION");
 
             foreach (var loginDestino in observadores)
             {
@@ -403,7 +397,7 @@ namespace SGUEES.Services
                     loginDestino: loginDestino,
                     titulo: titulo,
                     mensaje: mensaje,
-                    urlDestino: urlDocumento,
+                    urlDestino: urlBandejaTh,
                     usuarioCrea: loginActor,
                     estacionCrea: "API");
             }
