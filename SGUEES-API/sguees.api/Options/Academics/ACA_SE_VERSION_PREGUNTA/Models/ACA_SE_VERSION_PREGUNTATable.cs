@@ -1,5 +1,5 @@
 // Qué hace: modelo de tabla ACA_SE_VERSION_PREGUNTA.
-// Cómo lo hace: PK, FKs versión/sección/pregunta, orden, requerido, activo y auditoría.
+// Cómo lo hace: PK, FKs versión/sección/pregunta, orden, puntaje, ROL_MONTO/asoc. líquido, activo y auditoría.
 using System;
 using eFramework.Data;
 
@@ -14,6 +14,9 @@ namespace sguees.Models
 		public int ORDEN { get; set; }
 		public decimal PUNTAJE { get; set; }
 		public bool? ES_REQUERIDO { get; set; }
+		public string ROL_MONTO { get; set; }
+		public int? CORR_PREGUNTA_BRUTO { get; set; }
+		public int? CORR_PREGUNTA_DESCUENTO { get; set; }
 		public bool? ACTIVO { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }

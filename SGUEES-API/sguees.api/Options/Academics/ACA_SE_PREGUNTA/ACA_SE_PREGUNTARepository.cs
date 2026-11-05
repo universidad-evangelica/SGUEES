@@ -125,12 +125,11 @@ namespace sguees.Repositories
 			}
 			catch (Exception e)
 			{
-				var dup = IsDuplicateKeyError(e);
 				objResultado.Data = null;
 				objResultado.Result = false;
 				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = dup ? 2627 : -1;
-				objResultado.ErrorMessage = dup ? "Ya existe una pregunta con ese código." : e.Message;
+				objResultado.ErrorCode = IsDuplicateKeyError(e) ? 2627 : -1;
+				objResultado.ErrorMessage = IsDuplicateKeyError(e) ? "Ya existe una pregunta con ese código." : e.Message;
 				objResultado.ErrorSource += $"[{e.Source}]";
 			}
 			finally { objData.objConnection.Close(); }
@@ -169,12 +168,11 @@ namespace sguees.Repositories
 			}
 			catch (Exception e)
 			{
-				var dup = IsDuplicateKeyError(e);
 				objResultado.Data = null;
 				objResultado.Result = false;
 				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = dup ? 2627 : -1;
-				objResultado.ErrorMessage = dup ? "Ya existe una pregunta con ese código." : e.Message;
+				objResultado.ErrorCode = IsDuplicateKeyError(e) ? 2627 : -1;
+				objResultado.ErrorMessage = IsDuplicateKeyError(e) ? "Ya existe una pregunta con ese código." : e.Message;
 				objResultado.ErrorSource += $"[{e.Source}]";
 			}
 			finally { objData.objConnection.Close(); }
@@ -329,3 +327,4 @@ namespace sguees.Repositories
 		}
 	}
 }
+

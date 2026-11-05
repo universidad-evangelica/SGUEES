@@ -44,7 +44,6 @@ namespace sguees.Services
 		public Task<CResult> ActivarInactivarAsync(ACA_SE_PREGUNTATable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
 
-		// Qué hace: lookup de preguntas activas para GetLookUp.
 		public Task<CResult> GetPreguntasActivasAsync()
 			=> _repo.GetPreguntasActivasAsync();
 	}

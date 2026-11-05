@@ -1,5 +1,6 @@
 -- Qué hace: documentación de ACA_SE_PREGUNTA (ya existe en BD).
--- Cómo lo hace: refleja identity, PK, UNIQUE de código, FK a GEN_SE_TIPO_PREGUNTA y defaults reales. Sin CHECK. Sin triggers.
+-- Cómo lo hace: refleja identity, PK, UNIQUE de código, FK a GEN_SE_TIPO_PREGUNTA y defaults.
+-- ROL_MONTO / asociaciones líquido viven en ACA_SE_VERSION_PREGUNTA (por versión+sección).
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -37,6 +38,5 @@ ALTER TABLE [dbo].[ACA_SE_PREGUNTA] WITH CHECK ADD CONSTRAINT [FK_ACA_SE_PREG_V4
 GO
 
 -- FK entrantes: ACA_SE_OPCION, ACA_SE_VERSION_PREGUNTA, ACA_PROSPECTO_SE_RESPUESTA
--- Sin CHECK.
--- Sin triggers.
+-- Sin CHECK. Sin triggers.
 GO

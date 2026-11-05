@@ -1,5 +1,5 @@
 // Qué hace: servicio de negocio del catálogo preguntas socioeconómico.
-// Cómo lo hace: valida, ejecuta CRUD, arma columnas/formulario y GetLookUp de tipos (patrón sc-descriptor).
+// Cómo lo hace: valida, ejecuta CRUD, arma columnas/formulario y GetLookUp de tipos.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -21,8 +21,6 @@ export class AcaSePreguntaService {
 		private appInfoService: AppInfoService
 	) {}
 
-	// Qué hace: valida el formulario antes de guardar.
-	// Cómo lo hace: exige tipo, código (máx 50) y enunciado (máx 500); ayuda máx 500.
 	esValido(model: AcaSePregunta, msg: Function): boolean {
 		if (!model.CORR_TIPO_PREGUNTA || model.CORR_TIPO_PREGUNTA <= 0) {
 			msg('Debe seleccionar el tipo de pregunta.', NotifyType.Warning);
@@ -59,8 +57,6 @@ export class AcaSePreguntaService {
 		return this.repo.get([{ Parameter: 'CORR_PREGUNTA', Value: param.CORR_PREGUNTA }]);
 	}
 
-	// Qué hace: trae tipos de pregunta activos para el select.
-	// Cómo lo hace: getLookUp(ACA_SE_PREGUNTA, GEN_SE_TIPO_PREGUNTA, GetCORR_TIPO_PREGUNTA).
 	getCORR_TIPO_PREGUNTA(): Observable<IResult> {
 		return this.appInfoService.getLookUp(
 			'ACA_SE_PREGUNTA',
@@ -99,9 +95,9 @@ export class AcaSePreguntaService {
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			{ dataField: 'CODIGO', caption: 'Código', width: 160 },
-			{ dataField: 'ENUNCIADO', caption: 'Enunciado', width: 320, minWidth: 220 },
-			{ dataField: 'NOMBRE_TIPO_PREGUNTA', caption: 'Tipo', width: 160 },
-			{ dataField: 'AYUDA', caption: 'Ayuda', width: 220, minWidth: 160 },
+			{ dataField: 'ENUNCIADO', caption: 'Enunciado', width: 300, minWidth: 200 },
+			{ dataField: 'NOMBRE_TIPO_PREGUNTA', caption: 'Tipo', width: 150 },
+			{ dataField: 'AYUDA', caption: 'Ayuda', width: 200, minWidth: 140 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS, { caption: 'Estado' }),
 			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];

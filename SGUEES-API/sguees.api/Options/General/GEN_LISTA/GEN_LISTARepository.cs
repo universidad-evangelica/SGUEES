@@ -685,6 +685,26 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Qué hace: rol de monto monetario SE (CHECK ACA_SE_VERSION_PREGUNTA.ROL_MONTO).
+		public CResult GetROL_MONTO()
+		{
+			CResult objResultado = new();
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "BRUTO", Value = "Bruto" },
+				new() { Key = "DESCUENTO", Value = "Descuento" },
+				new() { Key = "LIQUIDO", Value = "Líquido" },
+				new() { Key = "MONTO", Value = "Monto" },
+			};
+			objResultado.Result = true;
+			objResultado.RowsAffected = 4;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+			return objResultado;
+		}
+
 		// Qué hace: niveles académicos para formación (campo NIVEL, sin CHECK en BD).
 		public CResult GetNIVEL_ACADEMICO()
 		{

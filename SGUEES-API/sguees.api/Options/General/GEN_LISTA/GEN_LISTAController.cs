@@ -302,5 +302,15 @@ namespace sguees.Controllers
 		{
 			return _service.GetTIPO_EVALUACION();
 		}
+
+		// Qué hace: lookup ROL_MONTO en preguntas por versión SE (solo MONTO + sección RANGO_MONTO).
+		// Cómo lo hace: GetLookUp arma GetROL_MONTO_ACA_SE_VERSION_PREGUNTA.
+		[HttpGet("GetROL_MONTO_ACA_SE_VERSION_PREGUNTA")]
+		[Authorize(Policy = "/aca-se-version-pregunta|R")]
+		public CResult GetROL_MONTO_ACA_SE_VERSION_PREGUNTA()
+		{
+			return _service.GetROL_MONTO();
+		}
 	}
 }
+

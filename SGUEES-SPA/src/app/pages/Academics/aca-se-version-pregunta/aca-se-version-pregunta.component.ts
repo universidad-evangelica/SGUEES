@@ -1,5 +1,5 @@
 // Qué hace: vista de mantenimiento de preguntas por versión socioeconómico.
-// Cómo lo hace: CRUD de ACA_SE_VERSION_PREGUNTA; versión → sección (filtrada) → pregunta.
+// Cómo lo hace: CRUD de ACA_SE_VERSION_PREGUNTA; rol/asoc. líquido solo si MONTO + RANGO_MONTO.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, Observable, of, throwError } from 'rxjs';
@@ -10,6 +10,7 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import {
 	AcaSePreguntaLookup,
+	AcaSeRolMontoLookup,
 	AcaSeSeccionLookup,
 	AcaSeVersionLookup,
 	AcaSeVersionPregunta,
@@ -41,6 +42,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 	mCORR_VERSION: AcaSeVersionLookup[] = [];
 	mCORR_SECCION_SE: AcaSeSeccionLookup[] = [];
 	mCORR_PREGUNTA: AcaSePreguntaLookup[] = [];
+	mROL_MONTO: AcaSeRolMontoLookup[] = [];
 	mSeccionesFiltradas: AcaSeSeccionLookup[] = [];
 
 	constructor(
@@ -95,6 +97,14 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 				ORDEN: xModel.ORDEN,
 				PUNTAJE: Number(xModel.PUNTAJE ?? 0),
 				ES_REQUERIDO: !!xModel.ES_REQUERIDO,
+				ROL_MONTO: xModel.ROL_MONTO ?? null,
+				NOMBRE_ROL_MONTO: xModel.NOMBRE_ROL_MONTO ?? null,
+				CORR_PREGUNTA_BRUTO: xModel.CORR_PREGUNTA_BRUTO ?? null,
+				CODIGO_PREGUNTA_BRUTO: xModel.CODIGO_PREGUNTA_BRUTO ?? null,
+				ENUNCIADO_PREGUNTA_BRUTO: xModel.ENUNCIADO_PREGUNTA_BRUTO ?? null,
+				CORR_PREGUNTA_DESCUENTO: xModel.CORR_PREGUNTA_DESCUENTO ?? null,
+				CODIGO_PREGUNTA_DESCUENTO: xModel.CODIGO_PREGUNTA_DESCUENTO ?? null,
+				ENUNCIADO_PREGUNTA_DESCUENTO: xModel.ENUNCIADO_PREGUNTA_DESCUENTO ?? null,
 				ACTIVO: xModel.ACTIVO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
@@ -113,6 +123,9 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			ORDEN: 0,
 			PUNTAJE: 0,
 			ES_REQUERIDO: false,
+			ROL_MONTO: null,
+			CORR_PREGUNTA_BRUTO: null,
+			CORR_PREGUNTA_DESCUENTO: null,
 			ACTIVO: true,
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
@@ -133,13 +146,12 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		});
 	}
 
-	// Qué hace: carga lookups de versión, sección y pregunta.
-	// Cómo lo hace: forkJoin de GetCORR_VERSION, GetCORR_SECCION_SE y GetCORR_PREGUNTA.
 	private cargarLookUps(): void {
 		forkJoin({
 			versiones: this.service.getCORR_VERSION().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 			secciones: this.service.getCORR_SECCION_SE().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 			preguntas: this.service.getCORR_PREGUNTA().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
+			rolesMonto: this.service.getROL_MONTO().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 		})
 			.pipe(take(1))
 			.subscribe({
@@ -190,13 +202,18 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 								};
 						  })
 						: [];
+					this.mROL_MONTO = Array.isArray(result?.rolesMonto?.Data)
+						? result.rolesMonto.Data.map((item: AcaSeRolMontoLookup) => ({
+								Key: (item.Key ?? '').trim(),
+								Value: (item.Value ?? '').trim(),
+						  }))
+						: [];
 					this.aplicarFiltroSecciones(Number(this.model?.CORR_VERSION ?? 0), false);
 					this.refrescarItemsForm();
 				},
 			});
 	}
 
-	// Qué hace: deja en el select solo secciones de la versión elegida.
 	private aplicarFiltroSecciones(corrVersion: number, limpiarSiNoPertenece: boolean): void {
 		this.mSeccionesFiltradas = corrVersion > 0
 			? this.mCORR_SECCION_SE
@@ -209,26 +226,33 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			const sigue = this.mSeccionesFiltradas.some((s) => s.CORR_SECCION_SE === actual);
 			if (!sigue) {
 				this.model.CORR_SECCION_SE = 0;
+				this.model.TIPO_EVALUACION = undefined;
+				this.limpiarRolYAsociaciones();
 			}
 		}
 	}
 
-	// Qué hace: tipo de la pregunta seleccionada (lookup o fila).
 	private codigoTipoPregunta(corrPregunta?: number): string {
 		const corr = Number(corrPregunta ?? this.model?.CORR_PREGUNTA ?? 0);
 		const pregunta = this.mCORR_PREGUNTA.find((p) => p.CORR_PREGUNTA === corr);
 		return (pregunta?.CODIGO_TIPO_PREGUNTA ?? this.model?.CODIGO_TIPO_PREGUNTA ?? '').trim().toUpperCase();
 	}
 
-	// Qué hace: indica si la sección es tipo PREGUNTA (no rango).
-	private seccionEsTipoPregunta(corrSeccion?: number): boolean {
+	private tipoEvaluacionSeccion(corrSeccion?: number): string {
 		const corr = Number(corrSeccion ?? this.model?.CORR_SECCION_SE ?? 0);
 		const seccion = this.mCORR_SECCION_SE.find((s) => s.CORR_SECCION_SE === corr);
-		return (seccion?.TIPO_EVALUACION ?? '').toUpperCase() === 'PREGUNTA';
+		return (seccion?.TIPO_EVALUACION ?? this.model?.TIPO_EVALUACION ?? '').trim().toUpperCase();
 	}
 
-	// Qué hace: puntaje en la pregunta: sección PREGUNTA y tipo distinto de OPCION_UNICA.
-	// Cómo lo hace: OPCION_UNICA usa puntaje en Opciones; múltiple/texto/número/etc. usan este campo.
+	private seccionEsTipoPregunta(corrSeccion?: number): boolean {
+		return this.tipoEvaluacionSeccion(corrSeccion) === 'PREGUNTA';
+	}
+
+	// Qué hace: rol/asoc. solo si pregunta MONTO y sección RANGO_MONTO.
+	private mostrarRolMonto(): boolean {
+		return this.codigoTipoPregunta() === 'MONTO' && this.tipoEvaluacionSeccion() === 'RANGO_MONTO';
+	}
+
 	private permitePuntajePregunta(): boolean {
 		if (!this.seccionEsTipoPregunta()) {
 			return false;
@@ -262,21 +286,52 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		};
 	}
 
-	// Qué hace: reconstruye el formulario con los catálogos cargados.
 	private refrescarItemsForm(): void {
 		const ayuda = this.textosAyudaPuntaje();
+		const mostrarRol = this.mostrarRolMonto();
+		const mostrarAsoc = mostrarRol && this.service.esRolLiquido(this.model?.ROL_MONTO);
+		const corrVersion = Number(this.model?.CORR_VERSION ?? 0);
+		const corrSeccion = Number(this.model?.CORR_SECCION_SE ?? 0);
+		const corrVp = Number(this.model?.CORR_VERSION_PREGUNTA ?? 0);
+		const corrPreg = Number(this.model?.CORR_PREGUNTA ?? 0);
+		const preguntasBruto = mostrarAsoc
+			? this.service.armarCandidatosAsoc(
+					this.models ?? [],
+					corrVersion,
+					corrSeccion,
+					corrVp,
+					corrPreg,
+					'BRUTO',
+					this.model?.CORR_PREGUNTA_BRUTO
+			  )
+			: [];
+		const preguntasDescuento = mostrarAsoc
+			? this.service.armarCandidatosAsoc(
+					this.models ?? [],
+					corrVersion,
+					corrSeccion,
+					corrVp,
+					corrPreg,
+					'DESCUENTO',
+					this.model?.CORR_PREGUNTA_DESCUENTO
+			  )
+			: [];
+
 		this.items = this.service.getItems({
 			versiones: this.mCORR_VERSION,
 			secciones: this.mSeccionesFiltradas,
 			preguntas: this.mCORR_PREGUNTA,
+			rolesMonto: this.mROL_MONTO,
+			preguntasBruto,
+			preguntasDescuento,
 			permitePuntaje: this.permitePuntajePregunta(),
+			mostrarRolMonto: mostrarRol,
+			mostrarAsocLiquido: mostrarAsoc,
 			helpTextPuntaje: ayuda.helpText,
 			hintPuntaje: ayuda.hint,
 		});
 	}
 
-	// Qué hace: habilita/deshabilita puntaje según sección y tipo de pregunta.
-	// Cómo lo hace: readOnly + hint/helpText; OPCION_UNICA o rango → fuerza 0.
 	private sincronizarEditorPuntaje(): void {
 		const permite = this.permitePuntajePregunta();
 		const ayuda = this.textosAyudaPuntaje();
@@ -290,12 +345,30 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		this.dataForm?.instance?.itemOption('PUNTAJE', 'helpText', ayuda.helpText);
 	}
 
+	private limpiarRolYAsociaciones(): void {
+		this.model.ROL_MONTO = null;
+		this.model.NOMBRE_ROL_MONTO = null;
+		this.limpiarAsociacionesLiquido();
+		this.dataForm?.instance?.updateData('ROL_MONTO', null);
+	}
+
+	private limpiarAsociacionesLiquido(): void {
+		this.model.CORR_PREGUNTA_BRUTO = null;
+		this.model.CODIGO_PREGUNTA_BRUTO = null;
+		this.model.ENUNCIADO_PREGUNTA_BRUTO = null;
+		this.model.CORR_PREGUNTA_DESCUENTO = null;
+		this.model.CODIGO_PREGUNTA_DESCUENTO = null;
+		this.model.ENUNCIADO_PREGUNTA_DESCUENTO = null;
+		this.dataForm?.instance?.updateData('CORR_PREGUNTA_BRUTO', null);
+		this.dataForm?.instance?.updateData('CORR_PREGUNTA_DESCUENTO', null);
+	}
+
 	onFieldDataChanged(e: any): void {
-		// Qué hace: al cambiar versión/sección/pregunta, sincroniza puntaje (única → 0 en pregunta).
 		if (e?.dataField === 'CORR_VERSION') {
 			const corrVersion = Number(e?.value ?? this.model?.CORR_VERSION ?? 0);
 			this.model.CORR_VERSION = corrVersion;
 			this.aplicarFiltroSecciones(corrVersion, true);
+			this.refrescarItemsForm();
 			setTimeout(() => {
 				const editorSeccion = this.dataForm?.instance?.getEditor('CORR_SECCION_SE') as any;
 				if (!editorSeccion) {
@@ -316,6 +389,10 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.model.CORR_SECCION_SE = Number(e?.value ?? 0);
 			const seccion = this.mCORR_SECCION_SE.find((s) => s.CORR_SECCION_SE === this.model.CORR_SECCION_SE);
 			this.model.TIPO_EVALUACION = seccion?.TIPO_EVALUACION;
+			if (!this.mostrarRolMonto()) {
+				this.limpiarRolYAsociaciones();
+			}
+			this.refrescarItemsForm();
 			setTimeout(() => this.sincronizarEditorPuntaje());
 			return;
 		}
@@ -327,7 +404,19 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.model.CODIGO_TIPO_PREGUNTA = pregunta?.CODIGO_TIPO_PREGUNTA;
 			this.model.NOMBRE_TIPO_PREGUNTA = pregunta?.NOMBRE_TIPO_PREGUNTA;
 			this.model.CORR_TIPO_PREGUNTA = pregunta?.CORR_TIPO_PREGUNTA;
+			if (!this.mostrarRolMonto()) {
+				this.limpiarRolYAsociaciones();
+			}
+			this.refrescarItemsForm();
 			setTimeout(() => this.sincronizarEditorPuntaje());
+			return;
+		}
+
+		if (e?.dataField === 'ROL_MONTO') {
+			if (!this.service.esRolLiquido(e.value)) {
+				this.limpiarAsociacionesLiquido();
+			}
+			this.refrescarItemsForm();
 		}
 	}
 
@@ -436,17 +525,23 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		if (!this.permitePuntajePregunta()) {
 			this.model.PUNTAJE = 0;
 		}
+		const mostrarRol = this.mostrarRolMonto();
+		if (!mostrarRol) {
+			this.model.ROL_MONTO = null;
+			this.model.CORR_PREGUNTA_BRUTO = null;
+			this.model.CORR_PREGUNTA_DESCUENTO = null;
+		}
 
 		const formValidation = this.dataForm?.instance?.validate();
 		if (formValidation && !formValidation.isValid) {
-			this.service.esValido(this.model, this.notifyFx.bind(this));
+			this.service.esValido(this.model, this.notifyFx.bind(this), { mostrarRolMonto: mostrarRol });
 			return;
 		}
 
 		this.guardarMtto({
-			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
-			insert: () => this.service.insert(this.model),
-			update: () => this.service.update(this.model),
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), { mostrarRolMonto: mostrarRol }),
+			insert: () => this.service.insert(this.model, mostrarRol),
+			update: () => this.service.update(this.model, mostrarRol),
 		});
 	}
 
@@ -502,6 +597,9 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		this.dataForm.instance.getEditor('CORR_VERSION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_SECCION_SE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_PREGUNTA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ROL_MONTO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_PREGUNTA_BRUTO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_PREGUNTA_DESCUENTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('PUNTAJE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ES_REQUERIDO')?.option('readOnly', true);
@@ -515,6 +613,9 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.dataForm.instance.getEditor('CORR_VERSION')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('CORR_SECCION_SE')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('CORR_PREGUNTA')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('ROL_MONTO')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('CORR_PREGUNTA_BRUTO')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('CORR_PREGUNTA_DESCUENTO')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ORDEN')?.option('readOnly', false);
 			this.sincronizarEditorPuntaje();
 			this.dataForm.instance.getEditor('ES_REQUERIDO')?.option('readOnly', false);

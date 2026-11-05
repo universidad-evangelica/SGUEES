@@ -1,5 +1,5 @@
 -- Qué hace: vista de mantenimiento del catálogo ACA_SE_PREGUNTA.
--- Cómo lo hace: proyecta la pregunta y el tipo (GEN_SE_TIPO_PREGUNTA); el usuario debe ejecutar este script en BD.
+-- Cómo lo hace: proyecta la pregunta y su tipo (sin rol de monto; eso va en VERSION_PREGUNTA).
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON

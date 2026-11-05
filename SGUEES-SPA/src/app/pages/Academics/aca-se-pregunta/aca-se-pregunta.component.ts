@@ -1,5 +1,5 @@
 // Qué hace: vista de mantenimiento de preguntas socioeconómico.
-// Cómo lo hace: administra el CRUD de ACA_SE_PREGUNTA; tipo vía getLookUp (patrón sc-descriptor).
+// Cómo lo hace: administra el CRUD de ACA_SE_PREGUNTA; tipo vía getLookUp.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -113,8 +113,6 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Qué hace: carga el catálogo de tipos de pregunta para el select.
-	// Cómo lo hace: getLookUp GetCORR_TIPO_PREGUNTA → mCORR_TIPO_PREGUNTA y refresca items del form.
 	getCORR_TIPO_PREGUNTA(): void {
 		this.service
 			.getCORR_TIPO_PREGUNTA()
@@ -135,7 +133,7 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 				},
 				error: () => {
 					this.mCORR_TIPO_PREGUNTA = [];
-					this.items = this.service.getItems({ tipos: this.mCORR_TIPO_PREGUNTA });
+					this.items = this.service.getItems({ tipos: [] });
 				},
 			});
 	}
@@ -144,7 +142,6 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 		if (!Array.isArray(this.models)) {
 			return;
 		}
-
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_PREGUNTA) - Number(b.CORR_PREGUNTA));
 	}
 
@@ -175,7 +172,6 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 			super.quitarRegistroDeGrid(keyValue);
 			return;
 		}
-
 		const key = this.mttoGridKeyExpr as keyof AcaSePregunta;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
@@ -195,6 +191,7 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 		}
 		super.rowDblClick(e);
 		setTimeout(() => {
+			this.items = this.service.getItems({ tipos: this.mCORR_TIPO_PREGUNTA });
 			this.dataForm?.instance?.option('formData', this.model);
 			this.bloquear();
 		});
@@ -204,10 +201,10 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 		if (!e?.row?.data) {
 			return;
 		}
-
 		this.model = this.fillData(e.row.data);
 		this.editarClick(e);
 		setTimeout(() => {
+			this.items = this.service.getItems({ tipos: this.mCORR_TIPO_PREGUNTA });
 			this.dataForm?.instance?.option('formData', this.model);
 			this.habilitar();
 		});
@@ -216,6 +213,7 @@ export class AcaSePreguntaComponent extends CBaseComponent implements OnInit {
 	override nuevo(): void {
 		super.nuevo();
 		setTimeout(() => {
+			this.items = this.service.getItems({ tipos: this.mCORR_TIPO_PREGUNTA });
 			this.dataForm?.instance?.option('formData', this.model);
 		});
 	}

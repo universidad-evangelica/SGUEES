@@ -1,4 +1,4 @@
-// Qué hace: fila de V_ACA_SE_VERSION_PREGUNTA (versión, sección y pregunta).
+// Qué hace: fila de V_ACA_SE_VERSION_PREGUNTA (versión, sección, pregunta, rol monto y asoc.).
 using System;
 
 namespace sguees.Models
@@ -22,6 +22,14 @@ namespace sguees.Models
 		public int ORDEN { get; set; }
 		public decimal PUNTAJE { get; set; }
 		public bool? ES_REQUERIDO { get; set; }
+		public string ROL_MONTO { get; set; }
+		public string NOMBRE_ROL_MONTO { get; set; }
+		public int? CORR_PREGUNTA_BRUTO { get; set; }
+		public string CODIGO_PREGUNTA_BRUTO { get; set; }
+		public string ENUNCIADO_PREGUNTA_BRUTO { get; set; }
+		public int? CORR_PREGUNTA_DESCUENTO { get; set; }
+		public string CODIGO_PREGUNTA_DESCUENTO { get; set; }
+		public string ENUNCIADO_PREGUNTA_DESCUENTO { get; set; }
 		public bool? ACTIVO { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }

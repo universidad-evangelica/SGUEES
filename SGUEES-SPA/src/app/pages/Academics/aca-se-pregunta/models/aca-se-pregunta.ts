@@ -1,5 +1,5 @@
 // Qué hace: modelos TypeScript de ACA_SE_PREGUNTA y lookup de tipo.
-// Cómo lo hace: refleja V_ACA_SE_PREGUNTA y el select de GEN_SE_TIPO_PREGUNTA.
+// Cómo lo hace: refleja V_ACA_SE_PREGUNTA y GEN_SE_TIPO_PREGUNTA.
 export interface AcaSePregunta {
 	CORR_PREGUNTA: number;
 	CORR_TIPO_PREGUNTA: number;
@@ -17,7 +17,6 @@ export interface AcaSePregunta {
 	FECHA_ACTU: Date | string;
 }
 
-// Qué hace: fila del GetLookUp GetCORR_TIPO_PREGUNTA (GEN_SE_TIPO_PREGUNTA).
 export interface AcaSeTipoPreguntaLookup {
 	CORR_TIPO_PREGUNTA: number;
 	CODIGO: string;

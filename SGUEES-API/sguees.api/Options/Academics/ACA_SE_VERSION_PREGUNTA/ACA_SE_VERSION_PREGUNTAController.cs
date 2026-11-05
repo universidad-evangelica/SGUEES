@@ -84,6 +84,7 @@ namespace sguees.Controllers
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 			Data.ACTIVO ??= true;
 			Data.ES_REQUERIDO ??= false;
+			NormalizarRolMontoEntrada(Data);
 		}
 
 		private void SetUpdateAudit(ACA_SE_VERSION_PREGUNTATable Data)
@@ -91,6 +92,25 @@ namespace sguees.Controllers
 			Data.USUARIO_ACTU = GetUsuario();
 			Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
 			Data.FECHA_ACTU = DateTime.Now;
+			NormalizarRolMontoEntrada(Data);
+		}
+
+		// Qué hace: limpia ROL vacío; si no es LIQUIDO limpia FKs (el repo valida contexto RANGO_MONTO+MONTO).
+		private static void NormalizarRolMontoEntrada(ACA_SE_VERSION_PREGUNTATable Data)
+		{
+			if (string.IsNullOrWhiteSpace(Data.ROL_MONTO))
+			{
+				Data.ROL_MONTO = null;
+				Data.CORR_PREGUNTA_BRUTO = null;
+				Data.CORR_PREGUNTA_DESCUENTO = null;
+				return;
+			}
+			Data.ROL_MONTO = Data.ROL_MONTO.Trim().ToUpperInvariant();
+			if (!string.Equals(Data.ROL_MONTO, "LIQUIDO", StringComparison.OrdinalIgnoreCase))
+			{
+				Data.CORR_PREGUNTA_BRUTO = null;
+				Data.CORR_PREGUNTA_DESCUENTO = null;
+			}
 		}
 	}
 }

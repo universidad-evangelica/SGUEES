@@ -100,6 +100,10 @@ namespace sguees.Repositories
 				// Qué hace: puntaje en pregunta salvo RANGO_MONTO u OPCION_UNICA (esa usa puntaje de opción).
 				Data.PUNTAJE = await NormalizarPuntajePreguntaAsync(validacion, Data.CORR_PREGUNTA, Data.PUNTAJE);
 
+				var rolOk = await NormalizarYValidarRolMontoAsync(Data, validacion);
+				if (!rolOk.Result)
+					return rolOk;
+
 				// Qué hace: inserta sin CORR_VERSION_PREGUNTA porque la PK es IDENTITY.
 				// Cómo lo hace: Insert sin CampoPk y relee por versión+pregunta (UQ).
 				var p = new List<CParameter>
@@ -110,6 +114,9 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "PUNTAJE", Value = Data.PUNTAJE, DbType = System.Data.DbType.Decimal },
 					new CParameter() { ParameterName = "ES_REQUERIDO", Value = Data.ES_REQUERIDO ?? false, DbType = System.Data.DbType.Boolean },
+					new CParameter() { ParameterName = "ROL_MONTO", Value = (object)Data.ROL_MONTO ?? DBNull.Value, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CORR_PREGUNTA_BRUTO", Value = (object)Data.CORR_PREGUNTA_BRUTO ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_PREGUNTA_DESCUENTO", Value = (object)Data.CORR_PREGUNTA_DESCUENTO ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO ?? true, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
@@ -143,9 +150,7 @@ namespace sguees.Repositories
 				objResultado.Result = false;
 				objResultado.CodeHelper = 0;
 				objResultado.ErrorCode = dup ? 2627 : -1;
-				objResultado.ErrorMessage = dup
-					? "Ya existe esa pregunta en la versión seleccionada."
-					: e.Message;
+				objResultado.ErrorMessage = MensajeErrorPersistencia(e, dup);
 				objResultado.ErrorSource += $"[{e.Source}]";
 			}
 			finally { objData.objConnection.Close(); }
@@ -163,6 +168,10 @@ namespace sguees.Repositories
 
 				Data.PUNTAJE = await NormalizarPuntajePreguntaAsync(validacion, Data.CORR_PREGUNTA, Data.PUNTAJE);
 
+				var rolOk = await NormalizarYValidarRolMontoAsync(Data, validacion);
+				if (!rolOk.Result)
+					return rolOk;
+
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
@@ -171,6 +180,9 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "ORDEN", Value = Data.ORDEN, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "PUNTAJE", Value = Data.PUNTAJE, DbType = System.Data.DbType.Decimal },
 					new CParameter() { ParameterName = "ES_REQUERIDO", Value = Data.ES_REQUERIDO ?? false, DbType = System.Data.DbType.Boolean },
+					new CParameter() { ParameterName = "ROL_MONTO", Value = (object)Data.ROL_MONTO ?? DBNull.Value, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CORR_PREGUNTA_BRUTO", Value = (object)Data.CORR_PREGUNTA_BRUTO ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_PREGUNTA_DESCUENTO", Value = (object)Data.CORR_PREGUNTA_DESCUENTO ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -197,9 +209,7 @@ namespace sguees.Repositories
 				objResultado.Result = false;
 				objResultado.CodeHelper = 0;
 				objResultado.ErrorCode = dup ? 2627 : -1;
-				objResultado.ErrorMessage = dup
-					? "Ya existe esa pregunta en la versión seleccionada."
-					: e.Message;
+				objResultado.ErrorMessage = MensajeErrorPersistencia(e, dup);
 				objResultado.ErrorSource += $"[{e.Source}]";
 			}
 			finally { objData.objConnection.Close(); }
@@ -367,11 +377,144 @@ namespace sguees.Repositories
 			return puntaje < 0 ? 0m : puntaje;
 		}
 
+		// Qué hace: ROL_MONTO/asoc. solo si sección RANGO_MONTO y pregunta tipo MONTO; si LIQUIDO exige bruto+descuento de la misma versión+sección.
+		private async Task<CResult> NormalizarYValidarRolMontoAsync(ACA_SE_VERSION_PREGUNTATable Data, CResult validacionSeccion)
+		{
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			var seccion = validacionSeccion?.Data as ACA_SE_SECCIONView;
+			var esRangoMonto = seccion != null &&
+				string.Equals(seccion.TIPO_EVALUACION, "RANGO_MONTO", StringComparison.OrdinalIgnoreCase);
+
+			var reader = await objData.GetDataReader("V_ACA_SE_PREGUNTA", new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_PREGUNTA", Value = Data.CORR_PREGUNTA, DbType = System.Data.DbType.Int32 },
+			});
+			var pregunta = new List<ACA_SE_PREGUNTAView>().FromDataReader(reader).FirstOrDefault();
+			reader.Close();
+
+			var esTipoMonto = pregunta != null &&
+				string.Equals(pregunta.CODIGO_TIPO_PREGUNTA, "MONTO", StringComparison.OrdinalIgnoreCase);
+
+			if (!esRangoMonto || !esTipoMonto)
+			{
+				Data.ROL_MONTO = null;
+				Data.CORR_PREGUNTA_BRUTO = null;
+				Data.CORR_PREGUNTA_DESCUENTO = null;
+				return ok;
+			}
+
+			if (string.IsNullOrWhiteSpace(Data.ROL_MONTO))
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4010;
+				ok.ErrorMessage = "Debe seleccionar el rol de monto (Bruto, Descuento, Líquido o Monto).";
+				return ok;
+			}
+
+			Data.ROL_MONTO = Data.ROL_MONTO.Trim().ToUpperInvariant();
+			var esLiquido = string.Equals(Data.ROL_MONTO, "LIQUIDO", StringComparison.OrdinalIgnoreCase);
+			if (!esLiquido)
+			{
+				Data.CORR_PREGUNTA_BRUTO = null;
+				Data.CORR_PREGUNTA_DESCUENTO = null;
+				return ok;
+			}
+
+			if (!Data.CORR_PREGUNTA_BRUTO.HasValue || Data.CORR_PREGUNTA_BRUTO.Value <= 0 ||
+				!Data.CORR_PREGUNTA_DESCUENTO.HasValue || Data.CORR_PREGUNTA_DESCUENTO.Value <= 0)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4011;
+				ok.ErrorMessage = "Si el rol es Líquido debe asociar la pregunta Bruto y la pregunta Descuento.";
+				return ok;
+			}
+
+			if (Data.CORR_PREGUNTA_BRUTO == Data.CORR_PREGUNTA_DESCUENTO)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4012;
+				ok.ErrorMessage = "La pregunta Bruto y Descuento deben ser distintas.";
+				return ok;
+			}
+
+			if (Data.CORR_PREGUNTA_BRUTO == Data.CORR_PREGUNTA || Data.CORR_PREGUNTA_DESCUENTO == Data.CORR_PREGUNTA)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4013;
+				ok.ErrorMessage = "Un líquido no puede asociarse a sí mismo.";
+				return ok;
+			}
+
+			var hermanos = await objData.GetDataReader(_ViewName, new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_VERSION", Value = Data.CORR_VERSION, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_SECCION_SE", Value = Data.CORR_SECCION_SE, DbType = System.Data.DbType.Int32 },
+			});
+			var lista = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(hermanos).ToList();
+			hermanos.Close();
+
+			var bruto = lista.FirstOrDefault(x => x.CORR_PREGUNTA == Data.CORR_PREGUNTA_BRUTO.Value);
+			if (bruto == null || !string.Equals(bruto.ROL_MONTO, "BRUTO", StringComparison.OrdinalIgnoreCase))
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4014;
+				ok.ErrorMessage = "La pregunta Bruto debe existir en la misma versión/sección con rol Bruto.";
+				return ok;
+			}
+
+			var desc = lista.FirstOrDefault(x => x.CORR_PREGUNTA == Data.CORR_PREGUNTA_DESCUENTO.Value);
+			if (desc == null || !string.Equals(desc.ROL_MONTO, "DESCUENTO", StringComparison.OrdinalIgnoreCase))
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4015;
+				ok.ErrorMessage = "La pregunta Descuento debe existir en la misma versión/sección con rol Descuento.";
+				return ok;
+			}
+
+			var conflictoBruto = lista.FirstOrDefault(x =>
+				x.CORR_PREGUNTA_BRUTO == Data.CORR_PREGUNTA_BRUTO &&
+				x.CORR_VERSION_PREGUNTA != Data.CORR_VERSION_PREGUNTA);
+			if (conflictoBruto != null)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4016;
+				ok.ErrorMessage = $"Esa pregunta bruto ya está asociada al líquido {conflictoBruto.CODIGO_PREGUNTA}.";
+				return ok;
+			}
+
+			var conflictoDesc = lista.FirstOrDefault(x =>
+				x.CORR_PREGUNTA_DESCUENTO == Data.CORR_PREGUNTA_DESCUENTO &&
+				x.CORR_VERSION_PREGUNTA != Data.CORR_VERSION_PREGUNTA);
+			if (conflictoDesc != null)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4017;
+				ok.ErrorMessage = $"Esa pregunta descuento ya está asociada al líquido {conflictoDesc.CODIGO_PREGUNTA}.";
+				return ok;
+			}
+
+			return ok;
+		}
+
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
 				e.Message.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) ||
-				e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
+				e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase) ||
+				e.Message.Contains("unique index", StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static string MensajeErrorPersistencia(Exception e, bool dup)
+		{
+			var msg = e.Message ?? string.Empty;
+			if (msg.Contains("UQ_ACA_SE_VP_BRUTO_USO", StringComparison.OrdinalIgnoreCase))
+				return "Esa pregunta bruto ya está asociada a otro líquido en esta sección.";
+			if (msg.Contains("UQ_ACA_SE_VP_DESC_USO", StringComparison.OrdinalIgnoreCase))
+				return "Esa pregunta descuento ya está asociada a otro líquido en esta sección.";
+			if (dup)
+				return "Ya existe esa pregunta en la versión seleccionada.";
+			return msg;
 		}
 	}
 }
+
