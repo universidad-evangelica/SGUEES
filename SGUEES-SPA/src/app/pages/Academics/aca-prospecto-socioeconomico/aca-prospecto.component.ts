@@ -1697,7 +1697,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     // Qué hace: etiqueta del total mostrado en secciones por rango de monto.
     private etiquetaTotalSeccionSE(codigoSeccion: string, nombre: string): string {
-        if (codigoSeccion === 'INGRESOS') return 'Total aportes líquidos';
+        if (codigoSeccion === 'INGRESOS') return 'Total ingresos';
         if (codigoSeccion === 'EGRESOS') return 'Total egresos';
         return `Total ${nombre || 'sección'}`;
     }
