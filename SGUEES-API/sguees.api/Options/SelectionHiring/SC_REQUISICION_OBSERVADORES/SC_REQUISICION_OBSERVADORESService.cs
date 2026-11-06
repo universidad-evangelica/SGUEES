@@ -66,9 +66,7 @@ namespace sguees.Services
 		}
 
 		/// <summary>
-		/// Notificación INFORMATIVA / seguimiento (NO es tarea de bandeja):
-		/// URL = documento requisición + corr (ResolverUrlDestinoAsync).
-		/// Las acciones de flujo usan ResolverUrlBandejaTareaAsync (TH vs Actores).
+		/// Al agregar observador a la requisición: campana → siempre bandeja TH (+ corr/tipo).
 		/// </summary>
 		public async Task<CResult> CreateBy_CORR_REQUISICION_PERSONAL(SC_REQUISICION_OBSERVADORESTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
@@ -82,9 +80,9 @@ namespace sguees.Services
 
 			try
 			{
-				var urlDestino = await _notificacion.ResolverUrlDestinoAsync(
-					"SC_REQUISICION_PERSONAL",
-					corrReq);
+				var urlDestino = await _notificacion.ResolverUrlBandejaThAsync(
+					corrReq > 0 ? corrReq : null,
+					"REQUISICION");
 
 				await _notificacion.NotificarUsuarioAsync(
 					corrEmpresa: Data.CORR_EMPRESA,

@@ -257,6 +257,19 @@ namespace sguees.Services
 			return AppendBandejaQuery(path, corrDocumento, tipoDocumento);
 		}
 
+		public async Task<string> ResolverUrlBandejaThAsync(
+			int? corrDocumento = null,
+			string tipoDocumento = null)
+		{
+			var path = await ResolverUrlOpcionAsync(CodigoOpcionBandejaTh);
+			if (string.IsNullOrWhiteSpace(path))
+			{
+				path = "/sc-bandeja-th";
+			}
+
+			return AppendBandejaQuery(path, corrDocumento, tipoDocumento);
+		}
+
 		public Task<bool> EsUsuarioThAsync(int corrEmpresa, string loginSistema)
 		{
 			return _repo.EsUsuarioThAsync(corrEmpresa, loginSistema);

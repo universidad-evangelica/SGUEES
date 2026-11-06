@@ -26,9 +26,34 @@ namespace SGUEES.Services
 			_notificacion = notificacion ?? throw new ArgumentNullException(nameof(notificacion));
 		}
 
+		/// <summary>
+		/// Listado filtrado: creador del expediente; jefe TH ve todos;
+		/// jefe de unidad no-TH por solicitud→requisición en su ámbito. CRUD lo define SEG.
+		/// </summary>
 		public async Task<CResult> GetAllAsync(SC_EXPEDIENTE_CANDIDATOParam xWhere)
 		{
-			return await _repo.GetAllAsync(BuildParameters(xWhere));
+			var login = (xWhere?.LOGIN_SISTEMA ?? string.Empty).Trim();
+			if (string.IsNullOrEmpty(login))
+			{
+				return new CResult
+				{
+					Data = new List<SC_EXPEDIENTE_CANDIDATOView>(),
+					Result = true,
+					RowsAffected = 0,
+					CodeHelper = 0,
+					ErrorCode = 0,
+					ErrorMessage = "",
+					ErrorSource = "",
+				};
+			}
+
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = login, DbType = System.Data.DbType.String },
+			};
+
+			return await _repo.GetAllVisibleAsync(p);
 		}
 
 		public async Task<CResult> GetAsync(SC_EXPEDIENTE_CANDIDATOParam xWhere)
@@ -282,14 +307,6 @@ namespace SGUEES.Services
 					usuarioCrea: loginActor,
 					estacionCrea: "API");
 			}
-		}
-
-		private static List<CParameter> BuildParameters(SC_EXPEDIENTE_CANDIDATOParam xWhere)
-		{
-			return new List<CParameter>
-			{
-				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-			};
 		}
 
 		private static CResult Validate(SC_EXPEDIENTE_CANDIDATOTable Data)

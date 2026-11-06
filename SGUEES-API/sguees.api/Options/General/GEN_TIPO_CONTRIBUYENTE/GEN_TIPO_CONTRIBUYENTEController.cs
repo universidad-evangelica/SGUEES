@@ -84,6 +84,13 @@ namespace sguees.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		[HttpGet("GetCORR_TIPO_CONTRIBUYENTE_GEN_PROVEEDOR")]
+		[Authorize(Policy = "/gen-proveedor|R")]
+		public async Task<CResult> GetCORR_TIPO_CONTRIBUYENTE_GEN_PROVEEDOR([FromQuery] GEN_TIPO_CONTRIBUYENTEParam Data)
+		{
+			return await _service.GetAllAsync(Data);
+		}
+
 		private string GetUsuario()
 		{
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;

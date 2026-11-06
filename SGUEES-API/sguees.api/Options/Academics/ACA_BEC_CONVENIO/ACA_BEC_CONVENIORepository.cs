@@ -92,152 +92,17 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        public async Task<CResult> CreateAsync(ACA_BEC_CONVENIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult result = new();
+        public Task<CResult> CreateAsync(ACA_BEC_CONVENIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+            => WriteAsync(1, Data, vLOGIN_SISTEMA, vESTACION);
 
-            try
-            {
-                var reader = await objData.Insert(_TableName, BuildInsertParameters(Data), _CampoPk, BuildCompanyWhere(Data));
-                var response = new List<ACA_BEC_CONVENIOView>().FromDataReader(reader).FirstOrDefault();
+        public Task<CResult> UpdateAsync(ACA_BEC_CONVENIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+            => WriteAsync(2, Data, vLOGIN_SISTEMA, vESTACION);
 
-                reader.Close();
-                result.Data = response;
-                result.Result = true;
-                result.RowsAffected = 1;
-                result.CodeHelper = response?.CORR_CONVENIO ?? 0;
-                result.ErrorCode = 0;
-                result.ErrorMessage = string.Empty;
-                result.ErrorSource = string.Empty;
-            }
-            catch (Exception e)
-            {
-                SetDuplicateAwareError(result, e);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
+        public Task<CResult> DeleteAsync(ACA_BEC_CONVENIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+            => WriteAsync(3, Data, vLOGIN_SISTEMA, vESTACION);
 
-            return result;
-        }
-
-        public async Task<CResult> UpdateAsync(ACA_BEC_CONVENIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult result = new();
-
-            try
-            {
-                var reader = await objData.Update(_TableName, BuildUpdateParameters(Data), BuildPrimaryWhere(Data));
-                var response = new List<ACA_BEC_CONVENIOView>().FromDataReader(reader).FirstOrDefault();
-
-                reader.Close();
-                result.Data = response;
-                result.Result = true;
-                result.RowsAffected = response == null ? 0 : 1;
-                result.CodeHelper = response?.CORR_CONVENIO ?? Data.CORR_CONVENIO;
-                result.ErrorCode = 0;
-                result.ErrorMessage = string.Empty;
-                result.ErrorSource = string.Empty;
-            }
-            catch (Exception e)
-            {
-                SetDuplicateAwareError(result, e);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return result;
-        }
-
-        public async Task<CResult> DeleteAsync(ACA_BEC_CONVENIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult result = new();
-
-            try
-            {
-                result.RowsAffected = (int)await objData.Delete(_TableName, BuildPrimaryWhere(Data));
-                result.Data = null;
-                result.Result = true;
-                result.CodeHelper = Data.CORR_CONVENIO;
-                result.ErrorCode = 0;
-                result.ErrorMessage = string.Empty;
-                result.ErrorSource = string.Empty;
-            }
-            catch (Exception e)
-            {
-                result.Data = null;
-                result.Result = false;
-                result.CodeHelper = Data.CORR_CONVENIO;
-                result.ErrorCode = -1;
-                result.ErrorMessage = "No se puede eliminar el convenio porque tiene registros asociados.";
-                result.ErrorSource += $"[{e.Source}]";
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return result;
-        }
-
-        public async Task<CResult> ActivarInactivarAsync(ACA_BEC_CONVENIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult result = new();
-
-            try
-            {
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_CONVENIO", Value = Data.CORR_CONVENIO, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
-                };
-
-                var sql = @"
-                    BEGIN
-                        SET NOCOUNT ON;
-
-                        UPDATE ACA_BEC_CONVENIO
-                        SET ESTADO_CONVENIO = CASE WHEN ESTADO_CONVENIO = 'VIGENTE' THEN 'CERRADO' ELSE 'VIGENTE' END,
-                            USUARIO_ACTU = @USUARIO_ACTU,
-                            ESTACION_ACTU = @ESTACION_ACTU,
-                            FECHA_ACTU = GETDATE()
-                        WHERE CORR_EMPRESA = @CORR_EMPRESA
-                            AND CORR_CONVENIO = @CORR_CONVENIO;
-
-                        SELECT *
-                        FROM V_ACA_BEC_CONVENIO
-                        WHERE CORR_EMPRESA = @CORR_EMPRESA
-                            AND CORR_CONVENIO = @CORR_CONVENIO;
-                    END";
-
-                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, p);
-                var response = new List<ACA_BEC_CONVENIOView>().FromDataReader(reader).FirstOrDefault();
-
-                reader.Close();
-                result.Data = response;
-                result.Result = response != null;
-                result.RowsAffected = response == null ? 0 : 1;
-                result.CodeHelper = response?.CORR_CONVENIO ?? Data.CORR_CONVENIO;
-                result.ErrorCode = response == null ? -1 : 0;
-                result.ErrorMessage = response == null ? "No se pudo cambiar el estado del convenio." : string.Empty;
-                result.ErrorSource = string.Empty;
-            }
-            catch (Exception e)
-            {
-                SetError(result, e, Data.CORR_CONVENIO);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return result;
-        }
+        public Task<CResult> ActivarInactivarAsync(ACA_BEC_CONVENIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+            => WriteAsync(4, Data, vLOGIN_SISTEMA, vESTACION);
 
         public async Task<CResult> GetEntidadesFinanciadorasAsync(int corrEmpresa)
         {
@@ -277,33 +142,9 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        private static List<CParameter> BuildInsertParameters(ACA_BEC_CONVENIOTable Data)
-        {
-            var p = BuildUpdateParameters(Data);
-            p.Insert(0, new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 });
-            p.Insert(1, new CParameter() { ParameterName = "CORR_CONVENIO", Value = Data.CORR_CONVENIO, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput });
-            p.Add(new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String });
-            p.Add(new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String });
-            p.Add(new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime });
-            return p;
-        }
 
-        private static List<CParameter> BuildUpdateParameters(ACA_BEC_CONVENIOTable Data)
-        {
-            return new List<CParameter>
-            {
-                new CParameter() { ParameterName = "CODIGO_CONVENIO", Value = Data.CODIGO_CONVENIO, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "NOMBRE_CONVENIO", Value = Data.NOMBRE_CONVENIO, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "CORR_ENTIDAD_FINANCIADORA", Value = Data.CORR_ENTIDAD_FINANCIADORA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "FECHA_INICIO", Value = Data.FECHA_INICIO, DbType = System.Data.DbType.Date },
-                new CParameter() { ParameterName = "FECHA_FIN", Value = Data.FECHA_FIN, DbType = System.Data.DbType.Date },
-                new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ESTADO_CONVENIO", Value = Data.ESTADO_CONVENIO, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
-            };
-        }
+
+
 
         private static List<CParameter> BuildCompanyWhere(ACA_BEC_CONVENIOTable Data)
         {
@@ -345,6 +186,39 @@ namespace SGUEES.Repositories
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
                 e.Message.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) ||
                 e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task<CResult> WriteAsync(int operation, ACA_BEC_CONVENIOTable Data, string user, string station)
+        {
+            if (Data == null) return new CResult { ErrorCode = 51000, ErrorMessage = "No se recibieron datos." };
+            try
+            {
+                var p = new List<CParameter> {
+                    new() { ParameterName="@TIPO_ACTUALIZA",Value=operation,DbType=System.Data.DbType.Int32 },
+                    new() { ParameterName="@CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32 },
+                    new() { ParameterName="@ID",Value=Data.CORR_CONVENIO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput },
+                    new() { ParameterName="@USUARIO",Value=user??"",DbType=System.Data.DbType.AnsiString },
+                    new() { ParameterName="@ESTACION",Value=station??"",DbType=System.Data.DbType.AnsiString },
+                    new() { ParameterName="@CODIGO_CONVENIO",Value=(object)Data.CODIGO_CONVENIO??DBNull.Value,DbType=System.Data.DbType.AnsiString },
+                    new() { ParameterName="@NOMBRE_CONVENIO",Value=(object)Data.NOMBRE_CONVENIO??DBNull.Value,DbType=System.Data.DbType.AnsiString },
+                    new() { ParameterName="@CORR_ENTIDAD_FINANCIADORA",Value=(object)Data.CORR_ENTIDAD_FINANCIADORA??DBNull.Value,DbType=System.Data.DbType.Int32 },
+                    new() { ParameterName="@FECHA_INICIO",Value=(object)Data.FECHA_INICIO??DBNull.Value,DbType=System.Data.DbType.Date },
+                    new() { ParameterName="@FECHA_FIN",Value=(object)Data.FECHA_FIN??DBNull.Value,DbType=System.Data.DbType.Date },
+                    new() { ParameterName="@DESCRIPCION",Value=(object)Data.DESCRIPCION??DBNull.Value,DbType=System.Data.DbType.AnsiString },
+                    new() { ParameterName="@ESTADO_CONVENIO",Value=(object)Data.ESTADO_CONVENIO??DBNull.Value,DbType=System.Data.DbType.AnsiString }
+                };
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_ACA_BEC_CONVENIO", true, p);
+                Data.CORR_CONVENIO = Convert.ToInt32(objData.objCommand.Parameters["@ID"].Value);
+                objData.objConnection.Close();
+                if (operation == 3) return new CResult { Result = true, CodeHelper = Data.CORR_CONVENIO, RowsAffected = 1 };
+                var result = await GetAsync(new List<CParameter>{
+                    new(){ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                    new(){ParameterName="CORR_CONVENIO",Value=Data.CORR_CONVENIO,DbType=System.Data.DbType.Int32}
+                });
+                result.CodeHelper = Data.CORR_CONVENIO; result.RowsAffected = result.Data == null ? 0 : 1; return result;
+            }
+            catch (Exception ex) { return new CResult { ErrorCode = -1, ErrorMessage = ex.Message }; }
+            finally { objData.objConnection.Close(); }
         }
     }
 }

@@ -1,6 +1,7 @@
 -- Qué hace: documentación de GEN_PROVEEDOR (existente en BD).
--- Modelo objetivo: tabla de ROL (código, pago, banco, estados). Datos generales
+-- Modelo objetivo: tabla de ROL (código, pago, estados). Datos generales
 -- viven en GEN_PERSONA + NATURAL/JURIDICA; el vínculo en GEN_PERSONA_PROVEEDOR.
+-- Bancos/cuentas: GEN_PERSONA_BANCO (no en esta tabla).
 -- Las columnas generales aún existen por compatibilidad; la vista V_GEN_PROVEEDOR
 -- prioriza persona y usa estas como fallback.
 -- Estado activo: ESTADO_PROVEEDOR ('A' Activo / 'I' Inactivo).
@@ -42,8 +43,6 @@ CREATE TABLE [dbo].[GEN_PROVEEDOR]
 	[CORREO_ELECTRONICO_2] [varchar](255) NOT NULL,
 	-- --- rol proveedor ---
 	[CORR_FORMA_PAGO] [int] NOT NULL,
-	[CUENTA_BANCARIA] [varchar](30) NOT NULL,
-	[CORR_BANCO] [int] NOT NULL,
 	[ESTADO_PROVEEDOR] [varchar](1) NOT NULL,
 	[ESTADO_PROVEEDOR_WEB] [varchar](1) NOT NULL,
 	[CORR_CONDICION_PAGO] [int] NULL,

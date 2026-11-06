@@ -21,6 +21,26 @@ export class GenProveedorRepository {
 		return this.objData.Get(this.xController, 'GetCORR_PERSONA', xWhere, environment.UrlGENERALAPI);
 	}
 
+	getPersona(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetPersona', xWhere, environment.UrlGENERALAPI);
+	}
+
+	createPersonaNatural(model: any): Observable<IResult> {
+		return this.objData.Post(model, this.xController, 'PersonaNatural', environment.UrlGENERALAPI);
+	}
+
+	updatePersonaNatural(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'PersonaNatural', xWhere, environment.UrlGENERALAPI);
+	}
+
+	createPersonaJuridica(model: any): Observable<IResult> {
+		return this.objData.Post(model, this.xController, 'PersonaJuridica', environment.UrlGENERALAPI);
+	}
+
+	updatePersonaJuridica(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'PersonaJuridica', xWhere, environment.UrlGENERALAPI);
+	}
+
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
 	}

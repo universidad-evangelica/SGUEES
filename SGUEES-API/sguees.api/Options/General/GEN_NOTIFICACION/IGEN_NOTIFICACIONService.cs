@@ -51,6 +51,13 @@ namespace sguees.Services
 			string tipoDocumento = null);
 
 		/// <summary>
+		/// Siempre bandeja TH (observadores / avisos a TH). No evalúa unidad del receptor.
+		/// </summary>
+		Task<string> ResolverUrlBandejaThAsync(
+			int? corrDocumento = null,
+			string tipoDocumento = null);
+
+		/// <summary>
 		/// True si el login pertenece a unidad TH (nodo TH o hija directa).
 		/// </summary>
 		Task<bool> EsUsuarioThAsync(int corrEmpresa, string loginSistema);

@@ -75,6 +75,19 @@ namespace SGUEES.Controllers
 			return await _service.GetAllAsync(data);
 		}
 
+		[HttpGet("GetCORR_MUNICIPIO_GEN_PROVEEDOR")]
+		[Authorize(Policy = "/gen-proveedor|R")]
+		public async Task<CResult> GetCORR_MUNICIPIO_GEN_PROVEEDOR([FromQuery] GEN_MUNICIPIOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			if (data.CORR_EMPRESA <= 0)
+			{
+				data.CORR_EMPRESA = 1;
+			}
+
+			return await _service.GetAllAsync(data);
+		}
+
 		[HttpGet("GetCORR_MUNICIPIO_GEN_ESTRUCTURA_TERRITORIAL")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		// Qué hace: entrega el catálogo de municipios requerido por el mantenimiento relacionado y aplica el contexto de empresa.

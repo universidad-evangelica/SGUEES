@@ -180,9 +180,13 @@ export class AppInfoService {
     const a = document.createElement('a');
     const url = window.URL.createObjectURL(blob);
     a.href = url;
-    a.download = fileName;
+    a.download = (fileName || 'documento').trim();
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
-    a.remove();
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    }, 1500);
   }
 }

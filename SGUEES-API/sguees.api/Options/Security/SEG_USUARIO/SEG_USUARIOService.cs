@@ -390,6 +390,8 @@ namespace sguees.Services
 
         private List<SEG_USUARIO_MENUView> GenerateMenu(List<SEG_USUARIO_PERMISOView> DataPermiso) 
         {
+            // Conservar todos los permisos para la sesión; solo filtrar la navegación.
+            DataPermiso = DataPermiso.Where(opcion => opcion.MOSTRAR_EN_MENU).ToList();
             var DataSistema = new  List<SEG_USUARIO_MENUView>();
             DataSistema.Add(new SEG_USUARIO_MENUView{
                                                 codeSistema = "SGUEES",

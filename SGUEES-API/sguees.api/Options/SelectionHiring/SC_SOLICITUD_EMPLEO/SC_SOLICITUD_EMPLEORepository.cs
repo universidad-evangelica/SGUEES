@@ -16,6 +16,7 @@ namespace sguees.Repositories
 	public class SC_SOLICITUD_EMPLEORepository: BaseRepository<SC_SOLICITUD_EMPLEOTable>, ISC_SOLICITUD_EMPLEORepository
 	{
 		private const string _TableName = "SC_SOLICITUD_EMPLEO";
+		private const string _SpDataListadoVisible = "PRAL_DATA_SC_SOLICITUD_EMPLEO";
 		
 		public SC_SOLICITUD_EMPLEORepository(IConfiguration config) : 
 				base(config.GetConnectionString("defaultConnection"),
@@ -57,6 +58,50 @@ namespace sguees.Repositories
 				objData.objConnection.Close();
 			}
 			
+			return objResultado;
+		}
+
+		/// <summary>
+		/// Listado filtrado: jefe TH padre / colaborador TH / jefe de área por unidad de requisición.
+		/// Cómo: PRAL_DATA_SC_SOLICITUD_EMPLEO (@CORR_EMPRESA, @LOGIN_SISTEMA).
+		/// </summary>
+		public async Task<CResult> GetAllVisibleAsync(List<CParameter> xWhere)
+		{
+			CResult objResultado = new();
+
+			try
+			{
+				var reader = await objData.GetDataReader(
+					CommandType.StoredProcedure,
+					_SpDataListadoVisible,
+					xWhere);
+				var response = new List<SC_SOLICITUD_EMPLEOView>().FromDataReader(reader).ToList();
+
+				reader.Close();
+				reader = null;
+
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
 			return objResultado;
 		}
 		
