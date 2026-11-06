@@ -38,11 +38,15 @@ namespace SGUEES.Controllers
 			_userService = userService ?? throw new ArgumentNullException(nameof(userService));
 		}
 
+		// Cómo: fija CORR_EMPRESA + LOGIN_SISTEMA; el service usa PRAL_DATA_SC_MOVIMIENTO_PERSONAL
+		// (creador = propios; jefe TH = todos; jefe no-TH = req.unidad o unidad actual si DIRECTO).
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/sc-movimiento-personal|R")]
 		public async Task<CResult> GetAll([FromQuery] SC_MOVIMIENTO_PERSONALParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
+			Data.LOGIN_SISTEMA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value
+				?? string.Empty;
 			return await _service.GetAllAsync(Data);
 		}
 

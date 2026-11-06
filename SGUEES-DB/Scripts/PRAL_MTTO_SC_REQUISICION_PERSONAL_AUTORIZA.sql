@@ -1,3 +1,5 @@
+USE [SGUEES]
+GO
 SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
@@ -17,6 +19,9 @@ GO
      - Bitácora ruta DIRECTO (ENVIAR): firmas auto JI/JU usan FECHA_ACCION
        = MAX(bitácora instancia) + 1s / +2s (nunca DATEADD negativo). Así
        ORDER BY FECHA_ACCION DESC deja: … → JU → JI → En Aprobación → Borrador.
+     - Híbrido GG: tras DIRECTO (paso N3), si SEG_FLUJO_PASO.PERMITE_AUTO_APROBACION=1
+       y el login cumple el actor del paso (misma regla del motor), cierra GG vía
+       EjecutarFlujoProceso. Si no, notifica jefes de @G (comportamiento anterior).
 
    @OPERACION:
      1 = GUARDAR   Queda en Borrador (1). Si es la primera vez, crea instancia.
@@ -31,7 +36,7 @@ GO
    Ejecutar:
      sqlcmd -S <servidor> -d SGUEES -U <user> -P <pass> -f 65001 -i PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA.sql
    ============================================================================= */
-CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA]
+ALTER PROCEDURE [dbo].[PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA]
 (
 	@CORR_EMPRESA INT = 1,
 	@CORR_REQUISICION_PERSONAL INT,
@@ -98,6 +103,16 @@ BEGIN
 	DECLARE @NEXT_BIT INT
 	DECLARE @FECHA_FIRMA DATETIME
 	DECLARE @LOCK_RESULT INT
+	/* Híbrido DIRECTO + config flujos: auto GG si PERMITE_AUTO_APROBACION y login cumple actor. */
+	DECLARE @AUTO_GG_PERMITE BIT = 0
+	DECLARE @AUTO_GG_OK BIT = 0
+	DECLARE @ACTOR_N3 INT
+	DECLARE @UNIDAD_PASO_N3 INT
+	DECLARE @TIPO_RES_N3 VARCHAR(50)
+	DECLARE @UNIDAD_VAL_GG INT
+	DECLARE @ACCION_GG INT
+	DECLARE @OBS_GG NVARCHAR(500)
+	DECLARE @ERROR_GG VARCHAR(500)
 
 	SET @CORR_ESTADO = NULL
 	SET @MENSAJE_ERROR = NULL
@@ -644,6 +659,7 @@ BEGIN
 			UPDATE dbo.SEG_FLUJO_INSTANCIA
 			SET CORR_PASO_ACTUAL = @PASO_N3,
 				CORR_ESTADO_ACTUAL = @EST_JU,
+				CORR_UNIDAD_DOCUMENTO = ISNULL(@G, CORR_UNIDAD_DOCUMENTO),
 				USUARIO_ACTU = @LOGIN_SISTEMA,
 				FECHA_ACTU = GETDATE()
 			WHERE CORR_EMPRESA = @EMPRESA AND CORR_INSTANCIA = @ID_INSTANCIA
@@ -651,32 +667,136 @@ BEGIN
 			SET @CORR_ESTADO = @EST_JU
 			SET @ID_PASO_ACTUAL = @PASO_N3
 
-			IF NOT EXISTS (
-				SELECT 1 FROM dbo.SEG_FN_ObtenerJefesDeUnidad(@G) WHERE LoginDestino IS NOT NULL
-			)
+			/* Unidad destino del paso GG = gerencia (@G), alineado al organigrama. */
+			UPDATE dbo.SEG_FLUJO_PASO
+			SET CORR_UNIDAD_DESTINO = @G
+			WHERE CORR_EMPRESA = @EMPRESA AND CORR_PASO = @PASO_N3
+
+			/*
+			  Híbrido: organigrama ya saltó JI/JU. El cierre de GG obedece a
+			  PERMITE_AUTO_APROBACION del paso N3 + match de actor (cualquier login).
+			*/
+			SET @AUTO_GG_PERMITE = 0
+			SET @AUTO_GG_OK = 0
+			SET @ACTOR_N3 = NULL
+			SET @UNIDAD_PASO_N3 = NULL
+			SET @ACCION_GG = NULL
+			SET @ERROR_GG = NULL
+
+			SELECT @AUTO_GG_PERMITE = ISNULL(P.PERMITE_AUTO_APROBACION, 0),
+			       @ACTOR_N3 = P.CORR_ACTOR_ORIGEN,
+			       @UNIDAD_PASO_N3 = P.CORR_UNIDAD_DESTINO
+			FROM dbo.SEG_FLUJO_PASO AS P
+			WHERE P.CORR_EMPRESA = @EMPRESA AND P.CORR_PASO = @PASO_N3
+
+			IF @AUTO_GG_PERMITE = 1 AND @ACTOR_N3 IS NOT NULL AND ISNULL(@G, 0) > 0
 			BEGIN
-				ROLLBACK TRAN
-				SET @MENSAJE_ERROR = 'No se encontraron destinatarios para el nivel 3.'
-				RETURN -10
+				SET @TIPO_RES_N3 = dbo.SEG_FN_ObtenerTipoResolucionActor(@EMPRESA, @ACTOR_N3)
+
+				IF @TIPO_RES_N3 IN ('JEFE_UNIDAD', 'JEFE_INMEDIATO')
+					SET @UNIDAD_VAL_GG = @G
+				ELSE
+					SET @UNIDAD_VAL_GG = ISNULL(NULLIF(@UNIDAD_PASO_N3, 0), @G)
+
+				IF dbo.SEG_FN_UsuarioMatchActorUnidad(
+						@LOGIN_SISTEMA, @ACTOR_N3, @UNIDAD_VAL_GG, @EMPRESA) = 1
+					SET @AUTO_GG_OK = 1
 			END
 
-			SELECT @NEXT_BIT = ISNULL(MAX(CORR_NOTIFICACION), 0)
-			FROM dbo.SEG_FLUJO_NOTIFICACION WHERE CORR_EMPRESA = @EMPRESA
+			IF @AUTO_GG_OK = 1
+			BEGIN
+				/* Misma resolución de acción que APROBAR(3) sobre el paso N3. */
+				IF @EST_APROBADA IS NOT NULL
+					SELECT TOP 1 @ACCION_GG = CORR_ACCION
+					FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO
+					WHERE CORR_EMPRESA = @EMPRESA AND CORR_FLUJO_PROCESO = @ID_FLUJO
+					  AND CORR_PASO = @PASO_N3 AND CORR_TIPO_MOVIMIENTO = 3
+					  AND CORR_ESTADO_DESTINO = @EST_APROBADA
+					  AND PERMITIDO = 1 AND ACTIVO = 1
+					ORDER BY CORR_ACCION ASC
 
-			INSERT INTO dbo.SEG_FLUJO_NOTIFICACION (
-				CORR_EMPRESA, CORR_NOTIFICACION, CORR_INSTANCIA, CORR_PASO,
-				LOGIN_SISTEMA_DESTINO, LOGIN_SISTEMA_ORIGEN, MENSAJE, URL,
-				LEIDA, PROCESADO, FECHA_ENVIO, USUARIO_CREA, ESTACION_CREA, FECHA_CREA
-			)
-			SELECT
-				@EMPRESA,
-				@NEXT_BIT + ROW_NUMBER() OVER (ORDER BY J.LoginDestino),
-				@ID_INSTANCIA, @PASO_N3,
-				J.LoginDestino, @LOGIN_SISTEMA, N'Tarea pendiente en el flujo.',
-				N'/sc-requisicion-personal?corr=' + CAST(@CORR_REQUISICION_PERSONAL AS VARCHAR(20)),
-				0, 0, GETDATE(), @LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
-			FROM dbo.SEG_FN_ObtenerJefesDeUnidad(@G) AS J
-			WHERE J.LoginDestino IS NOT NULL
+				IF @ACCION_GG IS NULL
+					SELECT TOP 1 @ACCION_GG = CORR_ACCION
+					FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO
+					WHERE CORR_EMPRESA = @EMPRESA AND CORR_FLUJO_PROCESO = @ID_FLUJO
+					  AND CORR_PASO = @PASO_N3 AND CORR_TIPO_MOVIMIENTO = 3
+					  AND PERMITIDO = 1 AND ACTIVO = 1
+					ORDER BY CORR_ACCION ASC
+
+				IF @ACCION_GG IS NULL
+					SELECT TOP 1 @ACCION_GG = CORR_ACCION
+					FROM dbo.SEG_FLUJO_PASO_ACCION_ESTADO
+					WHERE CORR_EMPRESA = @EMPRESA AND CORR_FLUJO_PROCESO = @ID_FLUJO
+					  AND CORR_PASO = @PASO_N3 AND CORR_TIPO_MOVIMIENTO = 1
+					  AND PERMITIDO = 1 AND ACTIVO = 1
+					ORDER BY CORR_ACCION ASC
+
+				IF @ACCION_GG IS NULL
+				BEGIN
+					SET @AUTO_GG_OK = 0
+				END
+				ELSE
+				BEGIN
+					SET @OBS_GG = N'La solicitud fue aprobada automáticamente, ya que el responsable cuenta con la autoridad necesaria para aprobarla.'
+
+					EXEC dbo.EjecutarFlujoProceso
+						@i_CORR_EMPRESA = @EMPRESA,
+						@i_CODIGO_OPCION = @CODIGO_OPCION,
+						@i_idDocumento = @CORR_REQUISICION_PERSONAL,
+						@i_idUnidadDocumento = @G,
+						@i_idAccion = @ACCION_GG,
+						@i_login = @LOGIN_SISTEMA,
+						@i_Observacion = @OBS_GG,
+						@o_idEstadoDocumento = @CORR_ESTADO OUTPUT,
+						@o_Error = @ERROR_GG OUTPUT
+
+					IF @ERROR_GG IS NOT NULL
+					BEGIN
+						IF @@TRANCOUNT > 0 ROLLBACK TRAN
+						SET @MENSAJE_ERROR = 'Error al auto-aprobar Gerencia General: ' + @ERROR_GG
+						RETURN -10
+					END
+
+					UPDATE dbo.SEG_FLUJO_NOTIFICACION
+					SET PROCESADO = 1, USUARIO_ACTU = @LOGIN_SISTEMA, FECHA_ACTU = GETDATE()
+					WHERE CORR_EMPRESA = @EMPRESA
+					  AND CORR_INSTANCIA = @ID_INSTANCIA
+					  AND ISNULL(PROCESADO, 0) = 0
+
+					SET @CORR_ACCION_USADA = @ACCION_GG
+				END
+			END
+
+			/* Sin auto GG: bandeja a jefes de la unidad gerencia (@G), como antes. */
+			IF @AUTO_GG_OK = 0
+			BEGIN
+				IF NOT EXISTS (
+					SELECT 1 FROM dbo.SEG_FN_ObtenerJefesDeUnidad(@G) WHERE LoginDestino IS NOT NULL
+				)
+				BEGIN
+					ROLLBACK TRAN
+					SET @MENSAJE_ERROR = 'No se encontraron destinatarios para el nivel 3.'
+					RETURN -10
+				END
+
+				SELECT @NEXT_BIT = ISNULL(MAX(CORR_NOTIFICACION), 0)
+				FROM dbo.SEG_FLUJO_NOTIFICACION WHERE CORR_EMPRESA = @EMPRESA
+
+				INSERT INTO dbo.SEG_FLUJO_NOTIFICACION (
+					CORR_EMPRESA, CORR_NOTIFICACION, CORR_INSTANCIA, CORR_PASO,
+					LOGIN_SISTEMA_DESTINO, LOGIN_SISTEMA_ORIGEN, MENSAJE, URL,
+					LEIDA, PROCESADO, FECHA_ENVIO, USUARIO_CREA, ESTACION_CREA, FECHA_CREA
+				)
+				SELECT
+					@EMPRESA,
+					@NEXT_BIT + ROW_NUMBER() OVER (ORDER BY J.LoginDestino),
+					@ID_INSTANCIA, @PASO_N3,
+					J.LoginDestino, @LOGIN_SISTEMA, N'Tarea pendiente en el flujo.',
+					N'/sc-requisicion-personal?corr=' + CAST(@CORR_REQUISICION_PERSONAL AS VARCHAR(20)),
+					0, 0, GETDATE(), @LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
+				FROM dbo.SEG_FN_ObtenerJefesDeUnidad(@G) AS J
+				WHERE J.LoginDestino IS NOT NULL
+			END
 		END
 
 		IF @V_OPERACION = 2 AND @RUTA = 'SIN_COORD' AND @ID_INSTANCIA IS NOT NULL AND @ID_PASO_ACTUAL = @PASO_N1

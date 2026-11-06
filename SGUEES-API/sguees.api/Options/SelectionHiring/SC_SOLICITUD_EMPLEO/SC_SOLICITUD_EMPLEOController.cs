@@ -26,11 +26,15 @@ namespace sguees.Controllers
 			_service = service ?? throw new ArgumentNullException(nameof(_service));
 		}
 		
+		// Cómo: fija CORR_EMPRESA + LOGIN_SISTEMA; el service usa PRAL_DATA_SC_SOLICITUD_EMPLEO
+		// (creador = propias; jefe TH padre = todas; jefe de unidad = por requisición en su ámbito).
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/sc-solicitud-empleo|R")]
 		public async Task<CResult> GetAll([FromQuery] SC_SOLICITUD_EMPLEOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.LOGIN_SISTEMA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value
+				?? string.Empty;
 			return await _service.GetAllAsync(Data);
 		}
 		
