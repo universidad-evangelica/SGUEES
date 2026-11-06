@@ -20,6 +20,10 @@ namespace sguees.Services
 			var p = new List<CParameter>
 			{
 				new() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "PAGE", Value = xWhere.PAGE < 1 ? 1 : xWhere.PAGE, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD ?? string.Empty, DbType = System.Data.DbType.String },
+				new() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
 			};
 			return await _repo.GetAllAsync(p);
 		}

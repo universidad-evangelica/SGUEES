@@ -1,15 +1,29 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { confirm } from 'devextreme/ui/dialog';
+import CustomStore from 'devextreme/data/custom_store';
+import { lastValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataLookupComponent } from 'src/app/layouts/data-lookup/data-lookup.component';
+import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
+import {
+	createMttoPagedStoreCacheState,
+	invalidateMttoPagedStoreCache,
+	MttoPagedStoreCacheState,
+	MttoPagedStorePageResult,
+	rememberMttoPagedServerCache,
+	resolveMttoPagedLoadParams,
+	syncMttoPagedStorePagerSize,
+	tryGetMttoPagedServerCache,
+} from 'src/app/shared/mtto/mtto-paged-store.helpers';
 import { GenProveedor } from './models/gen-proveedor';
 import { GenProveedorDoc } from './models/gen-proveedor-doc';
 import { GenPersonaBanco } from './models/gen-persona-banco';
@@ -27,12 +41,24 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	@ViewChild('previewPanel') previewPanelRef?: ElementRef<HTMLElement>;
 	@ViewChild('previewBody') previewBodyRef?: ElementRef<HTMLDivElement>;
 	@ViewChild('docFileInput') docFileInputRef?: ElementRef<HTMLInputElement>;
+	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	protected override etiquetaRegistro = 'el proveedor';
 	protected override requiereEmpresaSesion = true;
+	/** A+P clásico: lo que eliges en el pager = filas visibles = PAGE_SIZE del API. */
+	protected override mttoHybridPaging = false;
+	protected override mttoPageSize = 15;
+	protected override mttoPageSizes: (number | 'all')[] = [15, 50, 100, 'all'];
+	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
 	protected override mttoGridKeyExpr = 'CORR_PROVEEDOR';
 	protected override mttoCampoEstado = 'ACTIVO_PROVEEDOR';
 	protected override mttoEstadoDescribeField = 'NOMBRE_COMERCIAL';
+
+	private readonly pagedStoreCacheState: MttoPagedStoreCacheState = createMttoPagedStoreCacheState(
+		this.mttoPageSize,
+	);
+	private pagedStoreInflightKey: string | null = null;
+	private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
 
 	//#region <Declarando Variables>
 	mCORR_PERSONA: any;
@@ -140,11 +166,15 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		};
 	}
 
+	protected override getMttoDataGrid(): DataGridMttoComponent | null {
+		return this.dataGrid ?? null;
+	}
+
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
 		this.llenaComboBox();
-		this.consultar();
+		this.configurarDataSource();
 	}
 
 	ngOnDestroy(): void {
@@ -236,9 +266,19 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	//#endregion
 
 	//#region <Metodos Mtto>
-	fillParam(xCORR_PROVEEDOR?: number): any {
+	fillParam(
+		xCORR_PROVEEDOR?: number,
+		page = 1,
+		pageSize = this.mttoPageSize,
+		sortField = '',
+		sortDesc = false,
+	): any {
 		return {
 			CORR_PROVEEDOR: xCORR_PROVEEDOR ?? 0,
+			PAGE: page,
+			PAGE_SIZE: pageSize,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
 		};
 	}
 
@@ -278,10 +318,20 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		};
 	}
 
-	consultar(): void {
-		this.consultarMtto({
-			load: () => this.service.getAll(this.fillParam()),
-		});
+	consultar(resetPage = true): void {
+		invalidateMttoPagedStoreCache(this.pagedStoreCacheState);
+		this.pagedStoreInflightKey = null;
+		this.pagedStoreInflightPromise = null;
+		this.refrescarGridMtto(resetPage);
+	}
+
+	onPageSizeChange(pageSize: number): void {
+		if (pageSize > 0) {
+			this.mttoPageSize = pageSize;
+		}
+		syncMttoPagedStorePagerSize(this.pagedStoreCacheState, pageSize);
+		this.pagedStoreInflightKey = null;
+		this.pagedStoreInflightPromise = null;
 	}
 
 	override nuevo(): void {
@@ -1126,5 +1176,94 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	selectedLookUpCorr(vRow: any, field: string): any {
 		const row = Array.isArray(vRow) ? vRow[0] : vRow;
 		return row?.[field] ?? row;
+	}
+
+	private configurarDataSource(): void {
+		this.models = new CustomStore({
+			key: this.mttoGridKeyExpr,
+			loadMode: 'processed',
+			cacheRawData: false,
+			load: async (loadOptions: any) => {
+				const loadGeneration = this.pagedStoreCacheState.loadGeneration;
+
+				try {
+					const params = resolveMttoPagedLoadParams(
+						loadOptions,
+						this.pagedStoreCacheState,
+						this.mttoGridKeyExpr,
+						this.mttoPageSize,
+					);
+
+					const cached = tryGetMttoPagedServerCache(params.serverKey, this.pagedStoreCacheState);
+					if (cached) {
+						return cached;
+					}
+
+					if (this.pagedStoreInflightKey === params.serverKey && this.pagedStoreInflightPromise) {
+						return this.pagedStoreInflightPromise;
+					}
+
+					this.pagedStoreInflightKey = params.serverKey;
+					this.pagedStoreInflightPromise = this.fetchPaged(
+						params.page,
+						params.pageSize,
+						params.sortField,
+						params.sortDesc,
+						loadGeneration,
+					).then((result) => {
+						rememberMttoPagedServerCache(
+							params.serverKey,
+							result,
+							this.pagedStoreCacheState,
+							params.pageSize,
+						);
+						return result;
+					});
+
+					try {
+						return await this.pagedStoreInflightPromise;
+					} finally {
+						if (this.pagedStoreInflightKey === params.serverKey) {
+							this.pagedStoreInflightKey = null;
+							this.pagedStoreInflightPromise = null;
+						}
+					}
+				} catch (error) {
+					this.notifyApiError(error);
+					throw new Error(getApiErrorMessage(error));
+				}
+			},
+		});
+	}
+
+	private async fetchPaged(
+		page: number,
+		pageSize: number,
+		sortField: string,
+		sortDesc: boolean,
+		loadGeneration: number,
+	): Promise<MttoPagedStorePageResult> {
+		const response = await lastValueFrom(
+			this.service.getAll(this.fillParam(0, page, pageSize, sortField, sortDesc)),
+		);
+
+		if (loadGeneration !== this.pagedStoreCacheState.loadGeneration) {
+			return { data: [], totalCount: 0 };
+		}
+
+		if (!response.Result) {
+			throw new Error(response.ErrorMessage || 'No se pudo cargar los proveedores.');
+		}
+
+		const rows = Array.isArray(response.Data) ? response.Data : [];
+		const reported = (response as { RowsAffected?: number; rowsAffected?: number }).RowsAffected
+			?? (response as { rowsAffected?: number }).rowsAffected;
+		const parsed = reported == null ? NaN : Number(reported);
+		const totalCount = Number.isFinite(parsed) && parsed >= 0 ? parsed : rows.length;
+
+		return {
+			data: rows,
+			totalCount,
+		};
 	}
 }

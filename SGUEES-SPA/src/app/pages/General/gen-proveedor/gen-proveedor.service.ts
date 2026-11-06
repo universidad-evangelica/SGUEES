@@ -41,8 +41,23 @@ export class GenProveedorService {
 		return true;
 	}
 
-	getAll(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_PROVEEDOR', Value: param.CORR_PROVEEDOR ?? 0 }];
+	getAll(param: {
+		CORR_PROVEEDOR?: number;
+		PAGE?: number;
+		PAGE_SIZE?: number;
+		SORT_FIELD?: string;
+		SORT_DESC?: boolean;
+	}): Observable<IResult> {
+		const xWhere: IParam[] = [];
+		if (param.CORR_PROVEEDOR != null && param.CORR_PROVEEDOR > 0) {
+			xWhere.push({ Parameter: 'CORR_PROVEEDOR', Value: param.CORR_PROVEEDOR });
+		}
+		xWhere.push(
+			{ Parameter: 'PAGE', Value: param.PAGE != null && param.PAGE > 0 ? param.PAGE : 1 },
+			{ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE ?? 15 },
+			{ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD ?? '' },
+			{ Parameter: 'SORT_DESC', Value: param.SORT_DESC ?? false },
+		);
 		return this.repo.get(xWhere);
 	}
 

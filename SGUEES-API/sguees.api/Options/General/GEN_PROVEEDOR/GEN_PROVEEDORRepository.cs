@@ -13,6 +13,22 @@ namespace sguees.Repositories
 		private const string _TableName = "GEN_PROVEEDOR";
 		private const string _ViewName = "V_GEN_PROVEEDOR";
 		private const string _SpMtto = "PRAL_MTTO_GEN_PROVEEDOR";
+		private const string _DefaultSortField = "CORR_PROVEEDOR";
+
+		private static readonly string[] _AllowedSortFields =
+		{
+			"CORR_PROVEEDOR",
+			"CODIGO_PROVEEDOR",
+			"NOMBRE_COMERCIAL",
+			"NOMBRE_PROVEEDOR",
+			"NOMBRE_TIPO_PERSONERIA",
+			"ACTIVO_PROVEEDOR",
+			"NOMBRE_ESTADO_PROVEEDOR",
+			"USUARIO_CREA",
+			"FECHA_CREA",
+			"USUARIO_ACTU",
+			"FECHA_ACTU",
+		};
 
 		public GEN_PROVEEDORRepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
@@ -23,12 +39,15 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
-				var reader = await objData.GetDataReader(_ViewName, xWhere);
-				var response = new List<GEN_PROVEEDORView>().FromDataReader(reader).ToList();
-				reader.Close();
-				objResultado.Data = response;
+				var paged = await ReadPagedViewAsync<GEN_PROVEEDORView>(
+					_ViewName,
+					xWhere,
+					_AllowedSortFields,
+					_DefaultSortField);
+
+				objResultado.Data = paged.PageData;
 				objResultado.Result = true;
-				objResultado.RowsAffected = response.Count;
+				objResultado.RowsAffected = paged.TotalRows;
 				objResultado.CodeHelper = 0;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = string.Empty;
