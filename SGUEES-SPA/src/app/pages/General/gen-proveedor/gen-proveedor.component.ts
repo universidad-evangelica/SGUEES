@@ -1,15 +1,19 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { confirm } from 'devextreme/ui/dialog';
+import CustomStore from 'devextreme/data/custom_store';
+import { lastValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataLookupComponent } from 'src/app/layouts/data-lookup/data-lookup.component';
+import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
 import { GenProveedor } from './models/gen-proveedor';
 import { GenProveedorDoc } from './models/gen-proveedor-doc';
 import { GenPersonaBanco } from './models/gen-persona-banco';
@@ -27,12 +31,27 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	@ViewChild('previewPanel') previewPanelRef?: ElementRef<HTMLElement>;
 	@ViewChild('previewBody') previewBodyRef?: ElementRef<HTMLDivElement>;
 	@ViewChild('docFileInput') docFileInputRef?: ElementRef<HTMLInputElement>;
+	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	protected override etiquetaRegistro = 'el proveedor';
 	protected override requiereEmpresaSesion = true;
+	/**
+	 * Paginación servidor estilo Vuetify:
+	 * page/pageSize → API; Data = página; RowsAffected = totalItems.
+	 * PAGE_SIZE 0 = Todos. Filter-row = cliente (filtering:false).
+	 * UI Options = app-data-grid-mtto (misma fuente/iconos que gen-banco).
+	 */
+	protected override mttoHybridPaging = false;
+	protected override mttoPageSize = 15;
+	protected override mttoPageSizes: (number | 'all')[] = [15, 50, 100, 'all'];
+	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
 	protected override mttoGridKeyExpr = 'CORR_PROVEEDOR';
 	protected override mttoCampoEstado = 'ACTIVO_PROVEEDOR';
 	protected override mttoEstadoDescribeField = 'NOMBRE_COMERCIAL';
+
+	/** Equivalente Vuetify: page / totalItems (pageSize = mttoPageSize; 0 = Todos). */
+	page = 1;
+	totalItems = 0;
 
 	//#region <Declarando Variables>
 	mCORR_PERSONA: any;
@@ -106,7 +125,8 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
-		this.summary = this.service.getSummary();
+		// Count local engaña con paginado remoto (mostraría 15).
+		this.summary = {};
 		this.items = this.service.getItems();
 		this.documentoColumns = this.service.getDocumentoColumns();
 		this.selectedLookUpCORR_PERSONA = this.selectedLookUpCORR_PERSONA.bind(this);
@@ -140,11 +160,23 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		};
 	}
 
+	protected override getMttoDataGrid(): DataGridMttoComponent | null {
+		return this.dataGrid ?? null;
+	}
+
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		super.quitarRegistroDeGrid(keyValue);
+		if (this.totalItems > 0) {
+			this.totalItems -= 1;
+			this.sincronizarPagerServidor();
+		}
+	}
+
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
 		this.llenaComboBox();
-		this.consultar();
+		this.configurarDataSource();
 	}
 
 	ngOnDestroy(): void {
@@ -236,9 +268,19 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	//#endregion
 
 	//#region <Metodos Mtto>
-	fillParam(xCORR_PROVEEDOR?: number): any {
+	fillParam(
+		xCORR_PROVEEDOR?: number,
+		page = 1,
+		pageSize = this.mttoPageSize,
+		sortField = '',
+		sortDesc = false,
+	): any {
 		return {
 			CORR_PROVEEDOR: xCORR_PROVEEDOR ?? 0,
+			PAGE: page,
+			PAGE_SIZE: pageSize,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
 		};
 	}
 
@@ -278,10 +320,51 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		};
 	}
 
-	consultar(): void {
-		this.consultarMtto({
-			load: () => this.service.getAll(this.fillParam()),
+	consultar(resetPage = true): void {
+		if (resetPage) {
+			this.page = 1;
+		}
+		this.refrescarGridMtto(resetPage);
+	}
+
+	/** Equivalente Vuetify @update:items-per-page (0 = Todos). */
+	onPageSizeChange(pageSize: number): void {
+		this.mttoPageSize = pageSize >= 0 ? pageSize : 15;
+		this.page = 1;
+	}
+
+	/**
+	 * Con filter-row + filtering:false, DX a veces pinta total = filas de la página.
+	 * Sin filtro activo, reafirma totalCount desde RowsAffected (paginado intacto).
+	 */
+	private sincronizarPagerServidor(grid?: any): void {
+		const instance = grid ?? (this.dataGrid?.gData?.instance as any);
+		if (!instance || !(this.totalItems >= 0)) {
+			return;
+		}
+		const filtro = instance.getCombinedFilter?.();
+		const hayFiltro = Array.isArray(filtro) ? filtro.length > 0 : !!filtro;
+		if (hayFiltro) {
+			return;
+		}
+		const total = this.totalItems;
+		const pageSize =
+			this.mttoPageSize > 0
+				? this.mttoPageSize
+				: Number(instance.pageSize?.()) || total || 15;
+		const pageCount = pageSize > 0 ? Math.max(1, Math.ceil(total / pageSize)) : 1;
+		const pageIndex = Number(instance.pageIndex?.()) + 1;
+		const pager = instance.getView?.('pagerView')?.getPager?.();
+		pager?.option?.({
+			totalCount: total,
+			pageCount,
+			pageIndex,
+			hasKnownLastPage: true,
 		});
+		const info = instance.element?.()?.querySelector?.('.dx-pager .dx-info') as HTMLElement | null;
+		if (info) {
+			info.textContent = `Página ${pageIndex} de ${pageCount} (${total} ítems)`;
+		}
 	}
 
 	override nuevo(): void {
@@ -1126,5 +1209,70 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	selectedLookUpCorr(vRow: any, field: string): any {
 		const row = Array.isArray(vRow) ? vRow[0] : vRow;
 		return row?.[field] ?? row;
+	}
+
+	/**
+	 * Equivalente Vuetify listCompras:
+	 * page/pageSize → API; Data = ítems de la página; RowsAffected = totalItems.
+	 */
+	private configurarDataSource(): void {
+		this.models = new CustomStore({
+			key: this.mttoGridKeyExpr,
+			loadMode: 'processed',
+			cacheRawData: false,
+			load: async (loadOptions: any) => {
+				try {
+					// Todos = PAGE_SIZE 0 (no usar take=total: el API capea en 200).
+					const wantAll = this.mttoPageSize <= 0;
+					const takeNum = Number(loadOptions.take);
+					const effectivePageSize = wantAll
+						? 0
+						: Number.isFinite(takeNum) && takeNum > 0
+							? takeNum
+							: this.mttoPageSize > 0
+								? this.mttoPageSize
+								: 15;
+					const skip = Number(loadOptions.skip) || 0;
+					const page = effectivePageSize > 0 ? Math.floor(skip / effectivePageSize) + 1 : 1;
+
+					const sort = Array.isArray(loadOptions.sort) ? loadOptions.sort[0] : null;
+					const sortField = sort?.selector ? String(sort.selector) : this.mttoGridKeyExpr;
+					const sortDesc = !!sort?.desc;
+
+					this.page = page;
+					if (effectivePageSize > 0) {
+						this.mttoPageSize = effectivePageSize;
+					}
+
+					const response = await lastValueFrom(
+						this.service.getAll(this.fillParam(0, page, effectivePageSize, sortField, sortDesc)),
+					);
+
+					if (!response.Result) {
+						throw new Error(response.ErrorMessage || 'No se pudo cargar los proveedores.');
+					}
+
+					const rows = Array.isArray(response.Data) ? response.Data : [];
+					const reported = Number(
+						response.RowsAffected ?? (response as any).rowsAffected,
+					);
+					if (!Number.isFinite(reported) || reported < 0) {
+						throw new Error('El API no devolvió el total de proveedores en RowsAffected.');
+					}
+					this.totalItems = reported;
+					// Reafirma pager tras pintar (app-data-grid-mtto + filter-row).
+					setTimeout(() => this.sincronizarPagerServidor(), 0);
+					setTimeout(() => this.sincronizarPagerServidor(), 120);
+
+					return {
+						data: rows,
+						totalCount: reported,
+					};
+				} catch (error) {
+					this.notifyApiError(error);
+					throw new Error(getApiErrorMessage(error));
+				}
+			},
+		});
 	}
 }
