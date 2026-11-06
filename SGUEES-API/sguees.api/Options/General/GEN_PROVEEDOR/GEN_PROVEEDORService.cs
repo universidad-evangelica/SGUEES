@@ -15,6 +15,9 @@ namespace sguees.Services
 			_repo = repo;
 		}
 
+		/// <summary>
+		/// Lista paginada. PAGE_SIZE &lt;= 0 = Todos. Data = página; RowsAffected = total.
+		/// </summary>
 		public async Task<CResult> GetAllAsync(GEN_PROVEEDORParam xWhere)
 		{
 			var p = new List<CParameter>

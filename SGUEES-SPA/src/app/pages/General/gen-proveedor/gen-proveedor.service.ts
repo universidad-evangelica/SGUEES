@@ -41,6 +41,7 @@ export class GenProveedorService {
 		return true;
 	}
 
+	/** Lista paginada: PAGE/PAGE_SIZE (0 = Todos). RowsAffected = totalRecords. */
 	getAll(param: {
 		CORR_PROVEEDOR?: number;
 		PAGE?: number;
@@ -54,7 +55,7 @@ export class GenProveedorService {
 		}
 		xWhere.push(
 			{ Parameter: 'PAGE', Value: param.PAGE != null && param.PAGE > 0 ? param.PAGE : 1 },
-			{ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE ?? 15 },
+			{ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE != null ? param.PAGE_SIZE : 15 },
 			{ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD ?? '' },
 			{ Parameter: 'SORT_DESC', Value: param.SORT_DESC ?? false },
 		);
