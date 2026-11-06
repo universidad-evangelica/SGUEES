@@ -1,0 +1,24 @@
+using System;
+using eFramework.Data;
+using Microsoft.AspNetCore.Http;
+
+namespace sguees.Models
+{
+	public class GEN_PROVEEDOR_DOCTable : BaseEntity
+	{
+		public int CORR_EMPRESA { get; set; }
+		public int CORR_PROVEEDOR { get; set; }
+		public int CORR_DOCUMENTO { get; set; }
+		public string URL_DOCUMENTO { get; set; }
+		public string NOMBRE_ARCHIVO { get; set; }
+		public string USUARIO_CREA { get; set; }
+		public DateTime FECHA_CREA { get; set; }
+		public string ESTACION_CREA { get; set; }
+		public string USUARIO_ACTU { get; set; }
+		public DateTime FECHA_ACTU { get; set; }
+		public string ESTACION_ACTU { get; set; }
+
+		/// <summary>Archivo en multipart (solo upload).</summary>
+		public IFormFile ARCHIVO { get; set; }
+	}
+}

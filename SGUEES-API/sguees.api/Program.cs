@@ -38,6 +38,10 @@ var expedienteEntrevistaDocumentoOptions = new ExpedienteEntrevistaDocumentoOpti
 builder.Configuration.GetSection(ExpedienteEntrevistaDocumentoOptions.SectionName).Bind(expedienteEntrevistaDocumentoOptions);
 builder.Services.AddSingleton(expedienteEntrevistaDocumentoOptions);
 builder.Services.AddSingleton<ExpedienteEntrevistaDocumentoStorage>();
+var proveedorDocumentoOptions = new ProveedorDocumentoOptions();
+builder.Configuration.GetSection(ProveedorDocumentoOptions.SectionName).Bind(proveedorDocumentoOptions);
+builder.Services.AddSingleton(proveedorDocumentoOptions);
+builder.Services.AddSingleton<ProveedorDocumentoStorage>();
 
 // Bind AI options and register model router (from eFrameworkAPI options)
 var aiOptions = new eFrameworkAPI.Core.Options.AIOptions();

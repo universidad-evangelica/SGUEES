@@ -31,27 +31,29 @@
 		[items]="items"
 	>
 		<div *dxTemplate="let cellInfo of 'CORR_PERSONALookup'">
-			<app-data-lookup
-				#personaLookup
-				[model]="mCORR_PERSONA"
-				[(value)]="model.CORR_PERSONA"
-				[valueExpr]="'CORR_PERSONA'"
-				[displayExpr]="'NOMBRE_PERSONA'"
-				[selectedRowKeys]="selectedLookUpCORR_PERSONA"
-				[readOnly]="readOnly || (model?.CORR_PROVEEDOR > 0)"
-				[lookupColumns]="personaLookupColumns"
-			>
-			</app-data-lookup>
-		</div>
-		<div *dxTemplate="let cellInfo of 'CORR_BANCOLookup'">
-			<app-data-lookup
-				[model]="mCORR_BANCO"
-				[(value)]="model.CORR_BANCO"
-				[valueExpr]="'CORR_BANCO'"
-				[displayExpr]="'NOMBRE_BANCO'"
-				[readOnly]="readOnly"
-			>
-			</app-data-lookup>
+			<div class="proveedor-persona-lookup">
+				<app-data-lookup
+					#personaLookup
+					[model]="mCORR_PERSONA"
+					[(value)]="model.CORR_PERSONA"
+					[valueExpr]="'CORR_PERSONA'"
+					[displayExpr]="'NOMBRE_PERSONA'"
+					[selectedRowKeys]="selectedLookUpCORR_PERSONA"
+					[readOnly]="readOnly || (model?.CORR_PROVEEDOR > 0)"
+					[lookupColumns]="personaLookupColumns"
+				>
+				</app-data-lookup>
+				<button
+					type="button"
+					class="proveedor-persona-lookup__add"
+					*ngIf="!(model?.CORR_PROVEEDOR > 0) && !readOnly"
+					(click)="abrirPersonaNueva()"
+					title="Persona nueva"
+					aria-label="Persona nueva"
+				>
+					<i class="dx-icon dx-icon-add"></i>
+				</button>
+			</div>
 		</div>
 		<div *dxTemplate="let cellInfo of 'CORR_FORMA_PAGOLookup'">
 			<app-data-lookup
@@ -74,7 +76,562 @@
 			</app-data-lookup>
 		</div>
 	</dx-form>
+
+	<div
+		class="proveedor-persona-tabs"
+		*ngIf="personaResumenCargando || personaResumen?.CORR_PERSONA"
+	>
+		<dx-tab-panel
+			class="proveedor-persona-tabs__panel"
+			[(selectedIndex)]="personaDetalleTabIndex"
+			[animationEnabled]="false"
+			[swipeEnabled]="false"
+			[deferRendering]="false"
+		>
+			<dxi-item title="Datos personales" icon="user">
+				<section
+					class="proveedor-persona-resumen"
+					aria-label="Resumen de persona"
+					[attr.aria-busy]="personaResumenCargando"
+				>
+					<header class="proveedor-persona-resumen__header">
+						<div>
+							<p class="proveedor-persona-resumen__subtitle" *ngIf="!personaResumenCargando">
+								<span class="proveedor-persona-resumen__nombre">{{ textoLectura(personaResumen?.NOMBRE_PERSONA) }}</span>
+								<span class="proveedor-persona-resumen__sep">·</span>
+								<span class="proveedor-persona-resumen__tipo">{{ textoLectura(personaResumen?.NOMBRE_TIPO_PERSONERIA) }}</span>
+							</p>
+							<p class="proveedor-persona-resumen__subtitle" *ngIf="personaResumenCargando">
+								Cargando datos…
+							</p>
+						</div>
+						<button
+							type="button"
+							class="proveedor-persona-resumen__edit"
+							*ngIf="!readOnly && !personaResumenCargando && personaResumen?.CORR_PERSONA"
+							(click)="abrirPersonaEditar()"
+						>
+							<i class="dx-icon dx-icon-edit"></i>
+							Editar
+						</button>
+					</header>
+
+					<div class="proveedor-persona-resumen__loading" *ngIf="personaResumenCargando">
+						<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
+					</div>
+
+					<div class="proveedor-persona-resumen__cards" *ngIf="!personaResumenCargando && personaResumen?.CORR_PERSONA">
+						<section class="proveedor-persona-resumen__card" aria-label="Documentos">
+							<header class="proveedor-persona-resumen__card-head">
+								<h4>Documentos</h4>
+								<span>Identificación tributaria</span>
+							</header>
+							<dl class="proveedor-persona-resumen__fields">
+								<div class="proveedor-persona-resumen__field" *ngIf="personaResumen?.TIPO_PERSONERIA === 'N'">
+									<dt>DUI / DIP</dt>
+									<dd>{{ textoLectura(personaResumen?.NUMERO_DIP) }}</dd>
+								</div>
+								<div class="proveedor-persona-resumen__field">
+									<dt>NIT</dt>
+									<dd>{{ textoLectura(personaResumen?.NUMERO_NIT) }}</dd>
+								</div>
+								<div class="proveedor-persona-resumen__field">
+									<dt>NRC</dt>
+									<dd>{{ textoLectura(personaResumen?.NUMERO_NRC) }}</dd>
+								</div>
+								<div class="proveedor-persona-resumen__field proveedor-persona-resumen__field--full">
+									<dt>Actividad económica</dt>
+									<dd>{{ textoLectura(personaResumen?.NOMBRE_ACTIVIDAD_ECONOMICA) }}</dd>
+								</div>
+							</dl>
+						</section>
+
+						<section class="proveedor-persona-resumen__card" aria-label="Dirección">
+							<header class="proveedor-persona-resumen__card-head">
+								<h4>Dirección</h4>
+								<span>Domicilio de la persona</span>
+							</header>
+							<dl class="proveedor-persona-resumen__fields">
+								<div class="proveedor-persona-resumen__field proveedor-persona-resumen__field--full">
+									<dt>Dirección</dt>
+									<dd>{{ textoLectura(personaResumen?.DIRECCION) }}</dd>
+								</div>
+							</dl>
+						</section>
+
+						<section class="proveedor-persona-resumen__card" aria-label="Contacto">
+							<header class="proveedor-persona-resumen__card-head">
+								<h4>Contacto</h4>
+								<span>Teléfono y correo</span>
+							</header>
+							<dl class="proveedor-persona-resumen__fields">
+								<div class="proveedor-persona-resumen__field">
+									<dt>Teléfono</dt>
+									<dd>{{ textoLectura(personaResumen?.TELEFONO_FIJO || personaResumen?.TELEFONO_MOVIL) }}</dd>
+								</div>
+								<div class="proveedor-persona-resumen__field">
+									<dt>Correo</dt>
+									<dd>{{ textoLectura(personaResumen?.CORREO_ELECTRONICO_1) }}</dd>
+								</div>
+							</dl>
+						</section>
+					</div>
+				</section>
+			</dxi-item>
+
+			<dxi-item title="Doc. Adjuntos" icon="attach">
+				<div class="proveedor-docs-adjuntos">
+					<div class="proveedor-docs-adjuntos__toolbar">
+						<button
+							type="button"
+							class="proveedor-docs-adjuntos__upload"
+							[disabled]="!puedeAdjuntarDocumentos || documentoSubiendo"
+							(click)="abrirSelectorDocumento()"
+						>
+							<i class="dx-icon dx-icon-upload"></i>
+							{{ documentoSubiendo ? 'Subiendo…' : 'Adjuntar archivo' }}
+						</button>
+						<input
+							#docFileInput
+							type="file"
+							class="proveedor-docs-adjuntos__file"
+							[accept]="docAccept"
+							(change)="onDocumentoFileSelected($event)"
+						/>
+						<span class="proveedor-docs-adjuntos__hint">
+							PDF, imágenes u Office · máx. 10 MB
+						</span>
+					</div>
+
+					<p class="proveedor-docs-adjuntos__warn" *ngIf="!(model?.CORR_PROVEEDOR > 0)">
+						Guarde el proveedor para poder adjuntar documentos.
+					</p>
+
+					<div class="proveedor-docs-adjuntos__loading" *ngIf="documentosCargando">
+						<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
+						<span>Cargando documentos…</span>
+					</div>
+
+					<div
+						class="proveedor-docs-adjuntos__empty-state"
+						*ngIf="!documentosCargando && (model?.CORR_PROVEEDOR > 0) && documentos.length === 0"
+					>
+						<div class="proveedor-docs-adjuntos__empty-icon" aria-hidden="true">
+							<i class="dx-icon dx-icon-folder"></i>
+						</div>
+						<h4>Sin documentos adjuntos</h4>
+						<p>
+							Esta carpeta está vacía. Aún no se ha cargado ningún archivo para este proveedor.
+							Use <strong>Adjuntar archivo</strong> para agregar PDF, imágenes o documentos de Office.
+						</p>
+					</div>
+
+					<dx-data-grid
+						*ngIf="!documentosCargando && documentos.length > 0"
+						class="proveedor-docs-adjuntos__grid"
+						[dataSource]="documentos"
+						[columns]="documentoColumns"
+						[showBorders]="true"
+						[columnAutoWidth]="false"
+						[hoverStateEnabled]="true"
+						keyExpr="CORR_DOCUMENTO"
+						[paging]="{ enabled: false }"
+					>
+						<div *dxTemplate="let cell of 'docActionsTemplate'" class="proveedor-docs-adjuntos__actions">
+							<button
+								type="button"
+								class="proveedor-docs-adjuntos__action"
+								title="Vista previa"
+								aria-label="Vista previa"
+								(click)="verDocumento(cell.data)"
+							>
+								<i class="dx-icon dx-icon-eyeopen"></i>
+							</button>
+							<button
+								type="button"
+								class="proveedor-docs-adjuntos__action proveedor-docs-adjuntos__action--success"
+								title="Descargar"
+								aria-label="Descargar"
+								(click)="descargarDocumento(cell.data)"
+							>
+								<i class="dx-icon dx-icon-download"></i>
+							</button>
+							<button
+								type="button"
+								class="proveedor-docs-adjuntos__action proveedor-docs-adjuntos__action--danger"
+								title="Eliminar"
+								aria-label="Eliminar"
+								*ngIf="permiteDele && !readOnly"
+								(click)="eliminarDocumento(cell.data)"
+							>
+								<i class="dx-icon dx-icon-trash"></i>
+							</button>
+						</div>
+					</dx-data-grid>
+				</div>
+			</dxi-item>
+
+			<dxi-item title="Bancos" icon="money">
+				<div class="proveedor-bancos">
+					<p class="proveedor-bancos__warn" *ngIf="!(model?.CORR_PERSONA > 0)">
+						Seleccione una persona en el formulario para gestionar cuentas bancarias.
+					</p>
+					<p
+						class="proveedor-bancos__warn"
+						*ngIf="(model?.CORR_PERSONA > 0) && !(model?.CORR_PROVEEDOR > 0)"
+					>
+						Guarde el proveedor para poder agregar cuentas bancarias.
+					</p>
+
+					<ng-container *ngIf="(model?.CORR_PERSONA > 0) && (model?.CORR_PROVEEDOR > 0)">
+						<div class="proveedor-bancos__add" *ngIf="!readOnly">
+							<label class="proveedor-bancos__field">
+								<span>Banco</span>
+								<dx-select-box
+									[(value)]="nuevoBancoCorr"
+									[dataSource]="mCORR_BANCO"
+									valueExpr="CORR_BANCO"
+									displayExpr="NOMBRE_BANCO"
+									[searchEnabled]="true"
+									[showClearButton]="true"
+									placeholder="Seleccionar banco..."
+									[width]="'100%'"
+									[disabled]="bancoGuardando"
+								></dx-select-box>
+							</label>
+							<label class="proveedor-bancos__field">
+								<span>Cuenta bancaria</span>
+								<dx-text-box
+									[(value)]="nuevoBancoCuenta"
+									[maxLength]="30"
+									placeholder="Número de cuenta"
+									[width]="'100%'"
+									[disabled]="bancoGuardando"
+									(onEnterKey)="agregarPersonaBanco()"
+								></dx-text-box>
+							</label>
+							<button
+								type="button"
+								class="proveedor-bancos__add-btn"
+								[disabled]="!puedeGestionarBancos || bancoGuardando"
+								(click)="agregarPersonaBanco()"
+								title="Agregar cuenta"
+							>
+								<i class="dx-icon dx-icon-plus"></i>
+								{{ bancoGuardando ? 'Guardando…' : 'Agregar' }}
+							</button>
+						</div>
+
+						<div class="proveedor-bancos__loading" *ngIf="bancosCargando">
+							<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
+							<span>Cargando cuentas…</span>
+						</div>
+
+						<div
+							class="proveedor-bancos__empty-state"
+							*ngIf="!bancosCargando && personaBancos.length === 0"
+						>
+							<div class="proveedor-bancos__empty-icon" aria-hidden="true">
+								<i class="dx-icon dx-icon-card"></i>
+							</div>
+							<h4>Sin cuentas bancarias</h4>
+							<p>
+								Aún no hay cuentas asociadas a esta persona.
+								<span *ngIf="!readOnly"> Use <strong>Agregar</strong> para registrar banco y número de cuenta.</span>
+							</p>
+						</div>
+
+						<dx-data-grid
+							*ngIf="!bancosCargando && personaBancos.length > 0"
+							class="proveedor-bancos__grid"
+							[dataSource]="personaBancos"
+							[keyExpr]="'CORR_PERSONA_BANCO'"
+							[showBorders]="true"
+							[columnAutoWidth]="false"
+							[hoverStateEnabled]="true"
+							[paging]="{ enabled: false }"
+							[editing]="bancosGridEditing"
+							(onRowRemoving)="personaBancoRowRemoving($event)"
+						>
+							<dxi-column
+								dataField="NOMBRE_BANCO"
+								caption="Banco"
+								[minWidth]="180"
+								[allowEditing]="false"
+							></dxi-column>
+							<dxi-column
+								dataField="CUENTA_BANCARIA"
+								caption="Cuenta bancaria"
+								[minWidth]="180"
+								[allowEditing]="false"
+							></dxi-column>
+							<dxi-column type="buttons" [width]="56" caption="">
+								<dxi-button name="delete"></dxi-button>
+							</dxi-column>
+						</dx-data-grid>
+					</ng-container>
+				</div>
+			</dxi-item>
+		</dx-tab-panel>
+	</div>
 </div>
+
+<dx-popup
+	[(visible)]="personaPopupVisible"
+	[title]="personaPopupTitulo"
+	[showTitle]="true"
+	[width]="780"
+	[height]="'auto'"
+	[maxHeight]="'88vh'"
+	[dragEnabled]="true"
+	[showCloseButton]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'proveedor-persona-popup-wrapper' }"
+	(onHiding)="cerrarPersonaPopup()"
+>
+	<div *dxTemplate="let data of 'content'" class="proveedor-persona-popup">
+		<div class="proveedor-persona-popup__body">
+			<section class="proveedor-persona-popup__hero">
+				<p class="proveedor-persona-popup__hero-label">Personería</p>
+				<div
+					class="proveedor-persona-popup__segment"
+					[class.proveedor-persona-popup__segment--locked]="personaModel.CORR_PERSONA > 0"
+				>
+					<button
+						type="button"
+						class="proveedor-persona-popup__segment-btn"
+						[class.proveedor-persona-popup__segment-btn--active]="personaModel.TIPO_PERSONERIA === 'N'"
+						[disabled]="personaModel.CORR_PERSONA > 0"
+						(click)="seleccionarTipoPersoneria('N')"
+					>
+						<span class="proveedor-persona-popup__segment-icon">N</span>
+						<span>
+							<strong>Natural</strong>
+							<small>Persona física</small>
+						</span>
+					</button>
+					<button
+						type="button"
+						class="proveedor-persona-popup__segment-btn"
+						[class.proveedor-persona-popup__segment-btn--active]="personaModel.TIPO_PERSONERIA === 'J'"
+						[disabled]="personaModel.CORR_PERSONA > 0"
+						(click)="seleccionarTipoPersoneria('J')"
+					>
+						<span class="proveedor-persona-popup__segment-icon">J</span>
+						<span>
+							<strong>Jurídica</strong>
+							<small>Empresa / sociedad</small>
+						</span>
+					</button>
+				</div>
+			</section>
+
+			<section class="proveedor-persona-popup__card" *ngIf="personaModel.TIPO_PERSONERIA === 'N'">
+				<header class="proveedor-persona-popup__card-head">
+					<h4>Identidad</h4>
+					<span>Nombre completo de la persona</span>
+				</header>
+				<div class="proveedor-persona-popup__fields">
+					<label class="proveedor-persona-popup__field">
+						<span>Primer nombre <em>*</em></span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.PRIMER_NOMBRE" maxlength="50" placeholder="Ej. Luis" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Segundo nombre</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.SEGUNDO_NOMBRE" maxlength="50" placeholder="Opcional" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Primer apellido <em>*</em></span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.PRIMER_APELLIDO" maxlength="50" placeholder="Ej. Galdámez" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Segundo apellido</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.SEGUNDO_APELLIDO" maxlength="50" placeholder="Opcional" />
+					</label>
+				</div>
+			</section>
+
+			<section class="proveedor-persona-popup__card" *ngIf="personaModel.TIPO_PERSONERIA === 'J'">
+				<header class="proveedor-persona-popup__card-head">
+					<h4>Identidad comercial</h4>
+					<span>Datos de la empresa o sociedad</span>
+				</header>
+				<div class="proveedor-persona-popup__fields">
+					<label class="proveedor-persona-popup__field">
+						<span>Nombre empresa</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.NOMBRE_EMPRESA" maxlength="125" placeholder="Nombre comercial" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Razón social <em>*</em></span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.RAZON_SOCIAL" maxlength="200" placeholder="Razón social" />
+					</label>
+					<label class="proveedor-persona-popup__field proveedor-persona-popup__field--full">
+						<span>Giro</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.GIRO" maxlength="150" placeholder="Actividad / giro comercial" />
+					</label>
+				</div>
+			</section>
+
+			<section class="proveedor-persona-popup__card">
+				<header class="proveedor-persona-popup__card-head">
+					<h4>Documentos y fiscal</h4>
+					<span>Identificación tributaria</span>
+				</header>
+				<div class="proveedor-persona-popup__fields">
+					<label class="proveedor-persona-popup__field" *ngIf="personaModel.TIPO_PERSONERIA === 'N'">
+						<span>DUI / DIP</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.NUMERO_DIP" maxlength="50" placeholder="########-#" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>NIT</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.NUMERO_NIT" maxlength="50" placeholder="####-######-###-#" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>NRC</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.NUMERO_NRC" maxlength="50" placeholder="Opcional" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Tipo contribuyente</span>
+						<dx-select-box
+							[(value)]="personaModel.CORR_TIPO_CONTRIBUYENTE"
+							[dataSource]="mCORR_TIPO_CONTRIBUYENTE"
+							valueExpr="CORR_TIPO_CONTRIBUYENTE"
+							displayExpr="NOMBRE_TIPO_CONTRIBUYENTE"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							placeholder="Seleccionar..."
+							[width]="'100%'"
+						></dx-select-box>
+					</label>
+					<label class="proveedor-persona-popup__field" [class.proveedor-persona-popup__field--full]="personaModel.TIPO_PERSONERIA === 'J'">
+						<span>Actividad económica</span>
+						<dx-select-box
+							[(value)]="personaModel.CORR_ACTIVIDAD_ECONOMICA"
+							[dataSource]="mCORR_ACTIVIDAD_ECONOMICA"
+							valueExpr="CORR_ACTIVIDAD_ECONOMICA"
+							displayExpr="NOMBRE_ACTIVIDAD_ECONOMICA"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							placeholder="Seleccionar..."
+							[width]="'100%'"
+						></dx-select-box>
+					</label>
+				</div>
+			</section>
+
+			<section class="proveedor-persona-popup__card">
+				<header class="proveedor-persona-popup__card-head">
+					<h4>Domicilio</h4>
+					<span>Ubicación y residencia</span>
+				</header>
+				<div class="proveedor-persona-popup__fields">
+					<label class="proveedor-persona-popup__field">
+						<span>Domiciliado</span>
+						<dx-select-box
+							[(value)]="personaModel.DOMICILIADO"
+							[items]="domiciliadoOptions"
+							valueExpr="value"
+							displayExpr="text"
+							[showClearButton]="true"
+							placeholder="Seleccionar..."
+							[width]="'100%'"
+						></dx-select-box>
+					</label>
+					<label class="proveedor-persona-popup__field proveedor-persona-popup__field--check">
+						<span>Condición</span>
+						<label class="proveedor-persona-popup__switch">
+							<input type="checkbox" [(ngModel)]="personaModel.ES_EXTRANJERO" />
+							<span>Es extranjero</span>
+						</label>
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>País</span>
+						<dx-select-box
+							[(value)]="personaModel.CORR_PAIS"
+							[dataSource]="mCORR_PAIS_PERSONA"
+							valueExpr="CORR_PAIS"
+							displayExpr="NOMBRE_PAIS"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							placeholder="Seleccionar..."
+							[width]="'100%'"
+							(onValueChanged)="onPersonaPaisChanged($event.value, true)"
+						></dx-select-box>
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Departamento</span>
+						<dx-select-box
+							[(value)]="personaModel.CORR_DEPTO"
+							[dataSource]="mCORR_DEPTO_PERSONA"
+							valueExpr="CORR_DEPTO"
+							displayExpr="NOMBRE_DEPTO"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							[disabled]="personaModel.DOMICILIADO !== 'SI'"
+							placeholder="Seleccionar..."
+							[width]="'100%'"
+							(onValueChanged)="onPersonaDeptoChanged($event.value, true)"
+						></dx-select-box>
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Municipio</span>
+						<dx-select-box
+							[(value)]="personaModel.CORR_MUNICIPIO"
+							[dataSource]="mCORR_MUNICIPIO_PERSONA"
+							valueExpr="CORR_MUNICIPIO"
+							displayExpr="NOMBRE_MUNICIPIO"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							[disabled]="personaModel.DOMICILIADO !== 'SI'"
+							placeholder="Seleccionar..."
+							[width]="'100%'"
+						></dx-select-box>
+					</label>
+					<label class="proveedor-persona-popup__field proveedor-persona-popup__field--full">
+						<span>Dirección</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.DIRECCION" maxlength="255" placeholder="Calle, colonia, referencia..." />
+					</label>
+				</div>
+			</section>
+
+			<section class="proveedor-persona-popup__card">
+				<header class="proveedor-persona-popup__card-head">
+					<h4>Contacto</h4>
+					<span>Teléfonos y correos</span>
+				</header>
+				<div class="proveedor-persona-popup__fields">
+					<label class="proveedor-persona-popup__field">
+						<span>Teléfono fijo</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.TELEFONO_FIJO" maxlength="50" placeholder="####-####" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Teléfono móvil</span>
+						<input class="proveedor-persona-popup__input" [(ngModel)]="personaModel.TELEFONO_MOVIL" maxlength="50" placeholder="####-####" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Correo 1</span>
+						<input class="proveedor-persona-popup__input" type="email" [(ngModel)]="personaModel.CORREO_ELECTRONICO_1" maxlength="150" placeholder="correo@ejemplo.com" />
+					</label>
+					<label class="proveedor-persona-popup__field">
+						<span>Correo 2</span>
+						<input class="proveedor-persona-popup__input" type="email" [(ngModel)]="personaModel.CORREO_ELECTRONICO_2" maxlength="150" placeholder="Opcional" />
+					</label>
+				</div>
+			</section>
+
+		</div>
+
+		<footer class="proveedor-persona-popup__actions">
+			<button type="button" class="proveedor-persona-popup__btn proveedor-persona-popup__btn--cancel" (click)="cerrarPersonaPopup()" [disabled]="personaGuardando">
+				Cancelar
+			</button>
+			<button type="button" class="proveedor-persona-popup__btn proveedor-persona-popup__btn--save" (click)="guardarPersonaPopup()" [disabled]="personaGuardando">
+				<i class="dx-icon dx-icon-save" *ngIf="!personaGuardando"></i>
+				{{ personaGuardando ? 'Guardando…' : 'Guardar persona' }}
+			</button>
+		</footer>
+	</div>
+</dx-popup>
 
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
@@ -162,8 +719,11 @@
 		</p>
 
 		<ng-container *ngIf="previewProveedor?.CORR_PERSONA">
-			<section class="proveedor-preview-panel__section" aria-label="Persona">
-				<h3 class="proveedor-preview-panel__section-title">Persona</h3>
+			<section class="proveedor-preview-panel__card" aria-label="Persona">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Persona</h3>
+					<span>Datos de personería</span>
+				</header>
 				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
 						<dt>Nombre persona</dt>
@@ -196,8 +756,11 @@
 				</dl>
 			</section>
 
-			<section class="proveedor-preview-panel__section" aria-label="Documentos">
-				<h3 class="proveedor-preview-panel__section-title">Documentos</h3>
+			<section class="proveedor-preview-panel__card" aria-label="Documentos">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Documentos</h3>
+					<span>Identificación tributaria</span>
+				</header>
 				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field">
 						<dt>DUI / DIP</dt>
@@ -211,15 +774,27 @@
 						<dt>NRC</dt>
 						<dd>{{ textoLectura(previewProveedor?.NUMERO_NRC) }}</dd>
 					</div>
+				</dl>
+			</section>
+
+			<section class="proveedor-preview-panel__card" aria-label="Actividad económica">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Actividad económica</h3>
+					<span>Clasificación fiscal</span>
+				</header>
+				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
-						<dt>Actividad económica</dt>
+						<dt>Actividad</dt>
 						<dd>{{ textoLectura(previewProveedor?.NOMBRE_ACTIVIDAD_ECONOMICA) }}</dd>
 					</div>
 				</dl>
 			</section>
 
-			<section class="proveedor-preview-panel__section" aria-label="Dirección">
-				<h3 class="proveedor-preview-panel__section-title">Dirección</h3>
+			<section class="proveedor-preview-panel__card" aria-label="Dirección">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Dirección</h3>
+					<span>Domicilio registrado</span>
+				</header>
 				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
 						<dt>Dirección</dt>
@@ -240,8 +815,11 @@
 				</dl>
 			</section>
 
-			<section class="proveedor-preview-panel__section" aria-label="Contacto">
-				<h3 class="proveedor-preview-panel__section-title">Contacto</h3>
+			<section class="proveedor-preview-panel__card" aria-label="Contacto">
+				<header class="proveedor-preview-panel__card-head">
+					<h3>Contacto</h3>
+					<span>Teléfonos y correos</span>
+				</header>
 				<dl class="proveedor-preview-panel__fields">
 					<div class="proveedor-preview-panel__field proveedor-preview-panel__field--full">
 						<dt>Nombre contacto</dt>
