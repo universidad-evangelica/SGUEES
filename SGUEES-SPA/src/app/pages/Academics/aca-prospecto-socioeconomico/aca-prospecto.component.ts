@@ -62,10 +62,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     @ViewChild('fEstudioMedia', { static: false }) formEstudioMedia?: DxFormComponent;
     @ViewChild('fEstudioUniversidad', { static: false }) formEstudioUniversidad?: DxFormComponent;
     @ViewChild('fEstudioUees', { static: false }) formEstudioUees?: DxFormComponent;
-    // Interruptores de encabezado: empleo y las dos secciones opcionales de estudios.
+    // Interruptor de empleo (socioeconómico). Estudios van solo lectura en Información personal.
     @ViewChild('chkTrabaja', { static: false }) chkTrabaja?: DxCheckBoxComponent;
-    @ViewChild('chkUniversidad', { static: false }) chkUniversidad?: DxCheckBoxComponent;
-    @ViewChild('chkUees', { static: false }) chkUees?: DxCheckBoxComponent;
 
     protected override mttoGridKeyExpr = 'CORR_PROSPECTO';
     readOnly = true;
@@ -166,7 +164,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     mediosEliminar: any[] = [];
     medioOriginal: Record<number, string> = {};
 
-    // Pestaña Información académica: tres secciones de estudios, una fila cada una (como el portal).
+    // Estudios (solo lectura en Información personal): tres secciones, una fila cada una.
     // La media siempre existe; las otras dos se gobiernan con el interruptor de su encabezado.
     estudioMedia: any = null;
     estudioUniversidad: any = null;
@@ -1441,7 +1439,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     private cambiarSeccionEstudio(seccion: string, activa: boolean): void {
         const esUees = seccion === SECCION_GRADUADO_UEES;
         const modelo = esUees ? this.estudioUees : this.estudioUniversidad;
-        const check = esUees ? this.chkUees : this.chkUniversidad;
         const titulo = esUees ? 'Graduado UEES' : 'Estudios universitarios';
 
         if (!activa) {
@@ -1464,7 +1461,6 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                         return;
                     }
                     this.marcarEliminarEstudio(seccion, false);
-                    check?.instance?.option('value', true);
                 });
             });
             return;
@@ -1812,46 +1808,53 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     private validarFormularios(): boolean {
-        // Una ficha abierta (familiar, contacto, medio, limitación o deportación) se acepta o se cancela antes de guardar.
-        if (this.medioModel) {
-            this.notifyFx('Acepte o cancele el medio que está editando antes de guardar.', NotifyType.Warning, { raw: true });
-            return false;
-        }
-        if (this.limitacionModel) {
-            this.notifyFx('Acepte o cancele la limitación que está editando antes de guardar.', NotifyType.Warning, { raw: true });
-            return false;
-        }
-        if (this.deportacionModel) {
-            this.notifyFx('Acepte o cancele la deportación que está editando antes de guardar.', NotifyType.Warning, { raw: true });
-            return false;
-        }
-        if (this.contactoModel) {
-            this.notifyFx('Acepte o cancele el contacto que está editando antes de guardar.', NotifyType.Warning, { raw: true });
-            return false;
-        }
-        if (this.familiarModel) {
-            this.notifyFx('Acepte o cancele el familiar que está editando antes de guardar.', NotifyType.Warning, { raw: true });
-            return false;
+        // Qué hace: en socioeconómico solo se valida empleo + cuestionario; lo personal/académico es consulta.
+        if (this.esAcademico) {
+            // Una ficha abierta (familiar, contacto, medio, limitación o deportación) se acepta o se cancela antes de guardar.
+            if (this.medioModel) {
+                this.notifyFx('Acepte o cancele el medio que está editando antes de guardar.', NotifyType.Warning, { raw: true });
+                return false;
+            }
+            if (this.limitacionModel) {
+                this.notifyFx('Acepte o cancele la limitación que está editando antes de guardar.', NotifyType.Warning, { raw: true });
+                return false;
+            }
+            if (this.deportacionModel) {
+                this.notifyFx('Acepte o cancele la deportación que está editando antes de guardar.', NotifyType.Warning, { raw: true });
+                return false;
+            }
+            if (this.contactoModel) {
+                this.notifyFx('Acepte o cancele el contacto que está editando antes de guardar.', NotifyType.Warning, { raw: true });
+                return false;
+            }
+            if (this.familiarModel) {
+                this.notifyFx('Acepte o cancele el familiar que está editando antes de guardar.', NotifyType.Warning, { raw: true });
+                return false;
+            }
         }
 
-        const estudios = [
-            { seccion: SECCION_MEDIA, modelo: this.estudioMedia, form: this.formEstudioMedia, eliminar: false },
-            { seccion: SECCION_UNIVERSIDAD, modelo: this.estudioUniversidad, form: this.formEstudioUniversidad, eliminar: this.estudioUniversidadEliminar },
-            { seccion: SECCION_GRADUADO_UEES, modelo: this.estudioUees, form: this.formEstudioUees, eliminar: this.estudioUeesEliminar },
-        ];
+        const estudios = this.esAcademico
+            ? [
+                  { seccion: SECCION_MEDIA, modelo: this.estudioMedia, form: this.formEstudioMedia, eliminar: false },
+                  { seccion: SECCION_UNIVERSIDAD, modelo: this.estudioUniversidad, form: this.formEstudioUniversidad, eliminar: this.estudioUniversidadEliminar },
+                  { seccion: SECCION_GRADUADO_UEES, modelo: this.estudioUees, form: this.formEstudioUees, eliminar: this.estudioUeesEliminar },
+              ]
+            : [];
         // Solo se revisan las secciones de estudios que se van a guardar: una sección intacta con datos
         // viejos incompletos no debe impedir editar o eliminar otra (son independientes, como el portal).
         const estudiosAGuardar = estudios.filter((e) => !e.eliminar && this.estudioCambio(e.seccion, e.modelo, e.form));
 
-        const formularios = [
-            this.dataForm,
-            this.formPersona,
-            this.formEmergencia,
-            this.formEmpleo,
-            ...estudiosAGuardar.map((e) => e.form),
-            this.formSocio,
-            this.formRespuestas,
-        ];
+        const formularios = this.esAcademico
+            ? [
+                  this.dataForm,
+                  this.formPersona,
+                  this.formEmergencia,
+                  this.formEmpleo,
+                  ...estudiosAGuardar.map((e) => e.form),
+                  this.formSocio,
+                  this.formRespuestas,
+              ]
+            : [this.formEmpleo, this.formSocio, this.formRespuestas];
         for (const formulario of formularios) {
             const resultado = formulario?.instance?.validate();
             if (resultado && !resultado.isValid) {
@@ -1914,135 +1917,125 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     private armarPasosGuardado(): { nombre: string; accion: () => Observable<IResult> }[] {
         const pasos: { nombre: string; accion: () => Observable<IResult> }[] = [];
 
-        if (this.personaModel) {
-            pasos.push({
-                nombre: 'Datos personales',
-                accion: () => this.servicePersona.update(this.leerFormData(this.formPersona, this.personaModel)),
-            });
-        }
-        // Empleo según el interruptor "Trabaja": eliminar, crear o actualizar (después de la persona,
-        // que ya lleva el valor de TRABAJA; el API deja la bandera coherente en ambos casos).
-        if (this.empleoEliminar && this.empleoModel?.CORR_PROSPECTO_EMPLEO > 0) {
-            pasos.push({
-                nombre: 'Información laboral (eliminar)',
-                accion: () => this.serviceEmpleo.delete(this.empleoModel),
-            });
-        } else if (this.empleoNuevo && this.empleoModel) {
-            pasos.push({
-                nombre: 'Información laboral (nuevo)',
-                accion: () => this.serviceEmpleo.insert(this.leerFormData(this.formEmpleo, this.empleoModel)),
-            });
-        } else if (this.empleoModel) {
-            pasos.push({
-                nombre: 'Información laboral',
-                accion: () => this.serviceEmpleo.update(this.leerFormData(this.formEmpleo, this.empleoModel)),
-            });
-        }
-        // Información adicional: bajas, altas y cambios de los medios de origen (solo lo que cambió).
-        for (const medio of this.mediosEliminar) {
-            pasos.push({ nombre: `Medio ${medio.NOMBRE_MEDIO || ''} (eliminar)`.trim(), accion: () => this.serviceMedio.delete(medio) });
-        }
-        for (const medio of this.medios) {
-            const actual = JSON.stringify(this.serviceMedio.getPayload(medio));
-            if (!(medio.CORR_PROSPECTO_MEDIO > 0)) {
-                pasos.push({ nombre: `Medio ${medio.NOMBRE_MEDIO || ''} (nuevo)`.trim(), accion: () => this.serviceMedio.insert(medio) });
-            } else if (actual !== (this.medioOriginal[medio.CORR_PROSPECTO_MEDIO] ?? '')) {
-                pasos.push({ nombre: `Medio ${medio.NOMBRE_MEDIO || ''}`.trim(), accion: () => this.serviceMedio.update(medio) });
-            }
-        }
-
-        // Salud y Migratorio: bajas, altas y cambios (solo lo que cambió). El API deja las banderas
-        // POSEE_DISCAPACIDAD / HA_SIDO_DEPORTADO de la persona iguales a "tiene al menos una fila".
-        for (const limitacion of this.limitacionesEliminar) {
-            pasos.push({ nombre: `Limitación ${limitacion.NOMBRE_LIMITACION || ''} (eliminar)`.trim(), accion: () => this.serviceLimitacion.delete(limitacion) });
-        }
-        for (const limitacion of this.limitaciones) {
-            const actual = JSON.stringify(this.serviceLimitacion.getPayload(limitacion));
-            if (!(limitacion.CORR_PROSPECTO_LIMITACION_FISICA > 0)) {
-                pasos.push({ nombre: `Limitación ${limitacion.NOMBRE_LIMITACION || ''} (nueva)`.trim(), accion: () => this.serviceLimitacion.insert(limitacion) });
-            } else if (actual !== (this.limitacionOriginal[limitacion.CORR_PROSPECTO_LIMITACION_FISICA] ?? '')) {
-                pasos.push({ nombre: `Limitación ${limitacion.NOMBRE_LIMITACION || ''}`.trim(), accion: () => this.serviceLimitacion.update(limitacion) });
-            }
-        }
-        for (const deportacion of this.deportacionesEliminar) {
-            pasos.push({ nombre: `Deportación ${deportacion.NOMBRE_PAIS || ''} (eliminar)`.trim(), accion: () => this.serviceDeportacion.delete(deportacion) });
-        }
-        for (const deportacion of this.deportaciones) {
-            const actual = JSON.stringify(this.serviceDeportacion.getPayload(deportacion));
-            if (!(deportacion.CORR_PROSPECTO_DEPORTACION > 0)) {
-                pasos.push({ nombre: `Deportación ${deportacion.NOMBRE_PAIS || ''} (nueva)`.trim(), accion: () => this.serviceDeportacion.insert(deportacion) });
-            } else if (actual !== (this.deportacionOriginal[deportacion.CORR_PROSPECTO_DEPORTACION] ?? '')) {
-                pasos.push({ nombre: `Deportación ${deportacion.NOMBRE_PAIS || ''}`.trim(), accion: () => this.serviceDeportacion.update(deportacion) });
-            }
-        }
-
-        // Contactos: bajas, altas y cambios (solo los que cambiaron). Los principales nuevos van antes
-        // que las bajas para que el API nunca vea un tipo sin principal.
-        for (const contacto of this.contactos) {
-            const actual = JSON.stringify(this.serviceContacto.getPayload(contacto));
-            if (!(contacto.CORR_PROSPECTO_CONTACTO > 0)) {
-                pasos.push({ nombre: `Contacto ${contacto.CONTACTO} (nuevo)`, accion: () => this.serviceContacto.insert(contacto) });
-            } else if (actual !== (this.contactoOriginal[contacto.CORR_PROSPECTO_CONTACTO] ?? '')) {
-                pasos.push({ nombre: `Contacto ${contacto.CONTACTO}`, accion: () => this.serviceContacto.update(contacto) });
-            }
-        }
-        for (const contacto of this.contactosEliminar) {
-            pasos.push({ nombre: `Contacto ${contacto.CONTACTO} (eliminar)`, accion: () => this.serviceContacto.delete(contacto) });
-        }
-
-        // Familia: primero las bajas y luego las altas y los cambios (solo los familiares que cambiaron).
-        for (const familiar of this.familiaresEliminar) {
-            pasos.push({
-                nombre: `Familiar ${familiar.NOMBRE_COMPLETO || ''} (eliminar)`.trim(),
-                accion: () => this.serviceFamiliar.delete(familiar),
-            });
-        }
-        for (const familiar of this.familiares) {
-            const actual = JSON.stringify(this.serviceFamiliar.getPayload(familiar));
-            if (!(familiar.CORR_PROSPECTO_FAMILIAR > 0)) {
-                pasos.push({
-                    nombre: `Familiar ${familiar.NOMBRE_COMPLETO || ''} (nuevo)`.trim(),
-                    accion: () => this.serviceFamiliar.insert(familiar),
-                });
-                continue;
-            }
-            if (actual !== (this.familiarOriginal[familiar.CORR_PROSPECTO_FAMILIAR] ?? '')) {
-                pasos.push({
-                    nombre: `Familiar ${familiar.NOMBRE_COMPLETO || ''}`.trim(),
-                    accion: () => this.serviceFamiliar.update(familiar),
-                });
-            }
-        }
-
-        // Estudios: una fila por sección, con las mismas reglas del empleo (eliminar, crear o actualizar).
-        this.agregarPasoEstudio(pasos, 'Educación media', SECCION_MEDIA, this.estudioMedia, this.formEstudioMedia, false);
-        this.agregarPasoEstudio(pasos, 'Estudios universitarios', SECCION_UNIVERSIDAD, this.estudioUniversidad, this.formEstudioUniversidad, this.estudioUniversidadEliminar);
-        this.agregarPasoEstudio(pasos, 'Graduado UEES', SECCION_GRADUADO_UEES, this.estudioUees, this.formEstudioUees, this.estudioUeesEliminar);
-
-        if (this.socioeconomicoModel) {
-            pasos.push({
-                nombre: 'Estudio socioeconómico',
-                accion: () => this.serviceSocioeconomico.update(this.leerFormData(this.formSocio, this.socioeconomicoModel)),
-            });
-            if (this.respuestasSE.length) {
-                pasos.push({
-                    nombre: 'Preguntas del cuestionario',
-                    accion: () =>
-                        this.serviceRespuestaSE.guardar(
-                            this.model.CORR_PROSPECTO,
-                            this.socioeconomicoModel.CORR_PROSPECTO_SOCIOECONOMICO,
-                            this.respuestasSE,
-                            this.leerFormData(this.formRespuestas, this.respuestasSEModel)
-                        ),
-                });
-            }
-        }
-        // El encabezado (carrera, ciclo, forma de ingreso) solo se edita desde la vista académica.
+        // Qué hace: personal/académico solo se guarda en la vista de nuevo ingreso; aquí es consulta.
         if (this.esAcademico) {
+            if (this.personaModel) {
+                pasos.push({
+                    nombre: 'Datos personales',
+                    accion: () => this.servicePersona.update(this.leerFormData(this.formPersona, this.personaModel)),
+                });
+            }
+            for (const medio of this.mediosEliminar) {
+                pasos.push({ nombre: `Medio ${medio.NOMBRE_MEDIO || ''} (eliminar)`.trim(), accion: () => this.serviceMedio.delete(medio) });
+            }
+            for (const medio of this.medios) {
+                const actual = JSON.stringify(this.serviceMedio.getPayload(medio));
+                if (!(medio.CORR_PROSPECTO_MEDIO > 0)) {
+                    pasos.push({ nombre: `Medio ${medio.NOMBRE_MEDIO || ''} (nuevo)`.trim(), accion: () => this.serviceMedio.insert(medio) });
+                } else if (actual !== (this.medioOriginal[medio.CORR_PROSPECTO_MEDIO] ?? '')) {
+                    pasos.push({ nombre: `Medio ${medio.NOMBRE_MEDIO || ''}`.trim(), accion: () => this.serviceMedio.update(medio) });
+                }
+            }
+            for (const limitacion of this.limitacionesEliminar) {
+                pasos.push({ nombre: `Limitación ${limitacion.NOMBRE_LIMITACION || ''} (eliminar)`.trim(), accion: () => this.serviceLimitacion.delete(limitacion) });
+            }
+            for (const limitacion of this.limitaciones) {
+                const actual = JSON.stringify(this.serviceLimitacion.getPayload(limitacion));
+                if (!(limitacion.CORR_PROSPECTO_LIMITACION_FISICA > 0)) {
+                    pasos.push({ nombre: `Limitación ${limitacion.NOMBRE_LIMITACION || ''} (nueva)`.trim(), accion: () => this.serviceLimitacion.insert(limitacion) });
+                } else if (actual !== (this.limitacionOriginal[limitacion.CORR_PROSPECTO_LIMITACION_FISICA] ?? '')) {
+                    pasos.push({ nombre: `Limitación ${limitacion.NOMBRE_LIMITACION || ''}`.trim(), accion: () => this.serviceLimitacion.update(limitacion) });
+                }
+            }
+            for (const deportacion of this.deportacionesEliminar) {
+                pasos.push({ nombre: `Deportación ${deportacion.NOMBRE_PAIS || ''} (eliminar)`.trim(), accion: () => this.serviceDeportacion.delete(deportacion) });
+            }
+            for (const deportacion of this.deportaciones) {
+                const actual = JSON.stringify(this.serviceDeportacion.getPayload(deportacion));
+                if (!(deportacion.CORR_PROSPECTO_DEPORTACION > 0)) {
+                    pasos.push({ nombre: `Deportación ${deportacion.NOMBRE_PAIS || ''} (nueva)`.trim(), accion: () => this.serviceDeportacion.insert(deportacion) });
+                } else if (actual !== (this.deportacionOriginal[deportacion.CORR_PROSPECTO_DEPORTACION] ?? '')) {
+                    pasos.push({ nombre: `Deportación ${deportacion.NOMBRE_PAIS || ''}`.trim(), accion: () => this.serviceDeportacion.update(deportacion) });
+                }
+            }
+            for (const contacto of this.contactos) {
+                const actual = JSON.stringify(this.serviceContacto.getPayload(contacto));
+                if (!(contacto.CORR_PROSPECTO_CONTACTO > 0)) {
+                    pasos.push({ nombre: `Contacto ${contacto.CONTACTO} (nuevo)`, accion: () => this.serviceContacto.insert(contacto) });
+                } else if (actual !== (this.contactoOriginal[contacto.CORR_PROSPECTO_CONTACTO] ?? '')) {
+                    pasos.push({ nombre: `Contacto ${contacto.CONTACTO}`, accion: () => this.serviceContacto.update(contacto) });
+                }
+            }
+            for (const contacto of this.contactosEliminar) {
+                pasos.push({ nombre: `Contacto ${contacto.CONTACTO} (eliminar)`, accion: () => this.serviceContacto.delete(contacto) });
+            }
+            for (const familiar of this.familiaresEliminar) {
+                pasos.push({
+                    nombre: `Familiar ${familiar.NOMBRE_COMPLETO || ''} (eliminar)`.trim(),
+                    accion: () => this.serviceFamiliar.delete(familiar),
+                });
+            }
+            for (const familiar of this.familiares) {
+                const actual = JSON.stringify(this.serviceFamiliar.getPayload(familiar));
+                if (!(familiar.CORR_PROSPECTO_FAMILIAR > 0)) {
+                    pasos.push({
+                        nombre: `Familiar ${familiar.NOMBRE_COMPLETO || ''} (nuevo)`.trim(),
+                        accion: () => this.serviceFamiliar.insert(familiar),
+                    });
+                    continue;
+                }
+                if (actual !== (this.familiarOriginal[familiar.CORR_PROSPECTO_FAMILIAR] ?? '')) {
+                    pasos.push({
+                        nombre: `Familiar ${familiar.NOMBRE_COMPLETO || ''}`.trim(),
+                        accion: () => this.serviceFamiliar.update(familiar),
+                    });
+                }
+            }
+            this.agregarPasoEstudio(pasos, 'Educación media', SECCION_MEDIA, this.estudioMedia, this.formEstudioMedia, false);
+            this.agregarPasoEstudio(pasos, 'Estudios universitarios', SECCION_UNIVERSIDAD, this.estudioUniversidad, this.formEstudioUniversidad, this.estudioUniversidadEliminar);
+            this.agregarPasoEstudio(pasos, 'Graduado UEES', SECCION_GRADUADO_UEES, this.estudioUees, this.formEstudioUees, this.estudioUeesEliminar);
             pasos.push({
                 nombre: 'Datos del prospecto',
                 accion: () => this.service.update(this.leerFormData(this.dataForm, this.model)),
             });
+        }
+
+        // Empleo + socioeconómico: lo único editable en esta pantalla.
+        if (this.esSocioeconomico) {
+            if (this.empleoEliminar && this.empleoModel?.CORR_PROSPECTO_EMPLEO > 0) {
+                pasos.push({
+                    nombre: 'Información laboral (eliminar)',
+                    accion: () => this.serviceEmpleo.delete(this.empleoModel),
+                });
+            } else if (this.empleoNuevo && this.empleoModel) {
+                pasos.push({
+                    nombre: 'Información laboral (nuevo)',
+                    accion: () => this.serviceEmpleo.insert(this.leerFormData(this.formEmpleo, this.empleoModel)),
+                });
+            } else if (this.empleoModel) {
+                pasos.push({
+                    nombre: 'Información laboral',
+                    accion: () => this.serviceEmpleo.update(this.leerFormData(this.formEmpleo, this.empleoModel)),
+                });
+            }
+            if (this.socioeconomicoModel) {
+                pasos.push({
+                    nombre: 'Estudio socioeconómico',
+                    accion: () => this.serviceSocioeconomico.update(this.leerFormData(this.formSocio, this.socioeconomicoModel)),
+                });
+                if (this.respuestasSE.length) {
+                    pasos.push({
+                        nombre: 'Preguntas del cuestionario',
+                        accion: () =>
+                            this.serviceRespuestaSE.guardar(
+                                this.model.CORR_PROSPECTO,
+                                this.socioeconomicoModel.CORR_PROSPECTO_SOCIOECONOMICO,
+                                this.respuestasSE,
+                                this.leerFormData(this.formRespuestas, this.respuestasSEModel)
+                            ),
+                    });
+                }
+            }
         }
 
         return pasos;
@@ -2109,10 +2102,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.cargarLimitaciones(CORR_PROSPECTO);
         this.cargarDeportaciones(CORR_PROSPECTO);
         this.cargarMedios(CORR_PROSPECTO);
-        // Solo lo de la vista abierta: lo que no se carga no tiene modelo, así que tampoco entra al guardado.
-        if (this.esAcademico) {
-            this.cargarEstudios(CORR_PROSPECTO);
-        }
+        // Qué hace: estudios se muestran en Información personal (solo lectura) aunque no se editen aquí.
+        this.cargarEstudios(CORR_PROSPECTO);
         if (this.esSocioeconomico) {
             this.cargarEmpleo(CORR_PROSPECTO);
             this.cargarSocioeconomico(CORR_PROSPECTO);
