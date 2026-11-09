@@ -49,6 +49,7 @@ export interface AcaSeSeccionLookup {
 	CODIGO: string;
 	NOMBRE_SECCION: string;
 	TIPO_EVALUACION?: string;
+	PORCENTAJE_MAXIMO?: number;
 	DISPLAY?: string;
 	ACTIVO?: boolean;
 	ORDEN?: number;

@@ -180,6 +180,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 									CODIGO,
 									NOMBRE_SECCION,
 									TIPO_EVALUACION,
+									PORCENTAJE_MAXIMO: Number(item.PORCENTAJE_MAXIMO ?? 0),
 									DISPLAY: `${CODIGO} - ${NOMBRE_SECCION}`.trim(),
 									ACTIVO: item.ACTIVO,
 									ORDEN: Number(item.ORDEN ?? 0),
@@ -261,6 +262,16 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 	}
 
 	private textosAyudaPuntaje(): { helpText: string; hint: string } {
+		const topeInfo = this.service.calcularTopePuntajeSeccion(
+			this.model,
+			this.models ?? [],
+			this.mCORR_SECCION_SE ?? []
+		);
+		const restante =
+			topeInfo != null
+				? ` Tope sección: ${this.service.fmtPuntaje(topeInfo.tope)}. Disponible: ${this.service.fmtPuntaje(topeInfo.disponible)}.`
+				: '';
+
 		if (!this.seccionEsTipoPregunta()) {
 			return {
 				helpText: 'Solo aplica a secciones tipo PREGUNTA (no a rangos de monto).',
@@ -276,13 +287,16 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		if (this.codigoTipoPregunta() === 'OPCION_MULTIPLE') {
 			return {
 				helpText:
-					'Opción múltiple: un solo puntaje por contestar la pregunta (no por ítem marcado). 0 = sin puntaje.',
-				hint: 'Opción múltiple: puntaje fijo al responder (0 = sin puntaje).',
+					'Opción múltiple: un solo puntaje por contestar la pregunta (no por ítem marcado). 0 = sin puntaje.' +
+					restante,
+				hint: 'Opción múltiple: puntaje fijo al responder (0 = sin puntaje).' + restante,
 			};
 		}
 		return {
-			helpText: 'Puntaje de esta pregunta al responderla (texto, número, monto, sí/no, etc.). 0 = sin puntaje.',
-			hint: 'Puntaje de la pregunta al responderla (0 = sin puntaje).',
+			helpText:
+				'Puntaje de esta pregunta al responderla (texto, número, monto, sí/no, etc.). 0 = sin puntaje.' +
+				restante,
+			hint: 'Puntaje de la pregunta al responderla (0 = sin puntaje).' + restante,
 		};
 	}
 
@@ -540,7 +554,11 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			this.model.CORR_PREGUNTA_DESCUENTO = null;
 		}
 
-		const ctxValidacion = { mostrarRolMonto: mostrarRol, models: this.models ?? [] };
+		const ctxValidacion = {
+			mostrarRolMonto: mostrarRol,
+			models: this.models ?? [],
+			secciones: this.mCORR_SECCION_SE ?? [],
+		};
 		const formValidation = this.dataForm?.instance?.validate();
 		if (formValidation && !formValidation.isValid) {
 			this.service.esValido(this.model, this.notifyFx.bind(this), ctxValidacion);

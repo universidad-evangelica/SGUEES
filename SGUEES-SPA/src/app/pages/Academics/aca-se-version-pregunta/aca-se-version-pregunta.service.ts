@@ -28,11 +28,15 @@ export class AcaSeVersionPreguntaService {
 		private appInfoService: AppInfoService
 	) {}
 
-	// Qué hace: valida el formulario; si MONTO+RANGO_MONTO exige rol; si LIQUIDO exige bruto+descuento.
+	// Qué hace: valida el formulario; tope de sección; si MONTO+RANGO_MONTO exige rol; si LIQUIDO exige bruto+descuento.
 	esValido(
 		model: AcaSeVersionPregunta,
 		msg: Function,
-		ctx?: { mostrarRolMonto?: boolean; models?: AcaSeVersionPregunta[] }
+		ctx?: {
+			mostrarRolMonto?: boolean;
+			models?: AcaSeVersionPregunta[];
+			secciones?: AcaSeSeccionLookup[];
+		}
 	): boolean {
 		if (!model.CORR_VERSION || model.CORR_VERSION <= 0) {
 			msg('Debe seleccionar la versión.', NotifyType.Warning);
@@ -67,6 +71,17 @@ export class AcaSeVersionPreguntaService {
 			msg('El puntaje debe ser 0 o mayor.', NotifyType.Warning);
 			return false;
 		}
+		// Qué hace: en sección PREGUNTA la suma de puntajes no puede pasar PORCENTAJE_MAXIMO.
+		const topeInfo = this.calcularTopePuntajeSeccion(model, ctx?.models ?? [], ctx?.secciones ?? []);
+		if (topeInfo && Number(model.PUNTAJE) > topeInfo.disponible + 0.0001) {
+			msg(
+				`El puntaje supera el máximo de la sección (${this.fmtPuntaje(topeInfo.tope)}). ` +
+					`Ya asignado en otras preguntas: ${this.fmtPuntaje(topeInfo.sumaOtros)}. ` +
+					`Disponible: ${this.fmtPuntaje(topeInfo.disponible)}.`,
+				NotifyType.Warning
+			);
+			return false;
+		}
 		if (ctx?.mostrarRolMonto) {
 			if (!model.ROL_MONTO || String(model.ROL_MONTO).trim() === '') {
 				msg('Debe seleccionar el rol de monto (Bruto, Descuento, Líquido o Monto).', NotifyType.Warning);
@@ -90,6 +105,41 @@ export class AcaSeVersionPreguntaService {
 			}
 		}
 		return true;
+	}
+
+	// Qué hace: tope de la sección PREGUNTA y cuánto queda libre para esta fila.
+	// Cómo lo hace: PORCENTAJE_MAXIMO − suma de PUNTAJE de hermanas (excluye la fila en edición).
+	calcularTopePuntajeSeccion(
+		model: AcaSeVersionPregunta,
+		models: AcaSeVersionPregunta[],
+		secciones: AcaSeSeccionLookup[]
+	): { tope: number; sumaOtros: number; disponible: number } | null {
+		const corrSeccion = Number(model?.CORR_SECCION_SE ?? 0);
+		if (!corrSeccion) {
+			return null;
+		}
+		const seccion = (secciones ?? []).find((s) => Number(s.CORR_SECCION_SE) === corrSeccion);
+		const tipo = (seccion?.TIPO_EVALUACION ?? model?.TIPO_EVALUACION ?? '').trim().toUpperCase();
+		if (tipo !== 'PREGUNTA') {
+			return null;
+		}
+		const tope = Number(seccion?.PORCENTAJE_MAXIMO ?? 0);
+		const corrActual = Number(model?.CORR_VERSION_PREGUNTA ?? 0);
+		const sumaOtros = (models ?? [])
+			.filter(
+				(m) =>
+					Number(m.CORR_VERSION) === Number(model.CORR_VERSION) &&
+					Number(m.CORR_SECCION_SE) === corrSeccion &&
+					Number(m.CORR_VERSION_PREGUNTA ?? 0) !== corrActual
+			)
+			.reduce((acc, m) => acc + Math.max(0, Number(m.PUNTAJE ?? 0)), 0);
+		const disponible = Math.max(0, tope - sumaOtros);
+		return { tope, sumaOtros, disponible };
+	}
+
+	fmtPuntaje(n: number): string {
+		const v = Number(n ?? 0);
+		return Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/\.?0+$/, '');
 	}
 
 	getAll(param: any): Observable<IResult> {

@@ -100,6 +100,15 @@ namespace sguees.Repositories
 				// Qué hace: puntaje en pregunta salvo RANGO_MONTO u OPCION_UNICA (esa usa puntaje de opción).
 				Data.PUNTAJE = await NormalizarPuntajePreguntaAsync(validacion, Data.CORR_PREGUNTA, Data.PUNTAJE);
 
+				var topeOk = await ValidarPuntajeVsTopeSeccionAsync(
+					Data.CORR_VERSION,
+					Data.CORR_SECCION_SE,
+					excluirCorrVersionPregunta: null,
+					Data.PUNTAJE,
+					validacion.Data as ACA_SE_SECCIONView);
+				if (!topeOk.Result)
+					return topeOk;
+
 				var rolOk = await NormalizarYValidarRolMontoAsync(Data, validacion);
 				if (!rolOk.Result)
 					return rolOk;
@@ -176,6 +185,15 @@ namespace sguees.Repositories
 					return validacion;
 
 				Data.PUNTAJE = await NormalizarPuntajePreguntaAsync(validacion, Data.CORR_PREGUNTA, Data.PUNTAJE);
+
+				var topeOk = await ValidarPuntajeVsTopeSeccionAsync(
+					Data.CORR_VERSION,
+					Data.CORR_SECCION_SE,
+					excluirCorrVersionPregunta: Data.CORR_VERSION_PREGUNTA,
+					Data.PUNTAJE,
+					validacion.Data as ACA_SE_SECCIONView);
+				if (!topeOk.Result)
+					return topeOk;
 
 				var rolOk = await NormalizarYValidarRolMontoAsync(Data, validacion);
 				if (!rolOk.Result)
@@ -428,6 +446,55 @@ namespace sguees.Repositories
 				return 0m;
 
 			return puntaje < 0 ? 0m : puntaje;
+		}
+
+		// Qué hace: impide que la suma de PUNTAJE de la sección PREGUNTA pase el PORCENTAJE_MAXIMO.
+		// Cómo lo hace: suma PUNTAJE de hermanas (excluye la fila en edición) + el nuevo valor y compara el tope.
+		private async Task<CResult> ValidarPuntajeVsTopeSeccionAsync(
+			int corrVersion,
+			int? corrSeccion,
+			int? excluirCorrVersionPregunta,
+			decimal puntajeNuevo,
+			ACA_SE_SECCIONView seccion)
+		{
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			if (seccion == null ||
+				!string.Equals(seccion.TIPO_EVALUACION, "PREGUNTA", StringComparison.OrdinalIgnoreCase) ||
+				!corrSeccion.HasValue ||
+				corrSeccion.Value <= 0)
+				return ok;
+
+			var tope = seccion.PORCENTAJE_MAXIMO;
+			if (tope < 0)
+				tope = 0;
+
+			var reader = await objData.GetDataReader(_ViewName, new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_VERSION", Value = corrVersion, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_SECCION_SE", Value = corrSeccion.Value, DbType = System.Data.DbType.Int32 },
+			});
+			var hermanas = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(reader).ToList();
+			reader.Close();
+
+			var excluir = excluirCorrVersionPregunta ?? 0;
+			var sumaOtros = hermanas
+				.Where(x => x.CORR_VERSION_PREGUNTA != excluir)
+				.Sum(x => x.PUNTAJE < 0 ? 0m : x.PUNTAJE);
+			var total = sumaOtros + (puntajeNuevo < 0 ? 0m : puntajeNuevo);
+
+			if (total > tope)
+			{
+				var disponible = tope - sumaOtros;
+				if (disponible < 0)
+					disponible = 0;
+				ok.Result = false;
+				ok.ErrorCode = 4016;
+				ok.ErrorMessage =
+					$"El puntaje supera el máximo de la sección ({tope:0.##}). " +
+					$"Ya asignado en otras preguntas: {sumaOtros:0.##}. Disponible: {disponible:0.##}.";
+			}
+
+			return ok;
 		}
 
 		// Qué hace: ROL_MONTO/asoc. solo si sección RANGO_MONTO y pregunta tipo MONTO; si LIQUIDO exige bruto+descuento de la misma versión+sección.
