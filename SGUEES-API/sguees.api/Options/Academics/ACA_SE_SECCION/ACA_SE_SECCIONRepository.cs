@@ -180,6 +180,13 @@ namespace sguees.Repositories
 				if (!validTipo.Result)
 					return validTipo;
 
+				var validCapacidad = await ValidarCapacidadPuntajesVsTopeAsync(
+					Data.CORR_SECCION_SE,
+					tipoEval,
+					Data.PORCENTAJE_MAXIMO);
+				if (!validCapacidad.Result)
+					return validCapacidad;
+
 				var validMontos = await ValidarRangoMontoTienePreguntasMontoAsync(Data.CORR_SECCION_SE, tipoEval);
 				if (!validMontos.Result)
 					return validMontos;
@@ -412,6 +419,91 @@ namespace sguees.Repositories
 			}
 			finally { objData.objConnection.Close(); }
 			return objResultado;
+		}
+
+		// Qué hace: no deja bajar el % de la sección por debajo de lo ya reservado en preguntas/opciones.
+		// Cómo lo hace: OPCION_UNICA aporta MAX(opciones); el resto aporta PUNTAJE; si capacidad > nuevo tope, rechaza.
+		private async Task<CResult> ValidarCapacidadPuntajesVsTopeAsync(
+			int corrSeccion,
+			string tipoEvaluacion,
+			decimal porcentajeNuevo)
+		{
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			if (corrSeccion <= 0 ||
+				!string.Equals(tipoEvaluacion, "PREGUNTA", StringComparison.OrdinalIgnoreCase))
+				return ok;
+
+			var tope = porcentajeNuevo < 0 ? 0m : porcentajeNuevo;
+
+			var readerVp = await objData.GetDataReader("V_ACA_SE_VERSION_PREGUNTA", new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_SECCION_SE", Value = corrSeccion, DbType = System.Data.DbType.Int32 },
+			});
+			var preguntas = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(readerVp).ToList();
+			readerVp.Close();
+
+			if (preguntas.Count == 0)
+				return ok;
+
+			decimal capacidad = 0m;
+			var detalle = new List<string>();
+
+			foreach (var vp in preguntas)
+			{
+				decimal aporte;
+				string etiqueta = string.IsNullOrWhiteSpace(vp.CODIGO_PREGUNTA)
+					? $"pregunta {vp.CORR_PREGUNTA}"
+					: vp.CODIGO_PREGUNTA.Trim();
+
+				if (string.Equals(vp.CODIGO_TIPO_PREGUNTA, "OPCION_UNICA", StringComparison.OrdinalIgnoreCase))
+				{
+					aporte = await ObtenerMaxPuntajeOpcionesAsync(vp.CORR_PREGUNTA);
+					if (aporte > 0)
+						detalle.Add($"{etiqueta} (opción única MAX={aporte:0.##})");
+				}
+				else
+				{
+					aporte = vp.PUNTAJE < 0 ? 0m : vp.PUNTAJE;
+					if (aporte > 0)
+						detalle.Add($"{etiqueta} (puntaje={aporte:0.##})");
+				}
+
+				capacidad += aporte;
+			}
+
+			if (capacidad <= tope)
+				return ok;
+
+			var detalleTxt = detalle.Count > 0
+				? string.Join("; ", detalle.Take(6)) + (detalle.Count > 6 ? "; …" : "")
+				: "preguntas/opciones de la sección";
+
+			ok.Result = false;
+			ok.ErrorCode = 4018;
+			ok.ErrorMessage =
+				$"No puede bajar el % máximo a {tope:0.##} porque las preguntas/opciones ya reservan {capacidad:0.##}. " +
+				$"Baje primero esos puntajes. Detalle: {detalleTxt}.";
+			return ok;
+		}
+
+		// Qué hace: máximo puntaje entre opciones de una pregunta OPCION_UNICA.
+		private async Task<decimal> ObtenerMaxPuntajeOpcionesAsync(int corrPregunta)
+		{
+			var reader = await objData.GetDataReader("V_ACA_SE_OPCION", new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_PREGUNTA", Value = corrPregunta, DbType = System.Data.DbType.Int32 },
+			});
+			var opciones = new List<ACA_SE_OPCIONView>().FromDataReader(reader).ToList();
+			reader.Close();
+
+			decimal max = 0m;
+			foreach (var o in opciones)
+			{
+				var pts = o.PUNTAJE < 0 ? 0m : o.PUNTAJE;
+				if (pts > max)
+					max = pts;
+			}
+			return max;
 		}
 
 		// Qué hace: impide que las secciones activas de una versión sumen más de 100%.
