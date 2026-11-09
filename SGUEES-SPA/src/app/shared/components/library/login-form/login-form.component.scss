@@ -111,8 +111,9 @@
   --login-text-body: rgba(255, 255, 255, 0.72);
   --login-text-brand: rgba(255, 255, 255, 0.55);
   --login-text-footer: rgba(255, 255, 255, 0.45);
-  --login-glass-bg: rgba(255, 255, 255, 0.04);
-  --login-glass-border: rgba(255, 255, 255, 0.08);
+  /* Fondo opaco: evita manchas blancas del blur GPU (backdrop-filter). */
+  --login-glass-bg: rgba(30, 41, 59, 0.92);
+  --login-glass-border: rgba(255, 255, 255, 0.1);
   --login-input-text: #0f172a;
   --login-input-icon: #64748b;
 
@@ -152,8 +153,7 @@
   border-radius: 24px;
   background: var(--login-glass-bg);
   border: 1px solid var(--login-glass-border);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  /* Sin backdrop-filter: en Chrome/Windows el blur dejaba franjas blancas intermitentes. */
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   animation: login-glass-fade 400ms ease-out 80ms both;
 }
