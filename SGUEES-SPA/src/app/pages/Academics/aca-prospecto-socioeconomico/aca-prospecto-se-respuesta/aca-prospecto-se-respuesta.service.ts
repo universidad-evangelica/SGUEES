@@ -370,18 +370,27 @@ export class AcaProspectoSeRespuestaService {
     }
 
     // Qué hace: regla del portal para los ingresos: líquido = salario − descuentos, nunca negativo.
-    // Cómo lo hace: si cambió un ING_*_BRUTO o ING_*_DESC devuelve el campo líquido y su valor
-    //               (null cuando queda en 0, que es "sin respuesta"); null si el campo no es de ingresos.
+    // Cómo lo hace: si cambió un ING_*_BRUTO o ING_*_DESC recalcula *_LIQ (incluye 0); null solo si ambos vacíos.
     calcularLiquido(dataField: string, formData: any): { campo: string; valor: number | null } | null {
         const coincidencia = /^(ING_[A-Z]+)_(BRUTO|DESC)$/.exec(dataField ?? '');
         if (!coincidencia) {
             return null;
         }
         const prefijo = coincidencia[1];
-        const bruto = Number(formData?.[`${prefijo}_BRUTO`]) || 0;
-        const descuentos = Number(formData?.[`${prefijo}_DESC`]) || 0;
-        const liquido = Math.max(0, bruto - descuentos);
-        return { campo: `${prefijo}_LIQ`, valor: liquido > 0 ? liquido : null };
+        const brutoRaw = formData?.[`${prefijo}_BRUTO`];
+        const descRaw = formData?.[`${prefijo}_DESC`];
+        const sinDatos =
+            (brutoRaw === null || brutoRaw === undefined || brutoRaw === '') &&
+            (descRaw === null || descRaw === undefined || descRaw === '');
+        if (sinDatos) {
+            return { campo: `${prefijo}_LIQ`, valor: null };
+        }
+        const bruto = Number(brutoRaw);
+        const descuentos = Number(descRaw);
+        const b = Number.isFinite(bruto) ? bruto : 0;
+        const d = Number.isFinite(descuentos) ? descuentos : 0;
+        const liquido = Math.max(0, b - d);
+        return { campo: `${prefijo}_LIQ`, valor: liquido };
     }
 
     // Qué hace: objeto formData del formulario "Preguntas" ({ CODIGO_PREGUNTA: valor }).
