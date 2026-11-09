@@ -550,7 +550,8 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 					code === 4002 ||
 					code === 4003 ||
 					code === 4018 ||
-					/porcentaje|máximo|reservan|puntaje|opción|bajar|disponible|100%/i.test(msg);
+					code === 4019 ||
+					/porcentaje|máximo|reservan|puntaje|opción|rango|bajar|disponible|100%/i.test(msg);
 				this.notifyFx(msg, esValidacion ? NotifyType.Warning : NotifyType.Error, { raw: true });
 			},
 		});

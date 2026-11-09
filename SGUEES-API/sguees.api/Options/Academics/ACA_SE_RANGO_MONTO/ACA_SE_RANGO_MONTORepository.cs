@@ -346,6 +346,19 @@ namespace sguees.Repositories
 				return ok;
 			}
 
+			// Qué hace: el puntaje del rango no puede pasar el % máximo de la sección.
+			var tope = seccion.PORCENTAJE_MAXIMO < 0 ? 0m : seccion.PORCENTAJE_MAXIMO;
+			var puntaje = Data.PUNTAJE < 0 ? 0m : Data.PUNTAJE;
+			if (puntaje > tope)
+			{
+				ok.Result = false;
+				ok.ErrorCode = 4007;
+				ok.ErrorMessage =
+					$"El puntaje del rango ({puntaje:0.##}) supera el % máximo de la sección " +
+					$"'{seccion.NOMBRE_SECCION}' ({tope:0.##}).";
+				return ok;
+			}
+
 			return ok;
 		}
 

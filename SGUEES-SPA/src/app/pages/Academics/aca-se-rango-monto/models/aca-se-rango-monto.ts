@@ -37,5 +37,6 @@ export interface AcaSeSeccionRangoLookup {
 	CODIGO: string;
 	NOMBRE_SECCION: string;
 	TIPO_EVALUACION?: string;
+	PORCENTAJE_MAXIMO?: number;
 	ACTIVO?: boolean;
 }

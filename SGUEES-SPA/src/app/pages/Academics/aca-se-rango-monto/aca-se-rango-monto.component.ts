@@ -167,6 +167,7 @@ export class AcaSeRangoMontoComponent extends CBaseComponent implements OnInit {
 							CODIGO: (item.CODIGO ?? '').trim(),
 							NOMBRE_SECCION: (item.NOMBRE_SECCION ?? '').trim(),
 							TIPO_EVALUACION: (item.TIPO_EVALUACION ?? '').trim(),
+							PORCENTAJE_MAXIMO: Number(item.PORCENTAJE_MAXIMO ?? 0),
 							ACTIVO: item.ACTIVO,
 						}));
 					} else {
@@ -308,14 +309,15 @@ export class AcaSeRangoMontoComponent extends CBaseComponent implements OnInit {
 			this.model = { ...this.model, ...formData };
 		}
 
+		const ctxValidacion = { secciones: this.mCORR_SECCION_SE_TODAS ?? [] };
 		const formValidation = this.dataForm?.instance?.validate();
 		if (formValidation && !formValidation.isValid) {
-			this.service.esValido(this.model, this.notifyFx.bind(this));
+			this.service.esValido(this.model, this.notifyFx.bind(this), ctxValidacion);
 			return;
 		}
 
 		this.guardarMtto({
-			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), ctxValidacion),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
 		});

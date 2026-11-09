@@ -26,8 +26,12 @@ export class AcaSeRangoMontoService {
 	) {}
 
 	// Qué hace: valida el formulario antes de guardar.
-	// Cómo lo hace: exige versión, sección RANGO_MONTO, descripción, puntaje y rangos coherentes.
-	esValido(model: AcaSeRangoMonto, msg: Function): boolean {
+	// Cómo lo hace: exige versión, sección RANGO_MONTO, descripción, puntaje ≤ % sección y rangos coherentes.
+	esValido(
+		model: AcaSeRangoMonto,
+		msg: Function,
+		ctx?: { secciones?: AcaSeSeccionRangoLookup[] }
+	): boolean {
 		if (!model.CORR_VERSION || model.CORR_VERSION <= 0) {
 			msg('Debe seleccionar la versión.', NotifyType.Warning);
 			return false;
@@ -46,6 +50,15 @@ export class AcaSeRangoMontoService {
 		}
 		if (model.PUNTAJE === null || model.PUNTAJE === undefined || Number.isNaN(Number(model.PUNTAJE))) {
 			msg('Debe ingresar el puntaje.', NotifyType.Warning);
+			return false;
+		}
+		const seccion = (ctx?.secciones ?? []).find((s) => Number(s.CORR_SECCION_SE) === Number(model.CORR_SECCION_SE));
+		const tope = Number(seccion?.PORCENTAJE_MAXIMO);
+		if (seccion && !Number.isNaN(tope) && Number(model.PUNTAJE) > tope + 0.0001) {
+			msg(
+				`El puntaje del rango (${Number(model.PUNTAJE)}) supera el % máximo de la sección (${tope}).`,
+				NotifyType.Warning
+			);
 			return false;
 		}
 		if (model.RANGO_INICIAL === null || model.RANGO_INICIAL === undefined || Number.isNaN(Number(model.RANGO_INICIAL))) {
@@ -239,6 +252,7 @@ export class AcaSeRangoMontoService {
 				label: { text: 'Puntaje' },
 				editorType: 'dxNumberBox',
 				colSpan: 2,
+				helpText: 'No puede superar el % máximo de la sección RANGO_MONTO.',
 				editorOptions: { min: 0, showSpinButtons: true, format: '#0.00' },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},

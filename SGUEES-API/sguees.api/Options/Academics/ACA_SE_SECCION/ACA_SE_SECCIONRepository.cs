@@ -421,19 +421,24 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: no deja bajar el % de la sección por debajo de lo ya reservado en preguntas/opciones.
-		// Cómo lo hace: OPCION_UNICA aporta MAX(opciones); el resto aporta PUNTAJE; si capacidad > nuevo tope, rechaza.
+		// Qué hace: no deja bajar el % de la sección por debajo de lo ya configurado en puntajes.
+		// Cómo lo hace: PREGUNTA → suma capacidad (MAX opciones / PUNTAJE); RANGO_MONTO → MAX(PUNTAJE de rangos).
 		private async Task<CResult> ValidarCapacidadPuntajesVsTopeAsync(
 			int corrSeccion,
 			string tipoEvaluacion,
 			decimal porcentajeNuevo)
 		{
 			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
-			if (corrSeccion <= 0 ||
-				!string.Equals(tipoEvaluacion, "PREGUNTA", StringComparison.OrdinalIgnoreCase))
+			if (corrSeccion <= 0)
 				return ok;
 
 			var tope = porcentajeNuevo < 0 ? 0m : porcentajeNuevo;
+
+			if (string.Equals(tipoEvaluacion, "RANGO_MONTO", StringComparison.OrdinalIgnoreCase))
+				return await ValidarCapacidadRangosMontoVsTopeAsync(corrSeccion, tope);
+
+			if (!string.Equals(tipoEvaluacion, "PREGUNTA", StringComparison.OrdinalIgnoreCase))
+				return ok;
 
 			var readerVp = await objData.GetDataReader("V_ACA_SE_VERSION_PREGUNTA", new List<CParameter>
 			{
@@ -483,6 +488,52 @@ namespace sguees.Repositories
 			ok.ErrorMessage =
 				$"No puede bajar el % máximo a {tope:0.##} porque las preguntas/opciones ya reservan {capacidad:0.##}. " +
 				$"Baje primero esos puntajes. Detalle: {detalleTxt}.";
+			return ok;
+		}
+
+		// Qué hace: en RANGO_MONTO el tope no puede ser menor que el mayor PUNTAJE del catálogo de rangos.
+		// Cómo lo hace: lee V_ACA_SE_RANGO_MONTO de la sección; si algún rango (o el MAX) supera el nuevo %, rechaza.
+		private async Task<CResult> ValidarCapacidadRangosMontoVsTopeAsync(int corrSeccion, decimal tope)
+		{
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			var reader = await objData.GetDataReader("V_ACA_SE_RANGO_MONTO", new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_SECCION_SE", Value = corrSeccion, DbType = System.Data.DbType.Int32 },
+			});
+			var rangos = new List<ACA_SE_RANGO_MONTOView>().FromDataReader(reader).ToList();
+			reader.Close();
+
+			if (rangos.Count == 0)
+				return ok;
+
+			decimal maxPuntaje = 0m;
+			var detalle = new List<string>();
+			foreach (var r in rangos)
+			{
+				var pts = r.PUNTAJE < 0 ? 0m : r.PUNTAJE;
+				if (pts > maxPuntaje)
+					maxPuntaje = pts;
+				if (pts > tope)
+				{
+					var etiqueta = string.IsNullOrWhiteSpace(r.DESCRIPCION)
+						? $"rango {r.CORR_RANGO_MONTO}"
+						: r.DESCRIPCION.Trim();
+					detalle.Add($"{etiqueta} (puntaje={pts:0.##})");
+				}
+			}
+
+			if (maxPuntaje <= tope)
+				return ok;
+
+			var detalleTxt = detalle.Count > 0
+				? string.Join("; ", detalle.Take(6)) + (detalle.Count > 6 ? "; …" : "")
+				: "rangos del catálogo";
+
+			ok.Result = false;
+			ok.ErrorCode = 4019;
+			ok.ErrorMessage =
+				$"No puede bajar el % máximo a {tope:0.##} porque el catálogo de rangos tiene puntaje hasta {maxPuntaje:0.##}. " +
+				$"Baje primero esos puntajes en Rangos de monto. Detalle: {detalleTxt}.";
 			return ok;
 		}
 
