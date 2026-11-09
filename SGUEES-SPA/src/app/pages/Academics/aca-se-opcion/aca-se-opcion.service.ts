@@ -189,7 +189,7 @@ export class AcaSeOpcionService {
 				editorType: 'dxNumberBox',
 				colSpan: 2,
 				helpText: permitePuntaje
-					? 'Puntaje de esta respuesta (opción única). 0 = sin puntaje.'
+					? 'Puntaje de esta respuesta (opción única). No puede hacer que el MAX de opciones + otras preguntas pase el % de la sección. 0 = sin puntaje.'
 					: 'En opción múltiple el puntaje se define en Preguntas por versión, no aquí.',
 				editorOptions: {
 					min: 0,
@@ -197,7 +197,7 @@ export class AcaSeOpcionService {
 					format: '#0.00',
 					readOnly: !permitePuntaje,
 					hint: permitePuntaje
-						? 'Puntaje de la respuesta seleccionada (opción única). 0 = sin puntaje.'
+						? 'Opción única: el MAX de opciones reserva capacidad del tope de sección.'
 						: 'Opción múltiple: configure el puntaje en Preguntas por versión.',
 				},
 			},

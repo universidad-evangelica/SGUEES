@@ -36,6 +36,7 @@ export class AcaSeVersionPreguntaService {
 			mostrarRolMonto?: boolean;
 			models?: AcaSeVersionPregunta[];
 			secciones?: AcaSeSeccionLookup[];
+			maxOpcionByPregunta?: Record<number, number>;
 		}
 	): boolean {
 		if (!model.CORR_VERSION || model.CORR_VERSION <= 0) {
@@ -71,13 +72,21 @@ export class AcaSeVersionPreguntaService {
 			msg('El puntaje debe ser 0 o mayor.', NotifyType.Warning);
 			return false;
 		}
-		// Qué hace: en sección PREGUNTA la suma de puntajes no puede pasar PORCENTAJE_MAXIMO.
-		const topeInfo = this.calcularTopePuntajeSeccion(model, ctx?.models ?? [], ctx?.secciones ?? []);
-		if (topeInfo && Number(model.PUNTAJE) > topeInfo.disponible + 0.0001) {
+		// Qué hace: capacidad sección = MAX(opciones) de únicas + PUNTAJE de normales ≤ PORCENTAJE_MAXIMO.
+		const topeInfo = this.calcularTopePuntajeSeccion(
+			model,
+			ctx?.models ?? [],
+			ctx?.secciones ?? [],
+			ctx?.maxOpcionByPregunta ?? {}
+		);
+		if (topeInfo && topeInfo.aporteActual > topeInfo.disponible + 0.0001) {
 			msg(
-				`El puntaje supera el máximo de la sección (${this.fmtPuntaje(topeInfo.tope)}). ` +
-					`Ya asignado en otras preguntas: ${this.fmtPuntaje(topeInfo.sumaOtros)}. ` +
-					`Disponible: ${this.fmtPuntaje(topeInfo.disponible)}.`,
+				topeInfo.disponible <= 0
+					? `El máximo de la sección (${this.fmtPuntaje(topeInfo.tope)}) ya está cubierto por selección única u otras preguntas ` +
+							`(reservado: ${this.fmtPuntaje(topeInfo.sumaOtros)}). Disponible: 0.`
+					: `El puntaje supera el máximo de la sección (${this.fmtPuntaje(topeInfo.tope)}). ` +
+							`Ya reservado en otras preguntas: ${this.fmtPuntaje(topeInfo.sumaOtros)}. ` +
+							`Disponible: ${this.fmtPuntaje(topeInfo.disponible)}.`,
 				NotifyType.Warning
 			);
 			return false;
@@ -108,12 +117,13 @@ export class AcaSeVersionPreguntaService {
 	}
 
 	// Qué hace: tope de la sección PREGUNTA y cuánto queda libre para esta fila.
-	// Cómo lo hace: PORCENTAJE_MAXIMO − suma de PUNTAJE de hermanas (excluye la fila en edición).
+	// Cómo lo hace: OPCION_UNICA aporta MAX(opciones); el resto aporta PUNTAJE; excluye la fila en edición.
 	calcularTopePuntajeSeccion(
 		model: AcaSeVersionPregunta,
 		models: AcaSeVersionPregunta[],
-		secciones: AcaSeSeccionLookup[]
-	): { tope: number; sumaOtros: number; disponible: number } | null {
+		secciones: AcaSeSeccionLookup[],
+		maxOpcionByPregunta: Record<number, number> = {}
+	): { tope: number; sumaOtros: number; disponible: number; aporteActual: number } | null {
 		const corrSeccion = Number(model?.CORR_SECCION_SE ?? 0);
 		if (!corrSeccion) {
 			return null;
@@ -125,6 +135,13 @@ export class AcaSeVersionPreguntaService {
 		}
 		const tope = Number(seccion?.PORCENTAJE_MAXIMO ?? 0);
 		const corrActual = Number(model?.CORR_VERSION_PREGUNTA ?? 0);
+		const aporteDe = (m: AcaSeVersionPregunta): number => {
+			const tipoPreg = (m.CODIGO_TIPO_PREGUNTA ?? '').trim().toUpperCase();
+			if (tipoPreg === 'OPCION_UNICA') {
+				return Math.max(0, Number(maxOpcionByPregunta[Number(m.CORR_PREGUNTA)] ?? 0));
+			}
+			return Math.max(0, Number(m.PUNTAJE ?? 0));
+		};
 		const sumaOtros = (models ?? [])
 			.filter(
 				(m) =>
@@ -132,9 +149,10 @@ export class AcaSeVersionPreguntaService {
 					Number(m.CORR_SECCION_SE) === corrSeccion &&
 					Number(m.CORR_VERSION_PREGUNTA ?? 0) !== corrActual
 			)
-			.reduce((acc, m) => acc + Math.max(0, Number(m.PUNTAJE ?? 0)), 0);
+			.reduce((acc, m) => acc + aporteDe(m), 0);
+		const aporteActual = aporteDe(model);
 		const disponible = Math.max(0, tope - sumaOtros);
-		return { tope, sumaOtros, disponible };
+		return { tope, sumaOtros, disponible, aporteActual };
 	}
 
 	fmtPuntaje(n: number): string {

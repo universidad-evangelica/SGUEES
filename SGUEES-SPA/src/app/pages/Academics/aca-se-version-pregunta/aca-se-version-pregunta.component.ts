@@ -15,6 +15,7 @@ import {
 	AcaSeVersionLookup,
 	AcaSeVersionPregunta,
 } from './models/aca-se-version-pregunta';
+import { AcaSeOpcionService } from '../aca-se-opcion/aca-se-opcion.service';
 import { AcaSeVersionPreguntaService } from './aca-se-version-pregunta.service';
 
 const ESTADO_FIELD = 'ACTIVO';
@@ -44,11 +45,14 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 	mCORR_PREGUNTA: AcaSePreguntaLookup[] = [];
 	mROL_MONTO: AcaSeRolMontoLookup[] = [];
 	mSeccionesFiltradas: AcaSeSeccionLookup[] = [];
+	/** MAX(PUNTAJE) por CORR_PREGUNTA de opciones (capacidad de OPCION_UNICA). */
+	mMaxPuntajeOpcionByPregunta: Record<number, number> = {};
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: AcaSeVersionPreguntaService
+		private service: AcaSeVersionPreguntaService,
+		private opcionService: AcaSeOpcionService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -152,6 +156,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			secciones: this.service.getCORR_SECCION_SE().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 			preguntas: this.service.getCORR_PREGUNTA().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 			rolesMonto: this.service.getROL_MONTO().pipe(catchError(() => of({ Result: false, Data: [] } as any))),
+			opciones: this.opcionService.getAll({}).pipe(catchError(() => of({ Result: false, Data: [] } as any))),
 		})
 			.pipe(take(1))
 			.subscribe({
@@ -209,6 +214,19 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 								Value: (item.Value ?? '').trim(),
 						  }))
 						: [];
+					// Qué hace: arma MAX(PUNTAJE) por pregunta para validar tope con OPCION_UNICA.
+					const maxMap: Record<number, number> = {};
+					if (Array.isArray(result?.opciones?.Data)) {
+						for (const item of result.opciones.Data) {
+							const corr = Number(item?.CORR_PREGUNTA ?? 0);
+							if (!corr) {
+								continue;
+							}
+							const pts = Math.max(0, Number(item?.PUNTAJE ?? 0));
+							maxMap[corr] = Math.max(maxMap[corr] ?? 0, pts);
+						}
+					}
+					this.mMaxPuntajeOpcionByPregunta = maxMap;
 					this.aplicarFiltroSecciones(Number(this.model?.CORR_VERSION ?? 0), false);
 					this.refrescarItemsForm();
 				},
@@ -265,7 +283,8 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 		const topeInfo = this.service.calcularTopePuntajeSeccion(
 			this.model,
 			this.models ?? [],
-			this.mCORR_SECCION_SE ?? []
+			this.mCORR_SECCION_SE ?? [],
+			this.mMaxPuntajeOpcionByPregunta ?? {}
 		);
 		const restante =
 			topeInfo != null
@@ -279,9 +298,13 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			};
 		}
 		if (this.codigoTipoPregunta() === 'OPCION_UNICA') {
+			const maxOpc = Number(this.mMaxPuntajeOpcionByPregunta?.[Number(this.model?.CORR_PREGUNTA ?? 0)] ?? 0);
 			return {
-				helpText: 'Opción única: el puntaje se define en cada opción (pantalla Opciones), no aquí.',
-				hint: 'Opción única: configure el puntaje en Opciones socioeconómico.',
+				helpText:
+					`Opción única: el puntaje se define en cada opción (pantalla Opciones). ` +
+					`Capacidad actual (MAX opciones): ${this.service.fmtPuntaje(maxOpc)}.` +
+					restante,
+				hint: 'Opción única: configure el puntaje en Opciones socioeconómico.' + restante,
 			};
 		}
 		if (this.codigoTipoPregunta() === 'OPCION_MULTIPLE') {
@@ -558,6 +581,7 @@ export class AcaSeVersionPreguntaComponent extends CBaseComponent implements OnI
 			mostrarRolMonto: mostrarRol,
 			models: this.models ?? [],
 			secciones: this.mCORR_SECCION_SE ?? [],
+			maxOpcionByPregunta: this.mMaxPuntajeOpcionByPregunta ?? {},
 		};
 		const formValidation = this.dataForm?.instance?.validate();
 		if (formValidation && !formValidation.isValid) {

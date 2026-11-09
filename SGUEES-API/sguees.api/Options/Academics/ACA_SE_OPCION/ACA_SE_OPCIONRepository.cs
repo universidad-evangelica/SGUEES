@@ -94,6 +94,13 @@ namespace sguees.Repositories
 			{
 				Data.PUNTAJE = await NormalizarPuntajeOpcionAsync(Data.CORR_PREGUNTA, Data.PUNTAJE);
 
+				var topeOk = await ValidarPuntajeOpcionVsTopeSeccionAsync(
+					Data.CORR_PREGUNTA,
+					excluirCorrOpcion: null,
+					Data.PUNTAJE);
+				if (!topeOk.Result)
+					return topeOk;
+
 				// Qué hace: inserta sin CORR_OPCION porque la PK es IDENTITY.
 				// Cómo lo hace: Insert sin CampoPk y relee por pregunta+código (UQ).
 				var p = new List<CParameter>
@@ -151,6 +158,13 @@ namespace sguees.Repositories
 			try
 			{
 				Data.PUNTAJE = await NormalizarPuntajeOpcionAsync(Data.CORR_PREGUNTA, Data.PUNTAJE);
+
+				var topeOk = await ValidarPuntajeOpcionVsTopeSeccionAsync(
+					Data.CORR_PREGUNTA,
+					excluirCorrOpcion: Data.CORR_OPCION,
+					Data.PUNTAJE);
+				if (!topeOk.Result)
+					return topeOk;
 
 				var p = new List<CParameter>
 				{
@@ -307,6 +321,128 @@ namespace sguees.Repositories
 			if (!esUnica)
 				return 0m;
 			return puntaje < 0 ? 0m : puntaje;
+		}
+
+		// Qué hace: impide que el MAX de opciones + puntajes de otras preguntas pase el tope de cada sección PREGUNTA donde se use.
+		// Cómo lo hace: recorre usos en V_ACA_SE_VERSION_PREGUNTA; OPCION_UNICA aporta MAX(opciones); el resto aporta PUNTAJE.
+		private async Task<CResult> ValidarPuntajeOpcionVsTopeSeccionAsync(
+			int corrPregunta,
+			int? excluirCorrOpcion,
+			decimal puntajeOpcionNuevo)
+		{
+			var ok = new CResult { Result = true, ErrorCode = 0, ErrorMessage = "" };
+			if (puntajeOpcionNuevo <= 0)
+				return ok;
+
+			var readerUsos = await objData.GetDataReader("V_ACA_SE_VERSION_PREGUNTA", new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_PREGUNTA", Value = corrPregunta, DbType = System.Data.DbType.Int32 },
+			});
+			var usos = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(readerUsos).ToList();
+			readerUsos.Close();
+
+			if (usos.Count == 0)
+				return ok;
+
+			var maxEstaPregunta = await ObtenerMaxPuntajeOpcionesAsync(corrPregunta, excluirCorrOpcion, puntajeOpcionNuevo);
+
+			foreach (var uso in usos)
+			{
+				if (!uso.CORR_SECCION_SE.HasValue || uso.CORR_SECCION_SE.Value <= 0)
+					continue;
+
+				var readerSec = await objData.GetDataReader("V_ACA_SE_SECCION", new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_SECCION_SE", Value = uso.CORR_SECCION_SE.Value, DbType = System.Data.DbType.Int32 },
+				});
+				var seccion = new List<ACA_SE_SECCIONView>().FromDataReader(readerSec).FirstOrDefault();
+				readerSec.Close();
+
+				if (seccion == null ||
+					!string.Equals(seccion.TIPO_EVALUACION, "PREGUNTA", StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				var tope = seccion.PORCENTAJE_MAXIMO < 0 ? 0m : seccion.PORCENTAJE_MAXIMO;
+
+				var readerHermanas = await objData.GetDataReader("V_ACA_SE_VERSION_PREGUNTA", new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_VERSION", Value = uso.CORR_VERSION, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_SECCION_SE", Value = uso.CORR_SECCION_SE.Value, DbType = System.Data.DbType.Int32 },
+				});
+				var hermanas = new List<ACA_SE_VERSION_PREGUNTAView>().FromDataReader(readerHermanas).ToList();
+				readerHermanas.Close();
+
+				decimal sumaOtros = 0m;
+				foreach (var h in hermanas.Where(x => x.CORR_PREGUNTA != corrPregunta))
+				{
+					sumaOtros += await ObtenerAporteCapacidadAsync(h.CORR_PREGUNTA, h.CODIGO_TIPO_PREGUNTA, h.PUNTAJE);
+				}
+
+				var total = sumaOtros + maxEstaPregunta;
+				if (total <= tope)
+					continue;
+
+				var disponible = tope - sumaOtros;
+				if (disponible < 0)
+					disponible = 0;
+
+				ok.Result = false;
+				ok.ErrorCode = 4017;
+				ok.ErrorMessage = disponible <= 0
+					? $"El máximo de la sección '{seccion.NOMBRE_SECCION}' ({tope:0.##}) ya está cubierto por otras preguntas " +
+					  $"(reservado: {sumaOtros:0.##}). Disponible para esta selección única: 0."
+					: $"El puntaje de la opción supera el máximo de la sección '{seccion.NOMBRE_SECCION}' ({tope:0.##}). " +
+					  $"Ya reservado en otras preguntas: {sumaOtros:0.##}. " +
+					  $"MAX de esta pregunta quedaría en {maxEstaPregunta:0.##}. Disponible: {disponible:0.##}.";
+				return ok;
+			}
+
+			return ok;
+		}
+
+		// Qué hace: capacidad de una pregunta hermana para el tope de sección.
+		// Cómo lo hace: OPCION_UNICA → MAX(opciones); resto → PUNTAJE de versión-pregunta.
+		private async Task<decimal> ObtenerAporteCapacidadAsync(int corrPregunta, string codigoTipo, decimal puntajeVp)
+		{
+			if (string.Equals(codigoTipo, "OPCION_UNICA", StringComparison.OrdinalIgnoreCase))
+				return await ObtenerMaxPuntajeOpcionesAsync(corrPregunta, excluirCorrOpcion: null, puntajeOpcionOverride: null);
+
+			return puntajeVp < 0 ? 0m : puntajeVp;
+		}
+
+		// Qué hace: máximo puntaje entre opciones de una pregunta.
+		// Cómo lo hace: lee V_ACA_SE_OPCION; permite excluir/sustituir la opción en edición.
+		private async Task<decimal> ObtenerMaxPuntajeOpcionesAsync(
+			int corrPregunta,
+			int? excluirCorrOpcion,
+			decimal? puntajeOpcionOverride)
+		{
+			var reader = await objData.GetDataReader(_ViewName, new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_PREGUNTA", Value = corrPregunta, DbType = System.Data.DbType.Int32 },
+			});
+			var opciones = new List<ACA_SE_OPCIONView>().FromDataReader(reader).ToList();
+			reader.Close();
+
+			decimal max = 0m;
+			var excluir = excluirCorrOpcion ?? 0;
+			foreach (var o in opciones)
+			{
+				if (o.CORR_OPCION == excluir)
+					continue;
+				var pts = o.PUNTAJE < 0 ? 0m : o.PUNTAJE;
+				if (pts > max)
+					max = pts;
+			}
+
+			if (puntajeOpcionOverride.HasValue)
+			{
+				var pts = puntajeOpcionOverride.Value < 0 ? 0m : puntajeOpcionOverride.Value;
+				if (pts > max)
+					max = pts;
+			}
+
+			return max;
 		}
 
 		private static bool IsDuplicateKeyError(Exception e)
