@@ -596,11 +596,11 @@
                                 El prospecto aceptó la cuota máxima: el formulario no le solicitó ingresos ni egresos.
                             </p>
 
-                            <!-- Qué hace: muestra el cuestionario SE por sección con puntajes (solo lectura). -->
+                            <!-- Qué hace: cuestionario SE por subtabs (misma estructura de secciones del portal). -->
                             <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
                                 <div class="aca-prospecto-section-head-texto">
                                     <span class="aca-prospecto-section-title">Preguntas del cuestionario</span>
-                                    <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Vacío o monto en 0 = sin respuesta (igual que el portal)' : 'Respuestas y puntaje por sección del estudio socioeconómico' }}</span>
+                                    <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Vacío o monto en 0 = sin respuesta (igual que el portal)' : 'Respuestas por sección del estudio socioeconómico' }}</span>
                                 </div>
                                 <span
                                     *ngIf="readOnly && socioeconomicoModel"
@@ -610,53 +610,41 @@
                                 >{{ puntajeTotalSE | number:'1.2-2' }}</span>
                             </header>
 
-                            <!-- Consulta: secciones con chip de puntaje; en rangos muestra total → puntaje. -->
-                            <div class="aca-beca-secciones" *ngIf="readOnly && seccionesCuestionarioSE.length; else bloqueEdicionOVacioSE">
-                                <article class="aca-beca-seccion" *ngFor="let seccion of seccionesCuestionarioSE">
-                                    <header class="aca-beca-seccion-head">
-                                        <span>
-                                            {{ seccion.nombre }}
-                                            <small *ngIf="seccion.porcentajeMaximo != null" class="aca-beca-seccion-max">
-                                                (máx. {{ seccion.porcentajeMaximo | number:'1.0-2' }}%)
-                                            </small>
-                                        </span>
-                                        <span class="aca-beca-chip" [class.aca-beca-chip-cero]="seccion.puntaje === 0">{{ seccion.puntaje | number:'1.2-2' }}</span>
-                                    </header>
-                                    <!-- Qué hace: en ingresos/egresos explica de dónde salió el puntaje (suma → rango). -->
-                                    <div class="aca-beca-resumen-rango" *ngIf="seccion.esRangoMonto">
-                                        <span>{{ seccion.etiquetaTotal }}: <strong>{{ seccion.totalMonto | number:'1.2-2' }}</strong></span>
-                                        <span>→ Puntaje obtenido: <strong>{{ seccion.puntaje | number:'1.2-2' }}</strong></span>
-                                    </div>
-                                    <div
-                                        class="aca-beca-pregunta"
-                                        [class.aca-beca-pregunta--sin-chip]="seccion.esRangoMonto"
-                                        *ngFor="let pregunta of seccion.preguntas; trackBy: trackPreguntaSE"
-                                    >
-                                        <p class="aca-beca-pregunta-texto">{{ pregunta.texto }}</p>
-                                        <p class="aca-beca-respuesta">{{ pregunta.respuesta || '—' }}</p>
-                                        <span class="aca-beca-acciones" *ngIf="!seccion.esRangoMonto">
-                                            <span class="aca-beca-chip" [class.aca-beca-chip-cero]="pregunta.puntaje === 0">{{ pregunta.puntaje | number:'1.2-2' }}</span>
-                                        </span>
-                                    </div>
-                                </article>
-                            </div>
-                            <ng-template #bloqueEdicionOVacioSE>
-                                <!-- Edición: formulario actual del SE. -->
-                                <dx-form
-                                    #fRespuestas
-                                    *ngIf="!readOnly && itemsRespuestasSE.length; else sinPreguntas"
-                                    class="sguees-form-premium"
-                                    [formData]="respuestasSEModel"
-                                    [labelLocation]="'top'"
-                                    [colCount]="8"
-                                    [readOnly]="readOnly"
-                                    [items]="itemsRespuestasSE"
-                                    (onFieldDataChanged)="onRespuestaSEChanged($event)"
+                            <ng-container *ngIf="tabsCuestionarioSE.length; else sinPreguntas">
+                                <dx-tab-panel
+                                    class="aca-prospecto-se-subtabs"
+                                    [(selectedIndex)]="tabCuestionarioSEIndex"
+                                    [animationEnabled]="false"
+                                    [swipeEnabled]="false"
+                                    [deferRendering]="false"
                                 >
-                                </dx-form>
-                                <ng-template #sinPreguntas>
-                                    <p class="aca-prospecto-vacio">El cuestionario no tiene preguntas configuradas.</p>
-                                </ng-template>
+                                    <dxi-item *ngFor="let tab of tabsCuestionarioSE" [title]="tab.titulo">
+                                        <div class="aca-prospecto-se-tab">
+                                            <!-- Consulta: resumen de puntaje de ingresos/egresos en su subtab. -->
+                                            <div
+                                                class="aca-beca-resumen-rango"
+                                                *ngIf="readOnly && resumenSeccionTabSE(tab.titulo) as resumen"
+                                            >
+                                                <span>{{ resumen.etiquetaTotal }}: <strong>{{ resumen.totalMonto | number:'1.2-2' }}</strong></span>
+                                                <span>→ Puntaje: <strong>{{ resumen.puntaje | number:'1.2-2' }}</strong></span>
+                                            </div>
+                                            <dx-form
+                                                #fRespuestasTab
+                                                class="sguees-form-premium"
+                                                [formData]="respuestasSEModel"
+                                                [labelLocation]="'top'"
+                                                [colCount]="8"
+                                                [readOnly]="readOnly"
+                                                [items]="tab.items"
+                                                (onFieldDataChanged)="onRespuestaSEChanged($event)"
+                                            >
+                                            </dx-form>
+                                        </div>
+                                    </dxi-item>
+                                </dx-tab-panel>
+                            </ng-container>
+                            <ng-template #sinPreguntas>
+                                <p class="aca-prospecto-vacio">El cuestionario no tiene preguntas configuradas.</p>
                             </ng-template>
                         </ng-container>
                         <ng-template #sinSocioeconomico>

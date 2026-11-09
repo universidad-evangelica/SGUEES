@@ -154,64 +154,138 @@ export class AcaProspectoSeRespuestaService {
         return Object.keys(dependencias).filter((c) => dependencias[c] === codigo);
     }
 
+    // Qué hace: formulario SE en un solo dx-form (grupos anidados).
+    // Cómo lo hace: reutiliza getTabs() y aplana cada pestaña como grupo de sección.
     getItems(respuestas: AcaProspectoSeRespuesta[], opciones: any[] = [], formData: any = null): any {
-        const porCodigo = new Map<string, AcaProspectoSeRespuesta>();
+        return this.getTabs(respuestas, opciones, formData).map((tab) => ({
+            itemType: 'group',
+            caption: tab.titulo,
+            colSpan: 8,
+            colCount: 8,
+            cssClass: 'aca-prospecto-seccion',
+            items: tab.items,
+        }));
+    }
+
+    // Qué hace: subtabs del cuestionario con el NOMBRE_SECCION real de BD.
+    // Cómo lo hace: agrupa por CORR_SECCION_SE / NOMBRE_SECCION (ORDEN_SECCION); dentro aplica
+    //               los subgrupos de presentación del portal solo para las preguntas de esa sección.
+    getTabs(
+        respuestas: AcaProspectoSeRespuesta[],
+        opciones: any[] = [],
+        formData: any = null
+    ): { key: string; titulo: string; items: any[] }[] {
+        const anchos = this.getMapaAnchos();
+        const grupos = new Map<
+            string,
+            { key: string; titulo: string; orden: number; filas: AcaProspectoSeRespuesta[] }
+        >();
+
         for (const r of respuestas ?? []) {
-            porCodigo.set(r.CODIGO_PREGUNTA, r);
+            const meta = this.resolverClaveSeccion(r);
+            let grupo = grupos.get(meta.key);
+            if (!grupo) {
+                grupo = { key: meta.key, titulo: meta.titulo, orden: meta.orden, filas: [] };
+                grupos.set(meta.key, grupo);
+            }
+            grupo.filas.push(r);
         }
 
-        const usadas = new Set<string>();
-        const grupos: any[] = [];
+        const tabs: { key: string; titulo: string; items: any[] }[] = [];
+        for (const grupo of [...grupos.values()].sort((a, b) => a.orden - b.orden || a.titulo.localeCompare(b.titulo))) {
+            const porCodigo = new Map<string, AcaProspectoSeRespuesta>();
+            for (const fila of grupo.filas) {
+                porCodigo.set(fila.CODIGO_PREGUNTA, fila);
+            }
+            const usadas = new Set<string>();
+            const itemsTab: any[] = [];
 
-        for (const seccion of this.getSecciones()) {
-            const subgrupos: any[] = [];
-            for (const subseccion of seccion.subsecciones) {
-                const items: any[] = [];
-                for (const pregunta of subseccion.preguntas) {
-                    const respuesta = porCodigo.get(pregunta.codigo);
-                    if (respuesta) {
-                        usadas.add(pregunta.codigo);
-                        items.push(this.getItemPregunta(respuesta, opciones, pregunta.ancho, formData));
+            // Subtítulos de presentación (Bachillerato, Estudiante, etc.) solo si hay preguntas de esta sección.
+            for (const seccionUi of this.getSecciones()) {
+                for (const subseccion of seccionUi.subsecciones) {
+                    const items: any[] = [];
+                    for (const pregunta of subseccion.preguntas) {
+                        const respuesta = porCodigo.get(pregunta.codigo);
+                        if (respuesta) {
+                            usadas.add(pregunta.codigo);
+                            items.push(this.getItemPregunta(respuesta, opciones, pregunta.ancho, formData));
+                        }
+                    }
+                    if (items.length) {
+                        itemsTab.push({
+                            itemType: 'group',
+                            caption: subseccion.titulo,
+                            colSpan: 8,
+                            colCount: 8,
+                            cssClass: 'aca-prospecto-subseccion',
+                            items,
+                        });
                     }
                 }
-                if (items.length) {
-                    subgrupos.push({
+            }
+
+            const restantes = grupo.filas
+                .filter((f) => !usadas.has(f.CODIGO_PREGUNTA))
+                .sort((a, b) => (Number(a.ORDEN) || 0) - (Number(b.ORDEN) || 0))
+                .map((f) => this.getItemPregunta(f, opciones, anchos.get(f.CODIGO_PREGUNTA), formData));
+            if (restantes.length) {
+                if (itemsTab.length) {
+                    itemsTab.push({
                         itemType: 'group',
-                        caption: subseccion.titulo,
+                        caption: 'Otras preguntas',
                         colSpan: 8,
                         colCount: 8,
                         cssClass: 'aca-prospecto-subseccion',
-                        items,
+                        items: restantes,
                     });
+                } else {
+                    itemsTab.push(...restantes);
                 }
             }
-            if (subgrupos.length) {
-                grupos.push({
-                    itemType: 'group',
-                    caption: seccion.titulo,
-                    colSpan: 8,
-                    colCount: 8,
-                    cssClass: 'aca-prospecto-seccion',
-                    items: subgrupos,
-                });
+
+            if (itemsTab.length) {
+                tabs.push({ key: grupo.key, titulo: grupo.titulo, items: itemsTab });
             }
         }
 
-        const otras = (respuestas ?? [])
-            .filter((r) => !usadas.has(r.CODIGO_PREGUNTA))
-            .map((r) => this.getItemPregunta(r, opciones, undefined, formData));
-        if (otras.length) {
-            grupos.push({
-                itemType: 'group',
-                caption: 'Otras preguntas',
-                colSpan: 8,
-                colCount: 8,
-                cssClass: 'aca-prospecto-seccion',
-                items: otras,
-            });
+        return tabs;
+    }
+
+    // Qué hace: clave y título de pestaña según la sección de BD de la pregunta.
+    private resolverClaveSeccion(r: AcaProspectoSeRespuesta): { key: string; titulo: string; orden: number } {
+        const nombre = (r.NOMBRE_SECCION && String(r.NOMBRE_SECCION).trim()) || '';
+        if (r.CORR_SECCION_SE != null || nombre) {
+            return {
+                key: `S:${r.CORR_SECCION_SE ?? nombre}`,
+                titulo: nombre || 'Sección',
+                orden: Number(r.ORDEN_SECCION) || 999,
+            };
         }
 
-        return grupos;
+        const codigo = (r.CODIGO_PREGUNTA || '').toUpperCase();
+        if (codigo === 'CENTRO_EDUCATIVO' || codigo.startsWith('BACH_') || codigo.startsWith('UNI_')) {
+            return { key: 'F:ESTUDIOS', titulo: 'Centro Educativo / Estudios', orden: 1 };
+        }
+        if (codigo.startsWith('ING_')) {
+            return { key: 'F:INGRESOS', titulo: 'Ingresos', orden: 2 };
+        }
+        if (codigo.startsWith('EGR_')) {
+            return { key: 'F:EGRESOS', titulo: 'Egresos', orden: 3 };
+        }
+        return { key: 'F:OTROS', titulo: 'Otras preguntas', orden: 900 };
+    }
+
+    // Qué hace: anchos de columna del layout del portal, indexados por código de pregunta.
+    private getMapaAnchos(): Map<string, number> {
+        const mapa = new Map<string, number>();
+        for (const seccion of this.getSecciones()) {
+            for (const sub of seccion.subsecciones) {
+                for (const p of sub.preguntas) {
+                    mapa.set(p.codigo, p.ancho);
+                }
+            }
+        }
+        return mapa;
     }
 
     // Qué hace: regla del portal para los ingresos: líquido = salario − descuentos, nunca negativo.

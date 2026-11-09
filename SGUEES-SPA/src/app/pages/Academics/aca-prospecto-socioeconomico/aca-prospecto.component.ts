@@ -1,4 +1,4 @@
-import { Component, NgZone, OnInit, ViewChild } from '@angular/core';
+import { Component, NgZone, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -52,7 +52,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     @ViewChild('fPersona', { static: false }) formPersona?: DxFormComponent;
     @ViewChild('fEmpleo', { static: false }) formEmpleo?: DxFormComponent;
     @ViewChild('fSocio', { static: false }) formSocio?: DxFormComponent;
-    @ViewChild('fRespuestas', { static: false }) formRespuestas?: DxFormComponent;
+    // Qué hace: un dx-form por subtab de sección del cuestionario SE (mismo formData compartido).
+    @ViewChildren('fRespuestasTab') formsRespuestasTabs?: QueryList<DxFormComponent>;
     @ViewChild('fContacto', { static: false }) formContacto?: DxFormComponent;
     @ViewChild('fMedio', { static: false }) formMedio?: DxFormComponent;
     @ViewChild('fLimitacion', { static: false }) formLimitacion?: DxFormComponent;
@@ -196,6 +197,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     respuestasSE: AcaProspectoSeRespuesta[] = [];
     itemsRespuestasSE: any[] = [];
     respuestasSEModel: any = {};
+    // Qué hace: subtabs del cuestionario SE (Estudios previos / Ingresos / Egresos), estructura del portal.
+    tabsCuestionarioSE: { key: string; titulo: string; items: any[] }[] = [];
+    tabCuestionarioSEIndex = 0;
     // Qué hace: cuestionario SE en consulta, agrupado por sección con puntaje (patrón becas).
     seccionesCuestionarioSE: {
         nombre: string;
@@ -1517,8 +1521,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             return;
         }
         const calculo = this.serviceRespuestaSE.calcularLiquido(e?.dataField, this.respuestasSEModel);
-        if (calculo && this.formRespuestas?.instance) {
-            this.formRespuestas.instance.updateData(calculo.campo, calculo.valor);
+        if (calculo) {
+            this.respuestasSEModel[calculo.campo] = calculo.valor;
+            this.actualizarCampoRespuestasSE(calculo.campo, calculo.valor);
         }
 
         // Preguntas dependientes (por ejemplo las de la universidad): al responder "No" se limpian y
@@ -1529,15 +1534,27 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         }
         if (e?.value !== true) {
             for (const campo of dependientes) {
-                this.formRespuestas?.instance?.updateData(campo, null);
+                this.respuestasSEModel[campo] = null;
+                this.actualizarCampoRespuestasSE(campo, null);
             }
         }
         this.refrescarItemsRespuestasSE();
     }
 
-    // Qué hace: rearma las preguntas del cuestionario respetando las dependencias del formData actual.
+    // Qué hace: sincroniza un campo en todos los dx-form de las subtabs SE.
+    private actualizarCampoRespuestasSE(campo: string, valor: any): void {
+        for (const form of this.formsRespuestasTabs?.toArray() ?? []) {
+            form?.instance?.updateData(campo, valor);
+        }
+    }
+
+    // Qué hace: rearma las subtabs del cuestionario respetando las dependencias del formData actual.
     private refrescarItemsRespuestasSE(): void {
+        this.tabsCuestionarioSE = this.serviceRespuestaSE.getTabs(this.respuestasSE, this.mOPCIONES_SE, this.respuestasSEModel);
         this.itemsRespuestasSE = this.serviceRespuestaSE.getItems(this.respuestasSE, this.mOPCIONES_SE, this.respuestasSEModel);
+        if (this.tabCuestionarioSEIndex >= this.tabsCuestionarioSE.length) {
+            this.tabCuestionarioSEIndex = 0;
+        }
         this.armarSeccionesCuestionarioSE();
     }
 
@@ -1844,6 +1861,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         // viejos incompletos no debe impedir editar o eliminar otra (son independientes, como el portal).
         const estudiosAGuardar = estudios.filter((e) => !e.eliminar && this.estudioCambio(e.seccion, e.modelo, e.form));
 
+        const formulariosRespuestas = this.formsRespuestasTabs?.toArray() ?? [];
         const formularios = this.esAcademico
             ? [
                   this.dataForm,
@@ -1852,9 +1870,9 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                   this.formEmpleo,
                   ...estudiosAGuardar.map((e) => e.form),
                   this.formSocio,
-                  this.formRespuestas,
+                  ...formulariosRespuestas,
               ]
-            : [this.formEmpleo, this.formSocio, this.formRespuestas];
+            : [this.formEmpleo, this.formSocio, ...formulariosRespuestas];
         for (const formulario of formularios) {
             const resultado = formulario?.instance?.validate();
             if (resultado && !resultado.isValid) {
@@ -2031,7 +2049,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                                 this.model.CORR_PROSPECTO,
                                 this.socioeconomicoModel.CORR_PROSPECTO_SOCIOECONOMICO,
                                 this.respuestasSE,
-                                this.leerFormData(this.formRespuestas, this.respuestasSEModel)
+                                this.leerFormDataRespuestasSE()
                             ),
                     });
                 }
@@ -2055,6 +2073,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     private leerFormData(formulario: DxFormComponent | undefined, modelo: any): any {
         const formData = formulario?.instance?.option('formData');
         return formData ? { ...modelo, ...formData } : modelo;
+    }
+
+    // Qué hace: junta el formData de todas las subtabs SE (comparten respuestasSEModel).
+    private leerFormDataRespuestasSE(): any {
+        let data = { ...this.respuestasSEModel };
+        for (const form of this.formsRespuestasTabs?.toArray() ?? []) {
+            const formData = form?.instance?.option('formData');
+            if (formData) {
+                data = { ...data, ...formData };
+            }
+        }
+        this.respuestasSEModel = data;
+        return data;
     }
 
     private ejecutarPasos(pasos: { nombre: string; accion: () => Observable<IResult> }[], indice: number): void {
@@ -2158,6 +2189,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.socioeconomicoModel = null;
         this.respuestasSE = [];
         this.itemsRespuestasSE = [];
+        this.tabsCuestionarioSE = [];
+        this.tabCuestionarioSEIndex = 0;
         this.respuestasSEModel = {};
         this.seccionesCuestionarioSE = [];
         this.mCORR_DEPTO_RESIDENCIA = [];
@@ -2354,6 +2387,32 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     trackPreguntaSE(_indice: number, pregunta: { codigo: string }): string {
         return pregunta.codigo;
+    }
+
+    // Qué hace: localiza el resumen de puntaje (ingresos/egresos) de la subtab (NOMBRE_SECCION).
+    resumenSeccionTabSE(tabTitulo: string): (typeof this.seccionesCuestionarioSE)[number] | null {
+        const titulo = (tabTitulo || '').trim().toLowerCase();
+        const exacta = (this.seccionesCuestionarioSE ?? []).find(
+            (s) => s.esRangoMonto && (s.nombre || '').trim().toLowerCase() === titulo
+        );
+        if (exacta) {
+            return exacta;
+        }
+        return (
+            (this.seccionesCuestionarioSE ?? []).find((s) => {
+                if (!s.esRangoMonto) {
+                    return false;
+                }
+                const etiqueta = (s.etiquetaTotal || '').toLowerCase();
+                if (titulo.includes('ingreso') && etiqueta.includes('ingreso')) {
+                    return true;
+                }
+                if (titulo.includes('egreso') && etiqueta.includes('egreso')) {
+                    return true;
+                }
+                return false;
+            }) ?? null
+        );
     }
     // #endregion
 }

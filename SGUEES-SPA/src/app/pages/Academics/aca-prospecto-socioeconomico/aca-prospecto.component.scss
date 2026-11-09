@@ -78,19 +78,24 @@
 	border-radius: var(--sguees-radius-md, 10px);
 }
 
-// Qué hace: jerarquía visual del formulario de preguntas del SE (sección > subsección).
+// Qué hace: jerarquía visual del formulario SE dentro de cada subtab (subtítulos tipo portal).
 // Cómo lo hace: DevExtreme dibuja los grupos fuera del encapsulado del componente, por eso ::ng-deep.
-:host ::ng-deep .aca-prospecto-seccion .dx-form-group-caption {
-	font-size: 15px;
-	font-weight: 700;
-	color: var(--sguees-text-primary);
-}
-
-:host ::ng-deep .aca-prospecto-seccion .aca-prospecto-subseccion .dx-form-group-caption {
+:host ::ng-deep .aca-prospecto-subseccion .dx-form-group-caption {
 	font-size: 13px;
 	font-weight: 600;
 	color: var(--sguees-text-secondary, var(--texteditor-label-color));
 	padding-bottom: 4px;
+}
+
+.aca-prospecto-se-subtabs {
+	margin-top: 8px;
+}
+
+.aca-prospecto-se-tab {
+	padding: 12px 4px 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 }
 
 .aca-prospecto-aviso {
