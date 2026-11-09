@@ -601,7 +601,7 @@
                             <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
                                 <div class="aca-prospecto-section-head-texto">
                                     <span class="aca-prospecto-section-title">Preguntas del cuestionario</span>
-                                    <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Borrador: puede guardar incompleto; el círculo indica lo que falta' : 'Respuestas por sección del estudio socioeconómico' }}</span>
+                                    <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'El círculo indica lo que falta en cada sección' : 'Respuestas por sección del estudio socioeconómico' }}</span>
                                 </div>
                                 <span
                                     *ngIf="readOnly && socioeconomicoModel"
@@ -610,10 +610,6 @@
                                     title="Puntaje total"
                                 >{{ puntajeTotalSE | number:'1.2-2' }}</span>
                             </header>
-
-                            <p class="aca-prospecto-aviso aca-prospecto-aviso--borrador" *ngIf="isForm() && totalPendientesCuestionarioSE > 0">
-                                Borrador incompleto: faltan {{ totalPendientesCuestionarioSE }} campo(s) obligatorio(s). Puede guardar igual; al implementar el flujo sí deberán estar completos.
-                            </p>
 
                             <ng-container *ngIf="tabsCuestionarioSE.length; else sinPreguntas">
                                 <dx-tab-panel
