@@ -109,6 +109,59 @@
 	border-radius: var(--sguees-radius-md, 10px);
 }
 
+.aca-prospecto-aviso--borrador {
+	border-left-color: #ef5350;
+	margin-bottom: 8px;
+}
+
+/* Badge de pendientes por subtab (mismo patrón visual que nuevo ingreso). */
+:host ::ng-deep .aca-prospecto-se-subtabs .aca-prospecto-tab-lista {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+:host ::ng-deep .aca-prospecto-se-subtabs .aca-prospecto-tab-conteo {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 6px;
+	border-radius: 999px;
+	font-size: 11.5px;
+	font-weight: 800;
+	line-height: 22px;
+}
+
+:host ::ng-deep .aca-prospecto-se-subtabs .aca-prospecto-tab-conteo--ok {
+	background: rgba(31, 157, 95, 0.18);
+	color: #66bb6a;
+}
+
+:host ::ng-deep .aca-prospecto-se-subtabs .aca-prospecto-tab-conteo--falta {
+	background: rgba(214, 69, 69, 0.16);
+	color: #ef5350;
+}
+
+:host-context(.sguees-theme-light) ::ng-deep .aca-prospecto-se-subtabs .aca-prospecto-tab-conteo--ok {
+	background: rgba(31, 157, 95, 0.14);
+	color: #1f9d5f;
+}
+
+:host-context(.sguees-theme-light) ::ng-deep .aca-prospecto-se-subtabs .aca-prospecto-tab-conteo--falta {
+	background: rgba(214, 69, 69, 0.12);
+	color: #d64545;
+}
+
+/* Campo obligatorio vacío del borrador SE. */
+:host ::ng-deep .aca-prospecto-req--vacio .dx-texteditor,
+:host ::ng-deep .aca-prospecto-req--vacio .dx-checkbox {
+	border-color: #e53935 !important;
+}
+
 /* Qué hace: chips/secciones del cuestionario SE (mismo patrón visual que aca-prospecto-beca). */
 .aca-beca-secciones {
 	display: flex;

@@ -173,8 +173,9 @@ export class AcaProspectoSeRespuestaService {
     getTabs(
         respuestas: AcaProspectoSeRespuesta[],
         opciones: any[] = [],
-        formData: any = null
-    ): { key: string; titulo: string; items: any[] }[] {
+        formData: any = null,
+        aplicaCuotaMaxima = false
+    ): { key: string; titulo: string; items: any[]; codigoSeccion?: string; tipoEvaluacion?: string }[] {
         const anchos = this.getMapaAnchos();
         const grupos = new Map<
             string,
@@ -191,7 +192,7 @@ export class AcaProspectoSeRespuestaService {
             grupo.filas.push(r);
         }
 
-        const tabs: { key: string; titulo: string; items: any[] }[] = [];
+        const tabs: { key: string; titulo: string; items: any[]; codigoSeccion?: string; tipoEvaluacion?: string }[] = [];
         for (const grupo of [...grupos.values()].sort((a, b) => a.orden - b.orden || a.titulo.localeCompare(b.titulo))) {
             const porCodigo = new Map<string, AcaProspectoSeRespuesta>();
             for (const fila of grupo.filas) {
@@ -208,7 +209,7 @@ export class AcaProspectoSeRespuestaService {
                         const respuesta = porCodigo.get(pregunta.codigo);
                         if (respuesta) {
                             usadas.add(pregunta.codigo);
-                            items.push(this.getItemPregunta(respuesta, opciones, pregunta.ancho, formData));
+                            items.push(this.getItemPregunta(respuesta, opciones, pregunta.ancho, formData, aplicaCuotaMaxima));
                         }
                     }
                     if (items.length) {
@@ -227,7 +228,7 @@ export class AcaProspectoSeRespuestaService {
             const restantes = grupo.filas
                 .filter((f) => !usadas.has(f.CODIGO_PREGUNTA))
                 .sort((a, b) => (Number(a.ORDEN) || 0) - (Number(b.ORDEN) || 0))
-                .map((f) => this.getItemPregunta(f, opciones, anchos.get(f.CODIGO_PREGUNTA), formData));
+                .map((f) => this.getItemPregunta(f, opciones, anchos.get(f.CODIGO_PREGUNTA), formData, aplicaCuotaMaxima));
             if (restantes.length) {
                 if (itemsTab.length) {
                     itemsTab.push({
@@ -244,7 +245,14 @@ export class AcaProspectoSeRespuestaService {
             }
 
             if (itemsTab.length) {
-                tabs.push({ key: grupo.key, titulo: grupo.titulo, items: itemsTab });
+                const muestra = grupo.filas[0];
+                tabs.push({
+                    key: grupo.key,
+                    titulo: grupo.titulo,
+                    items: itemsTab,
+                    codigoSeccion: (muestra?.CODIGO_SECCION || '').toUpperCase(),
+                    tipoEvaluacion: (muestra?.TIPO_EVALUACION || '').toUpperCase(),
+                });
             }
         }
 
@@ -252,6 +260,10 @@ export class AcaProspectoSeRespuestaService {
     }
 
     // Qué hace: clave y título de pestaña según la sección de BD de la pregunta.
+    claveSeccion(r: AcaProspectoSeRespuesta): { key: string; titulo: string; orden: number } {
+        return this.resolverClaveSeccion(r);
+    }
+
     private resolverClaveSeccion(r: AcaProspectoSeRespuesta): { key: string; titulo: string; orden: number } {
         const nombre = (r.NOMBRE_SECCION && String(r.NOMBRE_SECCION).trim()) || '';
         if (r.CORR_SECCION_SE != null || nombre) {
@@ -273,6 +285,69 @@ export class AcaProspectoSeRespuestaService {
             return { key: 'F:EGRESOS', titulo: 'Egresos', orden: 3 };
         }
         return { key: 'F:OTROS', titulo: 'Otras preguntas', orden: 900 };
+    }
+
+    // Qué hace: true si la pregunta aplica en pantalla (dependencias del portal).
+    esPreguntaVisible(r: AcaProspectoSeRespuesta, formData: any = null): boolean {
+        const controlador = this.getDependencias()[r.CODIGO_PREGUNTA];
+        return !controlador || formData?.[controlador] === true;
+    }
+
+    // Qué hace: vacío para borrador (null/'' ; montos 0 vacíos salvo cuota bachiller/universidad).
+    esValorVacioBorrador(r: AcaProspectoSeRespuesta, formData: any = null): boolean {
+        const codigo = (r.CODIGO_PREGUNTA || '').toUpperCase();
+        const valor = formData?.[r.CODIGO_PREGUNTA];
+        if (r.TIPO_PREGUNTA === 'SI_NO') {
+            return valor !== true && valor !== false;
+        }
+        if (r.TIPO_PREGUNTA === 'MONTO' || r.TIPO_PREGUNTA === 'NUMERO') {
+            if (valor === null || valor === undefined || valor === '') {
+                return true;
+            }
+            if (codigo === 'BACH_CUOTA' || codigo === 'UNI_CUOTA') {
+                return !Number.isFinite(Number(valor));
+            }
+            return !(Number(valor) > 0);
+        }
+        if (valor === null || valor === undefined) {
+            return true;
+        }
+        return String(valor).trim() === '';
+    }
+
+    // Qué hace: cuenta obligatorios vacíos de una sección (aviso de borrador; no bloquea guardar).
+    // Cómo lo hace: ES_REQUERIDO + visibles; con cuota máxima no cuenta secciones RANGO_MONTO.
+    contarPendientesBorrador(
+        filas: AcaProspectoSeRespuesta[],
+        formData: any = null,
+        aplicaCuotaMaxima = false
+    ): number {
+        let n = 0;
+        for (const r of filas ?? []) {
+            if (aplicaCuotaMaxima && this.esSeccionRangoMonto(r)) {
+                continue;
+            }
+            if (!r.ES_REQUERIDO) {
+                continue;
+            }
+            if (!this.esPreguntaVisible(r, formData)) {
+                continue;
+            }
+            // Líquido calculado: no se captura a mano.
+            if (/^ING_[A-Z]+_LIQ$/i.test(r.CODIGO_PREGUNTA || '')) {
+                continue;
+            }
+            if (this.esValorVacioBorrador(r, formData)) {
+                n += 1;
+            }
+        }
+        return n;
+    }
+
+    private esSeccionRangoMonto(r: AcaProspectoSeRespuesta): boolean {
+        const tipo = (r.TIPO_EVALUACION || '').toUpperCase();
+        const codigo = (r.CODIGO_SECCION || '').toUpperCase();
+        return tipo === 'RANGO_MONTO' || codigo === 'INGRESOS' || codigo === 'EGRESOS';
     }
 
     // Qué hace: anchos de columna del layout del portal, indexados por código de pregunta.
@@ -335,19 +410,29 @@ export class AcaProspectoSeRespuestaService {
 
     // Qué hace: campo de una pregunta según su tipo (texto, monto, número, sí/no, opción).
     // Cómo lo hace: usa el ancho de getSecciones() o, si la pregunta no está ahí, uno por tipo.
-    //               Sin readOnly por campo: el dx-form [readOnly] decide consulta o edición.
-    //               ES_REQUERIDO agrega la regla required (asterisco en consulta, validación al guardar).
+    //               Borrador: sin validationRules (no bloquea Guardar); marca * y borde si falta.
     //               Opción única = combo con las opciones activas de esa pregunta; opción múltiple
     //               se muestra como texto y no se edita (V1 no la usa).
-    private getItemPregunta(r: AcaProspectoSeRespuesta, opciones: any[], ancho?: number, formData: any = null): any {
-        // Dependencia del portal: si la pregunta que la gobierna está en "No", esta no se muestra.
-        const controlador = this.getDependencias()[r.CODIGO_PREGUNTA];
+    private getItemPregunta(
+        r: AcaProspectoSeRespuesta,
+        opciones: any[],
+        ancho?: number,
+        formData: any = null,
+        aplicaCuotaMaxima = false
+    ): any {
+        const visible = this.esPreguntaVisible(r, formData);
+        const pendiente =
+            visible &&
+            !!r.ES_REQUERIDO &&
+            !(aplicaCuotaMaxima && this.esSeccionRangoMonto(r)) &&
+            !/^ING_[A-Z]+_LIQ$/i.test(r.CODIGO_PREGUNTA || '') &&
+            this.esValorVacioBorrador(r, formData);
         const base: any = {
             dataField: r.CODIGO_PREGUNTA,
-            label: { text: r.ENUNCIADO },
+            label: { text: r.ES_REQUERIDO ? `${r.ENUNCIADO} *` : r.ENUNCIADO },
             helpText: r.AYUDA || undefined,
-            validationRules: r.ES_REQUERIDO ? [{ type: 'required', message: 'Este campo es obligatorio' }] : undefined,
-            visible: !controlador || formData?.[controlador] === true,
+            visible,
+            cssClass: pendiente ? 'aca-prospecto-req--vacio' : undefined,
         };
 
         // Líquido de ingresos: calculado (salario − descuentos), no se captura a mano, como en el portal.

@@ -589,18 +589,19 @@
                                 [colCount]="8"
                                 [readOnly]="readOnly"
                                 [items]="itemsSocioeconomico"
+                                (onFieldDataChanged)="onSocioeconomicoChanged($event)"
                             >
                             </dx-form>
 
                             <p class="aca-prospecto-aviso" *ngIf="socioeconomicoModel.APLICA_CUOTA_MAXIMA">
-                                El prospecto aceptó la cuota máxima: el formulario no le solicitó ingresos ni egresos.
+                                El prospecto aceptó la cuota máxima (puntaje 100%): el formulario no le solicitó ingresos ni egresos.
                             </p>
 
-                            <!-- Qué hace: cuestionario SE por subtabs (misma estructura de secciones del portal). -->
+                            <!-- Qué hace: cuestionario SE por subtabs; badge = campos obligatorios pendientes (borrador). -->
                             <header class="aca-prospecto-section-head aca-prospecto-section-head--accion">
                                 <div class="aca-prospecto-section-head-texto">
                                     <span class="aca-prospecto-section-title">Preguntas del cuestionario</span>
-                                    <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Vacío o monto en 0 = sin respuesta (igual que el portal)' : 'Respuestas por sección del estudio socioeconómico' }}</span>
+                                    <span class="aca-prospecto-section-subtitle">{{ isForm() ? 'Borrador: puede guardar incompleto; el círculo indica lo que falta' : 'Respuestas por sección del estudio socioeconómico' }}</span>
                                 </div>
                                 <span
                                     *ngIf="readOnly && socioeconomicoModel"
@@ -610,13 +611,18 @@
                                 >{{ puntajeTotalSE | number:'1.2-2' }}</span>
                             </header>
 
+                            <p class="aca-prospecto-aviso aca-prospecto-aviso--borrador" *ngIf="isForm() && totalPendientesCuestionarioSE > 0">
+                                Borrador incompleto: faltan {{ totalPendientesCuestionarioSE }} campo(s) obligatorio(s). Puede guardar igual; al implementar el flujo sí deberán estar completos.
+                            </p>
+
                             <ng-container *ngIf="tabsCuestionarioSE.length; else sinPreguntas">
                                 <dx-tab-panel
-                                    class="aca-prospecto-se-subtabs"
+                                    class="aca-prospecto-se-subtabs aca-prospecto-tab-panel"
                                     [(selectedIndex)]="tabCuestionarioSEIndex"
                                     [animationEnabled]="false"
                                     [swipeEnabled]="false"
                                     [deferRendering]="false"
+                                    itemTitleTemplate="tituloSeccionSE"
                                 >
                                     <dxi-item *ngFor="let tab of tabsCuestionarioSE" [title]="tab.titulo">
                                         <div class="aca-prospecto-se-tab">
@@ -641,6 +647,16 @@
                                             </dx-form>
                                         </div>
                                     </dxi-item>
+                                    <!-- Qué hace: mismo badge de nuevo ingreso (✓ o cantidad pendiente). -->
+                                    <div *dxTemplate="let data of 'tituloSeccionSE'" class="aca-prospecto-tab-lista">
+                                        <span class="dx-tab-text">{{ data.title }}</span>
+                                        <span
+                                            *ngIf="isForm()"
+                                            class="aca-prospecto-tab-conteo"
+                                            [class.aca-prospecto-tab-conteo--ok]="faltanTabCuestionarioSEPorTitulo(data) === 0"
+                                            [class.aca-prospecto-tab-conteo--falta]="faltanTabCuestionarioSEPorTitulo(data) > 0"
+                                        >{{ faltanTabCuestionarioSEPorTitulo(data) === 0 ? '✓' : faltanTabCuestionarioSEPorTitulo(data) }}</span>
+                                    </div>
                                 </dx-tab-panel>
                             </ng-container>
                             <ng-template #sinPreguntas>

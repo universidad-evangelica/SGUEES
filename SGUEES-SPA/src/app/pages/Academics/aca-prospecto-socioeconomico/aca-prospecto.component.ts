@@ -193,12 +193,23 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     //               y declara que trabaja, se prepararía un empleo "nuevo" aunque ya tenga uno.
     empleoCargado = false;
     socioeconomicoModel: any = null;
+    // Qué hace: puntaje/porcentaje reales de BD para restaurarlos al quitar cuota máxima (display).
+    private socioeconomicoPuntajeOriginal: { puntaje: number | null; porcentaje: number | null } = {
+        puntaje: null,
+        porcentaje: null,
+    };
     itemsSocioeconomico: any[] = [];
     respuestasSE: AcaProspectoSeRespuesta[] = [];
     itemsRespuestasSE: any[] = [];
     respuestasSEModel: any = {};
-    // Qué hace: subtabs del cuestionario SE (Estudios previos / Ingresos / Egresos), estructura del portal.
-    tabsCuestionarioSE: { key: string; titulo: string; items: any[] }[] = [];
+    // Qué hace: subtabs del cuestionario SE por NOMBRE_SECCION; faltan = aviso de borrador.
+    tabsCuestionarioSE: {
+        key: string;
+        titulo: string;
+        items: any[];
+        codigoSeccion?: string;
+        tipoEvaluacion?: string;
+    }[] = [];
     tabCuestionarioSEIndex = 0;
     // Qué hace: cuestionario SE en consulta, agrupado por sección con puntaje (patrón becas).
     seccionesCuestionarioSE: {
@@ -1516,9 +1527,14 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Qué hace: recalcula el aporte líquido cuando cambia el salario o los descuentos de un ingreso.
     // Cómo lo hace: la regla vive en el servicio (salario − descuentos, mínimo 0); updateData refresca
     //               el editor bloqueado. El líquido no dispara el cálculo, así que no hay ciclo.
+    private refrescarPendientesSETimer: ReturnType<typeof setTimeout> | null = null;
+
     onRespuestaSEChanged(e: any): void {
         if (this.readOnly) {
             return;
+        }
+        if (e?.dataField && Object.prototype.hasOwnProperty.call(e, 'value')) {
+            this.respuestasSEModel[e.dataField] = e.value;
         }
         const calculo = this.serviceRespuestaSE.calcularLiquido(e?.dataField, this.respuestasSEModel);
         if (calculo) {
@@ -1529,16 +1545,28 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         // Preguntas dependientes (por ejemplo las de la universidad): al responder "No" se limpian y
         // se ocultan, igual que el portal; al volver a "Sí" reaparecen vacías para llenarlas.
         const dependientes = this.serviceRespuestaSE.getDependientes(e?.dataField);
-        if (!dependientes.length) {
+        if (dependientes.length) {
+            if (e?.value !== true) {
+                for (const campo of dependientes) {
+                    this.respuestasSEModel[campo] = null;
+                    this.actualizarCampoRespuestasSE(campo, null);
+                }
+            }
+            this.refrescarItemsRespuestasSE();
             return;
         }
-        if (e?.value !== true) {
-            for (const campo of dependientes) {
-                this.respuestasSEModel[campo] = null;
-                this.actualizarCampoRespuestasSE(campo, null);
-            }
+        // Bordes/badges de borrador: refresco breve para no perder el foco en cada tecla.
+        this.programarRefrescoPendientesSE();
+    }
+
+    private programarRefrescoPendientesSE(): void {
+        if (this.refrescarPendientesSETimer) {
+            clearTimeout(this.refrescarPendientesSETimer);
         }
-        this.refrescarItemsRespuestasSE();
+        this.refrescarPendientesSETimer = setTimeout(() => {
+            this.refrescarPendientesSETimer = null;
+            this.refrescarItemsRespuestasSE();
+        }, 280);
     }
 
     // Qué hace: sincroniza un campo en todos los dx-form de las subtabs SE.
@@ -1550,12 +1578,48 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
 
     // Qué hace: rearma las subtabs del cuestionario respetando las dependencias del formData actual.
     private refrescarItemsRespuestasSE(): void {
-        this.tabsCuestionarioSE = this.serviceRespuestaSE.getTabs(this.respuestasSE, this.mOPCIONES_SE, this.respuestasSEModel);
+        const cuotaMaxima = this.socioeconomicoModel?.APLICA_CUOTA_MAXIMA === true;
+        this.tabsCuestionarioSE = this.serviceRespuestaSE.getTabs(
+            this.respuestasSE,
+            this.mOPCIONES_SE,
+            this.respuestasSEModel,
+            cuotaMaxima
+        );
         this.itemsRespuestasSE = this.serviceRespuestaSE.getItems(this.respuestasSE, this.mOPCIONES_SE, this.respuestasSEModel);
         if (this.tabCuestionarioSEIndex >= this.tabsCuestionarioSE.length) {
             this.tabCuestionarioSEIndex = 0;
         }
         this.armarSeccionesCuestionarioSE();
+    }
+
+    // Qué hace: cuántos obligatorios faltan en una subtab (badge de borrador).
+    faltanTabCuestionarioSE(tab: { key?: string; titulo?: string } | string): number {
+        const key = typeof tab === 'string' ? '' : tab?.key || '';
+        const titulo = (typeof tab === 'string' ? tab : tab?.titulo || '').trim();
+        const filas = (this.respuestasSE ?? []).filter((r) => {
+            const meta = this.serviceRespuestaSE.claveSeccion(r);
+            if (key && meta.key === key) {
+                return true;
+            }
+            return !!titulo && meta.titulo === titulo;
+        });
+        return this.serviceRespuestaSE.contarPendientesBorrador(
+            filas,
+            this.respuestasSEModel,
+            this.socioeconomicoModel?.APLICA_CUOTA_MAXIMA === true
+        );
+    }
+
+    // Qué hace: total de pendientes del cuestionario SE (aviso de borrador).
+    get totalPendientesCuestionarioSE(): number {
+        return (this.tabsCuestionarioSE ?? []).reduce((acc, tab) => acc + this.faltanTabCuestionarioSE(tab), 0);
+    }
+
+    // Qué hace: badge de incompletos en título de subtab (mismo patrón que nuevo ingreso).
+    faltanTabCuestionarioSEPorTitulo(data: { title?: string }): number {
+        const titulo = data?.title || '';
+        const tab = (this.tabsCuestionarioSE ?? []).find((t) => t.titulo === titulo);
+        return this.faltanTabCuestionarioSE(tab || { titulo });
     }
 
     // Qué hace: arma el cuestionario SE en consulta por sección con puntajes.
@@ -1716,12 +1780,58 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: puntaje total del estudio para el chip de lectura.
+    // Cómo lo hace: con cuota máxima se muestra 100% (solo consulta visual); si no, el original de BD o la suma de secciones.
     get puntajeTotalSE(): number {
+        if (this.socioeconomicoModel?.APLICA_CUOTA_MAXIMA === true) {
+            return 100;
+        }
+        if (this.socioeconomicoPuntajeOriginal.puntaje != null) {
+            return Number(this.socioeconomicoPuntajeOriginal.puntaje) || 0;
+        }
         const total = this.socioeconomicoModel?.PUNTAJE_TOTAL;
         if (total != null && total !== undefined && total !== '') {
             return Number(total) || 0;
         }
         return (this.seccionesCuestionarioSE ?? []).reduce((acc, s) => acc + (Number(s.puntaje) || 0), 0);
+    }
+
+    // Qué hace: guarda el puntaje real de BD antes de cualquier override visual de cuota máxima.
+    private guardarPuntajeSocioeconomicoOriginal(model: any): void {
+        this.socioeconomicoPuntajeOriginal = {
+            puntaje: model?.PUNTAJE_TOTAL != null && model?.PUNTAJE_TOTAL !== '' ? Number(model.PUNTAJE_TOTAL) : null,
+            porcentaje:
+                model?.PORCENTAJE_TOTAL != null && model?.PORCENTAJE_TOTAL !== '' ? Number(model.PORCENTAJE_TOTAL) : null,
+        };
+    }
+
+    // Qué hace: cuota máxima → muestra 100; al quitarla → restaura el puntaje que traía de BD.
+    private aplicarPuntajeCuotaMaximaDisplay(): void {
+        if (!this.socioeconomicoModel) {
+            return;
+        }
+        if (this.socioeconomicoModel.APLICA_CUOTA_MAXIMA === true) {
+            this.socioeconomicoModel.PUNTAJE_TOTAL = 100;
+            this.socioeconomicoModel.PORCENTAJE_TOTAL = 100;
+            this.formSocio?.instance?.updateData('PUNTAJE_TOTAL', 100);
+            this.formSocio?.instance?.updateData('PORCENTAJE_TOTAL', 100);
+            return;
+        }
+        const puntaje = this.socioeconomicoPuntajeOriginal.puntaje;
+        const porcentaje = this.socioeconomicoPuntajeOriginal.porcentaje;
+        this.socioeconomicoModel.PUNTAJE_TOTAL = puntaje;
+        this.socioeconomicoModel.PORCENTAJE_TOTAL = porcentaje;
+        this.formSocio?.instance?.updateData('PUNTAJE_TOTAL', puntaje);
+        this.formSocio?.instance?.updateData('PORCENTAJE_TOTAL', porcentaje);
+    }
+
+    // Qué hace: al marcar/desmarcar cuota máxima muestra 100 o restaura el puntaje original.
+    onSocioeconomicoChanged(e: any): void {
+        if (e?.dataField !== 'APLICA_CUOTA_MAXIMA') {
+            return;
+        }
+        this.aplicarPuntajeCuotaMaximaDisplay();
+        // Con cuota máxima dejan de marcarse pendientes de ingresos/egresos.
+        this.refrescarItemsRespuestasSE();
     }
 
     private prepararEmpleoNuevo(): void {
@@ -1861,7 +1971,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         // viejos incompletos no debe impedir editar o eliminar otra (son independientes, como el portal).
         const estudiosAGuardar = estudios.filter((e) => !e.eliminar && this.estudioCambio(e.seccion, e.modelo, e.form));
 
-        const formulariosRespuestas = this.formsRespuestasTabs?.toArray() ?? [];
+        // Borrador SE: las respuestas se pueden guardar incompletas; el flujo futuro sí exigirá completarlas.
         const formularios = this.esAcademico
             ? [
                   this.dataForm,
@@ -1870,9 +1980,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                   this.formEmpleo,
                   ...estudiosAGuardar.map((e) => e.form),
                   this.formSocio,
-                  ...formulariosRespuestas,
               ]
-            : [this.formEmpleo, this.formSocio, ...formulariosRespuestas];
+            : [this.formEmpleo, this.formSocio];
         for (const formulario of formularios) {
             const resultado = formulario?.instance?.validate();
             if (resultado && !resultado.isValid) {
@@ -2187,6 +2296,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.empleoEliminar = false;
         this.empleoCargado = false;
         this.socioeconomicoModel = null;
+        this.socioeconomicoPuntajeOriginal = { puntaje: null, porcentaje: null };
         this.respuestasSE = [];
         this.itemsRespuestasSE = [];
         this.tabsCuestionarioSE = [];
@@ -2371,6 +2481,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     cargarSocioeconomico(CORR_PROSPECTO: number): void {
         this.cargarLista(this.serviceSocioeconomico.getSocioeconomicoPorProspecto(CORR_PROSPECTO), (data: any[]) => {
             this.socioeconomicoModel = data[0] ?? null;
+            this.guardarPuntajeSocioeconomicoOriginal(this.socioeconomicoModel);
+            this.aplicarPuntajeCuotaMaximaDisplay();
         });
     }
 
