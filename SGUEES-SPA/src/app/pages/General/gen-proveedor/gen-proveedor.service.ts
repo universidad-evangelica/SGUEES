@@ -41,13 +41,20 @@ export class GenProveedorService {
 		return true;
 	}
 
-	/** Lista paginada: PAGE/PAGE_SIZE (0 = Todos). RowsAffected = totalRecords. */
+	/** Lista paginada: PAGE/PAGE_SIZE (0 = Todos). Filtros = filter-row del grid. RowsAffected = total filtrado. */
 	getAll(param: {
 		CORR_PROVEEDOR?: number;
 		PAGE?: number;
 		PAGE_SIZE?: number;
 		SORT_FIELD?: string;
 		SORT_DESC?: boolean;
+		CODIGO_PROVEEDOR?: string;
+		NOMBRE_COMERCIAL?: string;
+		NOMBRE_PROVEEDOR?: string;
+		NOMBRE_TIPO_PERSONERIA?: string;
+		USUARIO_CREA?: string;
+		USUARIO_ACTU?: string;
+		ACTIVO_PROVEEDOR?: boolean | null;
 	}): Observable<IResult> {
 		const xWhere: IParam[] = [];
 		if (param.CORR_PROVEEDOR != null && param.CORR_PROVEEDOR > 0) {
@@ -59,7 +66,23 @@ export class GenProveedorService {
 			{ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD ?? '' },
 			{ Parameter: 'SORT_DESC', Value: param.SORT_DESC ?? false },
 		);
+		this.pushText(xWhere, 'CODIGO_PROVEEDOR', param.CODIGO_PROVEEDOR);
+		this.pushText(xWhere, 'NOMBRE_COMERCIAL', param.NOMBRE_COMERCIAL);
+		this.pushText(xWhere, 'NOMBRE_PROVEEDOR', param.NOMBRE_PROVEEDOR);
+		this.pushText(xWhere, 'NOMBRE_TIPO_PERSONERIA', param.NOMBRE_TIPO_PERSONERIA);
+		this.pushText(xWhere, 'USUARIO_CREA', param.USUARIO_CREA);
+		this.pushText(xWhere, 'USUARIO_ACTU', param.USUARIO_ACTU);
+		if (param.ACTIVO_PROVEEDOR === true || param.ACTIVO_PROVEEDOR === false) {
+			xWhere.push({ Parameter: 'ACTIVO_PROVEEDOR', Value: param.ACTIVO_PROVEEDOR });
+		}
 		return this.repo.get(xWhere);
+	}
+
+	private pushText(xWhere: IParam[], name: string, value?: string): void {
+		const text = (value ?? '').trim();
+		if (text) {
+			xWhere.push({ Parameter: name, Value: text });
+		}
 	}
 
 	getPersonas(param: any): Observable<IResult> {

@@ -12,5 +12,16 @@ namespace sguees.Models
 		public int PAGE_SIZE { get; set; } = 15;
 		public string SORT_FIELD { get; set; }
 		public bool SORT_DESC { get; set; }
+		/// <summary>Filtros filter-row (LIKE). Vacío = sin filtro en esa columna.</summary>
+		public string CODIGO_PROVEEDOR { get; set; }
+		public string NOMBRE_COMERCIAL { get; set; }
+		public string NOMBRE_PROVEEDOR { get; set; }
+		public string NOMBRE_TIPO_PERSONERIA { get; set; }
+		public string USUARIO_CREA { get; set; }
+		public string USUARIO_ACTU { get; set; }
+		/// <summary>null = todos; true/false = Activo/Inactivo (filter-row Estado).</summary>
+		public bool? ACTIVO_PROVEEDOR { get; set; }
+		/// <summary>Búsqueda libre opcional (OR en código/nombres). Preferir filtros por columna.</summary>
+		public string SEARCH { get; set; }
 	}
 }
