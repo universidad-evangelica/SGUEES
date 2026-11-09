@@ -542,9 +542,16 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 			},
 			error: (err) => {
 				this.loadingVisible = false;
-				this.notifyFx(`${this.mensajeErrorHttp(err, 'Error al guardar la sección.')}`, NotifyType.Error, {
-					raw: true,
-				});
+				const msg = this.mensajeErrorHttp(err, 'Error al guardar la sección.');
+				const code = err?.error?.ErrorCode ?? err?.error?.errorCode;
+				// Qué hace: validaciones de %/puntajes van en warning (el interceptor lanza BadRequest).
+				const esValidacion =
+					code === 4001 ||
+					code === 4002 ||
+					code === 4003 ||
+					code === 4018 ||
+					/porcentaje|máximo|reservan|puntaje|opción|bajar|disponible|100%/i.test(msg);
+				this.notifyFx(msg, esValidacion ? NotifyType.Warning : NotifyType.Error, { raw: true });
 			},
 		});
 	}
@@ -625,9 +632,12 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 		return data as AcaSeSeccion;
 	}
 
-	// Qué hace: saca el mensaje útil de un HttpErrorResponse (BadRequest con CResult).
-	// Cómo lo hace: prueba ErrorMessage en Pascal/camelCase y cae al message genérico.
+	// Qué hace: saca el mensaje útil de un HttpErrorResponse o del string que arma el ErrorInterceptor.
+	// Cómo lo hace: si el interceptor lanzó "Error: …", limpia el prefijo; si no, lee ErrorMessage del body.
 	private mensajeErrorHttp(err: any, fallback: string): string {
+		if (typeof err === 'string' && err.trim()) {
+			return err.replace(/^Error:\s*/i, '').trim();
+		}
 		const body = err?.error;
 		const msg =
 			body?.ErrorMessage ||
@@ -636,7 +646,7 @@ export class AcaSeVersionComponent extends CBaseComponent implements OnInit {
 			(typeof body === 'string' ? body : '') ||
 			err?.message ||
 			fallback;
-		return String(msg || fallback);
+		return String(msg || fallback).replace(/^Error:\s*/i, '').trim();
 	}
 
 	// Qué hace: formulario de la modal de sección (filas que suman colCount 8).
