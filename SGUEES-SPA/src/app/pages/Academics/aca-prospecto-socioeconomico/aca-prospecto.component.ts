@@ -1622,6 +1622,22 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return this.faltanTabCuestionarioSE(tab || { titulo });
     }
 
+    // Qué hace: sección con puntajes (consulta) asociada a un tab por NOMBRE_SECCION.
+    seccionCuestionarioPorTab(tab: { titulo?: string; key?: string } | null | undefined): (typeof this.seccionesCuestionarioSE)[number] | null {
+        return this.seccionCuestionarioPorTitulo(tab?.titulo || '');
+    }
+
+    seccionCuestionarioPorTitulo(titulo: string): (typeof this.seccionesCuestionarioSE)[number] | null {
+        const nombre = (titulo || '').trim().toLowerCase();
+        if (!nombre) {
+            return null;
+        }
+        return (
+            (this.seccionesCuestionarioSE ?? []).find((s) => (s.nombre || '').trim().toLowerCase() === nombre) ??
+            this.resumenSeccionTabSE(titulo)
+        );
+    }
+
     // Qué hace: arma el cuestionario SE en consulta por sección con puntajes.
     // Cómo lo hace: agrupa por sección; en RANGO_MONTO calcula total de montos y deja el puntaje solo a nivel sección.
     private armarSeccionesCuestionarioSE(): void {

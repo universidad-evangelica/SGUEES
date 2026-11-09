@@ -626,28 +626,56 @@
                                 >
                                     <dxi-item *ngFor="let tab of tabsCuestionarioSE" [title]="tab.titulo">
                                         <div class="aca-prospecto-se-tab">
-                                            <!-- Consulta: resumen de puntaje de ingresos/egresos en su subtab. -->
-                                            <div
-                                                class="aca-beca-resumen-rango"
-                                                *ngIf="readOnly && resumenSeccionTabSE(tab.titulo) as resumen"
-                                            >
-                                                <span>{{ resumen.etiquetaTotal }}: <strong>{{ resumen.totalMonto | number:'1.2-2' }}</strong></span>
-                                                <span>→ Puntaje: <strong>{{ resumen.puntaje | number:'1.2-2' }}</strong></span>
-                                            </div>
-                                            <dx-form
-                                                #fRespuestasTab
-                                                class="sguees-form-premium"
-                                                [formData]="respuestasSEModel"
-                                                [labelLocation]="'top'"
-                                                [colCount]="8"
-                                                [readOnly]="readOnly"
-                                                [items]="tab.items"
-                                                (onFieldDataChanged)="onRespuestaSEChanged($event)"
-                                            >
-                                            </dx-form>
+                                            <!-- Consulta: puntajes por sección (mismo layout beca de antes, dentro del tab). -->
+                                            <ng-container *ngIf="readOnly; else edicionSeccionSE">
+                                                <article class="aca-beca-seccion" *ngIf="seccionCuestionarioPorTab(tab) as seccion; else sinPuntajeSeccion">
+                                                    <header class="aca-beca-seccion-head">
+                                                        <span>
+                                                            {{ seccion.nombre }}
+                                                            <small *ngIf="seccion.porcentajeMaximo != null" class="aca-beca-seccion-max">
+                                                                (máx. {{ seccion.porcentajeMaximo | number:'1.0-2' }}%)
+                                                            </small>
+                                                        </span>
+                                                        <span class="aca-beca-chip" [class.aca-beca-chip-cero]="seccion.puntaje === 0">{{ seccion.puntaje | number:'1.2-2' }}</span>
+                                                    </header>
+                                                    <div class="aca-beca-resumen-rango" *ngIf="seccion.esRangoMonto">
+                                                        <span>{{ seccion.etiquetaTotal }}: <strong>{{ seccion.totalMonto | number:'1.2-2' }}</strong></span>
+                                                        <span>→ Puntaje obtenido: <strong>{{ seccion.puntaje | number:'1.2-2' }}</strong></span>
+                                                    </div>
+                                                    <div
+                                                        class="aca-beca-pregunta"
+                                                        [class.aca-beca-pregunta--sin-chip]="seccion.esRangoMonto"
+                                                        *ngFor="let pregunta of seccion.preguntas; trackBy: trackPreguntaSE"
+                                                    >
+                                                        <p class="aca-beca-pregunta-texto">{{ pregunta.texto }}</p>
+                                                        <p class="aca-beca-respuesta">{{ pregunta.respuesta || '—' }}</p>
+                                                        <span class="aca-beca-acciones" *ngIf="!seccion.esRangoMonto">
+                                                            <span class="aca-beca-chip" [class.aca-beca-chip-cero]="pregunta.puntaje === 0">{{ pregunta.puntaje | number:'1.2-2' }}</span>
+                                                        </span>
+                                                    </div>
+                                                </article>
+                                                <ng-template #sinPuntajeSeccion>
+                                                    <p class="aca-prospecto-vacio">Sin preguntas en esta sección.</p>
+                                                </ng-template>
+                                            </ng-container>
+
+                                            <!-- Edición: formulario por sección (borrador). -->
+                                            <ng-template #edicionSeccionSE>
+                                                <dx-form
+                                                    #fRespuestasTab
+                                                    class="sguees-form-premium"
+                                                    [formData]="respuestasSEModel"
+                                                    [labelLocation]="'top'"
+                                                    [colCount]="8"
+                                                    [readOnly]="false"
+                                                    [items]="tab.items"
+                                                    (onFieldDataChanged)="onRespuestaSEChanged($event)"
+                                                >
+                                                </dx-form>
+                                            </ng-template>
                                         </div>
                                     </dxi-item>
-                                    <!-- Qué hace: mismo badge de nuevo ingreso (✓ o cantidad pendiente). -->
+                                    <!-- Edición: badge pendientes. Consulta: chip de puntaje de la sección. -->
                                     <div *dxTemplate="let data of 'tituloSeccionSE'" class="aca-prospecto-tab-lista">
                                         <span class="dx-tab-text">{{ data.title }}</span>
                                         <span
@@ -656,6 +684,12 @@
                                             [class.aca-prospecto-tab-conteo--ok]="faltanTabCuestionarioSEPorTitulo(data) === 0"
                                             [class.aca-prospecto-tab-conteo--falta]="faltanTabCuestionarioSEPorTitulo(data) > 0"
                                         >{{ faltanTabCuestionarioSEPorTitulo(data) === 0 ? '✓' : faltanTabCuestionarioSEPorTitulo(data) }}</span>
+                                        <span
+                                            *ngIf="readOnly && seccionCuestionarioPorTitulo(data.title) as secTab"
+                                            class="aca-beca-chip aca-beca-chip--tab"
+                                            [class.aca-beca-chip-cero]="secTab.puntaje === 0"
+                                            title="Puntaje de la sección"
+                                        >{{ secTab.puntaje | number:'1.2-2' }}</span>
                                     </div>
                                 </dx-tab-panel>
                             </ng-container>

@@ -253,6 +253,12 @@
 	background: color-mix(in srgb, var(--accent-color, #337ab7) 16%, transparent);
 }
 
+.aca-beca-chip--tab {
+	min-width: 44px;
+	padding: 3px 8px;
+	font-size: 11.5px;
+}
+
 .aca-beca-acciones {
 	display: flex;
 	align-items: center;
