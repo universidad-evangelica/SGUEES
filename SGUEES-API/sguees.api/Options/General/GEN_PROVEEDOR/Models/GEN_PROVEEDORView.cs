@@ -35,9 +35,6 @@ namespace sguees.Models
 		public string CORREO_ELECTRONICO_1 { get; set; }
 		public string CORREO_ELECTRONICO_2 { get; set; }
 		public int CORR_FORMA_PAGO { get; set; }
-		public string CUENTA_BANCARIA { get; set; }
-		public int CORR_BANCO { get; set; }
-		public string NOMBRE_BANCO { get; set; }
 		public string ESTADO_PROVEEDOR { get; set; }
 		public bool ACTIVO_PROVEEDOR { get; set; }
 		public string NOMBRE_ESTADO_PROVEEDOR { get; set; }

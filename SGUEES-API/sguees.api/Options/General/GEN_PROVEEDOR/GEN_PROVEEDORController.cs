@@ -47,6 +47,80 @@ namespace sguees.Controllers
 			return await _service.GetPersonasLookupAsync(Data);
 		}
 
+		[HttpGet("GetPersona")]
+		[Authorize(Policy = "/gen-proveedor|R")]
+		public async Task<CResult> GetPersona([FromQuery] GEN_PROVEEDORParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetPersonaAsync(Data);
+		}
+
+		[HttpPost("PersonaNatural")]
+		[Authorize(Policy = "/gen-proveedor|C")]
+		public async Task<IActionResult> PostPersonaNatural(GEN_PROVEEDOR_PERSONATable Data)
+		{
+			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+				return BadRequest(resultadoEmpresa);
+
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			Data.USUARIO_CREA = GetUsuario();
+			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
+			Data.USUARIO_ACTU = Data.USUARIO_CREA;
+			Data.ESTACION_ACTU = Data.ESTACION_CREA;
+
+			var resultado = await _service.CreatePersonaNaturalAsync(Data, Data.USUARIO_CREA, Data.ESTACION_CREA);
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("PersonaNatural")]
+		[Authorize(Policy = "/gen-proveedor|U")]
+		public async Task<IActionResult> PutPersonaNatural(GEN_PROVEEDOR_PERSONATable Data)
+		{
+			this.ApplyQueryKeys(Data, nameof(GEN_PROVEEDOR_PERSONATable.CORR_PERSONA));
+			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+				return BadRequest(resultadoEmpresa);
+
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			Data.USUARIO_ACTU = GetUsuario();
+			Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+
+			var resultado = await _service.UpdatePersonaNaturalAsync(Data, Data.USUARIO_ACTU, Data.ESTACION_ACTU);
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		[HttpPost("PersonaJuridica")]
+		[Authorize(Policy = "/gen-proveedor|C")]
+		public async Task<IActionResult> PostPersonaJuridica(GEN_PROVEEDOR_PERSONATable Data)
+		{
+			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+				return BadRequest(resultadoEmpresa);
+
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			Data.USUARIO_CREA = GetUsuario();
+			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
+			Data.USUARIO_ACTU = Data.USUARIO_CREA;
+			Data.ESTACION_ACTU = Data.ESTACION_CREA;
+
+			var resultado = await _service.CreatePersonaJuridicaAsync(Data, Data.USUARIO_CREA, Data.ESTACION_CREA);
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("PersonaJuridica")]
+		[Authorize(Policy = "/gen-proveedor|U")]
+		public async Task<IActionResult> PutPersonaJuridica(GEN_PROVEEDOR_PERSONATable Data)
+		{
+			this.ApplyQueryKeys(Data, nameof(GEN_PROVEEDOR_PERSONATable.CORR_PERSONA));
+			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+				return BadRequest(resultadoEmpresa);
+
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			Data.USUARIO_ACTU = GetUsuario();
+			Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+
+			var resultado = await _service.UpdatePersonaJuridicaAsync(Data, Data.USUARIO_ACTU, Data.ESTACION_ACTU);
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
 		[HttpPost]
 		[Authorize(Policy = "/gen-proveedor|C")]
 		public async Task<IActionResult> Post(GEN_PROVEEDORTable Data)

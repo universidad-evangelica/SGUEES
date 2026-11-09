@@ -103,45 +103,11 @@ namespace sguees.Repositories
             CResult objResultado = new();
             try
             {
-                var sql = @$"
-                IF EXISTS(SELECT 1 FROM SEG_USUARIO A WHERE LTRIM(RTRIM(A.LOGIN_SISTEMA))=LTRIM(RTRIM(@LOGIN_SISTEMA)))
-                BEGIN
-                    SELECT A.CODIGO_SISTEMA
-                    ,A.NOMBRE_SISTEMA
-                    ,A.IMAGEN_SISTEMA
-                    ,A.CODIGO_MENU
-                    ,A.NOMBRE_MENU
-                    ,A.IMAGEN_MENU
-                    ,A.CODIGO_OPCION
-                    ,A.NOMBRE_OPCION
-                    ,A.IMAGEN_OPCION
-                    ,A.URL_OPCION
-                    ,A.NUEVO
-                    ,A.MODIFICAR
-                    ,A.ELIMINAR
-                    ,A.IMPRIMIR        
-                    ,A.ORDEN_SISTEMA
-                    ,A.ORDEN_MENU
-                    ,A.ORDEN_OPCION
-                    ,CASE WHEN A.NUEVO=1 THEN 'C' ELSE '' END +
-                            'R'+
-                    CASE WHEN A.MODIFICAR=1 THEN 'U' ELSE '' END +
-                    CASE WHEN A.ELIMINAR=1 THEN 'D' ELSE '' END + 
-                    CASE WHEN A.IMPRIMIR=1 THEN 'P' ELSE '' END PERMISO
-                    FROM V_{_TableName} A
-                    WHERE LTRIM(RTRIM(A.LOGIN_SISTEMA))=LTRIM(RTRIM(@LOGIN_SISTEMA))
-                    AND EXISTS(SELECT 1 FROM SEG_OPCION_SISTEMA_SUITE B
-                            WHERE A.CODIGO_OPCION=B.CODIGO_OPCION
-                            AND LTRIM(RTRIM(UPPER(B.CODIGO_SUITE)))=LTRIM(RTRIM(UPPER(@CODIGO_SUITE))))
-                    ORDER BY A.ORDEN_SISTEMA DESC,A.ORDEN_MENU,A.ORDEN_OPCION
-                END 
-                ";
-
                 var pWhere = new List<CParameter>();
                 pWhere.Add(new CParameter() {ParameterName="@LOGIN_SISTEMA",Value=LOGIN_SISTEMA,DbType=System.Data.DbType.String});
                 pWhere.Add(new CParameter() {ParameterName="@CODIGO_SUITE",Value=CODIGO_SUITE,DbType=System.Data.DbType.String});
 
-                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, pWhere);
+                var reader = await objData.GetDataReader(System.Data.CommandType.StoredProcedure, "PRAL_DATA_SEG_USUARIO_PERMISOS", pWhere);
                 var response = new List<SEG_USUARIO_PERMISOView>().FromDataReader(reader).ToList();
                 
                 reader.Close();

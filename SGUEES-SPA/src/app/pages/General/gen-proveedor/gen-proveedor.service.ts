@@ -7,7 +7,12 @@ import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { GenProveedorRepository } from './gen-proveedor.repository';
+import { GenProveedorDocRepository } from './gen-proveedor-doc.repository';
+import { GenPersonaBancoRepository } from './gen-persona-banco.repository';
 import { GenProveedor } from './models/gen-proveedor';
+import { GenProveedorPersona } from './models/gen-proveedor-persona';
+import { GenProveedorDoc } from './models/gen-proveedor-doc';
+import { GenPersonaBanco } from './models/gen-persona-banco';
 
 const ESTADO_FIELD = 'ACTIVO_PROVEEDOR';
 
@@ -15,7 +20,14 @@ const ESTADO_FIELD = 'ACTIVO_PROVEEDOR';
 	providedIn: 'root',
 })
 export class GenProveedorService {
-	constructor(private repo: GenProveedorRepository) {}
+	/** Máximo alineado con appsettings ProveedorDocumento:MaxBytes (10 MB). */
+	readonly maxDocBytes = 10 * 1024 * 1024;
+
+	constructor(
+		private repo: GenProveedorRepository,
+		private docRepo: GenProveedorDocRepository,
+		private personaBancoRepo: GenPersonaBancoRepository,
+	) {}
 
 	esValido(model: GenProveedor, msg: Function): boolean {
 		if (!model.CORR_PERSONA || model.CORR_PERSONA <= 0) {
@@ -29,9 +41,48 @@ export class GenProveedorService {
 		return true;
 	}
 
-	getAll(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_PROVEEDOR', Value: param.CORR_PROVEEDOR ?? 0 }];
+	/** Lista paginada: PAGE/PAGE_SIZE (0 = Todos). Filtros = filter-row del grid. RowsAffected = total filtrado. */
+	getAll(param: {
+		CORR_PROVEEDOR?: number;
+		PAGE?: number;
+		PAGE_SIZE?: number;
+		SORT_FIELD?: string;
+		SORT_DESC?: boolean;
+		CODIGO_PROVEEDOR?: string;
+		NOMBRE_COMERCIAL?: string;
+		NOMBRE_PROVEEDOR?: string;
+		NOMBRE_TIPO_PERSONERIA?: string;
+		USUARIO_CREA?: string;
+		USUARIO_ACTU?: string;
+		ACTIVO_PROVEEDOR?: boolean | null;
+	}): Observable<IResult> {
+		const xWhere: IParam[] = [];
+		if (param.CORR_PROVEEDOR != null && param.CORR_PROVEEDOR > 0) {
+			xWhere.push({ Parameter: 'CORR_PROVEEDOR', Value: param.CORR_PROVEEDOR });
+		}
+		xWhere.push(
+			{ Parameter: 'PAGE', Value: param.PAGE != null && param.PAGE > 0 ? param.PAGE : 1 },
+			{ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE != null ? param.PAGE_SIZE : 15 },
+			{ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD ?? '' },
+			{ Parameter: 'SORT_DESC', Value: param.SORT_DESC ?? false },
+		);
+		this.pushText(xWhere, 'CODIGO_PROVEEDOR', param.CODIGO_PROVEEDOR);
+		this.pushText(xWhere, 'NOMBRE_COMERCIAL', param.NOMBRE_COMERCIAL);
+		this.pushText(xWhere, 'NOMBRE_PROVEEDOR', param.NOMBRE_PROVEEDOR);
+		this.pushText(xWhere, 'NOMBRE_TIPO_PERSONERIA', param.NOMBRE_TIPO_PERSONERIA);
+		this.pushText(xWhere, 'USUARIO_CREA', param.USUARIO_CREA);
+		this.pushText(xWhere, 'USUARIO_ACTU', param.USUARIO_ACTU);
+		if (param.ACTIVO_PROVEEDOR === true || param.ACTIVO_PROVEEDOR === false) {
+			xWhere.push({ Parameter: 'ACTIVO_PROVEEDOR', Value: param.ACTIVO_PROVEEDOR });
+		}
 		return this.repo.get(xWhere);
+	}
+
+	private pushText(xWhere: IParam[], name: string, value?: string): void {
+		const text = (value ?? '').trim();
+		if (text) {
+			xWhere.push({ Parameter: name, Value: text });
+		}
 	}
 
 	getPersonas(param: any): Observable<IResult> {
@@ -39,6 +90,50 @@ export class GenProveedorService {
 			{ Parameter: 'CORR_PERSONA', Value: param.CORR_PERSONA ?? 0 },
 		];
 		return this.repo.getPersonas(xWhere);
+	}
+
+	getPersona(corrPersona: number): Observable<IResult> {
+		return this.repo.getPersona([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	esValidaPersona(model: GenProveedorPersona, msg: Function): boolean {
+		const tipo = (model?.TIPO_PERSONERIA ?? '').toUpperCase();
+		if (tipo === 'N') {
+			if (!model.PRIMER_NOMBRE?.trim() || !model.PRIMER_APELLIDO?.trim()) {
+				msg('Primer nombre y primer apellido son obligatorios.', NotifyType.Warning);
+				return false;
+			}
+			return true;
+		}
+		if (tipo === 'J') {
+			if (!model.RAZON_SOCIAL?.trim() && !model.NOMBRE_EMPRESA?.trim()) {
+				msg('Debe indicar Nombre empresa o Razón social.', NotifyType.Warning);
+				return false;
+			}
+			return true;
+		}
+		msg('Seleccione si la persona es Natural o Jurídica.', NotifyType.Warning);
+		return false;
+	}
+
+	crearPersonaNatural(model: GenProveedorPersona): Observable<IResult> {
+		return this.repo.createPersonaNatural(model);
+	}
+
+	actualizarPersonaNatural(model: GenProveedorPersona): Observable<IResult> {
+		return this.repo.updatePersonaNatural(model, [
+			{ Parameter: 'CORR_PERSONA', Value: model.CORR_PERSONA },
+		]);
+	}
+
+	crearPersonaJuridica(model: GenProveedorPersona): Observable<IResult> {
+		return this.repo.createPersonaJuridica(model);
+	}
+
+	actualizarPersonaJuridica(model: GenProveedorPersona): Observable<IResult> {
+		return this.repo.updatePersonaJuridica(model, [
+			{ Parameter: 'CORR_PERSONA', Value: model.CORR_PERSONA },
+		]);
 	}
 
 	insert(model: any): Observable<IResult> {
@@ -61,6 +156,91 @@ export class GenProveedorService {
 		]);
 	}
 
+	getPersonaBancos(corrPersona: number): Observable<IResult> {
+		return this.personaBancoRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	insertPersonaBanco(model: GenPersonaBanco): Observable<IResult> {
+		return this.personaBancoRepo.create(model);
+	}
+
+	updatePersonaBanco(model: GenPersonaBanco): Observable<IResult> {
+		return this.personaBancoRepo.update(model, [
+			{ Parameter: 'CORR_PERSONA', Value: model.CORR_PERSONA },
+			{ Parameter: 'CORR_PERSONA_BANCO', Value: model.CORR_PERSONA_BANCO },
+		]);
+	}
+
+	deletePersonaBanco(corrPersona: number, corrPersonaBanco: number): Observable<IResult> {
+		return this.personaBancoRepo.delete([
+			{ Parameter: 'CORR_PERSONA', Value: corrPersona },
+			{ Parameter: 'CORR_PERSONA_BANCO', Value: corrPersonaBanco },
+		]);
+	}
+
+	getDocumentos(corrProveedor: number): Observable<IResult> {
+		return this.docRepo.getAll([{ Parameter: 'CORR_PROVEEDOR', Value: corrProveedor ?? 0 }]);
+	}
+
+	uploadDocumento(corrProveedor: number, file: File): Observable<IResult> {
+		const form = new FormData();
+		form.append('CORR_PROVEEDOR', String(corrProveedor));
+		form.append('ARCHIVO', file, file.name);
+		return this.docRepo.postDoc(form);
+	}
+
+	deleteDocumento(corrProveedor: number, corrDocumento: number): Observable<IResult> {
+		return this.docRepo.delete([
+			{ Parameter: 'CORR_PROVEEDOR', Value: corrProveedor },
+			{ Parameter: 'CORR_DOCUMENTO', Value: corrDocumento },
+		]);
+	}
+
+	getDocumentoBlob(doc: GenProveedorDoc, download = false): Observable<Blob> {
+		const params = [
+			{ Parameter: 'CORR_PROVEEDOR', Value: doc.CORR_PROVEEDOR },
+			{ Parameter: 'CORR_DOCUMENTO', Value: doc.CORR_DOCUMENTO },
+			{ Parameter: 'NOMBRE_ARCHIVO', Value: doc.NOMBRE_ARCHIVO ?? '' },
+		];
+		if (download) {
+			params.push({ Parameter: 'download', Value: 'true' });
+		}
+		return this.docRepo.getDoc(params);
+	}
+
+	esExtensionDocumentoPermitida(fileName: string): boolean {
+		const ext = (fileName.split('.').pop() ?? '').toLowerCase();
+		const allowed = new Set([
+			'pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp',
+			'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+			'txt', 'rtf', 'csv',
+		]);
+		return allowed.has(ext);
+	}
+
+	getDocumentoColumns(): any[] {
+		return [
+			{
+				caption: 'Options',
+				width: 150,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'docActionsTemplate',
+				alignment: 'center',
+			},
+			{ dataField: 'CORR_DOCUMENTO', caption: 'Corr.', width: 70 },
+			{ dataField: 'NOMBRE_ARCHIVO', caption: 'Archivo', minWidth: 220 },
+			{
+				dataField: 'FECHA_CREA',
+				caption: 'Fecha carga',
+				width: 150,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+			},
+			{ dataField: 'USUARIO_CREA', caption: 'Usuario', width: 120 },
+		];
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_PROVEEDOR', caption: 'Corr.', width: 85 },
@@ -69,8 +249,6 @@ export class GenProveedorService {
 			{ dataField: 'NOMBRE_COMERCIAL', caption: 'Nombre / Razón social', width: 320 },
 			{ dataField: 'NOMBRE_PROVEEDOR', caption: 'Nombre persona', width: 280 },
 			{ dataField: 'NOMBRE_TIPO_PERSONERIA', caption: 'Personería', width: 110 },
-			{ dataField: 'NOMBRE_BANCO', caption: 'Banco', width: 180 },
-			{ dataField: 'CUENTA_BANCARIA', caption: 'Cuenta', width: 140 },
 			...buildAuditGridColumns(),
 		];
 	}
@@ -125,20 +303,6 @@ export class GenProveedorService {
 			},
 
 			{
-				dataField: 'CORR_BANCO',
-				label: { text: 'Banco' },
-				colSpan: 2,
-				template: 'CORR_BANCOLookup',
-			},
-
-			{
-				dataField: 'CUENTA_BANCARIA',
-				label: { text: 'Cuenta bancaria' },
-				colSpan: 2,
-				editorOptions: { placeholder: 'Cuenta...', showClearButton: true, maxLength: 30 },
-			},
-
-			{
 				dataField: 'NOMBRE_TIPO_PERSONERIA',
 				label: { text: 'Personería' },
 				colSpan: 1,
@@ -149,7 +313,7 @@ export class GenProveedorService {
 				dataField: 'ACTIVO_PROVEEDOR',
 				label: { text: 'Activo' },
 				editorType: 'dxCheckBox',
-				colSpan: 2,
+				colSpan: 1,
 			},
 		];
 	}

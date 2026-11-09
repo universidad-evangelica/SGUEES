@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
@@ -7,6 +8,9 @@ namespace sguees.Repositories
 {
 	public interface ISC_SOLICITUD_EMPLEORepository: IRepository<SC_SOLICITUD_EMPLEOTable>
 	{
+		/// <summary>Listado filtrado por organigrama del login (PRAL_DATA_SC_SOLICITUD_EMPLEO).</summary>
+		Task<CResult> GetAllVisibleAsync(List<CParameter> xWhere);
+
 		/// <summary>Actualiza persona + colecciones vía SP atómico (RRHH).</summary>
 		Task<CResult> ActualizarPersonaDatosAsync(
 			int corrEmpresa,

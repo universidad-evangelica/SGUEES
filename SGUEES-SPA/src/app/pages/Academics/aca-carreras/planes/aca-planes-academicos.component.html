@@ -1,0 +1,51 @@
+<p *ngIf="!carreraId">Guarde primero la carrera para registrar sus planes académicos.</p>
+<ng-container *ngIf="carreraId">
+    <p>Los planes se guardan de inmediato. Los nuevos se crean sin marcar como vigentes; habilítelos con la acción Marcar vigente.</p>
+    <p *ngIf="bloqueado">Guarde los cambios en Datos generales antes de modificar los planes.</p>
+    <p *ngIf="cargando">Cargando o guardando planes…</p>
+    <p *ngIf="!cargando && !cargado">No se pudieron cargar los planes. Utilice Actualizar planes.</p>
+    <dx-data-grid id="carreras-planes-grid" [dataSource]="planes" keyExpr="CORR_PLAN_ACADEMICO" [columns]="columns"
+        [selectedRowKeys]="seleccion" [showBorders]="true" [showRowLines]="true" [rowAlternationEnabled]="true"
+        [allowColumnResizing]="true" [width]="'100%'" (onSelectionChanged)="seleccionar($event)">
+        <dxo-selection mode="single"></dxo-selection>
+        <dxo-paging [pageSize]="10"></dxo-paging>
+        <dxo-filter-row [visible]="true"></dxo-filter-row>
+        <dxo-toolbar>
+            <dxi-item location="before"><dx-button text="Nuevo plan" icon="add" [visible]="permiteCrear" [disabled]="!puedeOperar" (onClick)="nuevo()"></dx-button></dxi-item>
+            <dxi-item location="before"><dx-button text="Editar plan" icon="edit" [visible]="permiteEditar" [disabled]="!puedeOperar || !seleccionado" (onClick)="editar()"></dx-button></dxi-item>
+            <dxi-item location="before"><dx-button [text]="seleccionado?.PLAN_VIGENTE ? 'Quitar vigencia' : 'Marcar vigente'"
+                [visible]="permiteEditar" [disabled]="!puedeOperar || !seleccionado" (onClick)="cambiarVigencia()"></dx-button></dxi-item>
+            <dxi-item location="after"><dx-button text="Actualizar planes" icon="refresh" [disabled]="cargando" (onClick)="cargar()"></dx-button></dxi-item>
+        </dxo-toolbar>
+    </dx-data-grid>
+</ng-container>
+
+<dx-popup [(visible)]="editorVisible" [title]="draft.CORR_PLAN_ACADEMICO ? 'Editar plan académico' : 'Nuevo plan académico'"
+    [width]="'90vw'" [maxWidth]="800" [height]="'auto'" [maxHeight]="'90vh'" [showCloseButton]="false"
+    [hideOnOutsideClick]="false" [dragEnabled]="false">
+    <div *dxTemplate="let data of 'content'" style="max-height: 70vh; overflow-y: auto;">
+        <p *ngIf="draft.EN_USO">Este plan tiene registros relacionados. Su código, año, modalidad e inicio están protegidos. Para otra versión, cree un nuevo plan.</p>
+        <dx-form #formPlan [formData]="draft" labelLocation="top" [colCount]="2" [disabled]="cargando">
+            <dxi-item dataField="CODIGO_PLAN" [label]="{text: 'Código del plan'}" [editorOptions]="{maxLength: 20, readOnly: draft.EN_USO}">
+                <dxi-validation-rule type="required" message="El código es obligatorio."></dxi-validation-rule>
+            </dxi-item>
+            <dxi-item dataField="ANIO_PLAN" editorType="dxNumberBox" [label]="{text: 'Año del plan'}"
+                [editorOptions]="{min: 1, max: 9999, format: '#0', readOnly: draft.EN_USO}">
+                <dxi-validation-rule type="required" message="El año es obligatorio."></dxi-validation-rule>
+                <dxi-validation-rule type="pattern" pattern="^[0-9]+$" message="El año debe ser entero."></dxi-validation-rule>
+            </dxi-item>
+            <dxi-item dataField="CORR_MODALIDAD" editorType="dxSelectBox" [label]="{text: 'Modalidad'}" [colSpan]="2"
+                [editorOptions]="{dataSource: modalidadesDisponibles, valueExpr: 'Key', displayExpr: 'Value', searchEnabled: true, readOnly: draft.EN_USO}">
+                <dxi-validation-rule type="required" message="Seleccione la modalidad."></dxi-validation-rule>
+            </dxi-item>
+            <dxi-item dataField="FECHA_VIGENCIA_INICIO" editorType="dxDateBox" [label]="{text: 'Inicio de vigencia'}"
+                [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy', readOnly: draft.EN_USO}">
+                <dxi-validation-rule type="required" message="La fecha inicial es obligatoria."></dxi-validation-rule>
+            </dxi-item>
+            <dxi-item dataField="FECHA_VIGENCIA_FIN" editorType="dxDateBox" [label]="{text: 'Fin de vigencia (opcional)'}"
+                [editorOptions]="{type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy', showClearButton: true}"></dxi-item>
+        </dx-form>
+        <dx-button text="Guardar plan" icon="save" type="default" [disabled]="cargando || bloqueado" (onClick)="guardar()"></dx-button>
+        <dx-button text="Cancelar plan" [disabled]="cargando" (onClick)="editorVisible = false"></dx-button>
+    </div>
+</dx-popup>

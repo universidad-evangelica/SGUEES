@@ -8,6 +8,8 @@ namespace sguees.Repositories
 {
     public interface IACA_PROSPECTO_BECA_ARCHIVORepository : IRepository<ACA_PROSPECTO_BECA_ARCHIVOTable>
     {
+        Task<CResult> GetContextoArchivoAsync(List<CParameter> parameters);
+        Task<CResult> GuardarArchivoAsync(List<CParameter> parameters);
         Task<CResult> GetArchivosAsync(List<CParameter> xWhere);
         Task<CResult> GetArchivoAsync(List<CParameter> xWhere);
     }

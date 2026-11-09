@@ -27,14 +27,34 @@ namespace SGUEES.Services
 			_notificacion = notificacion ?? throw new ArgumentNullException(nameof(notificacion));
 		}
 
+		/// <summary>
+		/// Listado filtrado: creador; jefe TH ve todos; jefe no-TH por unidad de requisición
+		/// (origen REQUISICION) o CORR_UNIDAD_ACTUAL (origen DIRECTO). CRUD lo define SEG.
+		/// </summary>
 		public async Task<CResult> GetAllAsync(SC_MOVIMIENTO_PERSONALParam xWhere)
 		{
+			var login = (xWhere?.LOGIN_SISTEMA ?? string.Empty).Trim();
+			if (string.IsNullOrEmpty(login))
+			{
+				return new CResult
+				{
+					Data = new List<SC_MOVIMIENTO_PERSONALView>(),
+					Result = true,
+					RowsAffected = 0,
+					CodeHelper = 0,
+					ErrorCode = 0,
+					ErrorMessage = "",
+					ErrorSource = "",
+				};
+			}
+
 			var p = new List<CParameter>
 			{
 				new() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "LOGIN_SISTEMA", Value = login, DbType = System.Data.DbType.String },
 			};
 
-			return await _repo.GetAllAsync(p);
+			return await _repo.GetAllVisibleAsync(p);
 		}
 
 		public async Task<CResult> GetAsync(SC_MOVIMIENTO_PERSONALParam xWhere)

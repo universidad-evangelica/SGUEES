@@ -19,6 +19,7 @@ namespace SGUEES.Repositories
 	{
 		private const string _TableName = "SC_MOVIMIENTO_PERSONAL";
 		private const string _SpUnidadesUsuario = "PRAL_DATA_SC_UNIDADES_USUARIO";
+		private const string _SpDataListadoVisible = "PRAL_DATA_SC_MOVIMIENTO_PERSONAL";
 
 		/// <summary>
 		/// Unidad del solicitante: solo el puesto (persona → empleado → puesto).
@@ -90,6 +91,42 @@ ORDER BY CASE WHEN UN.ACTIVO = 1 THEN 0 ELSE 1 END, UN.CORR_NIVEL DESC, EP.CORR_
 				var response = new List<SC_MOVIMIENTO_PERSONALView>()
 					.FromDataReader(reader)
 					.OrderByDescending(x => x.CORR_MOVIMIENTO_PERSONAL)
+					.ToList();
+				reader.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.ErrorCode = 0;
+			}
+			catch (Exception e)
+			{
+				SetError(objResultado, e);
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
+		/// <summary>
+		/// Listado filtrado: creador / jefe TH / jefe no-TH (req o unidad actual si DIRECTO).
+		/// Cómo: PRAL_DATA_SC_MOVIMIENTO_PERSONAL (@CORR_EMPRESA, @LOGIN_SISTEMA).
+		/// </summary>
+		public async Task<CResult> GetAllVisibleAsync(List<CParameter> xWhere)
+		{
+			var objResultado = new CResult();
+
+			try
+			{
+				var reader = await objData.GetDataReader(
+					CommandType.StoredProcedure,
+					_SpDataListadoVisible,
+					xWhere);
+				var response = new List<SC_MOVIMIENTO_PERSONALView>()
+					.FromDataReader(reader)
 					.ToList();
 				reader.Close();
 

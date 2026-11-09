@@ -17,6 +17,7 @@ namespace SGUEES.Repositories
 	{
 		private const string _TableName = "SC_EXPEDIENTE_CANDIDATO";
 		private const string _ViewName = "V_SC_EXPEDIENTE_CANDIDATO";
+		private const string _SpDataListadoVisible = "PRAL_DATA_SC_EXPEDIENTE_CANDIDATO";
 
 		public SC_EXPEDIENTE_CANDIDATORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
@@ -38,6 +39,49 @@ namespace SGUEES.Repositories
 				var response = new List<SC_EXPEDIENTE_CANDIDATOView>().FromDataReader(reader)
 					.OrderByDescending(x => x.CORR_EXPEDIENTE_CANDIDATO)
 					.ToList();
+
+				reader.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
+		/// <summary>
+		/// Listado filtrado: creador / jefe TH / jefe unidad no-TH por requisición de solicitud ligada.
+		/// Cómo: PRAL_DATA_SC_EXPEDIENTE_CANDIDATO (@CORR_EMPRESA, @LOGIN_SISTEMA).
+		/// </summary>
+		public async Task<CResult> GetAllVisibleAsync(List<CParameter> xWhere)
+		{
+			CResult objResultado = new();
+
+			try
+			{
+				var reader = await objData.GetDataReader(
+					CommandType.StoredProcedure,
+					_SpDataListadoVisible,
+					xWhere);
+				var response = new List<SC_EXPEDIENTE_CANDIDATOView>().FromDataReader(reader).ToList();
 
 				reader.Close();
 
