@@ -194,6 +194,12 @@ export class AcaProspectoSeRespuestaService {
 
         const tabs: { key: string; titulo: string; items: any[]; codigoSeccion?: string; tipoEvaluacion?: string }[] = [];
         for (const grupo of [...grupos.values()].sort((a, b) => a.orden - b.orden || a.titulo.localeCompare(b.titulo))) {
+            // Qué hace: con cuota máxima oculta tabs RANGO_MONTO (ingresos/egresos), igual que ADMISIONES.
+            const muestraGrupo = grupo.filas[0];
+            if (aplicaCuotaMaxima && this.esSeccionRangoMonto(muestraGrupo)) {
+                continue;
+            }
+
             const porCodigo = new Map<string, AcaProspectoSeRespuesta>();
             for (const fila of grupo.filas) {
                 porCodigo.set(fila.CODIGO_PREGUNTA, fila);
