@@ -9,6 +9,7 @@ export interface AcaProspectoSeRespuesta {
     ES_REQUERIDO: boolean;
     CORR_SECCION_SE?: number | null;
     NOMBRE_SECCION?: string | null;
+    DESCRIPCION_SECCION?: string | null;
     ORDEN_SECCION?: number | null;
     CODIGO_SECCION?: string | null;
     TIPO_EVALUACION?: string | null;

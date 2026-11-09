@@ -213,6 +213,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     tabCuestionarioSEIndex = 0;
     // Qué hace: cuestionario SE en consulta, agrupado por sección con puntaje (patrón becas).
     seccionesCuestionarioSE: {
+        clave: string;
         nombre: string;
         puntaje: number;
         porcentajeMaximo: number | null;
@@ -1622,8 +1623,15 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         return this.faltanTabCuestionarioSE(tab || { titulo });
     }
 
-    // Qué hace: sección con puntajes (consulta) asociada a un tab por NOMBRE_SECCION.
+    // Qué hace: sección con puntajes (consulta) asociada a un tab (clave BD o NOMBRE_SECCION).
     seccionCuestionarioPorTab(tab: { titulo?: string; key?: string } | null | undefined): (typeof this.seccionesCuestionarioSE)[number] | null {
+        const clave = (tab?.key || '').trim();
+        if (clave) {
+            const porClave = (this.seccionesCuestionarioSE ?? []).find((s) => s.clave === clave);
+            if (porClave) {
+                return porClave;
+            }
+        }
         return this.seccionCuestionarioPorTitulo(tab?.titulo || '');
     }
 
@@ -1642,8 +1650,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Cómo lo hace: agrupa por sección; en RANGO_MONTO calcula total de montos y deja el puntaje solo a nivel sección.
     private armarSeccionesCuestionarioSE(): void {
         type SeccionTmp = {
+            clave: string;
             orden: number;
             nombre: string;
+            descripcion: string;
             porcentajeMaximo: number | null;
             esRangoMonto: boolean;
             codigoSeccion: string;
@@ -1664,8 +1674,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             let seccion = secciones.get(meta.clave);
             if (!seccion) {
                 seccion = {
+                    clave: meta.clave,
                     orden: meta.orden,
                     nombre: meta.nombre,
+                    descripcion: meta.descripcion,
                     porcentajeMaximo: meta.porcentajeMaximo,
                     esRangoMonto: meta.esRangoMonto,
                     codigoSeccion: meta.codigoSeccion,
@@ -1695,11 +1707,12 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 const preguntas = seccion.preguntas.sort((a, b) => a.orden - b.orden || a.codigo.localeCompare(b.codigo));
                 const puntaje = preguntas.reduce((total, p) => total + (Number(p.puntaje) || 0), 0);
                 return {
+                    clave: seccion.clave,
                     nombre: seccion.nombre,
                     porcentajeMaximo: seccion.porcentajeMaximo,
                     esRangoMonto: seccion.esRangoMonto,
                     totalMonto: seccion.esRangoMonto ? seccion.totalMonto : null,
-                    etiquetaTotal: this.etiquetaTotalSeccionSE(seccion.codigoSeccion, seccion.nombre),
+                    etiquetaTotal: this.etiquetaTotalSeccionSE(seccion.descripcion),
                     puntaje,
                     preguntas,
                 };
@@ -1713,6 +1726,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         clave: string;
         orden: number;
         nombre: string;
+        descripcion: string;
         porcentajeMaximo: number | null;
         esRangoMonto: boolean;
         codigoSeccion: string;
@@ -1725,10 +1739,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 tipo === 'RANGO_MONTO' ||
                 codigoSeccionVista === 'INGRESOS' ||
                 codigoSeccionVista === 'EGRESOS';
+            const nombre = (fila.NOMBRE_SECCION && String(fila.NOMBRE_SECCION).trim()) || 'Sección';
+            const descripcion = (fila.DESCRIPCION_SECCION && String(fila.DESCRIPCION_SECCION).trim()) || '';
             return {
                 clave: `S:${fila.CORR_SECCION_SE ?? fila.NOMBRE_SECCION}`,
                 orden: Number(fila.ORDEN_SECCION) || 999,
-                nombre: (fila.NOMBRE_SECCION && String(fila.NOMBRE_SECCION).trim()) || 'Sección',
+                nombre,
+                descripcion,
                 porcentajeMaximo:
                     fila.PORCENTAJE_MAXIMO_SECCION != null && fila.PORCENTAJE_MAXIMO_SECCION !== undefined
                         ? Number(fila.PORCENTAJE_MAXIMO_SECCION)
@@ -1744,6 +1761,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 clave: 'F:ESTUDIOS',
                 orden: 1,
                 nombre: 'Centro Educativo / Estudios',
+                descripcion: 'Centro Educativo',
                 porcentajeMaximo: null,
                 esRangoMonto: false,
                 codigoSeccion: 'CENTRO_EDUCATIVO',
@@ -1754,6 +1772,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 clave: 'F:INGRESOS',
                 orden: 2,
                 nombre: 'Ingresos',
+                descripcion: 'Ingresos',
                 porcentajeMaximo: null,
                 esRangoMonto: true,
                 codigoSeccion: 'INGRESOS',
@@ -1764,6 +1783,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 clave: 'F:EGRESOS',
                 orden: 3,
                 nombre: 'Egresos',
+                descripcion: 'Egresos',
                 porcentajeMaximo: null,
                 esRangoMonto: true,
                 codigoSeccion: 'EGRESOS',
@@ -1773,6 +1793,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             clave: 'F:OTROS',
             orden: 900,
             nombre: 'Otras preguntas',
+            descripcion: '',
             porcentajeMaximo: null,
             esRangoMonto: false,
             codigoSeccion: 'OTROS',
@@ -1788,11 +1809,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         );
     }
 
-    // Qué hace: etiqueta del total mostrado en secciones por rango de monto.
-    private etiquetaTotalSeccionSE(codigoSeccion: string, nombre: string): string {
-        if (codigoSeccion === 'INGRESOS') return 'Total ingresos';
-        if (codigoSeccion === 'EGRESOS') return 'Total egresos';
-        return `Total ${nombre || 'sección'}`;
+    // Qué hace: etiqueta del total en consulta = "Total" + DESCRIPCION de ACA_SE_SECCION.
+    private etiquetaTotalSeccionSE(descripcion: string): string {
+        const desc = (descripcion || '').trim();
+        return desc ? `Total ${desc}` : 'Total';
     }
 
     // Qué hace: puntaje total del estudio para el chip de lectura.
