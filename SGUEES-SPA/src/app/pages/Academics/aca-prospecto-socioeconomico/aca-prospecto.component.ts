@@ -1526,26 +1526,29 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: recalcula el aporte líquido cuando cambia el salario o los descuentos de un ingreso.
-    // Cómo lo hace: la regla vive en el servicio (salario − descuentos, mínimo 0); updateData refresca
-    //               el editor bloqueado. El líquido no dispara el cálculo, así que no hay ciclo.
+    // Cómo lo hace: updateData del líquido (readOnly); estilos de pendientes sin rearmar tabs (evita salto de scroll).
     private refrescarPendientesSETimer: ReturnType<typeof setTimeout> | null = null;
 
     onRespuestaSEChanged(e: any): void {
         if (this.readOnly) {
             return;
         }
-        if (e?.dataField && Object.prototype.hasOwnProperty.call(e, 'value')) {
-            this.respuestasSEModel[e.dataField] = e.value;
+        const dataField = e?.dataField || '';
+        // updateData del líquido no debe rearmar ni recalcular.
+        if (/^ING_[A-Z]+_LIQ$/i.test(dataField)) {
+            return;
         }
-        const calculo = this.serviceRespuestaSE.calcularLiquido(e?.dataField, this.respuestasSEModel);
+        if (dataField && Object.prototype.hasOwnProperty.call(e, 'value')) {
+            this.respuestasSEModel[dataField] = e.value;
+        }
+        const calculo = this.serviceRespuestaSE.calcularLiquido(dataField, this.respuestasSEModel);
         if (calculo) {
             this.respuestasSEModel[calculo.campo] = calculo.valor;
             this.actualizarCampoRespuestasSE(calculo.campo, calculo.valor);
         }
 
-        // Preguntas dependientes (por ejemplo las de la universidad): al responder "No" se limpian y
-        // se ocultan, igual que el portal; al volver a "Sí" reaparecen vacías para llenarlas.
-        const dependientes = this.serviceRespuestaSE.getDependientes(e?.dataField);
+        // Preguntas dependientes (universidad): sí requiere rearmar visibles.
+        const dependientes = this.serviceRespuestaSE.getDependientes(dataField);
         if (dependientes.length) {
             if (e?.value !== true) {
                 for (const campo of dependientes) {
@@ -1556,24 +1559,51 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             this.refrescarItemsRespuestasSE();
             return;
         }
-        // Bordes/badges de borrador: refresco breve para no perder el foco en cada tecla.
-        this.programarRefrescoPendientesSE();
+        // Solo bordes/badges en sitio; no reemplazar tabs (mantiene scroll y foco).
+        this.programarActualizarPendientesSE();
     }
 
-    private programarRefrescoPendientesSE(): void {
+    private programarActualizarPendientesSE(): void {
         if (this.refrescarPendientesSETimer) {
             clearTimeout(this.refrescarPendientesSETimer);
         }
         this.refrescarPendientesSETimer = setTimeout(() => {
             this.refrescarPendientesSETimer = null;
-            this.refrescarItemsRespuestasSE();
-        }, 280);
+            this.actualizarEstilosPendientesSE();
+        }, 200);
     }
 
     // Qué hace: sincroniza un campo en todos los dx-form de las subtabs SE.
     private actualizarCampoRespuestasSE(campo: string, valor: any): void {
         for (const form of this.formsRespuestasTabs?.toArray() ?? []) {
             form?.instance?.updateData(campo, valor);
+        }
+    }
+
+    // Qué hace: marca/desmarca borde rojo de obligatorios sin recrear el tab panel (sin salto de scroll).
+    private actualizarEstilosPendientesSE(): void {
+        const cuotaMaxima = this.socioeconomicoModel?.APLICA_CUOTA_MAXIMA === true;
+        for (const form of this.formsRespuestasTabs?.toArray() ?? []) {
+            const instancia = form?.instance;
+            if (!instancia) {
+                continue;
+            }
+            for (const r of this.respuestasSE ?? []) {
+                const codigo = r.CODIGO_PREGUNTA;
+                if (!codigo) {
+                    continue;
+                }
+                const pendiente = this.serviceRespuestaSE.esCampoPendienteBorrador(
+                    r,
+                    this.respuestasSEModel,
+                    cuotaMaxima
+                );
+                try {
+                    instancia.itemOption(codigo, 'cssClass', pendiente ? 'aca-prospecto-req--vacio' : undefined);
+                } catch {
+                    // Campo no presente en este tab.
+                }
+            }
         }
     }
 

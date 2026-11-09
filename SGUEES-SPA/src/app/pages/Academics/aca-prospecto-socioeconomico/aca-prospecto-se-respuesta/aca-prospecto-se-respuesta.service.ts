@@ -350,7 +350,28 @@ export class AcaProspectoSeRespuestaService {
         return n;
     }
 
-    private esSeccionRangoMonto(r: AcaProspectoSeRespuesta): boolean {
+    // Qué hace: true si el campo debe ir con borde rojo (requerido vacío y visible).
+    esCampoPendienteBorrador(
+        r: AcaProspectoSeRespuesta,
+        formData: any = null,
+        aplicaCuotaMaxima = false
+    ): boolean {
+        if (!r?.ES_REQUERIDO) {
+            return false;
+        }
+        if (aplicaCuotaMaxima && this.esSeccionRangoMonto(r)) {
+            return false;
+        }
+        if (/^ING_[A-Z]+_LIQ$/i.test(r.CODIGO_PREGUNTA || '')) {
+            return false;
+        }
+        if (!this.esPreguntaVisible(r, formData)) {
+            return false;
+        }
+        return this.esValorVacioBorrador(r, formData);
+    }
+
+    esSeccionRangoMonto(r: AcaProspectoSeRespuesta): boolean {
         const tipo = (r.TIPO_EVALUACION || '').toUpperCase();
         const codigo = (r.CODIGO_SECCION || '').toUpperCase();
         return tipo === 'RANGO_MONTO' || codigo === 'INGRESOS' || codigo === 'EGRESOS';
