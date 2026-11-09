@@ -1717,6 +1717,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 secciones.set(meta.clave, seccion);
             }
 
+            // Qué hace: el “máx. %” de la solicitud usa el % ya aplicado (congelado), no el catálogo vivo.
+            // Cómo lo hace: si PORCENTAJE_APLICADO > 0 en alguna respuesta, ese valor gana sobre PORCENTAJE_MAXIMO_SECCION.
+            const aplicado = Number(fila.PORCENTAJE_APLICADO);
+            if (!Number.isNaN(aplicado) && aplicado > 0) {
+                seccion.porcentajeMaximo = aplicado;
+            }
+
             const codigo = (fila.CODIGO_PREGUNTA || '').toUpperCase();
             if (seccion.esRangoMonto && this.esCodigoMontoSeccionSE(codigo)) {
                 seccion.totalMonto += Number(fila.VALOR_NUMERO) || 0;
@@ -1771,15 +1778,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 codigoSeccionVista === 'EGRESOS';
             const nombre = (fila.NOMBRE_SECCION && String(fila.NOMBRE_SECCION).trim()) || 'Sección';
             const descripcion = (fila.DESCRIPCION_SECCION && String(fila.DESCRIPCION_SECCION).trim()) || '';
+            // Qué hace: fallback de máx. % si aún no hay PORCENTAJE_APLICADO en respuestas.
+            // Cómo lo hace: prioriza aplicado > 0; si no, usa el del catálogo solo como referencia inicial.
+            const aplicado = Number(fila.PORCENTAJE_APLICADO);
+            const catalogo =
+                fila.PORCENTAJE_MAXIMO_SECCION != null && fila.PORCENTAJE_MAXIMO_SECCION !== undefined
+                    ? Number(fila.PORCENTAJE_MAXIMO_SECCION)
+                    : null;
             return {
                 clave: `S:${fila.CORR_SECCION_SE ?? fila.NOMBRE_SECCION}`,
                 orden: Number(fila.ORDEN_SECCION) || 999,
                 nombre,
                 descripcion,
-                porcentajeMaximo:
-                    fila.PORCENTAJE_MAXIMO_SECCION != null && fila.PORCENTAJE_MAXIMO_SECCION !== undefined
-                        ? Number(fila.PORCENTAJE_MAXIMO_SECCION)
-                        : null,
+                porcentajeMaximo: !Number.isNaN(aplicado) && aplicado > 0 ? aplicado : catalogo,
                 esRangoMonto: esRango,
                 codigoSeccion: codigoSeccionVista || (esRango ? 'RANGO' : 'PREGUNTA'),
             };
