@@ -1,4 +1,4 @@
-﻿<p-toast
+<p-toast
   position="bottom-right"
   [showTransformOptions]="'translateY(100%)'"
   [hideTransitionOptions]="'500ms'"
@@ -967,6 +967,7 @@
   [dragEnabled]="false"
   [hideOnOutsideClick]="false"
   (onHiding)="cerrarModalEnviarCorreo()"
+  (onShown)="onPopupEnviarCorreoShown()"
 >
   <div *dxTemplate="let data of 'content'" style="display: flex; flex-direction: column; gap: 14px; padding: 6px;">
     <!-- motivo: datos generales del destinatario de la solicitud -->

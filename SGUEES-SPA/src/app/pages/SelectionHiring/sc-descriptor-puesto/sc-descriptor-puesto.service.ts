@@ -326,6 +326,7 @@ export class ScDescriptorPuestoService {
 	}
 
 	// Qué hace: define las columnas del grid de consulta, incluidos badges de formato, estado y versión.
+	// Cómo lo hace: asigna width y minWidth a cada columna para evitar truncamiento y permitir scroll horizontal adecuado.
 	getColumns(): any[] {
 		return [
 			// Qué hace: define la columna correlativo ordenada del más reciente al más antiguo por defecto.
@@ -333,24 +334,27 @@ export class ScDescriptorPuestoService {
 			{
 				dataField: 'CORR_DESCRIPTOR_PUESTO',
 				caption: 'Corr.',
-				width: 85,
+				width: 100,
+				minWidth: 90,
 				sortOrder: 'desc',
 				sortIndex: 0,
 			},
 			{
 				dataField: 'CODIGO_DESCRIPTOR_PUESTO',
 				caption: 'Codigo',
-				width: 110,
+				width: 115,
+				minWidth: 100,
 				// Los descriptores creados antes de este campo lo tienen vacío: se muestra el
 				// equivalente calculado para no dejar la celda en blanco.
 				calculateCellValue: (row: ScDescriptorPuesto) => this.buildCodigoDescriptor(row),
 			},
-			{ dataField: 'NOMBRE_UNIDAD', caption: 'Area', width: 180 },
-			{ dataField: 'NOMBRE_PUESTO', caption: 'Titulo del puesto', width: 220 },
+			{ dataField: 'NOMBRE_UNIDAD', caption: 'Area', width: 270, minWidth: 200 },
+			{ dataField: 'NOMBRE_PUESTO', caption: 'Titulo del puesto', width: 250, minWidth: 220 },
 			{
 				dataField: 'FECHA_EMISION',
 				caption: 'Fecha emision',
-				width: 130,
+				width: 150,
+				minWidth: 140,
 				dataType: 'date',
 				format: 'dd/MM/yyyy',
 			},
@@ -375,6 +379,7 @@ export class ScDescriptorPuestoService {
 				dataField: 'NOMBRE_ESTADO',
 				caption: 'Estado',
 				width: 168,
+				minWidth: 150,
 				cssClass: 'descriptor-grid-badge-col',
 				allowHeaderFiltering: false,
 				calculateCellValue: (row: ScDescriptorPuesto) =>
@@ -391,6 +396,7 @@ export class ScDescriptorPuestoService {
 				dataField: 'VERSION',
 				caption: 'Version',
 				width: 142,
+				minWidth: 120,
 				cssClass: 'descriptor-grid-badge-col',
 				dataType: 'number',
 				allowHeaderFiltering: false,

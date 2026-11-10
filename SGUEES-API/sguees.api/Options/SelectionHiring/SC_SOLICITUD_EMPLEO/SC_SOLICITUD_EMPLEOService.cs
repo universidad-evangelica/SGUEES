@@ -276,39 +276,107 @@ namespace sguees.Services
 			}, RegexOptions.IgnoreCase);
 		}
 
-		// Qué hace: normaliza el espaciado vertical del HTML y asegura compatibilidad de ancho y centrado en Outlook Desktop y clientes web.
-		// Cómo lo hace: inyecta atributos nativos align="center" y width="650" en tablas y celdas, compacta paddings/márgenes y envuelve el cuerpo en una tabla condicional MSO para confinar el diseño a 650px en el motor de Microsoft Word.
-		private static string NormalizarEspaciadoHtml(string html)
+		private const string FuentePorDefectoCorreo = "Arial, Helvetica, sans-serif";
+
+		// Qué hace: normaliza el espaciado vertical y asegura que la estructura HTML en Outlook coincida exactamente con la plantilla institucional de CRoutines.BodyEmailUEES.
+		// Cómo lo hace: limpia cierres de tabla huérfanos, reemplaza encabezado y pie mediante conteo de tablas anidadas, aplica width="680" solo a tablas raíz, asigna Arial como fuente por defecto preservando fuentes explícitas y envuelve en el contenedor de 680px.
+		internal static string NormalizarEspaciadoHtml(string html)
 		{
 			if (string.IsNullOrWhiteSpace(html)) return "";
 
+			var resultado = LimpiarCierresTablaHuerfanos(html);
+
 			// Reducir padding excesivo de celdas y tarjetas institucionales
-			var resultado = Regex.Replace(html, @"padding:\s*32px\s+24px;?", "padding: 8px 16px;", RegexOptions.IgnoreCase);
+			resultado = Regex.Replace(resultado, @"padding:\s*32px\s+24px;?", "padding: 8px 16px;", RegexOptions.IgnoreCase);
 			resultado = Regex.Replace(resultado, @"padding:\s*22px\s+20px;?", "padding: 12px 16px;", RegexOptions.IgnoreCase);
 
 			// Eliminar párrafos vacíos redundantes <p><br></p> entre tablas que generan espaciado vertical excesivo
 			resultado = Regex.Replace(resultado, @"(</table>\s*(?:<p[^>]*>\s*<span[^>]*>(?:&nbsp;|\s*)</span>\s*</p>)?)\s*<p[^>]*>\s*(?:<br\s*/?>|&nbsp;|\s*)\s*</p>\s*(<table)", "$1$2", RegexOptions.IgnoreCase);
+			resultado = Regex.Replace(resultado, @"(?:<p[^>]*>\s*(?:<br\s*/?>|&nbsp;|\s*)\s*</p>\s*){2,}", "<p><br></p>", RegexOptions.IgnoreCase);
 
-			// Asegurar align="center" y width="650" en tablas para que Outlook Desktop no las estire al 100%
-			resultado = Regex.Replace(resultado, @"<table(\s+[^>]*)?>", match =>
+			// Normalizar encabezado institucional tomando la tabla externa completa (sin truncar en tablas internas)
+			var tablasAzules = EncontrarTablasAzulesCompletas(resultado);
+			if (tablasAzules.Count > 0)
+			{
+				var tablaHeader = tablasAzules[0];
+				var imgMatch = Regex.Match(tablaHeader.Html, @"<img[^>]*>", RegexOptions.IgnoreCase);
+				var imgTag = imgMatch.Success ? imgMatch.Value : "<img src=\"assets/img/logo-xx.png\" alt=\"Logo UEES\" width=\"95\" height=\"77\" style=\"width:95px; height:auto; display:block; margin:0 auto; border:none;\">";
+				imgTag = Regex.Replace(imgTag, @"(?<![\w-])style\s*=\s*[""'][^""']*[""']", "style=\"width:95px; height:auto; display:block; margin:0 auto; border:none;\"", RegexOptions.IgnoreCase);
+
+				// Qué hace: genera la tabla del encabezado institucional centrada a 680px con franja dorada continua.
+				// Cómo lo hace: añade align="center", width="680" en la tabla externa y mantiene width="100%" en la tabla interna para no exceder los 680px en Outlook.
+				var nuevoEncabezado = $@"<table class=""plantilla-uees-table tabla-encabezado"" align=""center"" width=""680"" cellpadding=""0"" cellspacing=""0"" border=""0"" bgcolor=""#063b79"" style=""width:100%; max-width:680px; border-collapse:collapse; background-color:#063b79; margin:0 auto;"">
+  <tr>
+    <td class=""header"" bgcolor=""#063b79"" style=""padding:28px 35px 24px 35px; border-bottom:6px solid #ffcc00; background-color:#063b79; font-family: {FuentePorDefectoCorreo};"">
+      <table width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" role=""presentation"" style=""border-collapse:collapse;"">
+        <tr>
+          <td width=""115"" valign=""middle"" align=""center"" style=""width:115px; vertical-align:middle; text-align:center; padding:0; border:none;"">
+            {imgTag}
+          </td>
+          <td valign=""middle"" align=""left"" style=""vertical-align:middle; text-align:left; border:none; border-left:2px solid #ffffff; padding:0 0 0 22px; font-family: {FuentePorDefectoCorreo};"">
+            <p style=""margin:0 0 3px 0; color:#ffffff; font-size:20px; line-height:26px; font-weight:bold; letter-spacing:0.5px; text-align:left; font-family: {FuentePorDefectoCorreo};"">UNIVERSIDAD EVANGÉLICA</p>
+            <p style=""margin:0; color:#ffffff; font-size:20px; line-height:26px; font-weight:bold; letter-spacing:0.5px; text-align:left; font-family: {FuentePorDefectoCorreo};"">DE EL SALVADOR</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>";
+				resultado = resultado.Substring(0, tablaHeader.Start) + nuevoEncabezado + resultado.Substring(tablaHeader.Start + tablaHeader.Length);
+			}
+
+			// Qué hace: normaliza el pie institucional para que tenga exactamente el mismo ancho (680px) y alineación que el encabezado, asegurando franja dorada y enlace dorado.
+			// Cómo lo hace: actualiza la última tabla azul completa a width="680", añade border-top en sus celdas y asegura color #ffcc00 en etiquetas <a>.
+			tablasAzules = EncontrarTablasAzulesCompletas(resultado);
+			if (tablasAzules.Count > 1)
+			{
+				var tablaPie = tablasAzules[tablasAzules.Count - 1];
+				var nuevaEtiquetaTabla = @"<table class=""plantilla-uees-table tabla-pie"" align=""center"" width=""680"" cellpadding=""0"" cellspacing=""0"" border=""0"" bgcolor=""#063b79"" style=""width:100%; max-width:680px; border-collapse:collapse; background-color:#063b79; margin:0 auto;"">";
+				var pieModificado = Regex.Replace(tablaPie.Html, @"^<table(\s+[^>]*)?>", nuevaEtiquetaTabla, RegexOptions.IgnoreCase);
+				pieModificado = Regex.Replace(pieModificado, @"<td(\s+[^>]*)?>", mTd =>
+				{
+					var tagTd = mTd.Value;
+					if (!tagTd.Contains("border-top", StringComparison.OrdinalIgnoreCase))
+					{
+						tagTd = AsegurarPropiedadStyle(tagTd, "border-top", "5px solid #ffcc00");
+					}
+					return tagTd;
+				}, RegexOptions.IgnoreCase);
+				pieModificado = Regex.Replace(pieModificado, @"<a(\s+[^>]*)?>", mA => AsegurarPropiedadStyle(mA.Value, "color", "#ffcc00"), RegexOptions.IgnoreCase);
+				resultado = resultado.Substring(0, tablaPie.Start) + pieModificado + resultado.Substring(tablaPie.Start + tablaPie.Length);
+			}
+
+			// Asegurar align="center" y width="680" solo en tablas raíz (depth == 0), respetando tablas internas con width="100%"
+			int tableDepth = 0;
+			resultado = Regex.Replace(resultado, @"</?table\b[^>]*>", match =>
 			{
 				var tag = match.Value;
+				if (tag.StartsWith("</", StringComparison.Ordinal))
+				{
+					if (tableDepth > 0) tableDepth--;
+					return tag;
+				}
+
+				bool esTablaRaiz = tableDepth == 0;
+				tableDepth++;
+				if (!esTablaRaiz) return tag;
+
 				if (!Regex.IsMatch(tag, @"\balign\s*=", RegexOptions.IgnoreCase))
 				{
 					tag = tag.Insert(6, " align=\"center\"");
 				}
 				if (!Regex.IsMatch(tag, @"\bwidth\s*=", RegexOptions.IgnoreCase))
 				{
-					tag = tag.Insert(6, " width=\"650\"");
+					tag = tag.Insert(6, " width=\"680\"");
 				}
 				else
 				{
-					tag = Regex.Replace(tag, @"\bwidth\s*=\s*[""']100%?[""']", "width=\"650\"", RegexOptions.IgnoreCase);
+					tag = Regex.Replace(tag, @"\bwidth\s*=\s*[""'](?:100%?|650)[""']", "width=\"680\"", RegexOptions.IgnoreCase);
 				}
 				return tag;
 			}, RegexOptions.IgnoreCase);
 
-			// Asegurar align="center" en celdas con texto o imágenes centradas para compatibilidad con Word MSO
+			// Asegurar align="center" en celdas con texto centrado para compatibilidad con Word MSO
 			resultado = Regex.Replace(resultado, @"<td(\s+[^>]*)?>", match =>
 			{
 				var tag = match.Value;
@@ -320,9 +388,7 @@ namespace sguees.Services
 				return tag;
 			}, RegexOptions.IgnoreCase);
 
-			// Asegurar centrado de imágenes y logo UEES para Outlook Desktop (Word MSO):
-			// Word MSO ignora margin: auto y con display: block alinea la imagen a la izquierda ignorando text-align: center.
-			// Sustituir display: block por display: inline-block, asegurar align="center" y envolver con contenedor centrado.
+			// Asegurar centrado de imágenes y logo UEES para Outlook Desktop (Word MSO)
 			resultado = Regex.Replace(resultado, @"<img(\s+[^>]*)?>", match =>
 			{
 				var tag = match.Value;
@@ -334,69 +400,237 @@ namespace sguees.Services
 				return tag;
 			}, RegexOptions.IgnoreCase);
 
-			// Si la imagen está directamente en una celda centrada sin párrafo contenedor, envolver en párrafo centrado para Word MSO
-			resultado = Regex.Replace(resultado, @"(<td[^>]*align\s*=\s*[""']center[""'][^>]*>)\s*(<img[^>]*>)\s*(</td>)", "$1<p align=\"center\" style=\"text-align: center; margin: 0; padding: 0;\">$2</p>$3", RegexOptions.IgnoreCase);
-
-			// Normalizar etiquetas <p> para anular márgenes automáticos de clientes de correo (Outlook, Gmail)
+			// Normalizar etiquetas <p> preservando fuentes explícitas y usando Arial cuando falta o viene inherit
 			resultado = Regex.Replace(resultado, @"<p(\s+[^>]*)?>", match =>
 			{
 				var tag = match.Value;
 
-				// Respetar líneas divisorias con border-top
 				if (tag.IndexOf("border-top", StringComparison.OrdinalIgnoreCase) >= 0)
 				{
 					return tag;
 				}
 
-				// Si es un párrafo separador con fuente mínima (font-size: 1px / 4px)
 				if (tag.IndexOf("font-size: 1px", StringComparison.OrdinalIgnoreCase) >= 0 ||
 					tag.IndexOf("font-size: 4px", StringComparison.OrdinalIgnoreCase) >= 0)
 				{
-					if (Regex.IsMatch(tag, @"style\s*=\s*[""'][^""']*[""']", RegexOptions.IgnoreCase))
-					{
-						return Regex.Replace(tag, @"style\s*=\s*([""'])([^""']*)\1", mStyle =>
-						{
-							return "style=\"margin: 0; padding: 0; line-height: 2px; font-size: 2px; height: 2px; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; " + mStyle.Groups[2].Value + "\"";
-						}, RegexOptions.IgnoreCase);
-					}
-					return "<p style=\"margin: 0; padding: 0; line-height: 2px; font-size: 2px; height: 2px; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0;\">";
+					return $"<p style=\"margin: 0; padding: 0; line-height: 2px; font-size: 2px; height: 2px; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; font-family: {FuentePorDefectoCorreo};\">";
 				}
 
-				if (Regex.IsMatch(tag, @"style\s*=\s*[""'][^""']*[""']", RegexOptions.IgnoreCase))
+				if (Regex.IsMatch(tag, @"(?<![\w-])style\s*=\s*[""'][^""']*[""']", RegexOptions.IgnoreCase))
 				{
-					return Regex.Replace(tag, @"style\s*=\s*([""'])([^""']*)\1", mStyle =>
+					return Regex.Replace(tag, @"(?<![\w-])style\s*=\s*([""'])([^""']*)\1", mStyle =>
 					{
 						var estilo = mStyle.Groups[2].Value;
-						// Eliminar márgenes y paddings previos que agreguen separación
-						estilo = Regex.Replace(estilo, @"(?:margin|padding)(?:-top|-bottom)?\s*:\s*[^;]+;?", "", RegexOptions.IgnoreCase).Trim();
-						return "style=\"margin: 0; margin-top: 0; margin-bottom: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; padding: 0; line-height: 1.4; " + estilo + "\"";
+						var esTituloEncabezado = estilo.IndexOf("letter-spacing:0.5px", StringComparison.OrdinalIgnoreCase) >= 0;
+						if (!esTituloEncabezado)
+						{
+							estilo = Regex.Replace(estilo, @"(?<![\w-])(?:margin|padding)(?:-top|-bottom)?\s*:\s*[^;]+;?", "", RegexOptions.IgnoreCase).Trim();
+						}
+						estilo = NormalizarFuentePorDefecto(estilo);
+						if (esTituloEncabezado)
+						{
+							return $"style=\"{estilo}\"";
+						}
+						var tieneLineHeight = Regex.IsMatch(estilo, @"(?<![\w-])line-height\s*:", RegexOptions.IgnoreCase);
+						var prefijo = $"margin: 0 0 6px 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 6px; padding: 0;{(tieneLineHeight ? "" : " line-height: 1.4;")}";
+						return $"style=\"{prefijo} {estilo}\"".Replace("  ", " ");
 					}, RegexOptions.IgnoreCase);
 				}
 
-				return "<p style=\"margin: 0; margin-top: 0; margin-bottom: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; padding: 0; line-height: 1.4;\">";
+				return $"<p style=\"margin: 0 0 6px 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 6px; padding: 0; line-height: 1.4; font-family: {FuentePorDefectoCorreo};\">";
 			}, RegexOptions.IgnoreCase);
 
-			// Envolver en contenedor centrado con tabla condicional MSO para fijar ancho de 650px en Outlook Desktop
-			if (resultado.IndexOf("mso 9", StringComparison.OrdinalIgnoreCase) < 0)
+			// Reemplazar font-family: inherit (o fuente ausente) por Arial en etiquetas de texto, respetando fuentes explícitas de la plantilla
+			resultado = Regex.Replace(resultado, @"<(span|strong|b|em|i|u|a|td|th|li|div|h[1-6])(\s+[^>]*)?>", match =>
 			{
-				resultado = $@"<center style=""width: 100%; table-layout: fixed; background-color: #ffffff;"">
-<!--[if (gte mso 9)|(IE)]>
-<table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""650"" style=""width:650px;"">
-<tr>
-<td align=""center"" valign=""top"" width=""650"">
-<![endif]-->
-<div style=""max-width: 650px; margin: 0 auto; text-align: left;"">
-{resultado}
-</div>
-<!--[if (gte mso 9)|(IE)]>
-</td>
-</tr>
+				var tag = match.Value;
+				if (Regex.IsMatch(tag, @"(?<![\w-])style\s*=\s*[""'][^""']*[""']", RegexOptions.IgnoreCase))
+				{
+					return Regex.Replace(tag, @"(?<![\w-])style\s*=\s*([""'])([^""']*)\1", mStyle =>
+						$"style=\"{NormalizarFuentePorDefecto(mStyle.Groups[2].Value)}\"", RegexOptions.IgnoreCase);
+				}
+				var nombreTag = match.Groups[1].Value;
+				return tag.Insert(1 + nombreTag.Length, $" style=\"font-family: {FuentePorDefectoCorreo};\"");
+			}, RegexOptions.IgnoreCase);
+
+			// Envolver en la estructura contenedora nativa idéntica a CRoutines.BodyEmailUEES
+			// Qué hace: envuelve el correo en la estructura contenedora nativa idéntica a CRoutines.BodyEmailUEES si no es un documento HTML completo.
+			// Cómo lo hace: verifica la ausencia de <!DOCTYPE y <html para garantizar que el correo viaje con fondo exterior #f2f5f9, tarjeta blanca centrada de 680px y condicionales MSO para Outlook.
+			if (resultado.IndexOf("<!DOCTYPE", StringComparison.OrdinalIgnoreCase) < 0 &&
+				resultado.IndexOf("<html", StringComparison.OrdinalIgnoreCase) < 0)
+			{
+				resultado = $@"<!DOCTYPE html>
+<html lang=""es"">
+<head>
+<meta charset=""UTF-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+<meta http-equiv=""X-UA-Compatible"" content=""IE=edge"">
+<title>Universidad Evangélica de El Salvador</title>
+<style>
+body {{ margin: 0; padding: 0; background-color: #f2f5f9; font-family: {FuentePorDefectoCorreo}; color: #102d59; }}
+table {{ border-spacing: 0; border-collapse: collapse; }}
+img {{ border: 0; display: block; }}
+</style>
+</head>
+<body style=""margin: 0; padding: 0; background-color: #f2f5f9; font-family: {FuentePorDefectoCorreo};"">
+<table width=""100%"" role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" bgcolor=""#f2f5f9"" style=""background-color: #f2f5f9;"">
+  <tr>
+    <td align=""center"" style=""padding: 30px 12px;"">
+      <!--[if (gte mso 9)|(IE)]>
+      <table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""680"" style=""width:680px;"">
+      <tr>
+      <td align=""center"" valign=""top"" width=""680"">
+      <![endif]-->
+      <table class=""container"" width=""680"" role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""width:680px; max-width:680px; background-color:#ffffff; margin:0 auto; border-collapse:collapse;"">
+        <tr>
+          <td style=""padding: 0; background-color: #ffffff; border: none; font-family: {FuentePorDefectoCorreo};"">
+            {resultado}
+          </td>
+        </tr>
+      </table>
+      <!--[if (gte mso 9)|(IE)]>
+      </td>
+      </tr>
+      </table>
+      <![endif]-->
+    </td>
+  </tr>
 </table>
-<![endif]-->
-</center>";
+</body>
+</html>";
 			}
 
 			return resultado;
+		}
+
+		// Qué hace: elimina etiquetas de cierre de tabla o celda huérfanas que queden fuera de cualquier tabla abierta.
+		// Cómo lo hace: recorre las etiquetas de tabla y celda manteniendo un contador de profundidad y descarta los cierres cuando la profundidad es cero.
+		private static string LimpiarCierresTablaHuerfanos(string html)
+		{
+			int depth = 0;
+			return Regex.Replace(html, @"</?(table|tbody|thead|tfoot|tr|td|th)\b[^>]*>", match =>
+			{
+				var tag = match.Value;
+				var nombre = match.Groups[1].Value.ToLowerInvariant();
+				if (tag.StartsWith("</", StringComparison.Ordinal))
+				{
+					if (nombre == "table")
+					{
+						if (depth > 0)
+						{
+							depth--;
+							return tag;
+						}
+						return "";
+					}
+					return depth > 0 ? tag : "";
+				}
+
+				if (nombre == "table")
+				{
+					depth++;
+				}
+				return tag;
+			}, RegexOptions.IgnoreCase);
+		}
+
+		// Qué hace: localiza las tablas azules institucionales completas respetando tablas anidadas en su interior.
+		// Cómo lo hace: detecta aperturas con color #063b79 o rgb(6, 59, 121) y avanza balanceando <table> y </table> hasta alcanzar profundidad cero.
+		private static List<(int Start, int Length, string Html)> EncontrarTablasAzulesCompletas(string html)
+		{
+			var lista = new List<(int Start, int Length, string Html)>();
+			var regexInicio = new Regex(@"<table[^>]*(?:background-color:\s*(?:rgb\(6,\s*59,\s*121\)|#063b79)|bgcolor=[""']#063b79[""'])[^>]*>", RegexOptions.IgnoreCase);
+			var regexTags = new Regex(@"</?table\b[^>]*>", RegexOptions.IgnoreCase);
+
+			int posBusqueda = 0;
+			while (posBusqueda < html.Length)
+			{
+				var mInicio = regexInicio.Match(html, posBusqueda);
+				if (!mInicio.Success) break;
+
+				int depth = 0;
+				int finTabla = -1;
+				foreach (Match mTag in regexTags.Matches(html, mInicio.Index))
+				{
+					if (mTag.Value.StartsWith("</", StringComparison.Ordinal))
+					{
+						depth--;
+						if (depth == 0)
+						{
+							finTabla = mTag.Index + mTag.Length;
+							break;
+						}
+					}
+					else
+					{
+						depth++;
+					}
+				}
+
+				if (finTabla > mInicio.Index)
+				{
+					int len = finTabla - mInicio.Index;
+					lista.Add((mInicio.Index, len, html.Substring(mInicio.Index, len)));
+					posBusqueda = finTabla;
+				}
+				else
+				{
+					posBusqueda = mInicio.Index + mInicio.Length;
+				}
+			}
+
+			return lista;
+		}
+
+		// Qué hace: asigna Arial como tipografía por defecto solo cuando falta font-family o está definida como inherit/initial/unset.
+		// Cómo lo hace: evalúa el valor de font-family dentro de un estilo inline y conserva cualquier fuente explícita seleccionada en la plantilla.
+		private static string NormalizarFuentePorDefecto(string estiloActual)
+		{
+			var estilo = estiloActual ?? "";
+			var matchFuente = Regex.Match(estilo, @"(?<![\w-])font-family\s*:\s*([^;]+);?", RegexOptions.IgnoreCase);
+			if (!matchFuente.Success)
+			{
+				var limpio = estilo.TrimEnd();
+				var sep = string.IsNullOrEmpty(limpio) || limpio.EndsWith(";") ? (string.IsNullOrEmpty(limpio) ? "" : " ") : "; ";
+				return $"{limpio}{sep}font-family: {FuentePorDefectoCorreo};";
+			}
+
+			var valorFuente = matchFuente.Groups[1].Value.Trim().Trim('\'', '"').ToLowerInvariant();
+			if (string.IsNullOrEmpty(valorFuente) ||
+				valorFuente == "inherit" ||
+				valorFuente == "initial" ||
+				valorFuente == "unset")
+			{
+				return Regex.Replace(
+					estilo,
+					@"(?<![\w-])font-family\s*:\s*[^;]+;?",
+					$"font-family: {FuentePorDefectoCorreo};",
+					RegexOptions.IgnoreCase);
+			}
+
+			return estilo;
+		}
+
+		// Qué hace: agrega una propiedad CSS al atributo style de una etiqueta HTML sin alterar atributos data-*.
+		// Cómo lo hace: verifica la ausencia de la propiedad y la inyecta en style="..." respetando propiedades existentes.
+		private static string AsegurarPropiedadStyle(string tag, string propiedad, string valor)
+		{
+			if (Regex.IsMatch(tag, $@"(?<![\w-]){Regex.Escape(propiedad)}\s*:", RegexOptions.IgnoreCase))
+			{
+				return tag;
+			}
+			if (Regex.IsMatch(tag, @"(?<![\w-])style\s*=\s*[""']([^""']*)[""']", RegexOptions.IgnoreCase))
+			{
+				return Regex.Replace(tag, @"(?<![\w-])style\s*=\s*([""'])([^""']*)\1", m =>
+				{
+					var actual = m.Groups[2].Value.TrimEnd(';', ' ');
+					var sep = string.IsNullOrEmpty(actual) ? "" : "; ";
+					return $"style=\"{actual}{sep}{propiedad}: {valor};\"";
+				}, RegexOptions.IgnoreCase);
+			}
+			var pos = tag.IndexOf(' ');
+			var insertIdx = pos > 0 ? pos : tag.Length - 1;
+			return tag.Insert(insertIdx, $" style=\"{propiedad}: {valor};\"");
 		}
 
 		// Qué hace: consulta si existe un candidato con expediente previo a partir de su documento de identidad (DUI).

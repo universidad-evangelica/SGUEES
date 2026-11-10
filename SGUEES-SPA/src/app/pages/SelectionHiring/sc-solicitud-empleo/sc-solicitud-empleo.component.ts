@@ -1,4 +1,4 @@
-﻿import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -1761,6 +1761,27 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.correoCuerpoPreviewSafe = '';
 	}
 
+	// Qué hace: restablece la posición del scroll de la vista previa del correo al tope superior cuando el modal se hace visible.
+	// Cómo lo hace: consulta el elemento .email-preview-container y asigna scrollTop = 0 de forma escalonada para asegurar la visibilidad del encabezado institucional tras la animación y carga de imágenes.
+	onPopupEnviarCorreoShown(): void {
+		this.resetScrollVistaPrevia();
+	}
+
+	// Qué hace: fuerza el desplazamiento al inicio superior del visor del correo.
+	// Cómo lo hace: programa ejecuciones diferidas de scrollTop = 0 en el contenedor .email-preview-container para garantizar que el encabezado institucional sea visible desde el inicio.
+	private resetScrollVistaPrevia(): void {
+		const ejecutarReset = () => {
+			const contenedor = document.querySelector('.email-preview-container') as HTMLElement;
+			if (contenedor) {
+				contenedor.scrollTop = 0;
+			}
+		};
+		ejecutarReset();
+		setTimeout(ejecutarReset, 50);
+		setTimeout(ejecutarReset, 150);
+		setTimeout(ejecutarReset, 300);
+	}
+
 	// Qué hace: reacciona a la selección de una plantilla para previsualizar el asunto y cuerpo con parámetros sustituidos.
 	// Cómo lo hace: busca la plantilla elegida, extrae su versión activa, reemplaza tokens y genera SafeHtml para preservar estilos CSS.
 	onPlantillaSeleccionadaChange(e: any): void {
@@ -1783,8 +1804,11 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		let cuerpo = this.sustituirParametrosCorreo(plantilla.CUERPO_PLANTILLA || '');
 		// Limpiar párrafos vacíos redundantes <p><br></p> entre tablas para evitar separación excesiva en la vista previa
 		cuerpo = cuerpo.replace(/(<\/table>\s*(?:<p[^>]*>\s*<span[^>]*>(?:&nbsp;|\s*)<\/span>\s*<\/p>)?)\s*<p[^>]*>\s*(?:<br\s*\/?>|&nbsp;|\s*)\s*<\/p>\s*(<table)/gi, '$1$2');
+		// Colapsar saltos de párrafo vacíos consecutivos a uno solo para evitar huecos gigantes
+		cuerpo = cuerpo.replace(/(?:<p[^>]*>\s*(?:<br\s*\/?>|&nbsp;|\s*)\s*<\/p>\s*){2,}/gi, '<p><br></p>');
 		this.correoCuerpoPreview = cuerpo;
 		this.correoCuerpoPreviewSafe = this.sanitizer.bypassSecurityTrustHtml(this.correoCuerpoPreview);
+		this.resetScrollVistaPrevia();
 	}
 
 	// Qué hace: sustituye dinámicamente cualquier parámetro de la solicitud, requisición o sistema en el texto o HTML de la plantilla.

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -57,7 +57,7 @@ namespace SGUEES.Services
 
 		/// <summary>
 		/// Acción sin flujo: avisa a usuarios con menú SC_BANDEJA_TH.
-		/// APLICA con movimiento → deep-link a movimiento; si no → bandeja TH.
+		/// APLICA con movimiento -> deep-link a movimiento; si no -> bandeja TH.
 		/// </summary>
 		private async Task NotificarDesdeDictamenAsync(SC_REQUISICION_CANDIDATOTable data, string loginActor)
 		{
@@ -79,16 +79,23 @@ namespace SGUEES.Services
 				? dto.CORR_REQUISICION_PERSONAL
 				: data.CORR_REQUISICION_PERSONAL;
 			var nombre = string.IsNullOrWhiteSpace(dto.NOMBRE_PERSONA) ? "Candidato" : dto.NOMBRE_PERSONA.Trim();
-			var puesto = string.IsNullOrWhiteSpace(dto.NOMBRE_PUESTO) ? "—" : dto.NOMBRE_PUESTO.Trim();
-			var unidad = string.IsNullOrWhiteSpace(dto.NOMBRE_UNIDAD) ? "—" : dto.NOMBRE_UNIDAD.Trim();
+			var puesto = string.IsNullOrWhiteSpace(dto.NOMBRE_PUESTO) ? "-" : dto.NOMBRE_PUESTO.Trim();
+			var unidad = string.IsNullOrWhiteSpace(dto.NOMBRE_UNIDAD) ? "-" : dto.NOMBRE_UNIDAD.Trim();
 			var etiquetaEstado = estado == "APLICA" ? "APLICA" : "NO APLICA";
 
-			var titulo = $"Dictamen candidato #{corrExp} - {etiquetaEstado}";
-			var mensaje = $"{nombre} · REQ #{corrReq} · {puesto} ({unidad}).";
+			var titulo = $"Dictamen de Candidato #{corrExp}";
+			var lineasMensaje = new List<string>
+			{
+				$"Candidato evaluado: {nombre}",
+				$"Requisición asociada: REQ #{corrReq}",
+				$"Puesto solicitado: {puesto}",
+				$"Área solicitante: {unidad}"
+			};
 			if (!string.IsNullOrWhiteSpace(dto.OBSERVACION_DECISION))
 			{
-				mensaje += $" Observación: {dto.OBSERVACION_DECISION.Trim()}";
+				lineasMensaje.Add($"Observación: {dto.OBSERVACION_DECISION.Trim()}");
 			}
+			var mensaje = string.Join("\n", lineasMensaje);
 
 			var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			foreach (var login in dto.LOGINS_DESTINO ?? Enumerable.Empty<string>())
@@ -121,7 +128,7 @@ namespace SGUEES.Services
 				}
 				else
 				{
-					// Tarea → bandeja según unidad del receptor.
+					// Tarea / bandeja según unidad del receptor.
 					urlDestino = await _notificacion.ResolverUrlBandejaTareaAsync(
 						data.CORR_EMPRESA,
 						loginDestino,

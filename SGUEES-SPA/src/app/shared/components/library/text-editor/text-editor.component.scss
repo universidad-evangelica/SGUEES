@@ -119,16 +119,20 @@
 			}
 		}
 
-		// Área de texto amplia y cómoda para redactar
+		// Área de texto amplia y cómoda para redactar (Arial por defecto en plantillas institucionales)
 		.dx-htmleditor-content {
 			padding: 16px !important;
 			font-size: 14px !important;
 			line-height: 1.6 !important;
 			min-height: 380px !important;
 
-			// Qué hace: estilos para tablas creadas manualmente por el usuario dentro del editor.
-			// Cómo lo hace: define table-layout: fixed para distribuir equitativamente el ancho entre todas las columnas, bordes continuos sólidos y min-width para evitar que columnas nuevas se compriman, excluyendo tablas de formato institucional.
-			table:not(.plantilla-uees-table):not([data-tipo]) {
+			&.plantilla-uees-activa {
+				font-family: Arial, Helvetica, sans-serif;
+			}
+
+			// Qué hace: estilos estándar para tablas creadas dentro del editor.
+			// Cómo lo hace: define table-layout: fixed para distribuir equitativamente el ancho entre columnas con bordes continuos.
+			table {
 				width: 100%;
 				border-collapse: collapse;
 				table-layout: fixed;
@@ -141,184 +145,6 @@
 					padding: 8px 12px !important;
 					box-sizing: border-box;
 					word-break: break-word;
-				}
-			}
-
-			// Qué hace: estilos para tablas de formato institucional.
-			// Cómo lo hace: asegura que no muestren bordes de cuadrícula ni líneas divisorias internas y mantengan separación vertical compacta.
-			table.plantilla-uees-table,
-			table[data-tipo] {
-				border: none !important;
-				margin: 2px 0 !important;
-				width: 100% !important;
-				max-width: 100% !important;
-
-				td, th {
-					border: none !important;
-				}
-			}
-
-			// Qué hace: renderiza la línea divisoria institucional superior entre el encabezado amarillo y el cuerpo gris.
-			// Cómo lo hace: establece border-top de 1px sólido #cccccc al 100% del ancho con margen vertical de 16px.
-			table:first-of-type + p {
-				border: none !important;
-				border-top: 1px solid #cccccc !important;
-				margin: 16px 0 !important;
-				width: 100% !important;
-				max-width: 100% !important;
-				height: 1px !important;
-				min-height: 1px !important;
-				max-height: 1px !important;
-				line-height: 1px !important;
-				font-size: 1px !important;
-				padding: 0 !important;
-				overflow: visible !important;
-			}
-
-			// Qué hace: reduce al mínimo el espacio negro de los párrafos separadores entre la tarjeta gris y el pie azul.
-			// Cómo lo hace: anula los márgenes por defecto de párrafo del navegador (1em) y fuerza altura y margen mínimos de 3px.
-			table:not(:first-of-type) + p {
-				border-top: none !important;
-				margin: 3px 0 !important;
-				padding: 0 !important;
-				font-size: 2px !important;
-				line-height: 4px !important;
-				height: 4px !important;
-				min-height: 4px !important;
-				max-height: 4px !important;
-				overflow: hidden !important;
-			}
-
-			// Qué hace: asegura legibilidad del texto en el pie de página azul.
-			// Cómo lo hace: fuerza color de fuente #ffffff en párrafos y span internos, manteniendo el color celeste en enlaces.
-			table.plantilla-uees-pie,
-			table.plantilla-uees-table[data-tipo="pie"],
-			table[data-tipo="pie"],
-			table.plantilla-uees-table td[style*="#034ea2"],
-			table.plantilla-uees-table td[style*="rgb(3, 78, 162)"] {
-				border: none !important;
-				margin: 2px auto !important;
-				color: #ffffff !important;
-
-				td, th {
-					background-color: #034ea2 !important;
-					color: #ffffff !important;
-					border: none !important;
-					text-align: center !important;
-				}
-
-				p, span, .ql-table-cell-line {
-					color: #ffffff !important;
-				}
-
-				a {
-					color: #60a5fa !important;
-					text-decoration: underline !important;
-				}
-			}
-
-			// Encabezado institucional amarillo (#ffdc00)
-			table.plantilla-uees-table[data-tipo="encabezado"],
-			table[data-tipo="encabezado"] {
-				border: none !important;
-				margin: 2px auto !important;
-
-				td, th {
-					background-color: #ffdc00 !important;
-					border: none !important;
-					text-align: center !important;
-				}
-			}
-
-			// Tarjeta central institucional gris (#cccccc)
-			table.plantilla-uees-table[data-tipo="cuerpo"],
-			table[data-tipo="cuerpo"] {
-				border: none !important;
-				margin: 2px auto !important;
-
-				td, th {
-					background-color: #cccccc !important;
-					color: #1e293b !important;
-					border: none !important;
-					padding: 24px 20px !important;
-					text-align: center !important;
-				}
-
-				p, span, .ql-table-cell-line {
-					color: #1e293b !important;
-				}
-			}
-		}
-	}
-
-	// Qué hace: protección global de alta especificidad cuando la plantilla institucional está activa en el componente.
-	// Cómo lo hace: anula bordes y asigna los fondos oficiales a las tablas por posición estructural sin depender de atributos en línea que Quill purgue.
-	&.plantilla-uees-activa {
-		::ng-deep .dx-htmleditor {
-			.dx-htmleditor-content {
-				table {
-					border: none !important;
-					margin: 2px auto !important;
-
-					td, th {
-						border: none !important;
-					}
-				}
-
-				// Encabezado institucional amarillo (#ffdc00)
-				table:first-of-type,
-				table[data-tipo="encabezado"] {
-					border: none !important;
-					margin: 2px auto !important;
-
-					td, th {
-						background-color: #ffdc00 !important;
-						border: none !important;
-						text-align: center !important;
-					}
-				}
-
-				// Tarjeta central institucional gris (#cccccc)
-				table:nth-of-type(2),
-				table[data-tipo="cuerpo"] {
-					border: none !important;
-					margin: 2px auto !important;
-
-					td, th {
-						background-color: #cccccc !important;
-						color: #1e293b !important;
-						border: none !important;
-						padding: 24px 20px !important;
-						text-align: center !important;
-					}
-
-					p, span, .ql-table-cell-line {
-						color: #1e293b !important;
-					}
-				}
-
-				// Pie de página institucional azul (#034ea2)
-				table:nth-of-type(3),
-				table:last-of-type,
-				table[data-tipo="pie"] {
-					border: none !important;
-					margin: 2px auto !important;
-
-					td, th {
-						background-color: #034ea2 !important;
-						color: #ffffff !important;
-						border: none !important;
-						text-align: center !important;
-					}
-
-					p, span, .ql-table-cell-line {
-						color: #ffffff !important;
-					}
-
-					a {
-						color: #60a5fa !important;
-						text-decoration: underline !important;
-					}
 				}
 			}
 		}

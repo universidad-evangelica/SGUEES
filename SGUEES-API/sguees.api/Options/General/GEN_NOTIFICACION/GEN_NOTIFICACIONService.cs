@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -287,7 +287,8 @@ namespace sguees.Services
 			return $"{path}?corr={corr}";
 		}
 
-		/// <summary>Deep link bandeja: {URL}?corr=&amp;tipo= (corr/tipo opcionales).</summary>
+		// Qué hace: Construye la URL amigable de la bandeja para notificaciones en formato REST (/sc-bandeja-actores/REQ-29).
+		// Cómo lo hace: Evalúa el tipo de documento para determinar el prefijo (REQ, MOV, CAN) y lo anexa como segmento limpio de ruta.
 		private static string AppendBandejaQuery(string urlOpcion, int? corrDocumento, string tipoDocumento)
 		{
 			var path = NormalizePath(urlOpcion);
@@ -296,18 +297,19 @@ namespace sguees.Services
 				return null;
 			}
 
-			var parts = new List<string>();
 			if (corrDocumento.HasValue && corrDocumento.Value > 0)
 			{
-				parts.Add($"corr={corrDocumento.Value}");
+				var tipo = (tipoDocumento ?? string.Empty).Trim().ToUpperInvariant();
+				var prefijo = tipo switch
+				{
+					"MOVIMIENTO" or "MOVIMIENTOS" => "MOV",
+					"CANDIDATO" or "CANDIDATOS" => "CAN",
+					_ => "REQ"
+				};
+				return $"{path.TrimEnd('/')}/{prefijo}-{corrDocumento.Value}";
 			}
 
-			if (!string.IsNullOrWhiteSpace(tipoDocumento))
-			{
-				parts.Add($"tipo={Uri.EscapeDataString(tipoDocumento.Trim())}");
-			}
-
-			return parts.Count == 0 ? path : $"{path}?{string.Join("&", parts)}";
+			return path;
 		}
 
 		private static string NormalizePath(string urlOpcion)
@@ -488,36 +490,54 @@ namespace sguees.Services
 				? urlBase
 				: $"{urlBase.TrimEnd('/')}/{view.URL_DESTINO.TrimStart('/')}";
 
-			// 4. Construir cuerpo HTML institucional con plantilla UEES
-			// Qué hace: Construye el cuerpo del correo en HTML institucional con la tarjeta de notificación.
-			// Cómo lo hace: Agrupa el título, el detalle del puesto/unidad y el botón de acción dentro del mismo contenedor blanco con borde azul.
+			// 4. Construir cuerpo HTML institucional con tarjeta moderna 2 columnas
+			// Qué hace: Construye el cuerpo del correo en HTML institucional con tarjeta estilizada en 2 columnas, botón de acción y enlace seguro.
+			// Cómo lo hace: Agrupa la categoría, el título y los datos estructurados en una tarjeta #f8fafc con bordes redondeados, coloca el botón Ingresar al Sistema SGUEES y añade el recuadro de enlace de respaldo.
 			var nombreParaMostrar = string.IsNullOrWhiteSpace(nombreDestino) ? view.LOGIN_SISTEMA : nombreDestino;
 			var sbMensaje = new System.Text.StringBuilder();
-			sbMensaje.Append("<p>Estimado(a) <strong>").Append(System.Net.WebUtility.HtmlEncode(nombreParaMostrar)).Append("</strong>,</p>");
-			sbMensaje.Append("<p>Se ha generado una nueva notificación en el sistema <strong>SGUEES</strong>:</p>");
-			sbMensaje.Append("<div style='background-color: #ffffff; border-left: 4px solid #1e3a8a; padding: 16px 20px; margin: 16px 0; border-radius: 4px;'>");
-			sbMensaje.Append("<p style='margin: 0 0 6px 0; font-size: 15px; font-weight: bold; color: #1e3a8a;'>").Append(System.Net.WebUtility.HtmlEncode(view.TITULO)).Append("</p>");
-			sbMensaje.Append("<p style='margin: 0; font-size: 14px; color: #334155; line-height: 1.6;'>")
-				.Append(System.Net.WebUtility.HtmlEncode(view.MENSAJE ?? string.Empty).Replace("\r\n", "<br/>").Replace("\n", "<br/>"))
-				.Append("</p>");
 
+			sbMensaje.Append("<p style='margin: 0 0 8px; font-size: 22px; font-weight: bold; color: #063b79;'>")
+					 .Append("Estimado(a) ").Append(System.Net.WebUtility.HtmlEncode(nombreParaMostrar)).Append(",</p>");
+			sbMensaje.Append("<p style='margin: 0 0 20px; font-size: 15px; color: #334155; line-height: 24px;'>")
+					 .Append("Se ha registrado una nueva actualización en el proceso de selección de personal:</p>");
 
-			if (!string.IsNullOrWhiteSpace(view.URL_DESTINO))
-			{
-				sbMensaje.Append("<div style='margin-top: 16px; padding-top: 14px; border-top: 1px solid #e2e8f0; text-align: center;'>");
-				sbMensaje.Append("<p style='margin: 0 0 10px 0;'>");
-				sbMensaje.Append("<a href='").Append(urlAcceso).Append("' style='display: inline-block; background-color: #1e3a8a; color: #ffffff; text-decoration: none; padding: 10px 22px; border-radius: 5px; font-weight: bold; font-size: 14px;'>Ir al Sistema</a>");
-				sbMensaje.Append("</p>");
-				sbMensaje.Append("<p style='font-size: 12px; color: #64748b; text-align: center; margin-top: 8px;'>Si el botón no funciona, copie y pegue el siguiente enlace en su navegador:<br/>");
-				sbMensaje.Append("<a href='").Append(urlAcceso).Append("' style='color: #1e3a8a;'>").Append(urlAcceso).Append("</a></p>");
-				sbMensaje.Append("</div>");
-			}
+			// Tarjeta principal (Card moderna con esquinas redondeadas)
+			sbMensaje.Append("<div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px 28px; margin: 20px 0;'>");
 
+			// Etiqueta superior de categoría (Overline)
+			var etiquetaCategoria = view.TITULO.Contains("Dictamen", StringComparison.OrdinalIgnoreCase)
+				? "RESULTADO DE EVALUACIÓN"
+				: (view.TITULO.Contains("Requisición", StringComparison.OrdinalIgnoreCase)
+					? "DATOS DE LA REQUISICIÓN"
+					: "DETALLE DE LA NOTIFICACIÓN");
+
+			sbMensaje.Append("<p style='margin: 0 0 6px; font-size: 11px; font-weight: bold; color: #64748b; letter-spacing: 0.8px; text-transform: uppercase;'>")
+					 .Append(etiquetaCategoria).Append("</p>");
+
+			// Título principal (sin badge de estado según lo solicitado)
+			sbMensaje.Append("<h3 style='margin: 0 0 16px; font-size: 20px; font-weight: bold; color: #092e61;'>")
+					 .Append(System.Net.WebUtility.HtmlEncode(view.TITULO)).Append("</h3>");
+
+			// Divisor horizontal
+			sbMensaje.Append("<table width='100%' role='presentation'><tr><td height='1' bgcolor='#e2e8f0' style='font-size:0;'>&nbsp;</td></tr></table>");
+
+			// Cuadrícula de datos en 2 columnas
+			sbMensaje.Append("<div style='padding-top: 16px;'>");
+			sbMensaje.Append(FormatearDetallesEnGrid(view.MENSAJE));
 			sbMensaje.Append("</div>");
 
+			sbMensaje.Append("</div>"); // Fin Tarjeta
 
-			sbMensaje.Append("<hr style='border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;'/>");
-			sbMensaje.Append("<p style='font-size: 12px; color: #94a3b8; margin: 0;'>Este es un mensaje automático del Sistema de Gestión Universitaria (SGUEES). Por favor no responda a este correo.</p>");
+			// Botón Principal
+			if (!string.IsNullOrWhiteSpace(view.URL_DESTINO))
+			{
+				sbMensaje.Append("<table width='100%' cellpadding='0' cellspacing='0' border='0' role='presentation' style='margin: 28px 0 20px;'><tr><td align='center'>");
+				sbMensaje.Append("<table cellpadding='0' cellspacing='0' border='0' role='presentation' bgcolor='#063b79' style='background-color: #063b79; border-radius: 8px;'><tr><td align='center' style='padding: 14px 32px; border-radius: 8px;'>");
+				sbMensaje.Append("<a href='").Append(urlAcceso).Append("' title='Ingresar al Sistema SGUEES' target='_blank' style='color: #ffffff; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;'>")
+						 .Append("Ingresar al Sistema SGUEES &rarr;</a>");
+				sbMensaje.Append("</td></tr></table>");
+				sbMensaje.Append("</td></tr></table>");
+			}
 
 			var cuerpoCompleto = CRoutines.BodyEmailUEES(sbMensaje.ToString());
 			var destinatarios = new List<ToEMail>
@@ -569,6 +589,98 @@ namespace sguees.Services
 			{
 				_smtpThrottle.Release();
 			}
+		}
+
+				// Qué hace: Formatea el contenido del mensaje de notificación en una cuadrícula responsiva HTML de dos columnas con pares Etiqueta/Valor.
+		// Cómo lo hace: Analiza las líneas del mensaje; si contienen pares separados por dos puntos (Etiqueta: Valor), genera una tabla de 2 columnas con tipografía institucional, destacando identificadores en azul y desplegando observaciones en ancho completo.
+		private static string FormatearDetallesEnGrid(string mensaje)
+		{
+			if (string.IsNullOrWhiteSpace(mensaje))
+			{
+				return string.Empty;
+			}
+
+			var lineas = mensaje.Replace("\r\n", "\n")
+								.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
+								.Select(l => l.Trim())
+								.Where(l => !string.IsNullOrWhiteSpace(l))
+								.ToList();
+
+			if (lineas.Count == 1 && (lineas[0].Contains('•') || lineas[0].Contains('|')))
+			{
+				lineas = lineas[0].Split(new[] { '•', '|' }, StringSplitOptions.RemoveEmptyEntries)
+								  .Select(l => l.Trim())
+								  .Where(l => !string.IsNullOrWhiteSpace(l))
+								  .ToList();
+			}
+
+			var campos = new List<(string Etiqueta, string Valor)>();
+			var textosLibres = new List<string>();
+
+			foreach (var linea in lineas)
+			{
+				var posDosPuntos = linea.IndexOf(':');
+				if (posDosPuntos > 0 && posDosPuntos < linea.Length - 1)
+				{
+					var etiqueta = linea.Substring(0, posDosPuntos).Trim().ToUpperInvariant();
+					var valor = linea.Substring(posDosPuntos + 1).Trim();
+					campos.Add((etiqueta, valor));
+				}
+				else
+				{
+					textosLibres.Add(linea);
+				}
+			}
+
+			if (campos.Count == 0)
+			{
+				return $"<p style='margin: 0; font-size: 14px; color: #334155; line-height: 1.6;'>{System.Net.WebUtility.HtmlEncode(mensaje).Replace("\r\n", "<br/>").Replace("\n", "<br/>")}</p>";
+			}
+
+			var sb = new System.Text.StringBuilder();
+			sb.Append("<table width='100%' cellpadding='0' cellspacing='0' border='0' role='presentation'>");
+
+			for (int i = 0; i < campos.Count; i += 2)
+			{
+				sb.Append("<tr>");
+
+				var c1 = campos[i];
+				bool esUltimoSolo = (i + 1 >= campos.Count);
+				string colspan1 = esUltimoSolo ? " colspan='2'" : " width='50%'";
+				string padding1 = esUltimoSolo ? "padding: 6px 0 14px 0;" : "padding: 6px 12px 14px 0;";
+
+				sb.Append($"<td{colspan1} valign='top' style='{padding1}'>");
+				sb.Append($"<p style='margin: 0 0 4px; font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;'>{System.Net.WebUtility.HtmlEncode(c1.Etiqueta)}</p>");
+
+				bool esAzul1 = c1.Etiqueta.Contains("REQUISICI\u00D3N") || c1.Etiqueta.Contains("EXPEDIENTE") || c1.Etiqueta.Contains("MOVIMIENTO");
+				string colorValor1 = esAzul1 ? "#0754a5" : "#0f294a";
+				sb.Append($"<p style='margin: 0; font-size: 15px; font-weight: bold; color: {colorValor1};'>{System.Net.WebUtility.HtmlEncode(c1.Valor)}</p>");
+				sb.Append("</td>");
+
+				if (!esUltimoSolo)
+				{
+					var c2 = campos[i + 1];
+					sb.Append("<td width='50%' valign='top' style='padding: 6px 0 14px 12px;'>");
+					sb.Append($"<p style='margin: 0 0 4px; font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;'>{System.Net.WebUtility.HtmlEncode(c2.Etiqueta)}</p>");
+
+					bool esAzul2 = c2.Etiqueta.Contains("REQUISICI\u00D3N") || c2.Etiqueta.Contains("EXPEDIENTE") || c2.Etiqueta.Contains("MOVIMIENTO");
+					string colorValor2 = esAzul2 ? "#0754a5" : "#0f294a";
+					sb.Append($"<p style='margin: 0; font-size: 15px; font-weight: bold; color: {colorValor2};'>{System.Net.WebUtility.HtmlEncode(c2.Valor)}</p>");
+					sb.Append("</td>");
+				}
+
+				sb.Append("</tr>");
+			}
+
+			foreach (var texto in textosLibres)
+			{
+				sb.Append("<tr><td colspan='2' style='padding: 10px 0 4px 0; border-top: 1px dashed #e2e8f0;'>");
+				sb.Append($"<p style='margin: 0; font-size: 13px; color: #475569; line-height: 1.5;'>{System.Net.WebUtility.HtmlEncode(texto)}</p>");
+				sb.Append("</td></tr>");
+			}
+
+			sb.Append("</table>");
+			return sb.ToString();
 		}
 
 		private static CResult Error(string message)

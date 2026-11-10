@@ -13,7 +13,10 @@ import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 
 import { ScBandejaActoresComponent } from './sc-bandeja-actores.component';
 
-const routes: Routes = [{ path: '', component: ScBandejaActoresComponent }];
+const routes: Routes = [
+	{ path: '', component: ScBandejaActoresComponent },
+	{ path: ':codigo', component: ScBandejaActoresComponent },
+];
 
 @NgModule({
 	imports: [

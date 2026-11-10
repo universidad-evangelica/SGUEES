@@ -444,9 +444,114 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		this.ejecutarGuardado(esNuevo);
 	}
 
+	// Qué hace: asigna Arial, Helvetica, sans-serif como tipografía por defecto solo si el elemento no define fuente o usa inherit/initial/unset.
+	// Cómo lo hace: inspecciona el fontFamily inline del elemento y preserva cualquier fuente explícita configurada en la plantilla.
+	private asegurarFuentePorDefecto(el: HTMLElement): void {
+		const fuenteActual = (el.style?.fontFamily || '').trim().replace(/['"]/g, '').toLowerCase();
+		if (!fuenteActual || fuenteActual === 'inherit' || fuenteActual === 'initial' || fuenteActual === 'unset') {
+			el.style.fontFamily = 'Arial, Helvetica, sans-serif';
+		}
+	}
+
+	// Qué hace: normaliza el código HTML de la plantilla antes de guardarlo en BD para garantizar compatibilidad con clientes de correo como Outlook.
+	// Cómo lo hace: procesa el DOM nativo (evitando cortes por tablas anidadas y cierres huérfanos), reconstruye encabezado y pie a 680px, asegura color dorado en enlace del pie y conserva fuentes explícitas aplicando Arial como defecto.
+	private normalizarHtmlParaPersistencia(html: string): string {
+		if (!html) return '';
+
+		const contenedor = document.createElement('div');
+		contenedor.innerHTML = html;
+
+		const esTablaAzul = (tbl: HTMLTableElement): boolean => {
+			const bgAttr = (tbl.getAttribute('bgcolor') || '').toLowerCase();
+			const bgStyle = (tbl.style?.backgroundColor || '').toLowerCase().replace(/\s+/g, '');
+			const styleAttr = (tbl.getAttribute('style') || '').toLowerCase().replace(/\s+/g, '');
+			return (
+				bgAttr === '#063b79' ||
+				bgStyle === 'rgb(6,59,121)' ||
+				bgStyle === '#063b79' ||
+				styleAttr.includes('rgb(6,59,121)') ||
+				styleAttr.includes('#063b79') ||
+				tbl.classList.contains('tabla-encabezado') ||
+				tbl.classList.contains('tabla-pie')
+			);
+		};
+
+		const tablasRaizAzules = Array.from(contenedor.children).filter(
+			(el): el is HTMLTableElement => el.tagName === 'TABLE' && esTablaAzul(el as HTMLTableElement)
+		);
+
+		if (tablasRaizAzules.length > 0) {
+			const tablaEncabezado = tablasRaizAzules[0];
+			const imgEl = tablaEncabezado.querySelector('img');
+			const headerWrapper = document.createElement('div');
+			headerWrapper.innerHTML = `<table class="plantilla-uees-table tabla-encabezado" data-tipo="encabezado" align="center" width="680" cellpadding="0" cellspacing="0" border="0" bgcolor="#063b79" style="width:100%; max-width:680px; border-collapse:collapse; background-color:#063b79; margin:0 auto;">
+  <tbody>
+    <tr>
+      <td class="header" bgcolor="#063b79" style="padding:28px 35px 24px 35px; border-bottom:6px solid #ffcc00; background-color:#063b79; font-family:Arial, Helvetica, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+          <tr>
+            <td width="115" valign="middle" align="center" style="width:115px; vertical-align:middle; text-align:center; padding:0; border:none;">
+              <p style="margin:0; text-align:center; font-family:Arial, Helvetica, sans-serif;">
+                <img src="assets/img/logo-xx.png" alt="Logo UEES" width="95" height="77" style="width:95px; height:auto; max-width:100%; display:block; margin:0 auto; border:none;">
+              </p>
+            </td>
+            <td valign="middle" align="left" style="vertical-align:middle; text-align:left; border:none; border-left:2px solid #ffffff; padding:0 0 0 22px; font-family:Arial, Helvetica, sans-serif;">
+              <p style="margin:0 0 3px 0; color:#ffffff; font-size:20px; line-height:26px; font-weight:bold; letter-spacing:0.5px; text-align:left; font-family:Arial, Helvetica, sans-serif;">
+                UNIVERSIDAD EVANGÉLICA
+              </p>
+              <p style="margin:0; color:#ffffff; font-size:20px; line-height:26px; font-weight:bold; letter-spacing:0.5px; text-align:left; font-family:Arial, Helvetica, sans-serif;">
+                DE EL SALVADOR
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </tbody>
+</table>`;
+			const nuevaImg = headerWrapper.querySelector('img');
+			if (nuevaImg && imgEl) {
+				nuevaImg.setAttribute('src', imgEl.getAttribute('src') || 'assets/img/logo-xx.png');
+				nuevaImg.setAttribute('alt', imgEl.getAttribute('alt') || 'Logo UEES');
+			}
+			if (headerWrapper.firstElementChild) {
+				tablaEncabezado.replaceWith(headerWrapper.firstElementChild);
+			}
+
+			if (tablasRaizAzules.length > 1) {
+				const tablaPie = tablasRaizAzules[tablasRaizAzules.length - 1];
+				tablaPie.classList.add('plantilla-uees-table', 'tabla-pie');
+				tablaPie.setAttribute('data-tipo', 'pie');
+				tablaPie.setAttribute('align', 'center');
+				tablaPie.setAttribute('width', '680');
+				tablaPie.style.width = '100%';
+				tablaPie.style.maxWidth = '680px';
+				tablaPie.style.margin = '0 auto';
+				tablaPie.style.borderCollapse = 'collapse';
+				tablaPie.querySelectorAll('td').forEach((td) => {
+					if (!td.style.borderTop) {
+						td.style.borderTop = '5px solid #ffcc00';
+					}
+				});
+				tablaPie.querySelectorAll('a').forEach((a) => {
+					if (!a.style.color) {
+						a.style.color = '#ffcc00';
+					}
+				});
+			}
+		}
+
+		contenedor.querySelectorAll('p, span, td, th, strong, b, em, i, u, a, li').forEach((el) => {
+			this.asegurarFuentePorDefecto(el as HTMLElement);
+		});
+
+		return contenedor.innerHTML;
+	}
+
 	// Qué hace: ejecuta la persistencia de la plantilla (insert o update) y mantiene el parche en memoria.
 	// Cómo lo hace: inserta o actualiza según esNuevo, crea automáticamente la versión 1 inicial y refresca la lista local sin GetAll.
 	private ejecutarGuardado(esNuevo: boolean): void {
+		this.model.CUERPO_PLANTILLA = this.normalizarHtmlParaPersistencia(this.model.CUERPO_PLANTILLA);
 		if (esNuevo) {
 			this.service.insert(this.model).subscribe({
 				next: (response) => {
@@ -635,12 +740,14 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		if (!this.versionService.esValidaNuevaVersion(this.motivoNuevaVersion, this.notifyFx.bind(this))) return;
 
 		this.guardandoNuevaVersion = true;
+		const cuerpoNormalizado = this.normalizarHtmlParaPersistencia(this.model.CUERPO_PLANTILLA);
+		this.model.CUERPO_PLANTILLA = cuerpoNormalizado;
 		const nuevaVersionPayload: GenParametroPlantillaVersion = {
 			CORR_EMPRESA: this.model.CORR_EMPRESA,
 			CORR_PARAMETRO_PLANTILLA: this.model.CORR_PARAMETRO_PLANTILLA,
 			NUMERO_VERSION: 0,
 			ASUNTO_PLANTILLA: this.model.ASUNTO_PLANTILLA,
-			CUERPO_PLANTILLA: this.model.CUERPO_PLANTILLA,
+			CUERPO_PLANTILLA: cuerpoNormalizado,
 			CORREO_CC: this.model.CORREO_CC,
 			CORREO_CCO: this.model.CORREO_CCO,
 			ES_VERSION_ACTIVA: true,
