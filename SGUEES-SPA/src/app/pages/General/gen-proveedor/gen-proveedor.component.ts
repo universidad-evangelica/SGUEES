@@ -14,6 +14,10 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
+import {
+	ESTADO_ACTIVO_INACTIVO_LABELS,
+	parseRemoteGridFilters,
+} from 'src/app/shared/utils/remote-grid-filter.util';
 import { GenProveedor } from './models/gen-proveedor';
 import { GenProveedorDoc } from './models/gen-proveedor-doc';
 import { GenPersonaBanco } from './models/gen-persona-banco';
@@ -36,15 +40,13 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	protected override etiquetaRegistro = 'el proveedor';
 	protected override requiereEmpresaSesion = true;
 	/**
-	 * Paginación servidor estilo Vuetify:
-	 * page/pageSize → API; Data = página; RowsAffected = totalItems.
-	 * PAGE_SIZE 0 = Todos. Filter-row = cliente (filtering:false).
-	 * UI Options = app-data-grid-mtto (misma fuente/iconos que gen-banco).
+	 * Paginación servidor: page/pageSize → API; Data = página; RowsAffected = total.
+	 * Filter-row del grid → API (filtering:true + LIKE por columna).
 	 */
 	protected override mttoHybridPaging = false;
 	protected override mttoPageSize = 15;
 	protected override mttoPageSizes: (number | 'all')[] = [15, 50, 100, 'all'];
-	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
+	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: true };
 	protected override mttoGridKeyExpr = 'CORR_PROVEEDOR';
 	protected override mttoCampoEstado = 'ACTIVO_PROVEEDOR';
 	protected override mttoEstadoDescribeField = 'NOMBRE_COMERCIAL';
@@ -274,6 +276,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		pageSize = this.mttoPageSize,
 		sortField = '',
 		sortDesc = false,
+		columnFilters?: Record<string, unknown>,
 	): any {
 		return {
 			CORR_PROVEEDOR: xCORR_PROVEEDOR ?? 0,
@@ -281,6 +284,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			PAGE_SIZE: pageSize,
 			SORT_FIELD: sortField,
 			SORT_DESC: sortDesc,
+			...(columnFilters ?? {}),
 		};
 	}
 
@@ -333,18 +337,10 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.page = 1;
 	}
 
-	/**
-	 * Con filter-row + filtering:false, DX a veces pinta total = filas de la página.
-	 * Sin filtro activo, reafirma totalCount desde RowsAffected (paginado intacto).
-	 */
+	/** Reafirma pager con total filtrado del API (RowsAffected). */
 	private sincronizarPagerServidor(grid?: any): void {
 		const instance = grid ?? (this.dataGrid?.gData?.instance as any);
 		if (!instance || !(this.totalItems >= 0)) {
-			return;
-		}
-		const filtro = instance.getCombinedFilter?.();
-		const hayFiltro = Array.isArray(filtro) ? filtro.length > 0 : !!filtro;
-		if (hayFiltro) {
 			return;
 		}
 		const total = this.totalItems;
@@ -1212,8 +1208,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	}
 
 	/**
-	 * Equivalente Vuetify listCompras:
-	 * page/pageSize → API; Data = ítems de la página; RowsAffected = totalItems.
+	 * page/pageSize → API; filter-row → params LIKE por columna; RowsAffected = total filtrado.
 	 */
 	private configurarDataSource(): void {
 		this.models = new CustomStore({
@@ -1244,8 +1239,11 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 						this.mttoPageSize = effectivePageSize;
 					}
 
+					const columnFilters = this.leerFiltrosFilterRow(loadOptions);
 					const response = await lastValueFrom(
-						this.service.getAll(this.fillParam(0, page, effectivePageSize, sortField, sortDesc)),
+						this.service.getAll(
+							this.fillParam(0, page, effectivePageSize, sortField, sortDesc, columnFilters),
+						),
 					);
 
 					if (!response.Result) {
@@ -1260,7 +1258,6 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 						throw new Error('El API no devolvió el total de proveedores en RowsAffected.');
 					}
 					this.totalItems = reported;
-					// Reafirma pager tras pintar (app-data-grid-mtto + filter-row).
 					setTimeout(() => this.sincronizarPagerServidor(), 0);
 					setTimeout(() => this.sincronizarPagerServidor(), 120);
 
@@ -1274,5 +1271,74 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 				}
 			},
 		});
+	}
+
+	/** Lee filter-row / Estado del grid y arma params de API (LIKE por columna). */
+	private leerFiltrosFilterRow(loadOptions: any): Record<string, unknown> {
+		const grid = this.dataGrid?.gData?.instance;
+		const parsed = parseRemoteGridFilters(loadOptions?.filter, grid, {
+			estadoField: this.mttoCampoEstado,
+			booleanColumns: {
+				[this.mttoCampoEstado]: ESTADO_ACTIVO_INACTIVO_LABELS,
+			},
+		});
+
+		const text = (field: string): string => {
+			const raw =
+				parsed.filterRow[field] ??
+				parsed.filterRowExact[field] ??
+				this.valorEnFiltroDx(loadOptions?.filter, field);
+			return raw == null ? '' : String(raw).trim();
+		};
+
+		const corrRaw =
+			parsed.filterRowExact['CORR_PROVEEDOR'] ??
+			parsed.filterRow['CORR_PROVEEDOR'] ??
+			this.valorEnFiltroDx(loadOptions?.filter, 'CORR_PROVEEDOR');
+		const corrNum = Number(corrRaw);
+
+		const filters: Record<string, unknown> = {
+			CODIGO_PROVEEDOR: text('CODIGO_PROVEEDOR'),
+			NOMBRE_COMERCIAL: text('NOMBRE_COMERCIAL'),
+			NOMBRE_PROVEEDOR: text('NOMBRE_PROVEEDOR'),
+			NOMBRE_TIPO_PERSONERIA: text('NOMBRE_TIPO_PERSONERIA'),
+			USUARIO_CREA: text('USUARIO_CREA'),
+			USUARIO_ACTU: text('USUARIO_ACTU'),
+		};
+
+		if (Number.isFinite(corrNum) && corrNum > 0) {
+			filters.CORR_PROVEEDOR = corrNum;
+		}
+
+		if (parsed.estado === true || parsed.estado === false) {
+			filters.ACTIVO_PROVEEDOR = parsed.estado;
+		} else {
+			const estadoRaw = this.valorEnFiltroDx(loadOptions?.filter, this.mttoCampoEstado);
+			if (estadoRaw === true || estadoRaw === false) {
+				filters.ACTIVO_PROVEEDOR = estadoRaw;
+			}
+		}
+
+		return filters;
+	}
+
+	/** Extrae valor de un filtro DevExtreme `[field, op, value]` (anidado con and/or). */
+	private valorEnFiltroDx(filter: any, field: string): unknown {
+		if (!Array.isArray(filter) || !filter.length) {
+			return undefined;
+		}
+		if (typeof filter[0] === 'string' && filter[0] === field && filter.length >= 3) {
+			return filter[2];
+		}
+		if (filter[1] === 'and' || filter[1] === 'or') {
+			return this.valorEnFiltroDx(filter[0], field) ?? this.valorEnFiltroDx(filter[2], field);
+		}
+		for (const child of filter) {
+			const found = this.valorEnFiltroDx(child, field);
+			if (found !== undefined) {
+				return found;
+			}
+		}
+		return undefined;
 	}
 }

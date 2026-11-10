@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -14,6 +16,29 @@ namespace sguees.Repositories
 		private const string _ViewName = "V_GEN_PROVEEDOR";
 		private const string _SpMtto = "PRAL_MTTO_GEN_PROVEEDOR";
 		private const string _DefaultSortField = "CORR_PROVEEDOR";
+		/// <summary>Params de filtro (no son igualdad de eFramework; se quitan antes de ReadPagedView).</summary>
+		private static readonly HashSet<string> _FilterParamNames = new(StringComparer.OrdinalIgnoreCase)
+		{
+			"SEARCH",
+			"BUSQUEDA",
+			"CODIGO_PROVEEDOR",
+			"NOMBRE_COMERCIAL",
+			"NOMBRE_PROVEEDOR",
+			"NOMBRE_TIPO_PERSONERIA",
+			"USUARIO_CREA",
+			"USUARIO_ACTU",
+			"ACTIVO_PROVEEDOR",
+		};
+
+		private static readonly string[] _LikeFilterColumns =
+		{
+			"CODIGO_PROVEEDOR",
+			"NOMBRE_COMERCIAL",
+			"NOMBRE_PROVEEDOR",
+			"NOMBRE_TIPO_PERSONERIA",
+			"USUARIO_CREA",
+			"USUARIO_ACTU",
+		};
 
 		private static readonly string[] _AllowedSortFields =
 		{
@@ -39,11 +64,14 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
-				var paged = await ReadPagedViewAsync<GEN_PROVEEDORView>(
-					_ViewName,
-					xWhere,
-					_AllowedSortFields,
-					_DefaultSortField);
+				var filters = ExtractFilterParams(xWhere);
+				CPagedResult<GEN_PROVEEDORView> paged = filters.Count > 0
+					? await ReadPagedViewFilteredAsync(xWhere, filters)
+					: await ReadPagedViewAsync<GEN_PROVEEDORView>(
+						_ViewName,
+						xWhere,
+						_AllowedSortFields,
+						_DefaultSortField);
 
 				objResultado.Data = paged.PageData;
 				objResultado.Result = true;
@@ -53,7 +81,7 @@ namespace sguees.Repositories
 				objResultado.ErrorMessage = string.Empty;
 				objResultado.ErrorSource = string.Empty;
 			}
-			catch (System.Exception e)
+			catch (Exception e)
 			{
 				objResultado.Data = null;
 				objResultado.Result = false;
@@ -66,6 +94,190 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
+		}
+
+		/// <summary>Extrae y quita params de filtro del where (evita SEARCH=@SEARCH inválido en eFramework).</summary>
+		private static Dictionary<string, object> ExtractFilterParams(List<CParameter> xWhere)
+		{
+			var filters = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+			if (xWhere == null || xWhere.Count == 0)
+			{
+				return filters;
+			}
+
+			for (var i = xWhere.Count - 1; i >= 0; i--)
+			{
+				var name = xWhere[i].ParameterName ?? string.Empty;
+				if (!_FilterParamNames.Contains(name))
+				{
+					continue;
+				}
+
+				filters[name] = xWhere[i].Value;
+				xWhere.RemoveAt(i);
+			}
+
+			return filters;
+		}
+
+		private static bool HasText(Dictionary<string, object> filters, string key, out string text)
+		{
+			text = string.Empty;
+			if (!filters.TryGetValue(key, out var raw) || raw == null)
+			{
+				return false;
+			}
+
+			text = Convert.ToString(raw)?.Trim() ?? string.Empty;
+			return text.Length > 0;
+		}
+
+		/// <summary>
+		/// Filter-row → API (AND por columna LIKE; SEARCH = OR en código/nombres).
+		/// </summary>
+		private async Task<CPagedResult<GEN_PROVEEDORView>> ReadPagedViewFilteredAsync(
+			List<CParameter> xWhere,
+			Dictionary<string, object> filters)
+		{
+			var paging = CPagingParameters.Parse(xWhere, maxPageSize: 200);
+			var dbWhere = CPagingParameters.ExcludeReserved(xWhere);
+			var sortColumn = ResolveLocalSortColumn(paging.SortField);
+			var orderBy = paging.SortDesc ? $"{sortColumn} DESC" : $"{sortColumn} ASC";
+			if (!string.Equals(sortColumn, _DefaultSortField, StringComparison.OrdinalIgnoreCase))
+			{
+				orderBy += $", {_DefaultSortField} ASC";
+			}
+
+			var whereSql = "WHERE CORR_EMPRESA = @CORR_EMPRESA";
+			var parameters = new List<CParameter>();
+
+			var empresa = dbWhere.FirstOrDefault(p =>
+				string.Equals(p.ParameterName, "CORR_EMPRESA", StringComparison.OrdinalIgnoreCase));
+			parameters.Add(new CParameter
+			{
+				ParameterName = "CORR_EMPRESA",
+				Value = empresa?.Value ?? 0,
+				DbType = DbType.Int32,
+			});
+
+			var corrProv = dbWhere.FirstOrDefault(p =>
+				string.Equals(p.ParameterName, "CORR_PROVEEDOR", StringComparison.OrdinalIgnoreCase));
+			if (corrProv?.Value != null && Convert.ToInt32(corrProv.Value) > 0)
+			{
+				whereSql += " AND CORR_PROVEEDOR = @CORR_PROVEEDOR";
+				parameters.Add(new CParameter
+				{
+					ParameterName = "CORR_PROVEEDOR",
+					Value = Convert.ToInt32(corrProv.Value),
+					DbType = DbType.Int32,
+				});
+			}
+
+			foreach (var col in _LikeFilterColumns)
+			{
+				if (!HasText(filters, col, out var text))
+				{
+					continue;
+				}
+
+				var pName = "F_" + col;
+				// BD es Latin1_General_CS_AS: sin COLLATE, "flamenco" no encuentra "FLAMENCO".
+				whereSql += $" AND ISNULL({col}, N'') COLLATE Latin1_General_CI_AI LIKE @{pName} COLLATE Latin1_General_CI_AI";
+				parameters.Add(new CParameter
+				{
+					ParameterName = pName,
+					Value = "%" + text + "%",
+					DbType = DbType.String,
+					Size = 400,
+				});
+			}
+
+			if (HasText(filters, "SEARCH", out var search) || HasText(filters, "BUSQUEDA", out search))
+			{
+				whereSql += @" AND (
+					ISNULL(CODIGO_PROVEEDOR, N'') COLLATE Latin1_General_CI_AI LIKE @SEARCH COLLATE Latin1_General_CI_AI
+					OR ISNULL(NOMBRE_COMERCIAL, N'') COLLATE Latin1_General_CI_AI LIKE @SEARCH COLLATE Latin1_General_CI_AI
+					OR ISNULL(NOMBRE_PROVEEDOR, N'') COLLATE Latin1_General_CI_AI LIKE @SEARCH COLLATE Latin1_General_CI_AI
+				)";
+				parameters.Add(new CParameter
+				{
+					ParameterName = "SEARCH",
+					Value = "%" + search + "%",
+					DbType = DbType.String,
+					Size = 400,
+				});
+			}
+
+			if (filters.TryGetValue("ACTIVO_PROVEEDOR", out var activoRaw) && activoRaw != null)
+			{
+				var activo = Convert.ToBoolean(activoRaw);
+				whereSql += " AND ACTIVO_PROVEEDOR = @ACTIVO_PROVEEDOR";
+				parameters.Add(new CParameter
+				{
+					ParameterName = "ACTIVO_PROVEEDOR",
+					Value = activo,
+					DbType = DbType.Boolean,
+				});
+			}
+
+			var countSql = $@"SELECT COUNT(1) AS TOTAL_ROWS FROM {_ViewName} {whereSql}";
+			var countReader = await objData.GetDataReader(CommandType.Text, countSql, parameters);
+			var totalRows = 0;
+			if (countReader.Read())
+			{
+				totalRows = Convert.ToInt32(countReader["TOTAL_ROWS"]);
+			}
+			countReader.Close();
+
+			string dataSql;
+			var dataParams = new List<CParameter>(parameters);
+			if (paging.ReturnAll)
+			{
+				dataSql = $@"SELECT * FROM {_ViewName} {whereSql} ORDER BY {orderBy}";
+			}
+			else
+			{
+				dataSql = $@"SELECT * FROM {_ViewName} {whereSql}
+ORDER BY {orderBy}
+OFFSET @OFFSET ROWS FETCH NEXT @FETCH_SIZE ROWS ONLY";
+				dataParams.Add(new CParameter
+				{
+					ParameterName = "OFFSET",
+					Value = paging.Offset,
+					DbType = DbType.Int32,
+				});
+				dataParams.Add(new CParameter
+				{
+					ParameterName = "FETCH_SIZE",
+					Value = paging.PageSize,
+					DbType = DbType.Int32,
+				});
+			}
+
+			var dataReader = await objData.GetDataReader(CommandType.Text, dataSql, dataParams);
+			var pageData = new List<GEN_PROVEEDORView>().FromDataReader(dataReader).ToList();
+			dataReader.Close();
+
+			return new CPagedResult<GEN_PROVEEDORView>
+			{
+				PageData = pageData,
+				TotalRows = totalRows,
+			};
+		}
+
+		private static string ResolveLocalSortColumn(string sortField)
+		{
+			if (!string.IsNullOrWhiteSpace(sortField))
+			{
+				var match = _AllowedSortFields.FirstOrDefault(f =>
+					string.Equals(f, sortField.Trim(), StringComparison.OrdinalIgnoreCase));
+				if (match != null)
+				{
+					return match;
+				}
+			}
+
+			return _DefaultSortField;
 		}
 
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)

@@ -16,7 +16,9 @@ namespace sguees.Services
 		}
 
 		/// <summary>
-		/// Lista paginada. PAGE_SIZE &lt;= 0 = Todos. Data = página; RowsAffected = total.
+		/// Lista paginada. PAGE_SIZE &lt;= 0 = Todos.
+		/// Filtros filter-row (LIKE por columna) + ACTIVO_PROVEEDOR opcional.
+		/// Data = página; RowsAffected = total filtrado.
 		/// </summary>
 		public async Task<CResult> GetAllAsync(GEN_PROVEEDORParam xWhere)
 		{
@@ -28,7 +30,51 @@ namespace sguees.Services
 				new() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD ?? string.Empty, DbType = System.Data.DbType.String },
 				new() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
 			};
+
+			AddTextIfPresent(p, "CODIGO_PROVEEDOR", xWhere.CODIGO_PROVEEDOR);
+			AddTextIfPresent(p, "NOMBRE_COMERCIAL", xWhere.NOMBRE_COMERCIAL);
+			AddTextIfPresent(p, "NOMBRE_PROVEEDOR", xWhere.NOMBRE_PROVEEDOR);
+			AddTextIfPresent(p, "NOMBRE_TIPO_PERSONERIA", xWhere.NOMBRE_TIPO_PERSONERIA);
+			AddTextIfPresent(p, "USUARIO_CREA", xWhere.USUARIO_CREA);
+			AddTextIfPresent(p, "USUARIO_ACTU", xWhere.USUARIO_ACTU);
+			AddTextIfPresent(p, "SEARCH", xWhere.SEARCH);
+
+			if (xWhere.CORR_PROVEEDOR > 0)
+			{
+				p.Add(new CParameter
+				{
+					ParameterName = "CORR_PROVEEDOR",
+					Value = xWhere.CORR_PROVEEDOR,
+					DbType = System.Data.DbType.Int32,
+				});
+			}
+
+			if (xWhere.ACTIVO_PROVEEDOR.HasValue)
+			{
+				p.Add(new CParameter
+				{
+					ParameterName = "ACTIVO_PROVEEDOR",
+					Value = xWhere.ACTIVO_PROVEEDOR.Value,
+					DbType = System.Data.DbType.Boolean,
+				});
+			}
+
 			return await _repo.GetAllAsync(p);
+		}
+
+		private static void AddTextIfPresent(List<CParameter> p, string name, string value)
+		{
+			if (string.IsNullOrWhiteSpace(value))
+			{
+				return;
+			}
+
+			p.Add(new CParameter
+			{
+				ParameterName = name,
+				Value = value.Trim(),
+				DbType = System.Data.DbType.String,
+			});
 		}
 
 		public async Task<CResult> GetAsync(GEN_PROVEEDORParam xWhere)
