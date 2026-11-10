@@ -586,8 +586,8 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	// Qué hace: precarga el correo, DUI y plaza solicitada registrados en la solicitud y su requisición vinculada.
-	// Cómo lo hace: lee CORREO_INVITACION, DUI y PLAZA_SOLICITADA retornados por ValidarToken y los asigna al formulario si aún no han sido modificados.
+	// Qué hace: precarga el correo, DUI (9 dígitos) o pasaporte (> 9 dígitos o alfanumérico) y plaza solicitada registrados en la solicitud y su requisición vinculada.
+	// Cómo lo hace: lee CORREO_INVITACION, DUI y PLAZA_SOLICITADA retornados por ValidarToken; si el documento supera 9 dígitos o contiene letras lo asigna a PASAPORTE, de lo contrario lo formatea como DUI.
 	private aplicarDatosInicialesSolicitud(data: any): void {
 		if (!this.tokenValido) {
 			return;
@@ -597,15 +597,31 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			this.formData.CORREO = correo;
 		}
 
-		const dui = `${data?.DUI ?? ''}`.trim();
-		if (dui && !`${this.formData.DUI ?? ''}`.trim()) {
-			this.formData.DUI = this.formatearDui(dui);
+		const docIdentidad = `${data?.DUI ?? ''}`.trim();
+		if (docIdentidad) {
+			if (this.esDocumentoPasaporte(docIdentidad)) {
+				if (!`${this.formData.PASAPORTE ?? ''}`.trim()) {
+					this.formData.PASAPORTE = docIdentidad;
+				}
+			} else if (!`${this.formData.DUI ?? ''}`.trim()) {
+				this.formData.DUI = this.formatearDui(docIdentidad);
+			}
 		}
 
 		const plaza = `${data?.PLAZA_SOLICITADA ?? ''}`.trim();
 		if (plaza && !`${this.formData.PLAZA_SOLICITADA ?? ''}`.trim()) {
 			this.formData.PLAZA_SOLICITADA = plaza;
 		}
+	}
+
+	// Qué hace: Determina si el documento de identidad proveniente de la solicitud corresponde a pasaporte.
+	// Cómo lo hace: Retira guiones y espacios y verifica si contiene letras o supera los 9 dígitos numéricos de un DUI.
+	private esDocumentoPasaporte(valor: string): boolean {
+		const limpio = `${valor ?? ''}`.trim().replace(/[-\s]/g, '');
+		if (!limpio) {
+			return false;
+		}
+		return /[a-zA-Z]/.test(limpio) || limpio.replace(/[^0-9]/g, '').length > 9;
 	}
 
 	/** Carga persona + grids desde GetDatos (misma sesión de token vigente). */
@@ -646,7 +662,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			TELEFONO: `${p.TELEFONO ?? ''}`.trim(),
 			DIRECCION: `${p.DIRECCION ?? ''}`.trim(),
 			DUI: this.formatearDui(`${p.DUI ?? ''}`.trim() || `${this.formData.DUI ?? ''}`.trim()),
-			PASAPORTE: `${p.PASAPORTE ?? ''}`.trim(),
+			PASAPORTE: `${p.PASAPORTE ?? ''}`.trim() || `${this.formData.PASAPORTE ?? ''}`.trim(),
 			ISSS: `${p.ISSS ?? ''}`.trim(),
 			AFP: `${p.AFP ?? ''}`.trim(),
 			NOMBRE_AFP: `${p.NOMBRE_AFP ?? ''}`.trim(),

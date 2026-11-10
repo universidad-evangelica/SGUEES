@@ -1459,9 +1459,11 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 		if (this.banderaMtto === UpdateType.Add) {
 			const dui = `${this.model?.DUI ?? ''}`.trim();
-			const duiLimpio = dui.replace(/[^0-9kK]/g, '');
+			// Qué hace: Normaliza caracteres alfanuméricos del documento para buscar coincidencias previas por DUI o Pasaporte.
+			// Cómo lo hace: Conserva letras y dígitos ignorando guiones/espacios y ejecuta la búsqueda a partir de 6 caracteres.
+			const docLimpio = dui.replace(/[^a-zA-Z0-9]/g, '');
 
-			if ((this.model?.CORR_PERSONA_DATOS ?? 0) <= 0 && duiLimpio.length >= 8) {
+			if ((this.model?.CORR_PERSONA_DATOS ?? 0) <= 0 && docLimpio.length >= 6) {
 				this.loadingVisible = true;
 				try {
 					const response: any = await this.service.buscarCandidatoPorDui(dui).pipe(take(1)).toPromise();
@@ -1470,10 +1472,12 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 					if (response?.Result && response?.Data) {
 						const candidato = response.Data;
 						const nombreCandidato = candidato.NOMBRE_COMPLETO || 'el candidato';
-						const aceptar = await confirm(
-							`Se encontró un expediente para ${nombreCandidato} con el DUI ${dui}. ¿Desea cargar sus datos personales y asociarlo a esta solicitud?`,
-							'Candidato Existente'
-						);
+						const tipoDoc = `${candidato.TIPO_COINCIDENCIA ?? ''}`.toUpperCase() === 'PASAPORTE' ? 'Pasaporte' : 'DUI';
+						const tieneExpediente = (candidato.CORR_EXPEDIENTE_CANDIDATO ?? 0) > 0;
+						const mensajeConfirm = tieneExpediente
+							? `Se encontró un expediente para ${nombreCandidato} con el ${tipoDoc} ${dui}. ¿Desea cargar sus datos personales y asociarlo a esta solicitud?`
+							: `Se encontró un registro previo para ${nombreCandidato} con el ${tipoDoc} ${dui}. ¿Desea cargar sus datos personales en esta solicitud?`;
+						const aceptar = await confirm(mensajeConfirm, 'Candidato Existente');
 						if (aceptar) {
 							this.model.NOMBRE = candidato.NOMBRE_COMPLETO ?? this.model.NOMBRE;
 							this.model.CORREO_INVITACION = candidato.CORREO ?? this.model.CORREO_INVITACION;

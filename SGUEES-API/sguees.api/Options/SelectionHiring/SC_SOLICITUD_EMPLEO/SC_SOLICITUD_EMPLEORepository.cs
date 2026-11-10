@@ -848,47 +848,67 @@ namespace sguees.Repositories
 			}
 		}
 
-		// Qué hace: busca si existe un candidato con expediente previo por su documento de identidad (DUI).
-		// Cómo lo hace: normaliza el DUI retirando guiones y espacios y consulta SC_PERSONA_DATOS junto a SC_EXPEDIENTE_CANDIDATO.
+		// Qué hace: busca si existe un candidato con expediente previo por su documento de identidad (DUI o Pasaporte).
+		// Cómo lo hace: normaliza el documento retirando guiones y espacios y consulta SC_PERSONA_DATOS (DUI o PASAPORTE) junto a SC_EXPEDIENTE_CANDIDATO.
 		public async Task<CResult> BuscarCandidatoPorDuiAsync(int corrEmpresa, string dui)
 		{
 			CResult objResultado = new();
 			try
 			{
-				string duiNorm = (dui ?? "").Trim().Replace("-", "").Replace(" ", "").ToUpperInvariant();
+				string docNorm = (dui ?? "").Trim().Replace("-", "").Replace(" ", "").ToUpperInvariant();
 				string sql = @"
 					SELECT TOP 1
 						P.CORR_PERSONA_DATOS,
 						E.CORR_EXPEDIENTE_CANDIDATO,
 						P.DUI,
+						P.PASAPORTE,
 						LTRIM(RTRIM(CONCAT(P.NOMBRE1, ' ', ISNULL(P.NOMBRE2, ''), ' ', P.APELLIDO1, ' ', ISNULL(P.APELLIDO2, '')))) AS NOMBRE_COMPLETO,
 						P.CORREO,
 						P.CELULAR,
 						P.TELEFONO,
-						E.CORR_ESTADO_EXPEDIENTE
+						E.CORR_ESTADO_EXPEDIENTE,
+						CASE
+							WHEN UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(P.DUI, ''))), '-', ''), ' ', '')) = @DOC_NORM THEN 'DUI'
+							ELSE 'PASAPORTE'
+						END AS TIPO_COINCIDENCIA
 					FROM dbo.SC_PERSONA_DATOS P
 					LEFT JOIN dbo.SC_EXPEDIENTE_CANDIDATO E 
 						ON P.CORR_EMPRESA = E.CORR_EMPRESA AND P.CORR_PERSONA_DATOS = E.CORR_PERSONA_DATOS
 					WHERE P.CORR_EMPRESA = @CORR_EMPRESA
-					  AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(P.DUI)), '-', ''), ' ', '')) = @DUI_NORM
-					ORDER BY ISNULL(E.CORR_EXPEDIENTE_CANDIDATO, 0) DESC, P.CORR_PERSONA_DATOS DESC;";
+					  AND (
+						  UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(P.DUI, ''))), '-', ''), ' ', '')) = @DOC_NORM
+						  OR (
+							  NULLIF(LTRIM(RTRIM(ISNULL(P.PASAPORTE, ''))), '') IS NOT NULL
+							  AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(P.PASAPORTE)), '-', ''), ' ', '')) = @DOC_NORM
+						  )
+					  )
+					ORDER BY
+						CASE WHEN E.CORR_EXPEDIENTE_CANDIDATO IS NOT NULL THEN 0 ELSE 1 END,
+						CASE WHEN UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(P.DUI, ''))), '-', ''), ' ', '')) = @DOC_NORM THEN 0 ELSE 1 END,
+						ISNULL(E.CORR_EXPEDIENTE_CANDIDATO, 0) DESC,
+						P.CORR_PERSONA_DATOS DESC;";
 
 				var p = new List<CParameter>
 				{
 					new CParameter { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
-					new CParameter { ParameterName = "DUI_NORM", Value = duiNorm, DbType = DbType.String }
+					new CParameter { ParameterName = "DOC_NORM", Value = docNorm, DbType = DbType.String }
 				};
 
 				var reader = await objData.GetDataReader(CommandType.Text, sql, p);
 				if (reader.Read())
 				{
+					var ordDui = reader.GetOrdinal("DUI");
+					var ordPasaporte = reader.GetOrdinal("PASAPORTE");
+					var ordCorreo = reader.GetOrdinal("CORREO");
 					objResultado.Data = new
 					{
 						CORR_PERSONA_DATOS = reader.GetInt32(reader.GetOrdinal("CORR_PERSONA_DATOS")),
 						CORR_EXPEDIENTE_CANDIDATO = !reader.IsDBNull(reader.GetOrdinal("CORR_EXPEDIENTE_CANDIDATO")) ? reader.GetInt32(reader.GetOrdinal("CORR_EXPEDIENTE_CANDIDATO")) : (int?)null,
-						DUI = reader.GetString(reader.GetOrdinal("DUI")),
+						DUI = !reader.IsDBNull(ordDui) ? reader.GetString(ordDui) : null,
+						PASAPORTE = !reader.IsDBNull(ordPasaporte) ? reader.GetString(ordPasaporte) : null,
+						TIPO_COINCIDENCIA = reader.GetString(reader.GetOrdinal("TIPO_COINCIDENCIA")),
 						NOMBRE_COMPLETO = reader.GetString(reader.GetOrdinal("NOMBRE_COMPLETO")),
-						CORREO = reader.GetString(reader.GetOrdinal("CORREO")),
+						CORREO = !reader.IsDBNull(ordCorreo) ? reader.GetString(ordCorreo) : null,
 						CELULAR = !reader.IsDBNull(reader.GetOrdinal("CELULAR")) ? reader.GetString(reader.GetOrdinal("CELULAR")) : null,
 						TELEFONO = !reader.IsDBNull(reader.GetOrdinal("TELEFONO")) ? reader.GetString(reader.GetOrdinal("TELEFONO")) : null
 					};
