@@ -127,6 +127,44 @@ namespace sguees.Repositories
 				reader.Close();
 				reader = null;
 
+				// Qué hace: Actualiza la requisición a Publicada (6), En Reclutamiento (7) o En Selección (8) al vincular una solicitud de empleo.
+				// Cómo lo hace: Si la solicitud cuenta con expediente y este está en proceso de selección (>= 2) pasa a 8; si tiene expediente en borrador pasa a 7; en caso contrario pasa a 6 (si estaba en 5).
+				var pUpdateReq = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = Data.CORR_REQUISICION_PERSONAL, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = Data.CORR_SOLICITUD_EMPLEO, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+				};
+				await objData.ExecCmd(System.Data.CommandType.Text, @"
+UPDATE dbo.SC_REQUISICION_PERSONAL
+SET CORR_ESTADO_REQUISICION = CASE
+        WHEN EXISTS (
+            SELECT 1 
+            FROM dbo.SC_EXPEDIENTE_SOLICITUD ES
+            INNER JOIN dbo.SC_EXPEDIENTE_CANDIDATO EC
+                ON EC.CORR_EMPRESA = ES.CORR_EMPRESA
+               AND EC.CORR_EXPEDIENTE_CANDIDATO = ES.CORR_EXPEDIENTE_CANDIDATO
+            WHERE ES.CORR_EMPRESA = @CORR_EMPRESA
+              AND ES.CORR_SOLICITUD_EMPLEO = @CORR_SOLICITUD_EMPLEO
+              AND EC.CORR_ESTADO_EXPEDIENTE >= 2
+        ) THEN 8
+        WHEN EXISTS (
+            SELECT 1 
+            FROM dbo.SC_EXPEDIENTE_SOLICITUD ES
+            WHERE ES.CORR_EMPRESA = @CORR_EMPRESA
+              AND ES.CORR_SOLICITUD_EMPLEO = @CORR_SOLICITUD_EMPLEO
+        ) THEN 7
+        ELSE 6
+    END,
+    USUARIO_ACTU = @USUARIO_ACTU,
+    ESTACION_ACTU = @ESTACION_ACTU,
+    FECHA_ACTU = GETDATE()
+WHERE CORR_EMPRESA = @CORR_EMPRESA
+  AND CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL
+  AND CORR_ESTADO_REQUISICION IN (5, 6, 7);", true, pUpdateReq);
+
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;

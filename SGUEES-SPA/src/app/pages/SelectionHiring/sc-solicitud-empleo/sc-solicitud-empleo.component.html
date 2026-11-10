@@ -1,4 +1,4 @@
-﻿<p-toast
+<p-toast
   position="bottom-right"
   [showTransformOptions]="'translateY(100%)'"
   [hideTransitionOptions]="'500ms'"
@@ -267,6 +267,15 @@
                 <span class="persona-badge">Solo lectura</span>
                 <span>Corr. {{ personaDatos?.CORR_PERSONA_DATOS }}</span>
               </div>
+            </div>
+            <!-- motivo: botón de refrescar datos de solicitud -->
+            <div class="persona-datos-actions">
+              <dx-button
+                icon="refresh"
+                hint="Refrescar"
+                stylingMode="text"
+                (onClick)="refrescarDatosParticipante()"
+              ></dx-button>
             </div>
             <!-- motivo: en solicitud de empleo se evita la edición de datos de persona; la edición se realiza exclusivamente desde expediente candidato -->
           </div>
@@ -822,6 +831,15 @@
           <h4>Sin datos personales</h4>
           <p>Aún no hay información del participante para esta solicitud.</p>
           <span>Se mostrará aquí cuando complete el formulario de empleo.</span>
+          <!-- motivo: botón de refrescar para verificar si el participante completó los datos -->
+          <div class="mt-10">
+            <dx-button
+              icon="refresh"
+              hint="Refrescar"
+              stylingMode="text"
+              (onClick)="refrescarDatosParticipante()"
+            ></dx-button>
+          </div>
         </div>
         <div class="persona-datos-empty" *ngIf="cargandoPersonaDatos">
           <p>Cargando datos del participante...</p>
@@ -949,6 +967,7 @@
   [dragEnabled]="false"
   [hideOnOutsideClick]="false"
   (onHiding)="cerrarModalEnviarCorreo()"
+  (onShown)="onPopupEnviarCorreoShown()"
 >
   <div *dxTemplate="let data of 'content'" style="display: flex; flex-direction: column; gap: 14px; padding: 6px;">
     <!-- motivo: datos generales del destinatario de la solicitud -->

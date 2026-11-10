@@ -646,9 +646,12 @@ ORDER BY CASE WHEN UN.ACTIVO = 1 THEN 0 ELSE 1 END, UN.CORR_NIVEL DESC, EP.CORR_
         /// <summary>
         /// Mapeo flujo → SignalR: lee tipo documento, estado actual y destinatarios pendientes de la instancia.
         /// </summary>
+        // Qué hace: Consulta los datos completos de la requisición y del aprobador para armar la notificación.
+        // Cómo lo hace: Une la requisición con su vista V_SC_REQUISICION_PERSONAL y con SEG_USUARIO para obtener puesto, unidad y nombre del jefe.
         public async Task<SC_REQUISICION_FLUJO_NOTIF_DTO> GetContextoNotificacionFlujoAsync(
             int corrEmpresa,
-            int corrRequisicion)
+            int corrRequisicion,
+            string loginActor = null)
         {
             var dto = new SC_REQUISICION_FLUJO_NOTIF_DTO
             {
@@ -660,6 +663,7 @@ ORDER BY CASE WHEN UN.ACTIVO = 1 THEN 0 ELSE 1 END, UN.CORR_NIVEL DESC, EP.CORR_
                 {
                     new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
                     new() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = corrRequisicion, DbType = DbType.Int32 },
+                    new() { ParameterName = "LOGIN_ACTOR", Value = (object)loginActor ?? DBNull.Value, DbType = DbType.String },
                 };
 
                 var reader = await objData.GetDataReader(CommandType.Text, @"
@@ -668,8 +672,16 @@ SELECT TOP 1
 	TD.NOMBRE_TIPO,
 	E.NOMBRE_ESTADO,
 	E.DESCRIPCION AS DESCRIPCION_ESTADO,
-	R.USUARIO_CREA AS LOGIN_CREADOR
+	R.USUARIO_CREA AS LOGIN_CREADOR,
+	VR.NOMBRE_PUESTO,
+	VR.NOMBRE_UNIDAD,
+	U_ACTOR.NOMBRE_USUARIO AS NOMBRE_ACTOR
 FROM dbo.SC_REQUISICION_PERSONAL AS R
+LEFT JOIN dbo.V_SC_REQUISICION_PERSONAL AS VR
+	ON VR.CORR_EMPRESA = R.CORR_EMPRESA
+   AND VR.CORR_REQUISICION_PERSONAL = R.CORR_REQUISICION_PERSONAL
+LEFT JOIN dbo.SEG_USUARIO AS U_ACTOR
+	ON U_ACTOR.LOGIN_SISTEMA = @LOGIN_ACTOR
 INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO AS TD
 	ON TD.CORR_EMPRESA = R.CORR_EMPRESA
    AND TD.CODIGO_OPCION = N'SC_REQUISICION'
@@ -695,6 +707,9 @@ WHERE R.CORR_EMPRESA = @CORR_EMPRESA
                     dto.NOMBRE_ESTADO = reader["NOMBRE_ESTADO"]?.ToString()?.Trim();
                     dto.DESCRIPCION_ESTADO = reader["DESCRIPCION_ESTADO"]?.ToString()?.Trim();
                     dto.LOGIN_CREADOR = reader["LOGIN_CREADOR"]?.ToString()?.Trim();
+                    dto.NOMBRE_PUESTO = reader["NOMBRE_PUESTO"] == DBNull.Value ? null : reader["NOMBRE_PUESTO"]?.ToString()?.Trim();
+                    dto.NOMBRE_UNIDAD = reader["NOMBRE_UNIDAD"] == DBNull.Value ? null : reader["NOMBRE_UNIDAD"]?.ToString()?.Trim();
+                    dto.NOMBRE_ACTOR = reader["NOMBRE_ACTOR"] == DBNull.Value ? null : reader["NOMBRE_ACTOR"]?.ToString()?.Trim();
                 }
                 reader.Close();
 

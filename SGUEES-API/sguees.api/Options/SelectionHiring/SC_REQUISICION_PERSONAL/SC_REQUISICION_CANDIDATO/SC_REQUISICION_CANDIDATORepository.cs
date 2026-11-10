@@ -273,6 +273,25 @@ namespace SGUEES.Repositories
 					{
 						await ActualizarEstadoExpedienteAsync(Data.CORR_EMPRESA, corrExpediente, 3, login, vESTACION);
 					}
+
+					// Qué hace: Pasa la requisición a En Contratación (9) al seleccionarse un candidato para movimiento personal.
+					// Cómo lo hace: Actualiza CORR_ESTADO_REQUISICION = 9 en SC_REQUISICION_PERSONAL para la requisición indicada si estaba en estados 5..8.
+					var pUpdateReqContratacion = new List<CParameter>
+					{
+						new() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+						new() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = Data.CORR_REQUISICION_PERSONAL, DbType = System.Data.DbType.Int32 },
+						new() { ParameterName = "USUARIO_ACTU", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
+						new() { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+					};
+					await objData.ExecCmd(System.Data.CommandType.Text, @"
+UPDATE dbo.SC_REQUISICION_PERSONAL
+SET CORR_ESTADO_REQUISICION = 9,
+    USUARIO_ACTU = @USUARIO_ACTU,
+    ESTACION_ACTU = @ESTACION_ACTU,
+    FECHA_ACTU = GETDATE()
+WHERE CORR_EMPRESA = @CORR_EMPRESA
+  AND CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL
+  AND CORR_ESTADO_REQUISICION IN (5, 6, 7, 8);", true, pUpdateReqContratacion);
 				}
 
 				objResultado.Data = response;

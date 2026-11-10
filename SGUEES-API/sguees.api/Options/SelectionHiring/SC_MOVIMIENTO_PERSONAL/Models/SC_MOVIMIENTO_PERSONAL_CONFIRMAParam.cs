@@ -10,5 +10,9 @@ namespace SGUEES.Models
 
 		/// <summary>Fecha en que el movimiento se hace oficial.</summary>
 		public System.DateTime? FECHA_EFECTIVA { get; set; }
+
+		// Qué hace: Fecha de ingreso propuesta para contrataciones eventuales.
+		// Cómo lo hace: Se recibe opcionalmente para actualizar la fecha propuesta y calcular la finalización antes de confirmar.
+		public System.DateTime? FECHA_INGRESO_PROPUESTA { get; set; }
 	}
 }

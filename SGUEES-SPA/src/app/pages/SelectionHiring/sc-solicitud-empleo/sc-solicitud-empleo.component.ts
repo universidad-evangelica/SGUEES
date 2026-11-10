@@ -1,4 +1,4 @@
-﻿import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -102,6 +102,10 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		private elRef: ElementRef,
 	) {
 		super(appInfoService, router);
+		// Qué hace: Asegura el contexto de ejecución de las funciones de visibilidad de acciones en la grilla.
+		// Cómo lo hace: Enlaza explícitamente los métodos al componente actual para sobreescribir el enlace de CBaseComponent.
+		this.getPermiteEditar = this.getPermiteEditar.bind(this);
+		this.getPermiteDele = this.getPermiteDele.bind(this);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
@@ -916,6 +920,55 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.consultarPersonaDatos();
 	}
 
+	// Qué hace: Re-consulta la solicitud actual en BD para traer el CORR_PERSONA_DATOS actualizado y refresca los datos del participante.
+	// Cómo lo hace: Llama a SC_SOLICITUD_EMPLEO/Get por correlativo, sincroniza el modelo en memoria y desencadena consultarPersonaDatos().
+	refrescarDatosParticipante(): void {
+		const corrSolicitud = this.model?.CORR_SOLICITUD_EMPLEO ?? 0;
+		if (corrSolicitud <= 0) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Solicitud no guardada',
+				detail: 'Guarde la solicitud antes de refrescar los datos del participante.',
+			});
+			return;
+		}
+
+		this.cargandoPersonaDatos = true;
+		this.service
+			.getSolicitudPorId(corrSolicitud)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && response?.Data) {
+						const row = Array.isArray(response.Data) ? response.Data[0] : response.Data;
+						if (row) {
+							this.model.CORR_PERSONA_DATOS = row.CORR_PERSONA_DATOS;
+							if (row.NOMBRE) this.model.NOMBRE = row.NOMBRE;
+							if (row.DUI) this.model.DUI = row.DUI;
+							this.model.CORR_EXPEDIENTE_CANDIDATO = row.CORR_EXPEDIENTE_CANDIDATO;
+							this.model.TIENE_EXPEDIENTE = row.TIENE_EXPEDIENTE;
+							if (this.modelUpdate) {
+								this.modelUpdate.CORR_PERSONA_DATOS = row.CORR_PERSONA_DATOS;
+								if (row.NOMBRE) this.modelUpdate.NOMBRE = row.NOMBRE;
+								if (row.DUI) this.modelUpdate.DUI = row.DUI;
+								this.modelUpdate.CORR_EXPEDIENTE_CANDIDATO = row.CORR_EXPEDIENTE_CANDIDATO;
+								this.modelUpdate.TIENE_EXPEDIENTE = row.TIENE_EXPEDIENTE;
+							}
+							const idx = this.models.findIndex((m: any) => m.CORR_SOLICITUD_EMPLEO === corrSolicitud);
+							if (idx !== -1) {
+								this.models[idx] = { ...this.models[idx], ...row };
+							}
+						}
+					}
+					this.consultarPersonaDatos();
+				},
+				error: (error: any) => {
+					this.cargandoPersonaDatos = false;
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+				},
+			});
+	}
+
 	override nuevo(): void {
 		super.nuevo();
 		this.tokens = [];
@@ -927,31 +980,32 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	// Qué hace: Determina si el botón de edición debe mostrarse para una fila específica de la grilla.
 	// Cómo lo hace: Comprueba los permisos generales del rol y oculta la acción si la solicitud ya tiene un expediente asociado.
-	override getPermiteEditar = (e: any): boolean => {
+	override getPermiteEditar(e: any): boolean {
 		if (!this.permiteEdit) {
 			return false;
 		}
-		const rowData = e?.row?.data ?? e?.data;
+		const rowData = e?.row?.data ?? e?.data ?? e;
 		if (!rowData) {
 			return this.permiteEdit;
 		}
-		return !rowData.TIENE_EXPEDIENTE && !(Number(rowData.CORR_EXPEDIENTE_CANDIDATO) > 0);
-	};
+		const tieneExpediente = Boolean(rowData?.TIENE_EXPEDIENTE) || Number(rowData?.CORR_EXPEDIENTE_CANDIDATO) > 0;
+		return !tieneExpediente;
+	}
 
 	// Qué hace: Determina si el botón de eliminación debe mostrarse para una fila específica de la grilla.
 	// Cómo lo hace: Comprueba los permisos generales del rol y oculta la acción si la solicitud ya tiene expediente o ya tiene token generado/enviado.
-	override getPermiteDele = (e: any): boolean => {
+	override getPermiteDele(e: any): boolean {
 		if (!this.permiteDele) {
 			return false;
 		}
-		const rowData = e?.row?.data ?? e?.data;
+		const rowData = e?.row?.data ?? e?.data ?? e;
 		if (!rowData) {
 			return this.permiteDele;
 		}
-		const tieneExpediente = !!rowData.TIENE_EXPEDIENTE || Number(rowData.CORR_EXPEDIENTE_CANDIDATO) > 0;
-		const tieneTokenEnviado = !!rowData.TIENE_TOKEN || !!rowData.FECHA_GENERACION;
+		const tieneExpediente = Boolean(rowData?.TIENE_EXPEDIENTE) || Number(rowData?.CORR_EXPEDIENTE_CANDIDATO) > 0;
+		const tieneTokenEnviado = Boolean(rowData?.TIENE_TOKEN) || Boolean(rowData?.FECHA_GENERACION);
 		return !tieneExpediente && !tieneTokenEnviado;
-	};
+	}
 
 	override editarClick(e: any): void {
 		e?.event?.preventDefault?.();
@@ -1134,8 +1188,10 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 					this.requisicionesModal = (response.Data ?? [])
 						.filter(
 							(item: any) =>
-								Number(item.CORR_ESTADO_REQUISICION) === 5 &&
-								!vinculadas.has(Number(item.CORR_REQUISICION_PERSONAL))
+								Number(item.CORR_ESTADO_REQUISICION) >= 5 &&
+								Number(item.CORR_ESTADO_REQUISICION) <= 10 &&
+								!vinculadas.has(Number(item.CORR_REQUISICION_PERSONAL)) &&
+								(Number(item.CANTIDAD_PLAZAS ?? 0) <= 0 || Number(item.PLAZAS_CUBIERTAS ?? 0) < Number(item.CANTIDAD_PLAZAS ?? 0))
 						)
 						.sort((a: any, b: any) => {
 							const fechaA = new Date(a.FECHA_REQUISICION).getTime() || 0;
@@ -1403,9 +1459,11 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 		if (this.banderaMtto === UpdateType.Add) {
 			const dui = `${this.model?.DUI ?? ''}`.trim();
-			const duiLimpio = dui.replace(/[^0-9kK]/g, '');
+			// Qué hace: Normaliza caracteres alfanuméricos del documento para buscar coincidencias previas por DUI o Pasaporte.
+			// Cómo lo hace: Conserva letras y dígitos ignorando guiones/espacios y ejecuta la búsqueda a partir de 6 caracteres.
+			const docLimpio = dui.replace(/[^a-zA-Z0-9]/g, '');
 
-			if ((this.model?.CORR_PERSONA_DATOS ?? 0) <= 0 && duiLimpio.length >= 8) {
+			if ((this.model?.CORR_PERSONA_DATOS ?? 0) <= 0 && docLimpio.length >= 6) {
 				this.loadingVisible = true;
 				try {
 					const response: any = await this.service.buscarCandidatoPorDui(dui).pipe(take(1)).toPromise();
@@ -1414,10 +1472,12 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 					if (response?.Result && response?.Data) {
 						const candidato = response.Data;
 						const nombreCandidato = candidato.NOMBRE_COMPLETO || 'el candidato';
-						const aceptar = await confirm(
-							`Se encontró un expediente para ${nombreCandidato} con el DUI ${dui}. ¿Desea cargar sus datos personales y asociarlo a esta solicitud?`,
-							'Candidato Existente'
-						);
+						const tipoDoc = `${candidato.TIPO_COINCIDENCIA ?? ''}`.toUpperCase() === 'PASAPORTE' ? 'Pasaporte' : 'DUI';
+						const tieneExpediente = (candidato.CORR_EXPEDIENTE_CANDIDATO ?? 0) > 0;
+						const mensajeConfirm = tieneExpediente
+							? `Se encontró un expediente para ${nombreCandidato} con el ${tipoDoc} ${dui}. ¿Desea cargar sus datos personales y asociarlo a esta solicitud?`
+							: `Se encontró un registro previo para ${nombreCandidato} con el ${tipoDoc} ${dui}. ¿Desea cargar sus datos personales en esta solicitud?`;
+						const aceptar = await confirm(mensajeConfirm, 'Candidato Existente');
 						if (aceptar) {
 							this.model.NOMBRE = candidato.NOMBRE_COMPLETO ?? this.model.NOMBRE;
 							this.model.CORREO_INVITACION = candidato.CORREO ?? this.model.CORREO_INVITACION;
@@ -1577,10 +1637,12 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
+	// Qué hace: Controla el estado de solo lectura de los campos de identidad (DUI y Nombre).
+	// Cómo lo hace: Permite editarlos libremente mientras no se haya asociado el expediente a la solicitud (asociacionExpedienteBloqueada).
 	private aplicarEstadoCamposIdentidad(): void {
-		const personaCompleta = (this.model?.CORR_PERSONA_DATOS ?? 0) > 0;
-		this.dataForm?.instance?.getEditor('DUI')?.option('readOnly', personaCompleta);
-		this.dataForm?.instance?.getEditor('NOMBRE')?.option('readOnly', personaCompleta);
+		const bloqueado = this.asociacionExpedienteBloqueada || this.isConsulta();
+		this.dataForm?.instance?.getEditor('DUI')?.option('readOnly', bloqueado);
+		this.dataForm?.instance?.getEditor('NOMBRE')?.option('readOnly', bloqueado);
 	}
 
 	override setFocus() {
@@ -1703,6 +1765,27 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.correoCuerpoPreviewSafe = '';
 	}
 
+	// Qué hace: restablece la posición del scroll de la vista previa del correo al tope superior cuando el modal se hace visible.
+	// Cómo lo hace: consulta el elemento .email-preview-container y asigna scrollTop = 0 de forma escalonada para asegurar la visibilidad del encabezado institucional tras la animación y carga de imágenes.
+	onPopupEnviarCorreoShown(): void {
+		this.resetScrollVistaPrevia();
+	}
+
+	// Qué hace: fuerza el desplazamiento al inicio superior del visor del correo.
+	// Cómo lo hace: programa ejecuciones diferidas de scrollTop = 0 en el contenedor .email-preview-container para garantizar que el encabezado institucional sea visible desde el inicio.
+	private resetScrollVistaPrevia(): void {
+		const ejecutarReset = () => {
+			const contenedor = document.querySelector('.email-preview-container') as HTMLElement;
+			if (contenedor) {
+				contenedor.scrollTop = 0;
+			}
+		};
+		ejecutarReset();
+		setTimeout(ejecutarReset, 50);
+		setTimeout(ejecutarReset, 150);
+		setTimeout(ejecutarReset, 300);
+	}
+
 	// Qué hace: reacciona a la selección de una plantilla para previsualizar el asunto y cuerpo con parámetros sustituidos.
 	// Cómo lo hace: busca la plantilla elegida, extrae su versión activa, reemplaza tokens y genera SafeHtml para preservar estilos CSS.
 	onPlantillaSeleccionadaChange(e: any): void {
@@ -1725,8 +1808,11 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		let cuerpo = this.sustituirParametrosCorreo(plantilla.CUERPO_PLANTILLA || '');
 		// Limpiar párrafos vacíos redundantes <p><br></p> entre tablas para evitar separación excesiva en la vista previa
 		cuerpo = cuerpo.replace(/(<\/table>\s*(?:<p[^>]*>\s*<span[^>]*>(?:&nbsp;|\s*)<\/span>\s*<\/p>)?)\s*<p[^>]*>\s*(?:<br\s*\/?>|&nbsp;|\s*)\s*<\/p>\s*(<table)/gi, '$1$2');
+		// Colapsar saltos de párrafo vacíos consecutivos a uno solo para evitar huecos gigantes
+		cuerpo = cuerpo.replace(/(?:<p[^>]*>\s*(?:<br\s*\/?>|&nbsp;|\s*)\s*<\/p>\s*){2,}/gi, '<p><br></p>');
 		this.correoCuerpoPreview = cuerpo;
 		this.correoCuerpoPreviewSafe = this.sanitizer.bypassSecurityTrustHtml(this.correoCuerpoPreview);
+		this.resetScrollVistaPrevia();
 	}
 
 	// Qué hace: sustituye dinámicamente cualquier parámetro de la solicitud, requisición o sistema en el texto o HTML de la plantilla.

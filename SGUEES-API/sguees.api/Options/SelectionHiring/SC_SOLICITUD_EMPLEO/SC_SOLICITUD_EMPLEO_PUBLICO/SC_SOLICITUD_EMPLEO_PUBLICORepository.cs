@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
@@ -283,9 +283,21 @@ namespace sguees.Repositories
                     {
                         persona.PLAZA_SOLICITADA = vista.PLAZA_SOLICITADA;
                     }
-                    if (!string.IsNullOrWhiteSpace(vista.DUI) && string.IsNullOrWhiteSpace(persona.DUI))
+                    // Qué hace: Clasifica el documento de la solicitud en DUI o Pasaporte durante la precarga de reentrada.
+                    // Cómo lo hace: Si el valor supera 9 dígitos o contiene letras lo asigna a PASAPORTE cuando esté vacío; de lo contrario lo asigna a DUI.
+                    if (!string.IsNullOrWhiteSpace(vista.DUI))
                     {
-                        persona.DUI = vista.DUI;
+                        if (EsDocumentoPasaporte(vista.DUI))
+                        {
+                            if (string.IsNullOrWhiteSpace(persona.PASAPORTE))
+                            {
+                                persona.PASAPORTE = vista.DUI.Trim();
+                            }
+                        }
+                        else if (string.IsNullOrWhiteSpace(persona.DUI))
+                        {
+                            persona.DUI = vista.DUI.Trim();
+                        }
                     }
                 }
 
@@ -496,6 +508,37 @@ namespace sguees.Repositories
         private static object ToDbValue(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
+        }
+
+        // Qué hace: Determina si un documento de identidad corresponde a pasaporte (> 9 dígitos o alfanumérico).
+        // Cómo lo hace: Retira guiones y espacios y verifica si contiene letras o supera los 9 dígitos numéricos.
+        private static bool EsDocumentoPasaporte(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                return false;
+            }
+
+            var limpio = valor.Trim().Replace("-", "").Replace(" ", "");
+            if (limpio.Length == 0)
+            {
+                return false;
+            }
+
+            int digitos = 0;
+            foreach (char ch in limpio)
+            {
+                if (char.IsLetter(ch))
+                {
+                    return true;
+                }
+                if (char.IsDigit(ch))
+                {
+                    digitos++;
+                }
+            }
+
+            return digitos > 9;
         }
 
         /// <summary>

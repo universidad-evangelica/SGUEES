@@ -23,6 +23,7 @@ namespace SGUEES.Models
 		public string NOMBRE_UNIDAD { get; set; }
 		public string NOMBRE_PUESTO { get; set; }
 		public string MODALIDAD_NOMBRE { get; set; }
+		public int? CORR_TIPO_CONTRATACION { get; set; }
 		public string NOMBRE_TIPO_CONTRATACION { get; set; }
 		public int CORR_ESTADO_REQUISICION { get; set; }
 		public decimal? SALARIO { get; set; }
@@ -42,5 +43,8 @@ namespace SGUEES.Models
 		// Qué hace: Fecha efectiva del movimiento de personal asociado.
 		// Cómo lo hace: Mapea la columna FECHA_EFECTIVA devuelta por la consulta de contrataciones.
 		public DateTime? FECHA_EFECTIVA { get; set; }
+		// Qué hace: Fecha de ingreso propuesta del movimiento de personal.
+		// Cómo lo hace: Mapea la columna FECHA_INGRESO_PROPUESTA para el modal de confirmación eventual.
+		public DateTime? FECHA_INGRESO_PROPUESTA { get; set; }
 	}
 }

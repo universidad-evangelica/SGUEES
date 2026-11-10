@@ -15,5 +15,11 @@ namespace SGUEES.Models
 		public string DESCRIPCION_ESTADO { get; set; }
 		public string LOGIN_CREADOR { get; set; }
 		public List<string> LOGINS_PENDIENTES { get; set; } = new List<string>();
+
+		// Qué hace: Almacena los datos enriquecidos de la requisición y del autorizador para el correo.
+		// Cómo lo hace: Propiedades de lectura/escritura mapeadas desde la vista de requisición y SEG_USUARIO.
+		public string NOMBRE_PUESTO { get; set; }
+		public string NOMBRE_UNIDAD { get; set; }
+		public string NOMBRE_ACTOR { get; set; }
 	}
 }

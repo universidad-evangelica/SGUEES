@@ -58,20 +58,21 @@ namespace SGUEES.Services
             return await _repo.GetAllVisibleAsync(p);
         }
 
-        // Qué hace: Retorna únicamente las requisiciones aprobadas (estado final / Aprobado GG = 5) para el selector de solicitud de empleo, ordenadas de la más reciente a la más antigua.
-        // Cómo lo hace: Filtra por CORR_ESTADO_REQUISICION = 5 y ordena la lista resultante por FECHA_REQUISICION DESC y CORR_REQUISICION_PERSONAL DESC.
+        // Qué hace: Retorna las requisiciones disponibles (Aprobadas a Parcial Cubierta: 5..10) con vacantes pendientes de cubrir para el selector de solicitud de empleo.
+        // Cómo lo hace: Consulta las requisiciones de la empresa, filtra aquellas con CORR_ESTADO_REQUISICION entre 5 y 10 y donde PLAZAS_CUBIERTAS sea menor a CANTIDAD_PLAZAS, ordenándolas por fecha descendente.
         public async Task<CResult> GetAllForSolicitudEmpleoAsync(SC_REQUISICION_PERSONALParam xWhere)
         {
             var p = new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_ESTADO_REQUISICION", Value = 5, DbType = System.Data.DbType.Int32 },
             };
 
             var resultado = await _repo.GetAllAsync(p);
             if (resultado.Result && resultado.Data is IEnumerable<SC_REQUISICION_PERSONALView> lista)
             {
                 resultado.Data = lista
+                    .Where(r => (r.CORR_ESTADO_REQUISICION >= 5 && r.CORR_ESTADO_REQUISICION <= 10)
+                             && (r.CANTIDAD_PLAZAS <= 0 || r.PLAZAS_CUBIERTAS < r.CANTIDAD_PLAZAS))
                     .OrderByDescending(r => r.FECHA_REQUISICION)
                     .ThenByDescending(r => r.CORR_REQUISICION_PERSONAL)
                     .ToList();
@@ -241,7 +242,8 @@ namespace SGUEES.Services
         {
             var dto = await _repo.GetContextoNotificacionFlujoAsync(
                 data.CORR_EMPRESA,
-                data.CORR_REQUISICION_PERSONAL);
+                data.CORR_REQUISICION_PERSONAL,
+                loginActor);
 
             if (dto == null)
             {
@@ -259,9 +261,45 @@ namespace SGUEES.Services
                 ? "Actualización de flujo"
                 : dto.NOMBRE_ESTADO.Trim();
             var titulo = $"{nombreTipo} #{corrReq} - {nombreEstado}";
-            var mensaje = string.IsNullOrWhiteSpace(dto.DESCRIPCION_ESTADO)
-                ? $"La requisición No.{corrReq} cambió a estado {nombreEstado}."
-                : dto.DESCRIPCION_ESTADO.Trim();
+
+            // Qué hace: Construye el cuerpo del mensaje estructurado con Puesto, Unidad y nombre del Jefe aprobador.
+            // Cómo lo hace: Agrega las líneas de Puesto y Unidad, y personaliza la descripción reemplazando '(nivel 2)' por ': NombreJefe'.
+            var lineasMensaje = new List<string>();
+            if (!string.IsNullOrWhiteSpace(dto.NOMBRE_PUESTO))
+            {
+                lineasMensaje.Add($"Puesto: {dto.NOMBRE_PUESTO}");
+            }
+            if (!string.IsNullOrWhiteSpace(dto.NOMBRE_UNIDAD))
+            {
+                lineasMensaje.Add($"Unidad: {dto.NOMBRE_UNIDAD}");
+            }
+
+            string accionEstado = dto.DESCRIPCION_ESTADO;
+            if (!string.IsNullOrWhiteSpace(accionEstado))
+            {
+                if (!string.IsNullOrWhiteSpace(dto.NOMBRE_ACTOR))
+                {
+                    if (accionEstado.Contains("el jefe de la unidad (nivel 2)", StringComparison.OrdinalIgnoreCase))
+                    {
+                        accionEstado = accionEstado.Replace("el jefe de la unidad (nivel 2)", $"el jefe de la unidad: {dto.NOMBRE_ACTOR}", StringComparison.OrdinalIgnoreCase);
+                    }
+                    else if (accionEstado.Contains("el jefe inmediato (nivel 1)", StringComparison.OrdinalIgnoreCase))
+                    {
+                        accionEstado = accionEstado.Replace("el jefe inmediato (nivel 1)", $"el jefe inmediato: {dto.NOMBRE_ACTOR}", StringComparison.OrdinalIgnoreCase);
+                    }
+                    else if (accionEstado.Contains("gerencia general (nivel 3)", StringComparison.OrdinalIgnoreCase))
+                    {
+                        accionEstado = accionEstado.Replace("gerencia general (nivel 3)", $"Gerencia General: {dto.NOMBRE_ACTOR}", StringComparison.OrdinalIgnoreCase);
+                    }
+                }
+                lineasMensaje.Add(accionEstado);
+            }
+            else
+            {
+                lineasMensaje.Add($"La requisición No.{corrReq} cambió a estado {nombreEstado}.");
+            }
+
+            var mensaje = string.Join("\n", lineasMensaje);
 
             var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var creador = dto.LOGIN_CREADOR?.Trim();

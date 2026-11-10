@@ -55,6 +55,14 @@ const routes: Routes = [
     loadChildren: () => import('./sc-bandeja-actores/sc-bandeja-actores.module').then(m => m.ScBandejaActoresModule)
   },
   {
+    path: 'sc-bandeja-actores/:codigo',
+    component: ScBandejaActoresComponent,
+    data: { titulo: 'Bandeja de pendientes' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-bandeja-actores/sc-bandeja-actores.module').then(m => m.ScBandejaActoresModule)
+  },
+  {
     path: 'sc-tipo-vacante',
     component: ScTipoVacanteComponent,
     data: { titulo: 'Tipo de Vacante' },

@@ -83,6 +83,13 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	private candidatosStore: CustomStore | null = null;
 	private movimientosStore: CustomStore | null = null;
 
+	// Qué hace: Almacena temporalmente el correlativo recibido por URL para auto-seleccionar la fila en la bandeja.
+	// Cómo lo hace: Se asigna en procesarParametrosRuta y se consume en procesarAutoSeleccion al cargar los datos del grid.
+	private autoSelectCorr: number | null = null;
+	// Qué hace: Almacena la pestaña objetivo deducida a partir del tipo recibido por URL.
+	// Cómo lo hace: Se valida contra REQUISICIONES, CANDIDATOS o MOVIMIENTOS para abrir la pestaña correcta.
+	private autoSelectTipo: ScBandejaActoresTab | null = null;
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -93,6 +100,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	}
 
 	ngOnInit(): void {
+		this.procesarParametrosRuta();
 		this.cargarUnidades();
 		this.cargarKpis();
 		this.configurarDataSource();
@@ -653,6 +661,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 					);
 					this.totalRequisicionesApi = response.RowsAffected || rows.length;
 					this.recalcularKpisLocal();
+					this.procesarAutoSeleccionRequisicion(rows);
 
 					return {
 						data: rows,
@@ -710,6 +719,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 					);
 					this.totalCandidatosApi = response.RowsAffected || rows.length;
 					this.recalcularKpisLocal();
+					this.procesarAutoSeleccionCandidato(rows);
 
 					return {
 						data: rows,
@@ -767,6 +777,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 					);
 					this.totalMovimientosApi = response.RowsAffected || rows.length;
 					this.recalcularKpisLocal();
+					this.procesarAutoSeleccionMovimiento(rows);
 
 					return {
 						data: rows,
@@ -928,6 +939,128 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 				this.recalcularKpisLocal();
 			},
 		});
+	}
+
+	// Qué hace: Lee parámetros de la URL (ruta amigable /REQ-29 o query params ?corr=29) para posicionar la bandeja en el registro indicado.
+	// Cómo lo hace: Analiza ActivatedRoute.snapshot.paramMap y queryParamMap, determina el tab y prepara la auto-selección de la fila.
+	private procesarParametrosRuta(): void {
+		const codigoParam =
+			this.router.snapshot.paramMap.get('codigo') ||
+			this.router.snapshot.params?.['codigo'] ||
+			this.router.parent?.snapshot.paramMap.get('codigo');
+
+		let corr = 0;
+		let tab: ScBandejaActoresTab = 'REQUISICIONES';
+
+		if (codigoParam) {
+			const upper = codigoParam.trim().toUpperCase();
+			if (upper.startsWith('MOV-')) {
+				tab = 'MOVIMIENTOS';
+				corr = Number(upper.replace('MOV-', '')) || 0;
+			} else if (upper.startsWith('CAN-') || upper.startsWith('SOL-')) {
+				tab = 'CANDIDATOS';
+				corr = Number(upper.replace(/^(CAN|SOL)-/, '')) || 0;
+			} else if (upper.startsWith('REQ-')) {
+				tab = 'REQUISICIONES';
+				corr = Number(upper.replace('REQ-', '')) || 0;
+			} else if (!isNaN(Number(upper))) {
+				tab = 'REQUISICIONES';
+				corr = Number(upper) || 0;
+			}
+		}
+
+		// Compatibilidad hacia atrás con query parameters (?corr=29&tipo=REQUISICION)
+		if (corr <= 0) {
+			const corrQuery = this.router.snapshot.queryParamMap.get('corr');
+			const tipoQuery = (this.router.snapshot.queryParamMap.get('tipo') || '').toUpperCase();
+			if (corrQuery && !isNaN(Number(corrQuery)) && Number(corrQuery) > 0) {
+				corr = Number(corrQuery);
+				if (tipoQuery === 'MOVIMIENTO' || tipoQuery === 'MOVIMIENTOS') {
+					tab = 'MOVIMIENTOS';
+				} else if (tipoQuery === 'CANDIDATO' || tipoQuery === 'CANDIDATOS') {
+					tab = 'CANDIDATOS';
+				} else {
+					tab = 'REQUISICIONES';
+				}
+			}
+		}
+
+		if (corr > 0) {
+			this.autoSelectCorr = corr;
+			this.autoSelectTipo = tab;
+			this.activeTab = tab;
+			this.estadosFiltro =
+				tab === 'REQUISICIONES' ? this.estadosFiltroRequisicion : [{ VALUE: 'TODOS', TEXT: 'Todos' }];
+		}
+	}
+
+	// Qué hace: Normaliza la barra de direcciones del navegador a la ruta base /sc-bandeja-actores manteniendo la vista activa.
+	// Cómo lo hace: Navega a /sc-bandeja-actores con replaceUrl: true para ocultar el /REQ-29 o queryParams sin recargar la página.
+	private limpiarUrlNavegador(): void {
+		this.autoSelectCorr = null;
+		this.autoSelectTipo = null;
+		void this.navRouter.navigate(['/sc-bandeja-actores'], {
+			replaceUrl: true,
+		});
+	}
+
+	// Qué hace: Auto-selecciona la requisición especificada por parámetro de URL y abre su panel lateral de detalle.
+	// Cómo lo hace: Busca la fila coincidente por CORR_REQUISICION_PERSONAL, abre el panel de detalles y limpia la URL del navegador.
+	private procesarAutoSeleccionRequisicion(rows: ScBandejaActoresItem[]): void {
+		if (!this.autoSelectCorr || this.autoSelectTipo !== 'REQUISICIONES') {
+			return;
+		}
+
+		const corrBuscado = this.autoSelectCorr;
+		const target = rows.find((r) => r.CORR_REQUISICION_PERSONAL === corrBuscado);
+		this.limpiarUrlNavegador();
+
+		if (target) {
+			setTimeout(() => {
+				this.abrirPanel(target);
+			}, 100);
+		}
+	}
+
+	// Qué hace: Auto-selecciona el candidato especificado por parámetro de URL y abre su panel lateral de detalle.
+	// Cómo lo hace: Busca la fila coincidente por expediente, solicitud o requisición, abre el panel y limpia la URL del navegador.
+	private procesarAutoSeleccionCandidato(rows: ScBandejaActoresItem[]): void {
+		if (!this.autoSelectCorr || this.autoSelectTipo !== 'CANDIDATOS') {
+			return;
+		}
+
+		const corrBuscado = this.autoSelectCorr;
+		const target = rows.find(
+			(r) =>
+				r.CORR_EXPEDIENTE_CANDIDATO === corrBuscado ||
+				r.CORR_SOLICITUD_EMPLEO === corrBuscado ||
+				r.CORR_REQUISICION_PERSONAL === corrBuscado
+		);
+		this.limpiarUrlNavegador();
+
+		if (target) {
+			setTimeout(() => {
+				this.abrirPanel(target);
+			}, 100);
+		}
+	}
+
+	// Qué hace: Auto-selecciona el movimiento de personal especificado por parámetro de URL y abre su panel lateral de detalle.
+	// Cómo lo hace: Busca la fila coincidente por CORR_MOVIMIENTO_PERSONAL, abre el panel de detalles y limpia la URL del navegador.
+	private procesarAutoSeleccionMovimiento(rows: ScBandejaActoresItem[]): void {
+		if (!this.autoSelectCorr || this.autoSelectTipo !== 'MOVIMIENTOS') {
+			return;
+		}
+
+		const corrBuscado = this.autoSelectCorr;
+		const target = rows.find((r) => r.CORR_MOVIMIENTO_PERSONAL === corrBuscado);
+		this.limpiarUrlNavegador();
+
+		if (target) {
+			setTimeout(() => {
+				this.abrirPanel(target);
+			}, 100);
+		}
 	}
 
 	private recalcularKpisLocal(): void {

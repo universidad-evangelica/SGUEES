@@ -47,10 +47,13 @@ BEGIN
 
     DECLARE
         @CORR_PERSONA_DATOS int = 0,
-        @DUI_SOLICITUD varchar(25) = NULL,
+        @DUI_SOLICITUD varchar(50) = NULL,
         @DUI_PERSONA varchar(25) = NULL,
-        @DUI_SOL_NORM varchar(25) = NULL,
+        @PASAPORTE_PERSONA varchar(50) = NULL,
+        @DUI_SOL_NORM varchar(50) = NULL,
         @DUI_PER_NORM varchar(25) = NULL,
+        @PASAPORTE_PER_NORM varchar(50) = NULL,
+        @DOC_ENCONTRADO_LABEL nvarchar(80) = N'',
         @CORR_EXP int = 0,
         @CORR_DET int = 0,
         @FECHA datetime = GETDATE(),
@@ -97,7 +100,8 @@ BEGIN
 
         SELECT
             @EXISTE_PERSONA = 1,
-            @DUI_PERSONA = P.DUI
+            @DUI_PERSONA = P.DUI,
+            @PASAPORTE_PERSONA = P.PASAPORTE
         FROM dbo.SC_PERSONA_DATOS AS P
         WHERE P.CORR_EMPRESA = @CORR_EMPRESA
           AND P.CORR_PERSONA_DATOS = @CORR_PERSONA_DATOS;
@@ -113,12 +117,18 @@ BEGIN
 
         SET @DUI_SOL_NORM = UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(@DUI_SOLICITUD, ''))), '-', ''), ' ', ''));
         SET @DUI_PER_NORM = UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(@DUI_PERSONA, ''))), '-', ''), ' ', ''));
+        SET @PASAPORTE_PER_NORM = UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(@PASAPORTE_PERSONA, ''))), '-', ''), ' ', ''));
 
-        IF @DUI_SOL_NORM = N'' OR @DUI_PER_NORM = N'' OR @DUI_SOL_NORM <> @DUI_PER_NORM
+        /* Coincide si el documento de la solicitud coincide con el DUI o con el Pasaporte de la persona. */
+        IF @DUI_SOL_NORM = N''
+           OR (
+               (@DUI_PER_NORM = N'' OR @DUI_SOL_NORM <> @DUI_PER_NORM)
+               AND (@PASAPORTE_PER_NORM = N'' OR @DUI_SOL_NORM <> @PASAPORTE_PER_NORM)
+           )
         BEGIN
             SET @ESTADO = N'DUI_NO_COINCIDE';
             SET @SYS_NUMERO_ERROR = 4102;
-            SET @SYS_MENSAJE_ERROR = N'El DUI de la solicitud no coincide con el DUI de la persona asociada.';
+            SET @SYS_MENSAJE_ERROR = N'El documento de la solicitud no coincide con el DUI ni con el pasaporte de la persona asociada.';
             IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
             RETURN;
         END;
@@ -129,18 +139,28 @@ BEGIN
         WHERE E.CORR_EMPRESA = @CORR_EMPRESA
           AND E.CORR_PERSONA_DATOS = @CORR_PERSONA_DATOS;
 
-        /* 2) Si no hay: expediente de otra persona con el mismo DUI (no crear duplicado). */
+        /* 2) Si no hay: expediente de otra persona con el mismo DUI o Pasaporte (no crear duplicado). */
         IF ISNULL(@CORR_EXP, 0) = 0
         BEGIN
             SELECT TOP (1)
-                @CORR_EXP = E.CORR_EXPEDIENTE_CANDIDATO
+                @CORR_EXP = E.CORR_EXPEDIENTE_CANDIDATO,
+                @DOC_ENCONTRADO_LABEL = CASE
+                    WHEN @DUI_PER_NORM <> N'' AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(P.DUI, ''))), '-', ''), ' ', '')) = @DUI_PER_NORM
+                        THEN N'DUI ' + @DUI_PER_NORM
+                    ELSE N'Pasaporte ' + @PASAPORTE_PER_NORM
+                END
             FROM dbo.SC_EXPEDIENTE_CANDIDATO AS E
             INNER JOIN dbo.SC_PERSONA_DATOS AS P
                 ON P.CORR_EMPRESA = E.CORR_EMPRESA
                AND P.CORR_PERSONA_DATOS = E.CORR_PERSONA_DATOS
             WHERE E.CORR_EMPRESA = @CORR_EMPRESA
-              AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(P.DUI, ''))), '-', ''), ' ', '')) = @DUI_PER_NORM
-            ORDER BY E.CORR_EXPEDIENTE_CANDIDATO ASC;
+              AND (
+                  (@DUI_PER_NORM <> N'' AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(P.DUI, ''))), '-', ''), ' ', '')) = @DUI_PER_NORM)
+                  OR (@PASAPORTE_PER_NORM <> N'' AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(P.PASAPORTE, ''))), '-', ''), ' ', '')) = @PASAPORTE_PER_NORM)
+              )
+            ORDER BY
+                CASE WHEN @DUI_PER_NORM <> N'' AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(P.DUI, ''))), '-', ''), ' ', '')) = @DUI_PER_NORM THEN 0 ELSE 1 END,
+                E.CORR_EXPEDIENTE_CANDIDATO ASC;
 
             IF ISNULL(@CORR_EXP, 0) > 0
                 SET @ENCONTRADO_POR_DUI = 1;
@@ -202,7 +222,7 @@ BEGIN
                 SET @ESTADO = N'EXPEDIENTE_POR_DUI';
                 SET @SYS_NUMERO_ERROR = 4105;
                 SET @SYS_MENSAJE_ERROR =
-                    N'La persona ya posee un expediente (DUI ' + ISNULL(@DUI_PER_NORM, N'') +
+                    N'La persona ya posee un expediente (' + ISNULL(NULLIF(@DOC_ENCONTRADO_LABEL, N''), N'DUI ' + ISNULL(@DUI_PER_NORM, N'')) +
                     N'). ¿Desea asociar esta solicitud a ese expediente?';
             END
             ELSE

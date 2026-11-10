@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
@@ -221,7 +221,7 @@ namespace sguees.Services
             string cuerpoCorreo = Regex.Replace(cuerpoOriginal, @"\{\{([A-Za-z0-9_]+)\}\}", m =>
                 contexto.TryGetValue(m.Groups[1].Value, out var v) ? v : m.Value, RegexOptions.IgnoreCase);
 
-            cuerpoCorreo = NormalizarEspaciadoHtml(cuerpoCorreo);
+            cuerpoCorreo = SC_SOLICITUD_EMPLEOService.NormalizarEspaciadoHtml(cuerpoCorreo);
 
             var destinatarios = new List<ToEMail>
             {
@@ -565,129 +565,6 @@ namespace sguees.Services
                 ErrorMessage = mensaje,
                 RowsAffected = 0,
             };
-        }
-
-        // Qué hace: normaliza el espaciado vertical del HTML y asegura compatibilidad de ancho y centrado en Outlook Desktop y clientes web.
-        // Cómo lo hace: inyecta atributos nativos align="center" y width="650" en tablas y celdas, compacta paddings/márgenes y envuelve el cuerpo en una tabla condicional MSO para confinar el diseño a 650px en el motor de Microsoft Word.
-        private static string NormalizarEspaciadoHtml(string html)
-        {
-            if (string.IsNullOrWhiteSpace(html)) return "";
-
-            // Reducir padding excesivo de celdas y tarjetas institucionales
-            var resultado = Regex.Replace(html, @"padding:\s*32px\s+24px;?", "padding: 8px 16px;", RegexOptions.IgnoreCase);
-            resultado = Regex.Replace(resultado, @"padding:\s*22px\s+20px;?", "padding: 12px 16px;", RegexOptions.IgnoreCase);
-
-            // Eliminar párrafos vacíos redundantes <p><br></p> entre tablas que generan espaciado vertical excesivo
-            resultado = Regex.Replace(resultado, @"(</table>\s*(?:<p[^>]*>\s*<span[^>]*>(?:&nbsp;|\s*)</span>\s*</p>)?)\s*<p[^>]*>\s*(?:<br\s*/?>|&nbsp;|\s*)\s*</p>\s*(<table)", "$1$2", RegexOptions.IgnoreCase);
-
-            // Asegurar align="center" y width="650" en tablas para que Outlook Desktop no las estire al 100%
-            resultado = Regex.Replace(resultado, @"<table(\s+[^>]*)?>", match =>
-            {
-                var tag = match.Value;
-                if (!Regex.IsMatch(tag, @"\balign\s*=", RegexOptions.IgnoreCase))
-                {
-                    tag = tag.Insert(6, " align=\"center\"");
-                }
-                if (!Regex.IsMatch(tag, @"\bwidth\s*=", RegexOptions.IgnoreCase))
-                {
-                    tag = tag.Insert(6, " width=\"650\"");
-                }
-                else
-                {
-                    tag = Regex.Replace(tag, @"\bwidth\s*=\s*[""']100%?[""']", "width=\"650\"", RegexOptions.IgnoreCase);
-                }
-                return tag;
-            }, RegexOptions.IgnoreCase);
-
-            // Asegurar align="center" en celdas con texto o imágenes centradas para compatibilidad con Word MSO
-            resultado = Regex.Replace(resultado, @"<td(\s+[^>]*)?>", match =>
-            {
-                var tag = match.Value;
-                if (Regex.IsMatch(tag, @"text-align\s*:\s*center", RegexOptions.IgnoreCase) &&
-                    !Regex.IsMatch(tag, @"\balign\s*=", RegexOptions.IgnoreCase))
-                {
-                    tag = tag.Insert(3, " align=\"center\"");
-                }
-                return tag;
-            }, RegexOptions.IgnoreCase);
-
-            // Asegurar centrado de imágenes y logo UEES para Outlook Desktop (Word MSO):
-            // Word MSO ignora margin: auto y con display: block alinea la imagen a la izquierda ignorando text-align: center.
-            // Sustituir display: block por display: inline-block, asegurar align="center" y envolver con contenedor centrado.
-            resultado = Regex.Replace(resultado, @"<img(\s+[^>]*)?>", match =>
-            {
-                var tag = match.Value;
-                tag = Regex.Replace(tag, @"display\s*:\s*block;?", "display: inline-block; border: 0;", RegexOptions.IgnoreCase);
-                if (!Regex.IsMatch(tag, @"\balign\s*=", RegexOptions.IgnoreCase))
-                {
-                    tag = tag.Insert(4, " align=\"center\"");
-                }
-                return tag;
-            }, RegexOptions.IgnoreCase);
-
-            // Si la imagen está directamente en una celda centrada sin párrafo contenedor, envolver en párrafo centrado para Word MSO
-            resultado = Regex.Replace(resultado, @"(<td[^>]*align\s*=\s*[""']center[""'][^>]*>)\s*(<img[^>]*>)\s*(</td>)", "$1<p align=\"center\" style=\"text-align: center; margin: 0; padding: 0;\">$2</p>$3", RegexOptions.IgnoreCase);
-
-            // Normalizar etiquetas <p> para anular márgenes automáticos de clientes de correo (Outlook, Gmail)
-            resultado = Regex.Replace(resultado, @"<p(\s+[^>]*)?>", match =>
-            {
-                var tag = match.Value;
-
-                // Respetar líneas divisorias con border-top
-                if (tag.IndexOf("border-top", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return tag;
-                }
-
-                // Si es un párrafo separador con fuente mínima (font-size: 1px / 4px)
-                if (tag.IndexOf("font-size: 1px", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    tag.IndexOf("font-size: 4px", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    if (Regex.IsMatch(tag, @"style\s*=\s*[""'][^""']*[""']", RegexOptions.IgnoreCase))
-                    {
-                        return Regex.Replace(tag, @"style\s*=\s*([""'])([^""']*)\1", mStyle =>
-                        {
-                            return "style=\"margin: 0; padding: 0; line-height: 2px; font-size: 2px; height: 2px; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; " + mStyle.Groups[2].Value + "\"";
-                        }, RegexOptions.IgnoreCase);
-                    }
-                    return "<p style=\"margin: 0; padding: 0; line-height: 2px; font-size: 2px; height: 2px; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0;\">";
-                }
-
-                if (Regex.IsMatch(tag, @"style\s*=\s*[""'][^""']*[""']", RegexOptions.IgnoreCase))
-                {
-                    return Regex.Replace(tag, @"style\s*=\s*([""'])([^""']*)\1", mStyle =>
-                    {
-                        var estilo = mStyle.Groups[2].Value;
-                        // Eliminar márgenes y paddings previos que agreguen separación
-                        estilo = Regex.Replace(estilo, @"(?:margin|padding)(?:-top|-bottom)?\s*:\s*[^;]+;?", "", RegexOptions.IgnoreCase).Trim();
-                        return "style=\"margin: 0; margin-top: 0; margin-bottom: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; padding: 0; line-height: 1.4; " + estilo + "\"";
-                    }, RegexOptions.IgnoreCase);
-                }
-
-                return "<p style=\"margin: 0; margin-top: 0; margin-bottom: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; padding: 0; line-height: 1.4;\">";
-            }, RegexOptions.IgnoreCase);
-
-            // Envolver en contenedor centrado con tabla condicional MSO para fijar ancho de 650px en Outlook Desktop
-            if (resultado.IndexOf("mso 9", StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                resultado = $@"<center style=""width: 100%; table-layout: fixed; background-color: #ffffff;"">
-<!--[if (gte mso 9)|(IE)]>
-<table align=""center"" border=""0"" cellpadding=""0"" cellspacing=""0"" width=""650"" style=""width:650px;"">
-<tr>
-<td align=""center"" valign=""top"" width=""650"">
-<![endif]-->
-<div style=""max-width: 650px; margin: 0 auto; text-align: left;"">
-{resultado}
-</div>
-<!--[if (gte mso 9)|(IE)]>
-</td>
-</tr>
-</table>
-<![endif]-->
-</center>";
-            }
-
-            return resultado;
         }
     }
 }

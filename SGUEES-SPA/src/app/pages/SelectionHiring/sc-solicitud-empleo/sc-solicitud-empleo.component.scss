@@ -1,4 +1,4 @@
-﻿/* ===========================
+/* ===========================
    Margin - Todas las direcciones
 =========================== */
 
@@ -623,14 +623,16 @@
    Vista Previa de Correo Institucional
 =========================== */
 
+// Qué hace: define el contenedor y estilos de la vista previa institucional en modo lectura idénticos a CRoutines.BodyEmailUEES y gen-parametro-plantilla.
+// Cómo lo hace: replica el entorno real de correo con fondo suave #f2f5f9, tarjeta blanca central de borde a borde sin paddings exteriores que corten el encabezado o pie azul, franjas doradas continuas #ffcc00 y cuerpo blanco integrado.
 .email-preview-container {
-	max-height: 420px;
+	max-height: 520px;
 	overflow-y: auto;
 	overflow-x: hidden;
-	background: #e2e8f0;
+	background: #f2f5f9;
 	border: 1px solid #cbd5e1;
 	border-radius: 8px;
-	padding: 16px;
+	padding: 16px 14px;
 }
 
 .email-preview-label {
@@ -639,33 +641,111 @@
 	color: #64748b;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
-	margin-bottom: 8px;
+	margin-bottom: 12px;
 	display: block;
+	text-align: center;
 }
 
+// Qué hace: contenedor de la tarjeta de correo institucional dentro del modal de solicitud de empleo.
+// Cómo lo hace: replica la tipografía, interlineado y reinicio de márgenes de párrafos del editor en gen-parametro-plantilla, forzando ancho al 100% en tablas raíz y ocultando separadores entre bloques.
 ::ng-deep .email-preview-body {
-	table {
-		max-width: 100% !important;
-		margin: 0 auto !important;
-	}
-	td {
-		box-sizing: border-box;
-	}
-	img {
-		max-width: 100% !important;
-		height: auto;
-	}
+	width: 100%;
+	max-width: 680px;
+	margin: 0 auto;
+	background-color: #ffffff !important;
+	padding: 0 !important;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+	border-radius: 8px;
+	overflow: hidden;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	line-height: 1.6;
+	color: #102d59;
 
-	// Qué hace: normaliza los párrafos en el modo lectura para que coincidan fielmente con el editor de la plantilla.
-	// Cómo lo hace: anula los márgenes externos por defecto del navegador en p y establece line-height para replicar la vista del editor.
-	p {
+	// Mismo reinicio base de DevExtreme Quill (.dx-htmleditor-content) sin !important para respetar márgenes inline explícitos
+	p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote {
 		margin: 0;
 		padding: 0;
-		line-height: 1.6;
+	}
 
-		&[style*="border-top"] {
-			margin: 16px auto !important;
+	// Forzar que todas las tablas institucionales ocupen el ancho total de la tarjeta
+	table {
+		width: 100% !important;
+		max-width: 100% !important;
+		margin: 0 auto !important;
+		border-collapse: collapse !important;
+		border-spacing: 0 !important;
+
+		td, th {
+			box-sizing: border-box !important;
 		}
+	}
+
+	// Encabezado institucional azul de borde a borde con franja dorada inferior
+	> .tabla-encabezado,
+	> table[bgcolor="#063b79"]:first-of-type,
+	> table[style*="background-color:#063b79"]:first-of-type,
+	> table[style*="background-color: rgb(6, 59, 121)"]:first-of-type {
+		background-color: #063b79 !important;
+		border: none !important;
+
+		td.header,
+		td[bgcolor="#063b79"] {
+			background-color: #063b79 !important;
+			border-bottom: 6px solid #ffcc00 !important;
+			padding: 28px 35px 24px 35px !important;
+		}
+	}
+
+	// Cuerpo central: si es una celda <td> o tabla intermedia, asigna fondo blanco continuo y espaciado adecuado
+	> table:not(:first-of-type):not(:last-of-type),
+	> .tabla-cuerpo {
+		background-color: #ffffff !important;
+
+		> tbody > tr > td,
+		> tr > td {
+			background-color: #ffffff !important;
+			padding: 24px 35px !important;
+			border: none !important;
+		}
+	}
+
+	// Pie institucional azul de borde a borde con franja dorada superior
+	> .tabla-pie,
+	> table[bgcolor="#063b79"]:last-of-type,
+	> table[style*="background-color:#063b79"]:last-of-type,
+	> table[style*="background-color: rgb(6, 59, 121)"]:last-of-type {
+		background-color: #063b79 !important;
+		border: none !important;
+
+		td {
+			background-color: #063b79 !important;
+			border-top: 5px solid #ffcc00 !important;
+			padding: 28px 30px 20px !important;
+			text-align: center !important;
+		}
+
+		a {
+			color: #ffcc00 !important;
+		}
+	}
+
+	// Párrafos separadores limpios entre tablas (igual que table + p en gen-parametro-plantilla)
+	> p,
+	table + p {
+		display: none !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		line-height: 0 !important;
+		font-size: 0 !important;
+		height: 0 !important;
+		overflow: hidden !important;
+	}
+
+	// Enlaces en modo vista previa solo lectura para evitar desplazamientos accidentales de scroll
+	a {
+		pointer-events: none;
+		cursor: default;
 	}
 }
 

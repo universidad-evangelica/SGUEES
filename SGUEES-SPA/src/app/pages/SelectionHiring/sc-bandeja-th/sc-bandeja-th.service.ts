@@ -266,6 +266,7 @@ export class ScBandejaThService {
 			NOMBRE_PUESTO: row?.NOMBRE_PUESTO,
 			NOMBRE_TIPO_VACANTE: row?.NOMBRE_TIPO_VACANTE,
 			NOMBRE_TIPO_MODALIDAD: row?.MODALIDAD_NOMBRE,
+			CORR_TIPO_CONTRATACION: Number(row?.CORR_TIPO_CONTRATACION) || undefined,
 			NOMBRE_TIPO_CONTRATACION: row?.NOMBRE_TIPO_CONTRATACION,
 			CANTIDAD_PLAZAS: row?.CANTIDAD_PLAZAS,
 			PLAZAS_CUBIERTAS: row?.PLAZAS_CUBIERTAS,
@@ -384,6 +385,7 @@ export class ScBandejaThService {
 			CONFIRMADO: row?.CONFIRMADO,
 			CORR_EMPLEADO: corrEmpleado > 0 ? corrEmpleado : undefined,
 			FECHA_EFECTIVA: row?.FECHA_EFECTIVA,
+			FECHA_INGRESO_PROPUESTA: row?.FECHA_INGRESO_PROPUESTA,
 			REQUIERE_ATENCION: estado !== 'Contratado',
 			LISTO_CONTRATACION: estado === 'Seleccionado',
 		};
@@ -487,6 +489,7 @@ export class ScBandejaThService {
 	confirmarMovimientoPersonal(model: {
 		CORR_MOVIMIENTO_PERSONAL: number;
 		FECHA_EFECTIVA?: Date | string | null;
+		FECHA_INGRESO_PROPUESTA?: Date | string | null;
 	}): Observable<IResult> {
 		return this.repo.confirmarMovimientoPersonal(model);
 	}

@@ -330,6 +330,35 @@ namespace SGUEES.Repositories
 				objResultado.ErrorCode = response == null ? -1 : 0;
 				objResultado.ErrorMessage = response == null ? "No se encontró el expediente a actualizar." : "";
 				objResultado.ErrorSource = "";
+
+				if (response != null)
+				{
+					// Qué hace: Pasa a En Selección (8) las requisiciones de solicitudes asociadas al expediente que se activa en proceso de selección.
+					// Cómo lo hace: Actualiza SC_REQUISICION_PERSONAL enlazando SC_EXPEDIENTE_SOLICITUD y SC_SOLICITUD_REQUISICION para el expediente activo.
+					var pUpdateSeleccion = new List<CParameter>
+					{
+						new CParameter { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+						new CParameter { ParameterName = "CORR_EXPEDIENTE_CANDIDATO", Value = Data.CORR_EXPEDIENTE_CANDIDATO, DbType = System.Data.DbType.Int32 },
+						new CParameter { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+						new CParameter { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+					};
+					await objData.ExecCmd(System.Data.CommandType.Text, @"
+UPDATE R
+SET R.CORR_ESTADO_REQUISICION = 8,
+    R.USUARIO_ACTU = @USUARIO_ACTU,
+    R.ESTACION_ACTU = @ESTACION_ACTU,
+    R.FECHA_ACTU = GETDATE()
+FROM dbo.SC_REQUISICION_PERSONAL R
+INNER JOIN dbo.SC_SOLICITUD_REQUISICION SR
+    ON SR.CORR_EMPRESA = R.CORR_EMPRESA
+   AND SR.CORR_REQUISICION_PERSONAL = R.CORR_REQUISICION_PERSONAL
+INNER JOIN dbo.SC_EXPEDIENTE_SOLICITUD ES
+    ON ES.CORR_EMPRESA = SR.CORR_EMPRESA
+   AND ES.CORR_SOLICITUD_EMPLEO = SR.CORR_SOLICITUD_EMPLEO
+WHERE ES.CORR_EMPRESA = @CORR_EMPRESA
+  AND ES.CORR_EXPEDIENTE_CANDIDATO = @CORR_EXPEDIENTE_CANDIDATO
+  AND R.CORR_ESTADO_REQUISICION IN (5, 6, 7);", true, pUpdateSeleccion);
+				}
 			}
 			catch (Exception e)
 			{
@@ -410,6 +439,43 @@ namespace SGUEES.Repositories
 				objResultado.ErrorCode = errorCode;
 				objResultado.ErrorMessage = mensaje;
 				objResultado.ErrorSource = errorCode == 0 ? "" : "C" + _TableName + ".Mtto(" + spName + ")";
+
+				if (errorCode == 0 && !soloConsulta && (estado == "ASOCIADA" || corrExp > 0))
+				{
+					// Qué hace: Pasa a En Reclutamiento (7) o En Selección (8) las requisiciones vinculadas a la solicitud que acaba de obtener expediente.
+					// Cómo lo hace: Verifica el estado del expediente asociado; si es >= 2 actualiza a 8, si no actualiza a 7.
+					var pUpdateReclutamiento = new List<CParameter>
+					{
+						new CParameter { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+						new CParameter { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = corrSolicitudEmpleo, DbType = DbType.Int32 },
+						new CParameter { ParameterName = "USUARIO_ACTU", Value = login ?? string.Empty, DbType = DbType.String },
+						new CParameter { ParameterName = "ESTACION_ACTU", Value = estacion ?? string.Empty, DbType = DbType.String },
+					};
+					await objData.ExecCmd(CommandType.Text, @"
+UPDATE R
+SET R.CORR_ESTADO_REQUISICION = CASE
+        WHEN EXISTS (
+            SELECT 1 FROM dbo.SC_EXPEDIENTE_CANDIDATO EC
+            INNER JOIN dbo.SC_EXPEDIENTE_SOLICITUD ES
+                ON ES.CORR_EMPRESA = EC.CORR_EMPRESA
+               AND ES.CORR_EXPEDIENTE_CANDIDATO = EC.CORR_EXPEDIENTE_CANDIDATO
+            WHERE ES.CORR_EMPRESA = @CORR_EMPRESA
+              AND ES.CORR_SOLICITUD_EMPLEO = @CORR_SOLICITUD_EMPLEO
+              AND EC.CORR_ESTADO_EXPEDIENTE >= 2
+        ) THEN 8
+        ELSE 7
+    END,
+    R.USUARIO_ACTU = @USUARIO_ACTU,
+    R.ESTACION_ACTU = @ESTACION_ACTU,
+    R.FECHA_ACTU = GETDATE()
+FROM dbo.SC_REQUISICION_PERSONAL R
+INNER JOIN dbo.SC_SOLICITUD_REQUISICION SR
+    ON SR.CORR_EMPRESA = R.CORR_EMPRESA
+   AND SR.CORR_REQUISICION_PERSONAL = R.CORR_REQUISICION_PERSONAL
+WHERE SR.CORR_EMPRESA = @CORR_EMPRESA
+  AND SR.CORR_SOLICITUD_EMPLEO = @CORR_SOLICITUD_EMPLEO
+  AND R.CORR_ESTADO_REQUISICION IN (5, 6, 7);", true, pUpdateReclutamiento);
+				}
 			}
 			catch (Exception e)
 			{

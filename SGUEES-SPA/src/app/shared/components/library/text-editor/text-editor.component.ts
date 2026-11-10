@@ -124,11 +124,9 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 			if (
 				typeof val === 'string' &&
 				(val.includes('plantilla-uees') ||
-					val.includes('#cccccc') ||
-					val.includes('#ffdc00') ||
-					val.includes('#034ea2') ||
 					val.includes('universidad evang') ||
-					val.includes('logo-xx'))
+					val.includes('uees.edu.sv') ||
+					val.includes('data-tipo'))
 			) {
 				setTimeout(() => {
 					if (this.quillInstance) {
@@ -409,14 +407,26 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		return null;
 	}
 
-	// Qué hace: posiciona la selección activa y el cursor de texto dentro de la tarjeta central gris del formato institucional.
-	// Cómo lo hace: localiza la tabla central gris (#cccccc) en el DOM de Quill, resuelve el índice interno de la celda y actualiza ultimaSeleccion y la selección de Quill solo si el usuario no tiene selección activa.
+	// Qué hace: posiciona la selección activa y el cursor de texto dentro de la tarjeta central blanca de contenido institucional.
+	// Cómo lo hace: localiza la celda de contenido institucional (td.content o data-tipo="cuerpo"), resuelve su índice interno y actualiza ultimaSeleccion y la selección de Quill.
 	private posicionarEnTarjetaCentral(): void {
 		if (!this.quillInstance?.root || this.quillInstance.hasFocus?.() || this.ultimaSeleccion) return;
+		const tdContent = this.quillInstance.root.querySelector('td.content') as HTMLElement;
+		if (tdContent) {
+			const indice = this.obtenerIndiceInternoCelda(tdContent);
+			if (indice !== null) {
+				this.ultimaSeleccion = { index: indice, length: 0 };
+				try {
+					this.quillInstance.setSelection(indice, 0, 'silent');
+				} catch {}
+			}
+			return;
+		}
+
 		const tables = Array.from(this.quillInstance.root.querySelectorAll('table')) as HTMLTableElement[];
 		if (tables.length === 0) return;
 
-		const tablaCentral = tables.find(t => t.querySelector('td[style*="#cccccc"], td[style*="rgb(204, 204, 204)"]')) ||
+		const tablaCentral = tables.find(t => t.getAttribute('data-tipo') === 'cuerpo') ||
 			(tables.length >= 2 ? tables[1] : tables[0]);
 
 		if (tablaCentral) {
@@ -434,7 +444,7 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 	}
 
 	// Qué hace: calcula la posición adecuada donde insertar el parámetro en el editor.
-	// Cómo lo hace: verifica la última selección activa del usuario; si no existe, localiza el texto editable dentro de la tarjeta central gris del formato institucional (#cccccc) usando obtenerIndiceInternoCelda o retorna el inicio.
+	// Cómo lo hace: verifica la última selección activa del usuario; si no existe, localiza el texto editable dentro de la celda de contenido (td.content o data-tipo="cuerpo") usando obtenerIndiceInternoCelda o retorna el inicio.
 	private obtenerIndiceInsercionValido(): number {
 		const selection = this.quillInstance?.getSelection(false);
 		if (selection && typeof selection.index === 'number') {
@@ -447,9 +457,17 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		}
 
 		if (this.quillInstance?.root) {
+			const tdContent = this.quillInstance.root.querySelector('td.content') as HTMLElement;
+			if (tdContent) {
+				const indice = this.obtenerIndiceInternoCelda(tdContent);
+				if (indice !== null) {
+					return indice;
+				}
+			}
+
 			const tables = Array.from(this.quillInstance.root.querySelectorAll('table')) as HTMLTableElement[];
 			if (tables.length > 0) {
-				const tablaCentral = tables.find(t => t.querySelector('td[style*="#cccccc"], td[style*="rgb(204, 204, 204)"]')) ||
+				const tablaCentral = tables.find(t => t.getAttribute('data-tipo') === 'cuerpo') ||
 					(tables.length >= 2 ? tables[1] : tables[0]);
 
 				if (tablaCentral) {
@@ -601,9 +619,6 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 			this.quillInstance &&
 			typeof val === 'string' &&
 			(val.includes('plantilla-uees') ||
-				val.includes('#cccccc') ||
-				val.includes('#ffdc00') ||
-				val.includes('#034ea2') ||
 				val.includes('universidad evang') ||
 				val.includes('uees.edu.sv') ||
 				val.includes('data-tipo'))
@@ -621,8 +636,8 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 			str.includes('universidad evang') ||
 			str.includes('uees.edu.sv') ||
 			str.includes('2275-4000') ||
-			str.includes('#ffdc00') ||
-			str.includes('#034ea2') ||
+			str.includes('#063b79') ||
+			str.includes('#ffcc00') ||
 			str.includes('data-tipo') ||
 			this.esPlantillaInstitucional(this.quillInstance);
 	}
@@ -651,7 +666,7 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 			tbl.classList.contains('plantilla-uees-table') ||
 			tbl.classList.contains('plantilla-uees-pie') ||
 			!!tbl.getAttribute('data-tipo') ||
-			tbl.style.maxWidth === '650px' ||
+			tbl.style.maxWidth === '680px' ||
 			!!tbl.querySelector('img')
 		) {
 			return true;
@@ -663,7 +678,7 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		}
 
 		const html = tbl.innerHTML || '';
-		if (/#ffdc00|#cccccc|#034ea2|rgb\(\s*255,\s*220,\s*0\s*\)|rgb\(\s*204,\s*204,\s*204\s*\)|rgb\(\s*3,\s*78,\s*162\s*\)/i.test(html)) {
+		if (/#063b79|#ffcc00|rgb\(\s*6,\s*59,\s*121\s*\)|rgb\(\s*255,\s*204,\s*0\s*\)/i.test(html)) {
 			return true;
 		}
 
@@ -798,7 +813,7 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 			quill.root?.addEventListener('mousedown', this.mouseDownHandler);
 			quill.root?.addEventListener('paste', this.pasteHandler, true);
 			setTimeout(() => this.sincronizarDisenoInstitucional(quill), 80);
-			if (typeof this.value === 'string' && (this.value.includes('plantilla-uees-table') || this.value.includes('#cccccc') || this.value.includes('logo-xx'))) {
+			if (typeof this.value === 'string' && (this.value.includes('plantilla-uees') || this.value.includes('universidad evang') || this.value.includes('data-tipo'))) {
 				setTimeout(() => this.posicionarEnTarjetaCentral(), 150);
 			}
 		}
@@ -1037,47 +1052,105 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		return 'cuerpo';
 	}
 
-	// Qué hace: reaplica el color de fondo, padding y data-cellbackgroundcolor en todas las celdas de un bloque institucional.
-	// Cómo lo hace: recorre cada td/th, anula el borde de grilla de Quill y fija el dataset que DevExtreme usa para no perder el relleno al reeditar.
+	// Qué hace: reaplica el color de fondo, padding y alineaciones en todas las celdas del formato institucional idéntico a CRoutines.
+	// Cómo lo hace: para el encabezado aplica el azul #063b79, borde dorado #ffcc00 de 6px, celda izquierda de logo (145px, padding holgado) y celda derecha de título (535px, border-left blanco 2px); para el cuerpo fondo blanco #ffffff continuo a 680px; para el pie azul #063b79 con borde superior dorado de 5px a 680px.
 	private aplicarEstiloCeldasInstitucionales(tbl: HTMLTableElement, tipo: 'encabezado' | 'cuerpo' | 'pie'): void {
 		const celdas = Array.from(tbl.querySelectorAll('td, th')) as HTMLElement[];
-		celdas.forEach((td) => {
-			td.setAttribute('align', 'center');
-			td.style.border = 'none';
-			td.style.textAlign = 'center';
 
-			if (tipo === 'encabezado') {
-				td.style.backgroundColor = '#ffdc00';
-				td.style.padding = td.style.padding && td.style.padding !== '0px' ? td.style.padding : '12px 15px';
-				td.querySelectorAll('.ql-table-cell-line, p').forEach((cl) => {
-					(cl as HTMLElement).dataset['cellbackgroundcolor'] = '#ffdc00';
+		if (tipo === 'encabezado') {
+			tbl.style.width = '680px';
+			tbl.style.maxWidth = '680px';
+			tbl.style.margin = '0 auto';
+			tbl.style.backgroundColor = '#063b79';
+			tbl.style.border = 'none';
+			tbl.style.borderBottom = '6px solid #ffcc00';
+
+			// Celda 1: Logotipo institucional con ancho suficiente de 145px para que la imagen de 100x81 no se recorte
+			const celdaLogo = celdas[0];
+			if (celdaLogo) {
+				celdaLogo.style.width = '145px';
+				celdaLogo.style.minWidth = '145px';
+				celdaLogo.style.maxWidth = '145px';
+				celdaLogo.style.backgroundColor = '#063b79';
+				celdaLogo.style.border = 'none';
+				celdaLogo.style.padding = '20px 10px 20px 25px';
+				celdaLogo.style.textAlign = 'center';
+				celdaLogo.style.verticalAlign = 'middle';
+				celdaLogo.querySelectorAll('.ql-table-cell-line, p').forEach((cl) => {
+					(cl as HTMLElement).dataset['cellbackgroundcolor'] = '#063b79';
 				});
-				return;
 			}
 
-			if (tipo === 'pie') {
-				td.style.backgroundColor = '#034ea2';
+			// Celda 2: Título institucional con línea vertical divisoria blanca de 2px
+			const celdaTitulo = celdas.length > 1 ? celdas[1] : null;
+			if (celdaTitulo) {
+				celdaTitulo.style.width = '535px';
+				celdaTitulo.style.backgroundColor = '#063b79';
+				celdaTitulo.style.border = 'none';
+				const contenedorTitulo = celdaTitulo.querySelector('div') as HTMLElement;
+				if (contenedorTitulo) {
+					celdaTitulo.style.borderLeft = 'none';
+					celdaTitulo.style.padding = '20px 25px 20px 0';
+					contenedorTitulo.style.borderLeft = '2px solid #ffffff';
+					contenedorTitulo.style.paddingLeft = '20px';
+				} else {
+					celdaTitulo.style.borderLeft = '2px solid #ffffff';
+					celdaTitulo.style.padding = '25px 30px 25px 20px';
+				}
+				celdaTitulo.style.textAlign = 'left';
+				celdaTitulo.style.verticalAlign = 'middle';
+				celdaTitulo.querySelectorAll('.ql-table-cell-line, p').forEach((cl) => {
+					const el = cl as HTMLElement;
+					el.dataset['cellbackgroundcolor'] = '#063b79';
+					el.style.textAlign = 'left';
+					el.style.color = '#ffffff';
+				});
+			}
+			return;
+		}
+
+		if (tipo === 'pie') {
+			tbl.style.width = '680px';
+			tbl.style.maxWidth = '680px';
+			tbl.style.margin = '0 auto';
+			tbl.style.backgroundColor = '#063b79';
+			tbl.style.border = 'none';
+			tbl.style.borderTop = '5px solid #ffcc00';
+
+			celdas.forEach((td) => {
+				td.style.width = '680px';
+				td.style.backgroundColor = '#063b79';
+				td.style.border = 'none';
 				td.style.color = '#ffffff';
-				td.style.padding = td.style.padding && td.style.padding !== '0px' ? td.style.padding : '14px 16px';
+				td.style.textAlign = 'center';
+				td.style.padding = '25px 30px';
 				td.querySelectorAll('.ql-table-cell-line, p').forEach((cl) => {
 					const el = cl as HTMLElement;
-					el.dataset['cellbackgroundcolor'] = '#034ea2';
+					el.dataset['cellbackgroundcolor'] = '#063b79';
 					if (!el.querySelector('a')) {
 						el.style.color = '#ffffff';
 					}
 				});
-				return;
-			}
+			});
+			return;
+		}
 
-			td.style.backgroundColor = '#cccccc';
-			td.style.color = '#1e293b';
-			td.style.height = 'auto';
-			td.style.minHeight = '150px';
-			if (!td.style.padding || td.style.padding === '0px') {
-				td.style.padding = '32px 24px';
-			}
+		// Tarjeta central de cuerpo blanco continuo
+		tbl.style.width = '680px';
+		tbl.style.maxWidth = '680px';
+		tbl.style.margin = '0 auto';
+		tbl.style.backgroundColor = '#ffffff';
+		tbl.style.border = 'none';
+
+		celdas.forEach((td) => {
+			td.style.width = '680px';
+			td.style.backgroundColor = '#ffffff';
+			td.style.border = 'none';
+			td.style.color = '#102d59';
+			td.style.padding = '35px 30px';
+			td.style.textAlign = 'left';
 			td.querySelectorAll('.ql-table-cell-line, p').forEach((cl) => {
-				(cl as HTMLElement).dataset['cellbackgroundcolor'] = '#cccccc';
+				(cl as HTMLElement).dataset['cellbackgroundcolor'] = '#ffffff';
 			});
 		});
 	}
@@ -1100,6 +1173,22 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 			quill.root?.classList?.toggle('plantilla-uees-activa', esInstitucional);
 			const contentContainer = quill.root?.closest('.dx-htmleditor-content');
 			contentContainer?.classList?.toggle('plantilla-uees-activa', esInstitucional);
+
+			// Qué hace: si la plantilla ya posee la estructura unificada oficial de CRoutines, respeta su maquetación interna intacta.
+			// Cómo lo hace: verifica la presencia de td.header o td.content, confina el ancho del contenedor principal a 680px centrado y evita mutar tablas internas del logo o pie.
+			const esEstructuraCRoutines = !!quill.root.querySelector('td.header, td.content, table.container');
+			if (esEstructuraCRoutines) {
+				const contenedor = (quill.root.querySelector('table.container') || tables[0]) as HTMLTableElement;
+				if (contenedor) {
+					contenedor.style.width = '680px';
+					contenedor.style.maxWidth = '680px';
+					contenedor.style.margin = '0 auto';
+					contenedor.style.borderCollapse = 'collapse';
+					contenedor.style.backgroundColor = '#ffffff';
+				}
+				return;
+			}
+
 			const institucionales = esInstitucional ? tables : tables.filter((tbl) => this.esTablaInstitucional(tbl));
 			if (institucionales.length === 0) return;
 
@@ -1108,12 +1197,13 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 				tbl.classList.add('plantilla-uees-table');
 				tbl.setAttribute('data-tipo', tipo);
 				tbl.setAttribute('align', 'center');
-				tbl.setAttribute('width', '100%');
+				tbl.setAttribute('width', '680');
 				tbl.style.border = 'none';
 				tbl.style.borderCollapse = 'collapse';
-				tbl.style.maxWidth = '100%';
-				tbl.style.width = '100%';
-				tbl.style.margin = '2px 0';
+				tbl.style.borderSpacing = '0';
+				tbl.style.maxWidth = '680px';
+				tbl.style.width = '680px';
+				tbl.style.margin = '0 auto';
 				if (tipo === 'pie') {
 					tbl.classList.add('plantilla-uees-pie');
 				} else {
@@ -1123,32 +1213,18 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 				this.aplicarEstiloCeldasInstitucionales(tbl, tipo);
 			});
 
-			// Configurar párrafos separadores entre tablas en el DOM con ancho 100% y línea divisora entre amarillo y gris
-			const separatorParagraphs = Array.from(quill.root.querySelectorAll('table + p')) as HTMLElement[];
-			separatorParagraphs.forEach((p, index) => {
-				p.style.border = 'none';
-				p.style.width = '100%';
-				p.style.maxWidth = '100%';
-				if (index === 0) {
-					p.style.borderTop = '1px solid #cccccc';
-					p.style.margin = '16px 0';
-					p.style.height = '1px';
-					p.style.minHeight = '1px';
-					p.style.maxHeight = '1px';
-					p.style.lineHeight = '1px';
-					p.style.fontSize = '1px';
-					p.style.overflow = 'visible';
-				} else {
-					p.style.borderTop = 'none';
-					p.style.margin = '4px 0';
-					p.style.height = '4px';
-					p.style.minHeight = '4px';
-					p.style.maxHeight = '4px';
-					p.style.lineHeight = '4px';
-					p.style.fontSize = '4px';
-					p.style.overflow = 'hidden';
-				}
+			// Ocultar cualquier párrafo separador entre tablas para que la tarjeta sea 100% continua
+			const separatorParagraphs = Array.from(quill.root.querySelectorAll('table + p, p.plantilla-spacer')) as HTMLElement[];
+			separatorParagraphs.forEach((p) => {
+				p.style.display = 'none';
+				p.style.margin = '0';
 				p.style.padding = '0';
+				p.style.height = '0';
+				p.style.minHeight = '0';
+				p.style.maxHeight = '0';
+				p.style.lineHeight = '0';
+				p.style.fontSize = '0';
+				p.style.border = 'none';
 			});
 		} catch (err) {
 			console.warn('Error al sincronizar diseño institucional en editor:', err);

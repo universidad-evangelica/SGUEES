@@ -360,6 +360,46 @@ SELECT CAST(CASE WHEN EXISTS (
 			}
 		}
 
+		// Qué hace: Obtiene el correo institucional y nombre completo del usuario desde SEG_USUARIO.
+		// Cómo lo hace: Ejecuta una consulta parametrizada filtrando por LOGIN_SISTEMA y ESTADO_USUARIO = 1; retorna null si no existe o no tiene correo.
+		public async Task<(string Correo, string Nombre)> ObtenerDatosCorreoUsuarioAsync(string loginSistema)
+		{
+			if (string.IsNullOrWhiteSpace(loginSistema))
+			{
+				return (null, null);
+			}
+
+			const string sql = @"
+SELECT TOP (1)
+	CORREO_ELECTRONICO,
+	NOMBRE_USUARIO
+FROM dbo.SEG_USUARIO
+WHERE LOGIN_SISTEMA = @LOGIN_SISTEMA
+  AND ESTADO_USUARIO = 1;";
+
+			try
+			{
+				await using var conn = new SqlConnection(_connectionString);
+				await conn.OpenAsync();
+				await using var cmd = new SqlCommand(sql, conn);
+				cmd.Parameters.Add(new SqlParameter("@LOGIN_SISTEMA", SqlDbType.VarChar, 30) { Value = loginSistema.Trim() });
+
+				await using var reader = await cmd.ExecuteReaderAsync();
+				if (await reader.ReadAsync())
+				{
+					var correo = reader["CORREO_ELECTRONICO"] == DBNull.Value ? null : reader["CORREO_ELECTRONICO"]?.ToString()?.Trim();
+					var nombre = reader["NOMBRE_USUARIO"] == DBNull.Value ? null : reader["NOMBRE_USUARIO"]?.ToString()?.Trim();
+					return (correo, nombre);
+				}
+
+				return (null, null);
+			}
+			catch
+			{
+				return (null, null);
+			}
+		}
+
 		private static GEN_NOTIFICACIONView MapView(SqlDataReader reader)
 		{
 			return new GEN_NOTIFICACIONView

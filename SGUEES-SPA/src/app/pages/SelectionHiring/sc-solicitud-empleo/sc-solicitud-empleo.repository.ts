@@ -28,6 +28,17 @@ export class ScSolicitudEmpleoRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Qué hace: Consulta una solicitud de empleo individual por su correlativo sin afectar la grilla browse.
+	// Cómo lo hace: Invoca el endpoint Get del controlador SC_SOLICITUD_EMPLEO pasando CORR_SOLICITUD_EMPLEO.
+	getSolicitudPorId(corrSolicitud: number): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'Get',
+			[{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: corrSolicitud }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}

@@ -1,4 +1,4 @@
-﻿using eFramework.Core;
+using eFramework.Core;
 using eFramework.Data;
 using SGUEES.Models;
 
@@ -20,6 +20,8 @@ namespace SGUEES.Repositories
         /// <summary>
         /// Tras Autoriza: tipo documento + estado actual del flujo + creador + logins pendientes (PROCESADO=0).
         /// </summary>
-        Task<SC_REQUISICION_FLUJO_NOTIF_DTO> GetContextoNotificacionFlujoAsync(int corrEmpresa, int corrRequisicion);
+        // Qué hace: Obtiene el contexto de la requisición y el actor para notificaciones.
+        // Cómo lo hace: Firma asíncrona que recibe la empresa, requisición y opcionalmente el login del autorizador.
+        Task<SC_REQUISICION_FLUJO_NOTIF_DTO> GetContextoNotificacionFlujoAsync(int corrEmpresa, int corrRequisicion, string loginActor = null);
     }
 }
