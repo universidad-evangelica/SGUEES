@@ -372,9 +372,186 @@
 					</ng-container>
 				</div>
 			</dxi-item>
+
+			<dxi-item title="Usuarios" icon="group">
+				<div class="proveedor-usuarios">
+					<p class="proveedor-usuarios__warn" *ngIf="!(model?.CORR_PROVEEDOR > 0)">
+						Guarde el proveedor para poder asignar usuarios.
+					</p>
+
+					<ng-container *ngIf="model?.CORR_PROVEEDOR > 0">
+						<div class="proveedor-usuarios__toolbar" *ngIf="!readOnly">
+							<button type="button" class="proveedor-usuarios__btn proveedor-usuarios__btn--add" (click)="abrirUsuarioNuevo()">
+								<i class="dx-icon dx-icon-add"></i>
+								Agregar usuario
+							</button>
+							<button type="button" class="proveedor-usuarios__btn proveedor-usuarios__btn--key" (click)="abrirCambioClave()">
+								<i class="dx-icon dx-icon-key"></i>
+								Cambiar clave
+							</button>
+						</div>
+
+						<div class="proveedor-usuarios__loading" *ngIf="usuariosCargando">
+							<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
+							<span>Cargando usuarios…</span>
+						</div>
+
+						<div
+							class="proveedor-usuarios__empty-state"
+							*ngIf="!usuariosCargando && usuariosProveedor.length === 0"
+						>
+							<div class="proveedor-usuarios__empty-icon" aria-hidden="true">
+								<i class="dx-icon dx-icon-user"></i>
+							</div>
+							<h4>Sin usuarios</h4>
+							<p>Aún no hay usuarios asignados a este proveedor.</p>
+						</div>
+
+						<dx-data-grid
+							*ngIf="!usuariosCargando && usuariosProveedor.length > 0"
+							class="proveedor-usuarios__grid"
+							[dataSource]="usuariosProveedor"
+							[columns]="usuarioColumns"
+							keyExpr="LOGIN_SISTEMA"
+							[showBorders]="true"
+							[columnAutoWidth]="false"
+							[hoverStateEnabled]="true"
+							[focusedRowEnabled]="true"
+							[paging]="{ enabled: false }"
+							(onFocusedRowChanged)="onUsuarioFocused($event)"
+						>
+							<div *dxTemplate="let cell of 'usuarioEstado'">
+								{{ textoEstadoUsuario(cell.value) }}
+							</div>
+							<div *dxTemplate="let cell of 'usuarioActions'" class="proveedor-usuarios__actions">
+								<button
+									type="button"
+									class="proveedor-usuarios__action"
+									title="Editar"
+									aria-label="Editar"
+									*ngIf="!readOnly && permiteEdit"
+									(click)="abrirUsuarioEditar(cell.data)"
+								>
+									<i class="dx-icon dx-icon-edit"></i>
+								</button>
+								<button
+									type="button"
+									class="proveedor-usuarios__action proveedor-usuarios__action--danger"
+									title="Eliminar"
+									aria-label="Eliminar"
+									*ngIf="!readOnly && permiteDele"
+									(click)="eliminarUsuario(cell.data)"
+								>
+									<i class="dx-icon dx-icon-trash"></i>
+								</button>
+							</div>
+							<dxo-summary>
+								<dxi-total-item column="LOGIN_SISTEMA" summaryType="count" displayFormat="Cant: {0}"></dxi-total-item>
+							</dxo-summary>
+						</dx-data-grid>
+					</ng-container>
+				</div>
+			</dxi-item>
 		</dx-tab-panel>
 	</div>
 </div>
+
+<dx-popup
+	[(visible)]="usuarioPopupVisible"
+	[title]="usuarioPopupTitulo"
+	[showTitle]="true"
+	[width]="560"
+	[height]="'auto'"
+	[dragEnabled]="true"
+	[showCloseButton]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'proveedor-usuarios-popup-wrapper' }"
+	(onHiding)="cerrarUsuarioPopup()"
+>
+	<div *dxTemplate="let data of 'content'" class="proveedor-usuarios-popup">
+		<div class="proveedor-usuarios-popup__body">
+			<p class="proveedor-usuarios-popup__lead" *ngIf="usuarioEsNuevo">
+				Quedará asignado a este proveedor. La clave inicial es el mismo login; después puede cambiarla.
+			</p>
+			<p class="proveedor-usuarios-popup__lead" *ngIf="!usuarioEsNuevo">
+				El login no se puede modificar. Puede actualizar el nombre, el correo y el estado.
+			</p>
+			<section class="proveedor-usuarios-popup__card">
+				<div class="proveedor-usuarios-popup__fields">
+					<label class="proveedor-usuarios-popup__field">
+						<span>Login sistema <em>*</em></span>
+						<input class="proveedor-usuarios-popup__input" [(ngModel)]="usuarioModel.LOGIN_SISTEMA" maxlength="30" [readonly]="!usuarioEsNuevo" placeholder="Usuario de acceso" />
+					</label>
+					<label class="proveedor-usuarios-popup__field">
+						<span>Estado <em>*</em></span>
+						<dx-select-box
+							[(value)]="usuarioModel.ESTADO_USUARIO"
+							[dataSource]="mESTADO_USUARIO"
+							valueExpr="Key"
+							displayExpr="Value"
+							[searchEnabled]="false"
+							placeholder="Seleccionar..."
+							[width]="'100%'"
+						></dx-select-box>
+					</label>
+					<label class="proveedor-usuarios-popup__field proveedor-usuarios-popup__field--full">
+						<span>Nombre del usuario <em>*</em></span>
+						<input class="proveedor-usuarios-popup__input" [(ngModel)]="usuarioModel.NOMBRE_USUARIO" maxlength="100" placeholder="Nombre completo" />
+					</label>
+					<label class="proveedor-usuarios-popup__field proveedor-usuarios-popup__field--full">
+						<span>Correo <em>*</em></span>
+						<input class="proveedor-usuarios-popup__input" type="email" [(ngModel)]="usuarioModel.CORREO_ELECTRONICO" maxlength="255" placeholder="correo@ejemplo.com" />
+					</label>
+				</div>
+			</section>
+		</div>
+		<footer class="proveedor-usuarios-popup__actions">
+			<button type="button" class="proveedor-usuarios-popup__btn proveedor-usuarios-popup__btn--cancel" (click)="cerrarUsuarioPopup()" [disabled]="usuarioGuardando">Cancelar</button>
+			<button type="button" class="proveedor-usuarios-popup__btn proveedor-usuarios-popup__btn--save" (click)="guardarUsuarioPopup()" [disabled]="usuarioGuardando">
+				{{ usuarioGuardando ? 'Guardando…' : 'Guardar' }}
+			</button>
+		</footer>
+	</div>
+</dx-popup>
+
+<dx-popup
+	[(visible)]="clavePopupVisible"
+	title="Cambiar clave"
+	[showTitle]="true"
+	[width]="440"
+	[height]="'auto'"
+	[dragEnabled]="true"
+	[showCloseButton]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'proveedor-usuarios-popup-wrapper' }"
+	(onHiding)="cerrarCambioClave()"
+>
+	<div *dxTemplate="let data of 'content'" class="proveedor-usuarios-popup">
+		<div class="proveedor-usuarios-popup__body">
+			<p class="proveedor-usuarios-popup__lead">
+				Usuario <strong>{{ usuarioSeleccionado?.LOGIN_SISTEMA }}</strong>
+			</p>
+			<section class="proveedor-usuarios-popup__card">
+				<div class="proveedor-usuarios-popup__fields">
+					<label class="proveedor-usuarios-popup__field proveedor-usuarios-popup__field--full">
+						<span>Clave nueva <em>*</em></span>
+						<input class="proveedor-usuarios-popup__input" type="password" [(ngModel)]="claveNueva" maxlength="50" placeholder="Mínimo 4 caracteres" autocomplete="new-password" />
+					</label>
+					<label class="proveedor-usuarios-popup__field proveedor-usuarios-popup__field--full">
+						<span>Confirmar clave <em>*</em></span>
+						<input class="proveedor-usuarios-popup__input" type="password" [(ngModel)]="claveConfirmar" maxlength="50" placeholder="Repita la clave" autocomplete="new-password" />
+					</label>
+				</div>
+			</section>
+		</div>
+		<footer class="proveedor-usuarios-popup__actions">
+			<button type="button" class="proveedor-usuarios-popup__btn proveedor-usuarios-popup__btn--cancel" (click)="cerrarCambioClave()" [disabled]="claveGuardando">Cancelar</button>
+			<button type="button" class="proveedor-usuarios-popup__btn proveedor-usuarios-popup__btn--key" (click)="guardarCambioClave()" [disabled]="claveGuardando">
+				{{ claveGuardando ? 'Guardando…' : 'Cambiar' }}
+			</button>
+		</footer>
+	</div>
+</dx-popup>
 
 <dx-popup
 	[(visible)]="personaPopupVisible"

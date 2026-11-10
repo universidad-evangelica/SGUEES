@@ -22,6 +22,7 @@ import { GenProveedor } from './models/gen-proveedor';
 import { GenProveedorDoc } from './models/gen-proveedor-doc';
 import { GenPersonaBanco } from './models/gen-persona-banco';
 import { emptyGenProveedorPersona, GenProveedorPersona } from './models/gen-proveedor-persona';
+import { emptyGenProveedorUsuario, GenProveedorUsuario } from './models/gen-proveedor-usuario';
 import { GenProveedorService } from './gen-proveedor.service';
 
 @Component({
@@ -102,9 +103,25 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	bancosCargando = false;
 	bancoGuardando = false;
 
+	/** Tab Usuarios (SEG_USUARIO tipo proveedor, asignado a este proveedor). */
+	usuariosProveedor: GenProveedorUsuario[] = [];
+	usuariosCargando = false;
+	usuarioSeleccionado: GenProveedorUsuario | null = null;
+	mESTADO_USUARIO: Array<{ Key: number; Value: string }> = [];
+	usuarioPopupVisible = false;
+	usuarioPopupTitulo = 'Usuario nuevo';
+	usuarioEsNuevo = true;
+	usuarioGuardando = false;
+	usuarioModel: GenProveedorUsuario = emptyGenProveedorUsuario();
+	clavePopupVisible = false;
+	claveNueva = '';
+	claveConfirmar = '';
+	claveGuardando = false;
+
 	/** Tab Doc. Adjuntos */
 	documentos: GenProveedorDoc[] = [];
 	documentoColumns: any[] = [];
+	usuarioColumns: any[] = [];
 	documentosCargando = false;
 	documentoSubiendo = false;
 	docAccept =
@@ -131,6 +148,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.summary = {};
 		this.items = this.service.getItems();
 		this.documentoColumns = this.service.getDocumentoColumns();
+		this.usuarioColumns = this.service.getUsuarioColumns();
 		this.selectedLookUpCORR_PERSONA = this.selectedLookUpCORR_PERSONA.bind(this);
 	}
 
@@ -202,6 +220,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.getCORR_BANCO();
 		this.getCORR_FORMA_PAGO();
 		this.getCORR_CONDICION_PAGO();
+		this.getESTADO_USUARIO();
 	}
 
 	getCORR_PERSONA(corrPersonaIncluir?: number) {
@@ -268,6 +287,239 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			});
 	}
 	//#endregion
+
+	getESTADO_USUARIO(): void {
+		this.appInfoService
+			.getLookUp('GEN_PROVEEDOR', 'GEN_LISTA', 'GetESTADO_USUARIO', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result) {
+						this.mESTADO_USUARIO = response.Data ?? [];
+					}
+				},
+			});
+	}
+
+	private resetUsuariosLocal(): void {
+		this.usuariosProveedor = [];
+		this.usuariosCargando = false;
+		this.usuarioSeleccionado = null;
+		this.usuarioPopupVisible = false;
+		this.usuarioGuardando = false;
+		this.clavePopupVisible = false;
+		this.claveNueva = '';
+		this.claveConfirmar = '';
+		this.claveGuardando = false;
+	}
+
+	cargarUsuariosProveedor(corrProveedor?: number): void {
+		const corr = Number(corrProveedor ?? this.model?.CORR_PROVEEDOR ?? 0);
+		this.usuarioSeleccionado = null;
+		if (!(corr > 0)) {
+			this.usuariosProveedor = [];
+			this.usuariosCargando = false;
+			return;
+		}
+		this.usuariosCargando = true;
+		this.service
+			.getUsuarios(corr)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.usuariosCargando = false;
+					this.usuariosProveedor = response?.Result ? [...(response.Data ?? [])] : [];
+					if (!response?.Result) {
+						this.notifyApiError(response);
+					}
+				},
+				error: (error: any) => {
+					this.usuariosCargando = false;
+					this.usuariosProveedor = [];
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	onUsuarioFocused(e: any): void {
+		this.usuarioSeleccionado = (e?.row?.data as GenProveedorUsuario) ?? null;
+	}
+
+	abrirUsuarioNuevo(): void {
+		if (!(Number(this.model?.CORR_PROVEEDOR ?? 0) > 0)) {
+			this.notifyFx('Guarde el proveedor para poder agregar usuarios.', NotifyType.Warning);
+			return;
+		}
+		this.usuarioEsNuevo = true;
+		this.usuarioPopupTitulo = 'Usuario nuevo';
+		this.usuarioModel = emptyGenProveedorUsuario(Number(this.model.CORR_PROVEEDOR));
+		this.usuarioPopupVisible = true;
+	}
+
+	abrirUsuarioEditar(row?: GenProveedorUsuario): void {
+		const data = row ?? this.usuarioSeleccionado;
+		if (!data?.LOGIN_SISTEMA) {
+			this.notifyFx('Seleccione el usuario que desea editar.', NotifyType.Warning);
+			return;
+		}
+		this.usuarioEsNuevo = false;
+		this.usuarioPopupTitulo = 'Editar usuario';
+		this.usuarioModel = { ...data, CORR_PROVEEDOR: Number(this.model?.CORR_PROVEEDOR ?? data.CORR_PROVEEDOR) };
+		this.usuarioPopupVisible = true;
+	}
+
+	cerrarUsuarioPopup(): void {
+		this.usuarioPopupVisible = false;
+		this.usuarioGuardando = false;
+	}
+
+	guardarUsuarioPopup(): void {
+		const model = this.usuarioModel;
+		const login = (model.LOGIN_SISTEMA ?? '').trim();
+		const nombre = (model.NOMBRE_USUARIO ?? '').trim();
+		const correo = (model.CORREO_ELECTRONICO ?? '').trim();
+		if (login.length < 4 || login.length > 30) {
+			this.notifyFx('El login debe tener entre 4 y 30 caracteres.', NotifyType.Warning);
+			return;
+		}
+		if (nombre.length < 4) {
+			this.notifyFx('El nombre debe tener al menos 4 caracteres.', NotifyType.Warning);
+			return;
+		}
+		if (correo.length < 4 || !correo.includes('@')) {
+			this.notifyFx('Debe indicar un correo electrónico válido.', NotifyType.Warning);
+			return;
+		}
+		if (this.usuarioGuardando) {
+			return;
+		}
+		const payload: GenProveedorUsuario = {
+			...model,
+			CORR_PROVEEDOR: Number(this.model?.CORR_PROVEEDOR ?? 0),
+			LOGIN_SISTEMA: login,
+			NOMBRE_USUARIO: nombre,
+			CORREO_ELECTRONICO: correo,
+			ESTADO_USUARIO: Number(model.ESTADO_USUARIO ?? 1),
+		};
+		this.usuarioGuardando = true;
+		const req$ = this.usuarioEsNuevo ? this.service.insertUsuario(payload) : this.service.updateUsuario(payload);
+		req$.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				this.usuarioGuardando = false;
+				if (!response?.Result) {
+					this.notifyApiError(response);
+					return;
+				}
+				this.notifyFx(
+					this.usuarioEsNuevo ? 'Usuario asignado al proveedor.' : 'Usuario actualizado.',
+					NotifyType.Success,
+				);
+				this.cerrarUsuarioPopup();
+				this.cargarUsuariosProveedor(payload.CORR_PROVEEDOR);
+			},
+			error: (error: any) => {
+				this.usuarioGuardando = false;
+				this.notifyApiError(error);
+			},
+		});
+	}
+
+	async eliminarUsuario(row: GenProveedorUsuario): Promise<void> {
+		if (this.readOnly || !this.permiteDele) {
+			return;
+		}
+		const corr = Number(this.model?.CORR_PROVEEDOR ?? 0);
+		const login = (row?.LOGIN_SISTEMA ?? '').trim();
+		if (!(corr > 0) || !login) {
+			return;
+		}
+		const ok = await confirm(`¿Eliminar el usuario "${login}" de este proveedor?`, 'Confirmar eliminación');
+		if (!ok) {
+			return;
+		}
+		this.service
+			.deleteUsuario(corr, login)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notifyApiError(response);
+						return;
+					}
+					this.notifyFx('Usuario eliminado.', NotifyType.Success);
+					this.cargarUsuariosProveedor(corr);
+				},
+				error: (error: any) => this.notifyApiError(error),
+			});
+	}
+
+	abrirCambioClave(): void {
+		if (!this.usuarioSeleccionado?.LOGIN_SISTEMA) {
+			this.notifyFx('Seleccione el usuario al que se le cambiará la clave.', NotifyType.Warning);
+			return;
+		}
+		this.claveNueva = '';
+		this.claveConfirmar = '';
+		this.clavePopupVisible = true;
+	}
+
+	cerrarCambioClave(): void {
+		this.clavePopupVisible = false;
+		this.claveGuardando = false;
+		this.claveNueva = '';
+		this.claveConfirmar = '';
+	}
+
+	guardarCambioClave(): void {
+		const login = (this.usuarioSeleccionado?.LOGIN_SISTEMA ?? '').trim();
+		const nueva = this.claveNueva.trim();
+		const confirmar = this.claveConfirmar.trim();
+		if (!login) {
+			this.notifyFx('Seleccione el usuario al que se le cambiará la clave.', NotifyType.Warning);
+			return;
+		}
+		if (nueva.length < 4) {
+			this.notifyFx('La clave debe tener al menos 4 caracteres.', NotifyType.Warning);
+			return;
+		}
+		if (nueva !== confirmar) {
+			this.notifyFx('Las claves no coinciden.', NotifyType.Warning);
+			return;
+		}
+		if (this.claveGuardando) {
+			return;
+		}
+		this.claveGuardando = true;
+		this.service
+			.reasignarClaveUsuario({
+				CORR_PROVEEDOR: Number(this.model?.CORR_PROVEEDOR ?? 0),
+				LOGIN_SISTEMA: login,
+				CLAVE_USUARIO_NUEVA: nueva,
+				CLAVE_CONFIRMAR: confirmar,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.claveGuardando = false;
+					if (!response?.Result) {
+						this.notifyApiError(response);
+						return;
+					}
+					this.notifyFx('Clave cambiada correctamente.', NotifyType.Success);
+					this.cerrarCambioClave();
+				},
+				error: (error: any) => {
+					this.claveGuardando = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	textoEstadoUsuario(valor: unknown): string {
+		const key = Number(valor);
+		const item = (this.mESTADO_USUARIO ?? []).find((x) => Number(x.Key) === key);
+		return item?.Value || '—';
+	}
 
 	//#region <Metodos Mtto>
 	fillParam(
@@ -373,6 +625,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.personaDetalleTabIndex = 0;
 		this.documentos = [];
 		this.resetPersonaBancosLocal();
+		this.resetUsuariosLocal();
 		this.getCORR_PERSONA(0);
 		super.nuevo();
 	}
@@ -391,7 +644,16 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			this.personaResumenCargando = false;
 			this.resetPersonaBancosLocal();
 		}
-		this.consultarDocumentos(Number(row?.CORR_PROVEEDOR ?? 0));
+		const corrProveedor = Number(row?.CORR_PROVEEDOR ?? 0);
+		this.consultarDocumentos(corrProveedor);
+		this.cargarUsuariosProveedor(corrProveedor);
+	}
+
+	override rowDblClick(e: any): void {
+		super.rowDblClick(e);
+		const row = e?.data ?? e?.row?.data;
+		const corrProveedor = Number(row?.CORR_PROVEEDOR ?? this.model?.CORR_PROVEEDOR ?? 0);
+		this.cargarUsuariosProveedor(corrProveedor);
 	}
 
 	/** Clic en fila del browse → panel lateral con datos de persona (solo lectura). */
@@ -550,6 +812,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.personaDetalleTabIndex = 0;
 		this.documentos = [];
 		this.resetPersonaBancosLocal();
+		this.resetUsuariosLocal();
 		this.cerrarPersonaPopup();
 		super.cancelar((item: any) => item.CORR_PROVEEDOR === this.modelUpdate.CORR_PROVEEDOR);
 	}

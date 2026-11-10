@@ -13,6 +13,8 @@ import { GenProveedor } from './models/gen-proveedor';
 import { GenProveedorPersona } from './models/gen-proveedor-persona';
 import { GenProveedorDoc } from './models/gen-proveedor-doc';
 import { GenPersonaBanco } from './models/gen-persona-banco';
+import { GenProveedorUsuario } from './models/gen-proveedor-usuario';
+import { GenProveedorUsuarioRepository } from './gen-proveedor-usuario.repository';
 
 const ESTADO_FIELD = 'ACTIVO_PROVEEDOR';
 
@@ -27,6 +29,7 @@ export class GenProveedorService {
 		private repo: GenProveedorRepository,
 		private docRepo: GenProveedorDocRepository,
 		private personaBancoRepo: GenPersonaBancoRepository,
+		private usuarioRepo: GenProveedorUsuarioRepository,
 	) {}
 
 	esValido(model: GenProveedor, msg: Function): boolean {
@@ -171,6 +174,37 @@ export class GenProveedorService {
 		]);
 	}
 
+	getUsuarios(corrProveedor: number): Observable<IResult> {
+		return this.usuarioRepo.getAll([{ Parameter: 'CORR_PROVEEDOR', Value: corrProveedor ?? 0 }]);
+	}
+
+	insertUsuario(model: GenProveedorUsuario): Observable<IResult> {
+		return this.usuarioRepo.create(model);
+	}
+
+	updateUsuario(model: GenProveedorUsuario): Observable<IResult> {
+		return this.usuarioRepo.update(model, [
+			{ Parameter: 'CORR_PROVEEDOR', Value: model.CORR_PROVEEDOR },
+			{ Parameter: 'LOGIN_SISTEMA', Value: model.LOGIN_SISTEMA },
+		]);
+	}
+
+	deleteUsuario(corrProveedor: number, login: string): Observable<IResult> {
+		return this.usuarioRepo.delete([
+			{ Parameter: 'CORR_PROVEEDOR', Value: corrProveedor },
+			{ Parameter: 'LOGIN_SISTEMA', Value: login },
+		]);
+	}
+
+	reasignarClaveUsuario(model: {
+		CORR_PROVEEDOR: number;
+		LOGIN_SISTEMA: string;
+		CLAVE_USUARIO_NUEVA: string;
+		CLAVE_CONFIRMAR: string;
+	}): Observable<IResult> {
+		return this.usuarioRepo.reasignarClave(model);
+	}
+
 	deletePersonaBanco(corrPersona: number, corrPersonaBanco: number): Observable<IResult> {
 		return this.personaBancoRepo.delete([
 			{ Parameter: 'CORR_PERSONA', Value: corrPersona },
@@ -216,6 +250,29 @@ export class GenProveedorService {
 			'txt', 'rtf', 'csv',
 		]);
 		return allowed.has(ext);
+	}
+
+	getUsuarioColumns(): any[] {
+		return [
+			{
+				caption: '',
+				width: 100,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'usuarioActions',
+				alignment: 'center',
+			},
+			{ dataField: 'LOGIN_SISTEMA', caption: 'Login sistema', minWidth: 100 },
+			{ dataField: 'NOMBRE_USUARIO', caption: 'Nombre del usuario', minWidth: 250 },
+			{ dataField: 'CORREO_ELECTRONICO', caption: 'Correo', minWidth: 150 },
+			{
+				dataField: 'ESTADO_USUARIO',
+				caption: 'Estado',
+				width: 170,
+				allowSorting: false,
+				cellTemplate: 'usuarioEstado',
+			},
+		];
 	}
 
 	getDocumentoColumns(): any[] {
