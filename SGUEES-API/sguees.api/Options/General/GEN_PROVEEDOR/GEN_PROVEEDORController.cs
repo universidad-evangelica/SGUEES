@@ -192,6 +192,13 @@ namespace sguees.Controllers
 			return await _service.GetLookupAsync(GetCorrEmpresa());
 		}
 
+		[HttpGet("GetCORR_PROVEEDOR_COM_DOCUMENTO")]
+		[Authorize(Policy = "/com-documento|R")]
+		public async Task<CResult> GetCORR_PROVEEDOR_COM_DOCUMENTO()
+		{
+			return await _service.GetLookupComDocumentoAsync(GetCorrEmpresa());
+		}
+
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");

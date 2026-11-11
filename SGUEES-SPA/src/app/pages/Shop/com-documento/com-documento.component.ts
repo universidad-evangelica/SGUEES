@@ -93,6 +93,10 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 
   mostrarDetaDoc = false;
   tituloGridDetaDoc = '';
+  proveedorLookupColumns = [
+    { dataField: 'CODIGO_PROVEEDOR', caption: 'Código', width: 120 },
+    { dataField: 'NOMBRE_PROVEEDOR', caption: 'Nombre', width: 360 },
+  ];
   // #endregion
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -165,7 +169,7 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 	}
 	getCORR_PROVEEDOR() {
 		this.appInfoService
-			.getLookUp('COM_DOCUMENTO', 'COM_PROVEEDOR', 'GetCORR_PROVEEDOR', undefined, environment.UrlCOMPRASAPI)
+			.getLookUp('COM_DOCUMENTO', 'GEN_PROVEEDOR', 'GetCORR_PROVEEDOR', undefined, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -181,7 +185,7 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 
   	getCORR_PROVEEDOR_COMPRAS() {
 		this.appInfoService
-			.getLookUp('COM_DOCUMENTO', 'COM_PROVEEDOR', 'GetCORR_PROVEEDOR_COMPRAS', undefined, environment.UrlCOMPRASAPI)
+			.getLookUp('COM_DOCUMENTO', 'GEN_PROVEEDOR', 'GetCORR_PROVEEDOR', undefined, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -770,12 +774,20 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
   }
 
   selectedLookUpCORR_PROVEEDOR(vRow: any): any {
-    if(vRow[0].CORR_CONDICION_PAGO !==0){
-      this.model.CORR_CONDICION_PAGO = vRow[0].CORR_CONDICION_PAGO;
-      this.model.DIAS_CREDITO = this.mCORR_CONDICION_PAGO.find((item: any) => item.CORR_CONDICION_PAGO === vRow[0].CORR_CONDICION_PAGO).DIAS_CREDITO;
-      // this.model.FECHA_VENCIMIENTO = this.model.DIAS_CREDITO>0?this.appInfoService.dateAdd(this.model.FECHA_DOCUMENTO, 'day', this.model.DIAS_CREDITO):this.model.FECHA_DOCUMENTO;
+    const row = vRow?.[0];
+    if (!row) {
+      return null;
     }
-    return vRow[0].CORR_PROVEEDOR;
+    this.model.NOMBRE_PROVEEDOR = row.NOMBRE_PROVEEDOR ?? '';
+    const corrCondicion = Number(row.CORR_CONDICION_PAGO ?? 0);
+    if (corrCondicion !== 0) {
+      this.model.CORR_CONDICION_PAGO = corrCondicion;
+      const condicion = this.mCORR_CONDICION_PAGO?.find((item: any) => item.CORR_CONDICION_PAGO === corrCondicion);
+      if (condicion) {
+        this.model.DIAS_CREDITO = condicion.DIAS_CREDITO;
+      }
+    }
+    return row.CORR_PROVEEDOR;
   }
 
   selectedLookUpCORR_CONDICION_PAGO(vRow: any): any {

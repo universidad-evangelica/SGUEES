@@ -8,6 +8,7 @@ namespace sguees.Services
 	{
 		Task<CResult> GetAllAsync(GEN_PROVEEDORParam xWhere);
 		Task<CResult> GetLookupAsync(int corrEmpresa);
+		Task<CResult> GetLookupComDocumentoAsync(int corrEmpresa);
 		Task<CResult> GetAsync(GEN_PROVEEDORParam xWhere);
 		Task<CResult> GetPersonasLookupAsync(GEN_PROVEEDORParam xWhere);
 		Task<CResult> GetPersonaAsync(GEN_PROVEEDORParam xWhere);

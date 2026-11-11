@@ -80,6 +80,9 @@ namespace sguees.Services
 		public Task<CResult> GetLookupAsync(int corrEmpresa)
 			=> _repo.GetLookupAsync(corrEmpresa);
 
+		public Task<CResult> GetLookupComDocumentoAsync(int corrEmpresa)
+			=> _repo.GetLookupComDocumentoAsync(corrEmpresa);
+
 		public async Task<CResult> GetAsync(GEN_PROVEEDORParam xWhere)
 		{
 			var p = new List<CParameter>
