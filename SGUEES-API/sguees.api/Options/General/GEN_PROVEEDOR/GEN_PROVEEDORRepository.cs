@@ -280,6 +280,99 @@ OFFSET @OFFSET ROWS FETCH NEXT @FETCH_SIZE ROWS ONLY";
 			return _DefaultSortField;
 		}
 
+		public async Task<CResult> GetLookupAsync(int corrEmpresa)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var parameters = new List<CParameter>
+				{
+					new()
+					{
+						ParameterName = "CORR_EMPRESA",
+						Value = corrEmpresa,
+						DbType = System.Data.DbType.Int32,
+					},
+				};
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
+					SELECT
+						CORR_EMPRESA,
+						CORR_PROVEEDOR,
+						CODIGO_PROVEEDOR,
+						NOMBRE_PROVEEDOR
+					FROM dbo.GEN_PROVEEDOR
+					WHERE CORR_EMPRESA = @CORR_EMPRESA
+					ORDER BY CODIGO_PROVEEDOR, CORR_PROVEEDOR", parameters);
+				var response = new List<GEN_PROVEEDORView>().FromDataReader(reader).ToList();
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = string.Empty;
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
+		public async Task<CResult> GetLookupComDocumentoAsync(int corrEmpresa)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var parameters = new List<CParameter>
+				{
+					new()
+					{
+						ParameterName = "CORR_EMPRESA",
+						Value = corrEmpresa,
+						DbType = System.Data.DbType.Int32,
+					},
+				};
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
+					SELECT
+						CORR_EMPRESA,
+						CORR_PROVEEDOR,
+						CODIGO_PROVEEDOR,
+						NOMBRE_PROVEEDOR,
+						ISNULL(CORR_CONDICION_PAGO, 0) AS CORR_CONDICION_PAGO
+					FROM dbo.GEN_PROVEEDOR
+					WHERE CORR_EMPRESA = @CORR_EMPRESA
+					ORDER BY CODIGO_PROVEEDOR, CORR_PROVEEDOR", parameters);
+				var response = new List<GEN_PROVEEDORView>().FromDataReader(reader).ToList();
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = string.Empty;
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();

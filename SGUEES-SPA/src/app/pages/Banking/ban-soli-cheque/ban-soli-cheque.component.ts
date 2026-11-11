@@ -68,8 +68,8 @@ export class BanSoliChequeComponent extends CBaseComponent implements OnInit {
 		{ dataField: 'NOMBRE_TIPO_CHEQUE', caption: 'Tipo cheque', width: 280 },
 	];
 	proveedorLookupColumns: any[] = [
-		{ dataField: 'CODIGO_PROVEEDOR', caption: 'Código', width: 100 },
-		{ dataField: 'NOMBRE_PROVEEDOR', caption: 'Proveedor', width: 280 },
+		{ dataField: 'CODIGO_PROVEEDOR', caption: 'Código', width: 120 },
+		{ dataField: 'NOMBRE_PROVEEDOR', caption: 'Proveedor', width: 320 },
 	];
 	empleadoLookupColumns: any[] = [
 		{ dataField: 'CORR_EMPLEADO', caption: 'Código', width: 80 },
@@ -243,9 +243,13 @@ export class BanSoliChequeComponent extends CBaseComponent implements OnInit {
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					if (response.Result) {
-						this.mCORR_PROVEEDOR = response.Data || [];
+					if (!response?.Result) {
+						this.mCORR_PROVEEDOR = [];
+						this.notifyFx(response?.ErrorMessage || 'No se pudo cargar los proveedores.', NotifyType.Error, { raw: true });
+						return;
 					}
+					this.mCORR_PROVEEDOR = Array.isArray(response.Data) ? response.Data : [];
+					this.cdr.detectChanges();
 				},
 				error: (error: any) => this.notifyFx(error, NotifyType.Error),
 			});

@@ -173,26 +173,30 @@ namespace sguees.Controllers
 
 		[HttpGet("GetCORR_PROVEEDOR_BAN_SOLI_CHEQUE")]
 		[Authorize(Policy = "/ban-soli-cheque|R")]
-		public async Task<CResult> GetCORR_PROVEEDOR_BAN_SOLI_CHEQUE([FromQuery] GEN_PROVEEDORParam Data)
+		public async Task<CResult> GetCORR_PROVEEDOR_BAN_SOLI_CHEQUE()
 		{
-			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetLookupAsync(GetCorrEmpresa());
 		}
 
 		[HttpGet("GetCORR_PROVEEDOR_BAN_CHEQUE")]
 		[Authorize(Policy = "/ban-cheque|R")]
-		public async Task<CResult> GetCORR_PROVEEDOR_BAN_CHEQUE([FromQuery] GEN_PROVEEDORParam Data)
+		public async Task<CResult> GetCORR_PROVEEDOR_BAN_CHEQUE()
 		{
-			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetLookupAsync(GetCorrEmpresa());
 		}
 
 		[HttpGet("GetCORR_PROVEEDOR_BAN_DOCUMENTO")]
 		[Authorize(Policy = "/ban-documento|R")]
-		public async Task<CResult> GetCORR_PROVEEDOR_BAN_DOCUMENTO([FromQuery] GEN_PROVEEDORParam Data)
+		public async Task<CResult> GetCORR_PROVEEDOR_BAN_DOCUMENTO()
 		{
-			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetLookupAsync(GetCorrEmpresa());
+		}
+
+		[HttpGet("GetCORR_PROVEEDOR_COM_DOCUMENTO")]
+		[Authorize(Policy = "/com-documento|R")]
+		public async Task<CResult> GetCORR_PROVEEDOR_COM_DOCUMENTO()
+		{
+			return await _service.GetLookupComDocumentoAsync(GetCorrEmpresa());
 		}
 
 		private int GetCorrEmpresa()

@@ -7,6 +7,8 @@ namespace sguees.Repositories
 {
 	public interface IGEN_PROVEEDORRepository : IRepository<GEN_PROVEEDORTable>
 	{
+		Task<CResult> GetLookupAsync(int corrEmpresa);
+		Task<CResult> GetLookupComDocumentoAsync(int corrEmpresa);
 		Task<CResult> GetPersonasLookupAsync(int corrEmpresa, long? corrPersonaIncluir);
 		Task<CResult> GetPersonaAsync(int corrEmpresa, long corrPersona);
 		Task<CResult> CreatePersonaNaturalAsync(GEN_PROVEEDOR_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION);
