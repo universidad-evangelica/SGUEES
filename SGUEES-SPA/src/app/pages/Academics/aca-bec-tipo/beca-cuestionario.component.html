@@ -1,10 +1,7 @@
-<app-barra-data-mtto *ngIf="edicion" tituloVentana="Editor de cuestionario" [ocultarEncabezado]="true" [showRibbon]="false" [isBrowse]="false" [isForm]="true"
-  [permiteAdd]="false" [showExport]="false" [showRefresh]="false" (guardar)="guardar()" (cancelar)="cancelar()">
-</app-barra-data-mtto>
 
 <div class="content-block dx-card responsive-paddings" *ngIf="contenido">
   <h3>{{ contenido.VERSION.NOMBRE_FORMULARIO }} · Versión {{ contenido.VERSION.VERSION_FORMULARIO }}</h3>
-  <p class="guia" *ngIf="soloLectura">Versión publicada: puede consultar y probar el cuestionario. Para cambiarlo, vuelva a Versiones y cree una copia en borrador.</p>
+  <p class="guia" *ngIf="soloLectura">Versión publicada: puede consultar y probar el cuestionario. {{contenido.VERSION.CANT_SOLICITUDES ? 'Tiene solicitudes asociadas: cree una nueva versión para cambiarlo.' : 'No tiene solicitudes: pulse Modificar cuestionario o vuelva a Versiones para reabrir esta misma versión.'}}</p>
   <p class="guia" *ngIf="!soloLectura">Borrador. Agregue una sección, escriba sus preguntas y defina las opciones cuando corresponda. Revise la vista previa antes de publicar.</p>
   <div class="acciones" *ngIf="!edicion">
     <dx-button text="Volver a versiones y asignación" icon="back" [disabled]="loadingVisible" (onClick)="salir()"></dx-button>
@@ -30,8 +27,10 @@
 
   <div *ngIf="edicion && datos">
     <h3>{{ tituloEditor }}</h3>
+    <app-barra-data-mtto [ocultarEncabezado]="true" [isBrowse]="false" [isForm]="true" [permiteAdd]="false" [showRefresh]="false" (guardar)="guardar()" (cancelar)="cancelar()"></app-barra-data-mtto>
+    <p class="guia" *ngIf="datos.ELEMENTO === 1">Este límite es el máximo que puede aportar la sección. Use 0 para una sección informativa sin puntuación. Las respuestas configuradas no pueden superar este límite.</p>
     <p class="guia" *ngIf="datos.ELEMENTO === 2">El tipo de respuesta determina lo que verá el aspirante. «Seleccionar una respuesta» y «Seleccionar varias respuestas» permiten agregar alternativas en el paso 3. «Sí / No» crea esas dos alternativas automáticamente.</p>
-    <p class="guia" *ngIf="datos.ELEMENTO === 4">Configure un puntaje fijo y su vigencia. En preguntas de selección, el puntaje corresponde a la opción elegida.</p>
+    <p class="guia" *ngIf="datos.ELEMENTO === 4">Asigne los puntos de la respuesta y su vigencia. El sistema comprobará el límite de la sección. El porcentaje de evaluación se calcula automáticamente sobre los puntos máximos del formulario.</p>
     <p class="guia" *ngIf="datos.ELEMENTO === 5">Esta condición muestra la pregunta actual según una respuesta anterior. Si agrega varias condiciones, bastará que se cumpla una.</p>
     <dx-form #fData [formData]="datos" [items]="itemsEditor" labelLocation="top" [colCount]="2"
       [colCountByScreen]="{ xs: 1, sm: 1, md: 2, lg: 2 }" [disabled]="loadingVisible"></dx-form>
@@ -44,8 +43,8 @@
     <p class="guia" *ngIf="paso === 2">Cada opción es una respuesta que el aspirante podrá seleccionar, por ejemplo «Trabaja», «Estudia» u «Otro». Los puntajes se configuran en el paso 4.</p>
     <p class="guia" *ngIf="paso === 3">Asigne puntos a la respuesta general o a cada opción. Si la pregunta no califica, puede dejarla sin reglas de puntaje.</p>
     <p class="guia" *ngIf="paso === 4">Sin condiciones, la pregunta siempre aparece. Agregue una condición solo si depende de una respuesta anterior.</p>
+    <app-barra-data-mtto *ngIf="!soloLectura" [ocultarEncabezado]="true" [isBrowse]="true" [isForm]="false" [showRibbon]="true" [showRefresh]="false" [permiteAdd]="permiteAdd && !loadingVisible" (nuevo)="abrirEditor(true)"></app-barra-data-mtto>
     <div class="acciones" *ngIf="!soloLectura">
-      <dx-button [text]="'Agregar ' + nombreElemento" icon="add" type="default" *ngIf="permiteAdd" [disabled]="loadingVisible" (onClick)="abrirEditor(true)"></dx-button>
       <dx-button [text]="'Editar ' + nombreElemento" icon="edit" *ngIf="permiteEdit" [disabled]="loadingVisible || !filaSeleccionada" (onClick)="abrirEditor(false)"></dx-button>
       <dx-button [text]="'Quitar ' + nombreElemento" icon="remove" *ngIf="permiteDele" [disabled]="loadingVisible || !filaSeleccionada" (onClick)="quitar()"></dx-button>
     </div>

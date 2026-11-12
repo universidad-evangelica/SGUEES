@@ -30,11 +30,11 @@ type VistaValor = string | number | boolean | Date | number[] | null;
 @Component({
   selector: 'app-beca-cuestionario', standalone: true,
   imports: [CommonModule, DxButtonModule, DxFormModule, DxTabsModule, DxSelectBoxModule, DxTextBoxModule, DxTextAreaModule,
-    DxNumberBoxModule, DxDateBoxModule, DxCheckBoxModule, DxTagBoxModule, DxLoadPanelModule, BarraDataMttoModule, DataGridMttoModule],
+    DxNumberBoxModule, DxDateBoxModule, DxCheckBoxModule, DxTagBoxModule, DxLoadPanelModule, DataGridMttoModule,BarraDataMttoModule],
   templateUrl: './beca-cuestionario.component.html',
   styles: [`.acciones {display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;} .contexto {display:grid;grid-template-columns:1fr 1fr;gap:16px;}
     .contexto > div {min-width:0;} .guia {margin:12px 0;line-height:1.6;} .pregunta-vista {margin:18px 0;}
-    h3,p,label {overflow-wrap:anywhere;} .pregunta-vista label {display:block;margin-bottom:8px;}
+    h3,p,label {overflow-wrap:anywhere;} h3{font-size:20px;line-height:1.4;margin:0 0 12px;}.guia{font-size:13px;}.pregunta-vista label {display:block;margin-bottom:8px;}
     @media(max-width:700px){.contexto {grid-template-columns:1fr;}}`],
 })
 export class BecaCuestionarioComponent extends CBaseComponent implements OnChanges {
@@ -125,10 +125,10 @@ export class BecaCuestionarioComponent extends CBaseComponent implements OnChang
   }
   private refrescarFilas():void {
     this.filaSeleccionada=undefined;
-    if(this.paso===0){this.clave='CORR_SECCION_BECA';this.filas=this.secciones;this.columnas=[{dataField:'ORDEN',caption:'Orden',width:90},{dataField:'NOMBRE_SECCION',caption:'Sección',minWidth:260},{dataField:'PUNTAJE_MAXIMO',caption:'Puntaje máximo'},{dataField:'PORCENTAJE_SECCION',caption:'Peso (%)'}];}
+    if(this.paso===0){this.clave='CORR_SECCION_BECA';this.filas=this.secciones;this.columnas=[{dataField:'ORDEN',caption:'Orden',width:90},{dataField:'NOMBRE_SECCION',caption:'Sección',minWidth:260},{dataField:'PUNTAJE_MAXIMO',caption:'Límite de puntos'}];}
     if(this.paso===1){this.clave='CORR_PREGUNTA_BECA';this.filas=this.preguntas;this.columnas=[{dataField:'ORDEN',caption:'Orden',width:90},{dataField:'TEXTO_PREGUNTA',caption:'Pregunta',minWidth:340},{dataField:'TIPO_RESPUESTA',caption:'Tipo de respuesta',lookup:{dataSource:this.tipos,valueExpr:'id',displayExpr:'text'}},{dataField:'REQUERIDO',caption:'Obligatoria',dataType:'boolean'}];}
     if(this.paso===2){this.clave='CORR_OPCION_BECA';this.filas=this.opciones;this.columnas=[{dataField:'ORDEN',caption:'Orden',width:90},{dataField:'TEXTO_OPCION',caption:'Opción de respuesta',minWidth:350}];}
-    if(this.paso===3){this.clave='CORR_PUNTAJE_BECA';this.filas=(this.contenido?.PUNTAJES ?? []).filter(p=>p.CORR_PREGUNTA_BECA===this.preguntaId);this.columnas=[{dataField:'TEXTO_OPCION',caption:'Respuesta (vacía: puntaje general)',minWidth:250},{dataField:'PUNTAJE',caption:'Puntaje'},{dataField:'PORCENTAJE',caption:'Porcentaje'},{dataField:'FECHA_INICIO',caption:'Inicio',dataType:'date',format:'dd/MM/yyyy'},{dataField:'FECHA_FIN',caption:'Fin',dataType:'date',format:'dd/MM/yyyy'}];}
+    if(this.paso===3){this.clave='CORR_PUNTAJE_BECA';this.filas=(this.contenido?.PUNTAJES ?? []).filter(p=>p.CORR_PREGUNTA_BECA===this.preguntaId);this.columnas=[{dataField:'TEXTO_OPCION',caption:'Respuesta (vacía: puntaje general)',minWidth:250},{dataField:'PUNTAJE',caption:'Puntos de la respuesta'},{dataField:'FECHA_INICIO',caption:'Inicio',dataType:'date',format:'dd/MM/yyyy'},{dataField:'FECHA_FIN',caption:'Fin',dataType:'date',format:'dd/MM/yyyy'}];}
     if(this.paso===4){this.clave='CORR_DEPENDENCIA_BECA';this.filas=(this.contenido?.DEPENDENCIAS ?? []).filter(d=>d.CORR_PREGUNTA_HIJA===this.preguntaId);this.columnas=[{dataField:'PREGUNTA_PADRE',caption:'Pregunta anterior',minWidth:300},{dataField:'OPCION_PADRE',caption:'Respuesta que muestra esta pregunta',minWidth:250}];}
     if(this.paso===0)this.filaSeleccionada=this.secciones.find(s=>s.CORR_SECCION_BECA===this.seccionId);
     if(this.paso===1)this.filaSeleccionada=this.preguntas.find(p=>p.CORR_PREGUNTA_BECA===this.preguntaId);
@@ -143,7 +143,8 @@ export class BecaCuestionarioComponent extends CBaseComponent implements OnChang
     const orden=this.filas.reduce((max,row)=>Math.max(max,'ORDEN' in row?row.ORDEN:0),0)+1;
     if(elemento===BecaElemento.Seccion){
       Object.assign(this.datos,nuevo?{NOMBRE_SECCION:'',DESCRIPCION:'',ORDEN:orden,PUNTAJE_MAXIMO:0,PORCENTAJE_SECCION:0}:fila);
-      this.itemsEditor=[this.texto('NOMBRE_SECCION','Nombre de la sección',200),this.numero('ORDEN','Orden',1),this.texto('DESCRIPCION','Descripción (opcional)',1000,false,true),this.numero('PUNTAJE_MAXIMO','Puntaje máximo',0),this.numero('PORCENTAJE_SECCION','Peso de la sección (%)',0,100)];
+      this.datos.PORCENTAJE_SECCION=0;
+      this.itemsEditor=[this.texto('NOMBRE_SECCION','Nombre de la sección',200),this.numero('ORDEN','Orden',1),this.texto('DESCRIPCION','Descripción (opcional)',1000,false,true),this.numero('PUNTAJE_MAXIMO','Límite de puntos de la sección',0)];
     } else if(elemento===BecaElemento.Pregunta){
       Object.assign(this.datos,nuevo?{TEXTO_PREGUNTA:'',AYUDA:'',ORDEN:orden,TIPO_RESPUESTA:'TEXTO',REQUERIDO:true}:fila);
       this.itemsEditor=[this.texto('TEXTO_PREGUNTA','¿Qué desea preguntar?',20000,true,true),this.texto('AYUDA','Ayuda para el aspirante (opcional)',1000,false,true),
@@ -154,7 +155,8 @@ export class BecaCuestionarioComponent extends CBaseComponent implements OnChang
       this.itemsEditor=[this.texto('TEXTO_OPCION','Texto de la respuesta que podrá seleccionar',500,true,true),this.numero('ORDEN','Orden',1)];
     } else if(elemento===BecaElemento.Puntaje){
       Object.assign(this.datos,nuevo?{CORR_OPCION_BECA:null,PUNTAJE:0,PORCENTAJE:0,FECHA_INICIO:this.contenido!.VERSION.FECHA_INICIO,FECHA_FIN:this.contenido!.VERSION.FECHA_FIN}:fila);
-      this.itemsEditor=[...(this.usaOpciones?[this.selector('CORR_OPCION_BECA','Opción de respuesta',this.opciones,'CORR_OPCION_BECA','TEXTO_OPCION')]:[]),this.numero('PUNTAJE','Puntaje de la respuesta',0),this.numero('PORCENTAJE','Porcentaje',0,100),this.fecha('FECHA_INICIO','Fecha inicio',true),this.fecha('FECHA_FIN','Fecha fin (opcional)',false)];
+      this.datos.PORCENTAJE=0;
+      this.itemsEditor=[...(this.usaOpciones?[this.selector('CORR_OPCION_BECA','Opción de respuesta',this.opciones,'CORR_OPCION_BECA','TEXTO_OPCION')]:[]),this.numero('PUNTAJE','Puntos de la respuesta',0),this.fecha('FECHA_INICIO','Fecha inicio',true),this.fecha('FECHA_FIN','Fecha fin (opcional)',false)];
     } else {
       Object.assign(this.datos,nuevo?{CORR_PREGUNTA_HIJA:this.preguntaId}:fila);
       const padres=(this.contenido?.PREGUNTAS ?? []).filter(p=>p.CORR_PREGUNTA_BECA!==this.preguntaId&&['OPCION_UNICA','OPCION_MULTIPLE','SI_NO'].includes(p.TIPO_RESPUESTA));
@@ -191,7 +193,7 @@ export class BecaCuestionarioComponent extends CBaseComponent implements OnChang
   }
   async publicar():Promise<void> {
     if(this.soloLectura||!this.permiteEdit||this.loadingVisible||this.edicion)return;
-    if(!await confirm('Revise la vista previa. Al publicar ya no se podrá cambiar este contenido. ¿Desea publicar?','Publicar cuestionario'))return;
+    if(!await confirm('Revise la vista previa. Una vez que esta versión tenga solicitudes, su contenido quedará protegido. ¿Desea publicar?','Publicar cuestionario'))return;
     this.loadingVisible=true;
     this.service.guardarFormulario('PublicarVersion',{CORR_BECA:this.corrBeca,ID:this.versionId,VERSION_REGISTRO:this.contenido!.VERSION.VERSION_REGISTRO}).pipe(take(1),finalize(()=>this.loadingVisible=false)).subscribe({next:result=>{
       if(!result.Result){this.notifyApiResponse(result);return;}

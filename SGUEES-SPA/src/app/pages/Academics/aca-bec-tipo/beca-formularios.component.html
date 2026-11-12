@@ -1,12 +1,10 @@
-<app-barra-data-mtto *ngIf="!versionEditorId" tituloVentana="Formularios y versiones" [ocultarEncabezado]="true" [showRibbon]="true" [isBrowse]="!edicion" [isForm]="!!edicion"
-  [permiteAdd]="false" [showExport]="false" [showRefresh]="true" (consultar)="consultar()" (guardar)="guardar()" (cancelar)="cancelar()">
-</app-barra-data-mtto>
 
 <app-beca-cuestionario *ngIf="versionEditorId" [corrBeca]="corrBeca" [versionId]="versionEditorId"
   (volver)="volverVersiones()" (pendiente)="pendiente.emit($event)" (actualizado)="actualizado.emit()"></app-beca-cuestionario>
 
 <div class="content-block dx-card responsive-paddings" *ngIf="edicion">
   <h3>{{ tituloEdicion }}</h3>
+  <app-barra-data-mtto [ocultarEncabezado]="true" [isBrowse]="false" [isForm]="true" [permiteAdd]="false" [showRefresh]="false" (guardar)="guardar()" (cancelar)="cancelar()"></app-barra-data-mtto>
   <p class="descripcion" *ngIf="edicion === 'CrearVersion' && datos.CORR_VERSION_ORIGEN">Se copiarán las secciones, preguntas, opciones, dependencias y puntajes de la beca plantilla. El original y las solicitudes existentes se conservan.</p>
   <p *ngIf="modoSencillo && accionInicial?.tipo === 'copiar'">Elija el cuestionario y la beca de origen. Se abrirá una copia para la beca seleccionada. Revísela, publíquela y después pulse Asignar.</p>
   <p *ngIf="modoSencillo && edicion === 'CrearFormularioVacio'">Escriba el nombre y guarde. Después podrá agregar las secciones y preguntas. El código y la primera versión se generan automáticamente.</p>
@@ -21,15 +19,17 @@
   <div class="content-block dx-card responsive-paddings">
     <ol class="descripcion">
       <li><strong>Desde cero:</strong> pulse «Crear formulario desde cero». Al guardar se abrirá el editor para agregar secciones y preguntas.</li>
-      <li><strong>Para modificar:</strong> seleccione una versión en borrador y pulse «Editar preguntas y opciones». Si está publicada, primero cree una copia.</li>
+      <li><strong>Para modificar:</strong> edite el borrador o reabra la misma versión si todavía no tiene solicitudes. Si ya fue utilizada, cree una copia.</li>
       <li><strong>Para habilitar:</strong> revise la vista previa, publique el cuestionario y cree su asignación a la beca y ciclo.</li>
     </ol>
     <p class="descripcion">Una versión en borrador no aparece en la postulación. Publique y asigne la versión a esta beca para habilitarla. Las solicitudes existentes conservan su versión y ciclo.</p>
     <label for="beca-formulario-selector">Formulario</label>
     <dx-select-box id="beca-formulario-selector" [dataSource]="formularios" valueExpr="CORR_FORMULARIO_BECA" displayExpr="NOMBRE_FORMULARIO"
       [value]="formularioId" [searchEnabled]="true" [disabled]="loadingVisible" (onValueChanged)="seleccionarFormulario($event.value)"></dx-select-box>
+    <app-barra-data-mtto [ocultarEncabezado]="true" [isBrowse]="true" [isForm]="false" [showRibbon]="true" [showRefresh]="false" [permiteAdd]="permiteAdd && !loadingVisible" (nuevo)="editarFormulario(true)"></app-barra-data-mtto>
     <div class="acciones">
-      <dx-button text="Crear formulario desde cero" type="default" icon="add" *ngIf="permiteAdd" [disabled]="loadingVisible" (onClick)="editarFormulario(true)"></dx-button>
+      <dx-button text="Actualizar versiones" icon="refresh" [disabled]="loadingVisible" (onClick)="consultar()"></dx-button>
+      <dx-button text="Modificar esta misma versión" icon="edit" *ngIf="permiteEdit && versionSeleccionada?.ESTADO_VERSION === 'PUBLICADA' && versionSeleccionada?.CANT_SOLICITUDES === 0" [disabled]="loadingVisible" (onClick)="reabrirVersion()"></dx-button>
       <dx-button text="Editar formulario" icon="edit" *ngIf="permiteEdit" [disabled]="loadingVisible || !puedeEditarFormulario" (onClick)="editarFormulario(false)"></dx-button>
       <dx-button text="Crear versión vacía" icon="add" *ngIf="permiteAdd" [disabled]="loadingVisible || !formularioId" (onClick)="editarVersion(true, false)"></dx-button>
       <dx-button text="Copiar una versión existente" icon="copy" *ngIf="permiteAdd" [disabled]="loadingVisible || !formularioId" (onClick)="editarVersion(true)"></dx-button>

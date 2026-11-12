@@ -1,10 +1,14 @@
 <div class="sguees-mtto-view">
-<app-barra-data-mtto
+<app-barra-data-mtto tituloVentana="Requisitos de la beca" [isBrowse]="true" [isForm]="false" [permiteAdd]="false" [showRefresh]="false"></app-barra-data-mtto>
+
+<app-becas-configuracion-tabs activa="requisitos" [corrBeca]="becaContexto" [nombreBeca]="nombreBecaContexto" [bloqueado]="!isBrowse()"></app-becas-configuracion-tabs>
+
+<app-barra-data-mtto [ocultarEncabezado]="true"
 	[tituloVentana]="'Requisitos de la beca'"
 	[showRibbon]="isBrowse()"
 	[showExport]="permitePrint"
 	[isBrowse]="isBrowse()"
-	[isForm]="false"
+	[isForm]="isForm()"
 	[permiteAdd]="permiteAdd && becaContexto > 0 && !loadingVisible"
 	[showRefresh]="true"
 	[showEstadoToolbar]="true"
@@ -19,8 +23,6 @@
 >
 </app-barra-data-mtto>
 
-<app-becas-configuracion-tabs activa="requisitos" [corrBeca]="becaContexto" [nombreBeca]="nombreBecaContexto" [bloqueado]="!isBrowse()"></app-becas-configuracion-tabs>
-
 <div class="content-block dx-card responsive-paddings" *ngIf="isBrowse()">
   <label>Beca</label>
   <dx-select-box [dataSource]="tiposBeca" valueExpr="CORR_BECA" displayExpr="NOMBRE_BECA" [value]="becaContexto"
@@ -31,10 +33,7 @@
 <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
   <h3>{{ isForm() ? (model?.CORR_BECA_REQUISITO ? 'Editar requisito' : 'Nuevo requisito') : 'Consultar requisito' }}</h3>
   <p>Beca: {{ nombreBecaContexto }}</p>
-  <div style="display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;">
-    <dx-button *ngIf="isForm()" text="Guardar requisito" icon="save" type="success" [disabled]="loadingVisible" (onClick)="guardar()"></dx-button>
-    <dx-button [text]="isForm() ? 'Cancelar requisito' : 'Volver al listado'" icon="close" [disabled]="loadingVisible" (onClick)="cancelar()"></dx-button>
-  </div>
+
 
 	<dx-form
 		#fData

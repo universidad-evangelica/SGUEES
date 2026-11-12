@@ -8,6 +8,6 @@ namespace sguees.Services
     {
         Task<CResult> GetRespuestasAsync(ACA_PROSPECTO_BECAParam xWhere);
         Task<CResult> GetOpcionesAsync(int corrEmpresa, int corrPreguntaBeca);
-        Task<CResult> GuardarRespuestaAsync(int corrEmpresa, string usuario, AcaProspectoBecaRespuestaEdicion edicion);
+        Task<CResult> GuardarRespuestaAsync(int corrEmpresa, string usuario, AcaProspectoBecaRespuestaEdicion edicion, string estacion);
     }
 }

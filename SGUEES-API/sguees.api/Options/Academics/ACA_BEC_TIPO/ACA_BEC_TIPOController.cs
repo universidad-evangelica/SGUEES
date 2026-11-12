@@ -117,6 +117,8 @@ namespace SGUEES.Controllers
         public Task<IActionResult> EditarVersion(BecaFormularioCambio data)=>GuardarConfiguracion("EDITAR_VERSION",data);
         [HttpPost("PublicarVersion")][Authorize(Policy="/aca-bec-tipo|U")]
         public Task<IActionResult> PublicarVersion(BecaFormularioCambio data)=>GuardarConfiguracion("PUBLICAR",data);
+        [HttpPost("ReabrirVersion")][Authorize(Policy="/aca-bec-tipo|U")]
+        public Task<IActionResult> ReabrirVersion(BecaFormularioCambio data)=>GuardarConfiguracion("REABRIR",data);
         [HttpPost("AsignarVersion")][Authorize(Policy="/aca-bec-tipo|U")]
         public Task<IActionResult> AsignarVersion(BecaFormularioCambio data)=>GuardarConfiguracion("ASIGNAR",data);
         [HttpPost("RetirarAsignacion")][Authorize(Policy="/aca-bec-tipo|U")]

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -10,7 +11,7 @@ using sguees.Models;
 namespace sguees.Repositories
 {
     // Qué hace: lectura del cuestionario de la solicitud de beca.
-    // Cómo lo hace: lee V_ACA_PROSPECTO_BECA_RESPUESTA. No escribe; el guardado está en el servicio.
+    // Lecturas por vistas y correcciones por procedimiento transaccional del framework.
     public class ACA_PROSPECTO_BECA_RESPUESTARepository : BaseRepository<ACA_PROSPECTO_BECA_RESPUESTATable>, IACA_PROSPECTO_BECA_RESPUESTARepository
     {
         private const string _ViewName = "V_ACA_PROSPECTO_BECA_RESPUESTA";
@@ -24,6 +25,28 @@ namespace sguees.Repositories
         public Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             return GetRespuestasAsync(xWhere);
+        }
+        public async Task<CResult> GetOpcionesAsync(List<CParameter> parameters)
+        {
+            try
+            {
+                using var reader = await objData.GetDataReader("V_ACA_PROSPECTO_BECA_OPCION_EDICION", parameters, "ORDEN,CORR_OPCION_BECA");
+                var data = new List<ACA_PROSPECTO_BECA_OPCIONView>().FromDataReader(reader).ToList();
+                return new CResult { Result=true,Data=data,RowsAffected=data.Count };
+            }
+            catch (Exception ex) { return new CResult { ErrorCode=-1,ErrorMessage=ex.Message }; }
+            finally { objData.objConnection.Close(); }
+        }
+        public async Task<CResult> GuardarRespuestaAsync(List<CParameter> parameters)
+        {
+            try
+            {
+                using var reader = await objData.GetDataReader(CommandType.StoredProcedure,"PRAL_MTTO_ACA_PROSPECTO_BECA_RESPUESTA",parameters);
+                var data = new List<ACA_PROSPECTO_BECA_TOTALESView>().FromDataReader(reader).SingleOrDefault();
+                return new CResult { Result=data!=null,Data=data,RowsAffected=data==null?0:1,ErrorMessage=data==null?"No se obtuvo el resultado de la correccion.":"Respuesta actualizada" };
+            }
+            catch (Exception ex) { return new CResult { ErrorCode=-1,ErrorMessage=ex.Message }; }
+            finally { objData.objConnection.Close(); }
         }
 
         public Task<CResult> GetAsync(List<CParameter> xWhere)

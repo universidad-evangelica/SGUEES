@@ -9,5 +9,7 @@ namespace sguees.Repositories
     public interface IACA_PROSPECTO_BECA_RESPUESTARepository : IRepository<ACA_PROSPECTO_BECA_RESPUESTATable>
     {
         Task<CResult> GetRespuestasAsync(List<CParameter> xWhere);
+        Task<CResult> GetOpcionesAsync(List<CParameter> parameters);
+        Task<CResult> GuardarRespuestaAsync(List<CParameter> parameters);
     }
 }

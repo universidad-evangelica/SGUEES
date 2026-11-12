@@ -1,5 +1,5 @@
 <div class="sguees-mtto-view">
-  <app-barra-data-mtto tituloVentana="Cuestionario de becas" [showRibbon]="false"></app-barra-data-mtto>
+  <header class="content-block cuestionarios-header"><h2>Cuestionario de becas</h2><p>Seleccione una beca y su cuestionario para consultar preguntas, editar versiones o asignar el formulario.</p></header>
   <app-becas-configuracion-tabs activa="formularios" [corrBeca]="seleccionada?.CORR_BECA || 0"
     [nombreBeca]="seleccionada?.NOMBRE_BECA || ''" [mostrarContexto]="false" [bloqueado]="cambiosPendientes || loadingVisible"></app-becas-configuracion-tabs>
 
@@ -7,23 +7,24 @@
     <label for="beca-cuestionario-selector">Beca y cuestionario</label>
     <div class="selector-fila">
     <div class="selector-control">
-    <dx-select-box id="beca-cuestionario-selector" [dataSource]="filas" valueExpr="CLAVE" displayExpr="ETIQUETA"
-      [value]="seleccionada?.CLAVE" [searchEnabled]="true" [searchExpr]="camposBusqueda" [wrapItemText]="true"
-      [showClearButton]="false" [disabled]="loadingVisible || cambiosPendientes" width="100%"
-      placeholder="Seleccione la beca y su cuestionario" (onValueChanged)="seleccionarClave($event.value)"></dx-select-box>
+    <button type="button" id="beca-cuestionario-selector" class="selector-trigger" aria-haspopup="dialog"
+      [attr.aria-expanded]="selectorAbierto" [disabled]="loadingVisible || cambiosPendientes" (click)="abrirSelector()">
+      <span>{{seleccionada?.ETIQUETA || 'Seleccione la beca y su cuestionario'}}</span><i class="dx-icon dx-icon-find" aria-hidden="true"></i>
+    </button>
     </div>
       <dx-button icon="refresh" hint="Actualizar opciones" [elementAttr]="etiquetaActualizar"
         [disabled]="loadingVisible || cambiosPendientes" (onClick)="consultar()"></dx-button>
     </div>
     <ng-container *ngIf="seleccionada as fila">
-    <p class="resumen"><strong>Estado:</strong> {{ fila.ESTADO_USO }} · <strong>Preguntas:</strong> {{ fila.CANT_PREGUNTAS }}</p>
+    <p class="resumen"><strong>Estado:</strong> {{ fila.ESTADO_USO }} · <strong>Preguntas:</strong> {{ fila.CANT_PREGUNTAS }} · <strong>Solicitudes de esta versión:</strong> {{fila.CANT_SOLICITUDES}}</p>
+    <p *ngIf="fila.CORR_FORMULARIO_VERSION">{{fila.CANT_SOLICITUDES ? 'Esta versión tiene solicitudes: los cambios requieren una nueva versión para conservar su historial.' : 'Sin solicitudes asociadas: puede modificar esta misma versión sin crear otra copia.'}}</p>
     <details *ngIf="!mostrarVersiones && fila.CORR_FORMULARIO_VERSION">
       <summary>Becas que usan este cuestionario</summary>
       <p>{{ becasAsignadas }}</p>
     </details>
+    <app-barra-data-mtto *ngIf="!cambiosPendientes" [ocultarEncabezado]="true" [isBrowse]="true" [isForm]="false" [showRibbon]="true" [showRefresh]="false" [permiteAdd]="permiteAdd && !loadingVisible" (nuevo)="iniciarAccion('crear')"></app-barra-data-mtto>
     <div class="acciones" *ngIf="!cambiosPendientes">
-      <dx-button text="Crear cuestionario" icon="add" type="default" *ngIf="permiteAdd" [disabled]="loadingVisible" (onClick)="iniciarAccion('crear')"></dx-button>
-      <dx-button text="Modificar cuestionario" icon="edit" *ngIf="fila.ESTADO_VERSION === 'BORRADOR' ? permiteEdit : permiteAdd"
+      <dx-button text="Modificar cuestionario" icon="edit" *ngIf="fila.ESTADO_VERSION === 'BORRADOR' || fila.CANT_SOLICITUDES === 0 ? permiteEdit : permiteAdd"
         [disabled]="loadingVisible || !fila.CORR_FORMULARIO_VERSION" (onClick)="iniciarAccion('modificar')"></dx-button>
       <dx-button text="Asignar a esta beca" icon="check" type="success" *ngIf="permiteEdit"
         [disabled]="loadingVisible || fila.ESTADO_VERSION !== 'PUBLICADA'" (onClick)="iniciarAccion('asignar')"></dx-button>
@@ -42,5 +43,34 @@
       [versionInicialId]="contextoGestor?.version || 0" [accionInicial]="accionInicial" (versionActiva)="registrarVersion($event)" (pendiente)="cambiosPendientes=$event" (actualizado)="consultar()"></app-beca-formularios>
     </ng-container>
   </div>
+  <dx-popup [visible]="selectorAbierto" width="94vw" [maxWidth]="1200" height="84vh" [maxHeight]="700" [showTitle]="true" title="Seleccionar beca y cuestionario"
+    [showCloseButton]="true" [hideOnOutsideClick]="false" [dragEnabled]="false" [wrapperAttr]="{class:'selector-cuestionarios-popup'}" (onHiding)="cerrarSelector()">
+    <div *dxTemplate="let data of 'content'"><div class="selector-popup">
+      <p class="selector-guia">Busque y marque una fila. Pulse <strong>Seleccionar</strong> para aplicarla o <strong>Cerrar</strong> para volver sin cambios.</p>
+      <div class="selector-grid">
+        <dx-data-grid [dataSource]="filas" keyExpr="CLAVE" height="100%" [columnAutoWidth]="true" [wordWrapEnabled]="true"
+          [hoverStateEnabled]="true" [focusedRowEnabled]="true" [focusedRowKey]="clavePendiente"
+          [selectedRowKeys]="clavePendiente ? [clavePendiente] : []" (onSelectionChanged)="marcarFila($event)">
+          <dxo-selection mode="single"></dxo-selection><dxo-scrolling mode="standard"></dxo-scrolling>
+          <dxo-search-panel [visible]="true" placeholder="Buscar beca o cuestionario" [width]="260"></dxo-search-panel>
+          <dxo-filter-row [visible]="true"></dxo-filter-row><dxo-paging [pageSize]="15"></dxo-paging>
+          <dxo-pager [visible]="true" [showInfo]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[15,30,50]"></dxo-pager>
+          <dxi-column dataField="NOMBRE_BECA" caption="Beca" [minWidth]="220"></dxi-column>
+          <dxi-column dataField="NOMBRE_FORMULARIO" caption="Cuestionario" [minWidth]="220"></dxi-column>
+          <dxi-column dataField="VERSION_FORMULARIO" caption="Versión" [width]="150"></dxi-column>
+          <dxi-column dataField="ESTADO_USO" caption="Estado" [width]="170"></dxi-column>
+          <dxi-column dataField="CANT_PREGUNTAS" caption="Preguntas" [width]="100"></dxi-column>
+          <dxi-column dataField="CANT_SOLICITUDES" caption="Solicitudes" [width]="110"></dxi-column>
+        </dx-data-grid>
+      </div>
+      <footer class="selector-footer">
+        <p class="selector-resumen">{{filaPendiente?.ETIQUETA || 'Marque una fila para seleccionarla.'}}</p>
+        <div class="acciones">
+          <dx-button text="Seleccionar" icon="check" type="default" [disabled]="!filaPendiente || loadingVisible || cambiosPendientes" (onClick)="confirmarSelector()"></dx-button>
+          <dx-button text="Cerrar" icon="close" (onClick)="cerrarSelector()"></dx-button>
+        </div>
+      </footer>
+    </div></div>
+  </dx-popup>
   <dx-load-panel [(visible)]="loadingVisible" [showIndicator]="true" [shading]="true"></dx-load-panel>
 </div>

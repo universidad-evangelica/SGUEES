@@ -13,6 +13,16 @@ namespace SGUEES.Services {
    if(operacion=="AGREGAR")data.ID=0;
    else if(data.ID<=0)return Task.FromResult(ValidationError("Seleccione el elemento que desea modificar."));
    if(data.FECHA_FIN<data.FECHA_INICIO)return Task.FromResult(ValidationError("La fecha fin no puede ser anterior al inicio."));
+   if(operacion!="QUITAR"&&data.ELEMENTO==BecaElemento.Seccion) {
+    if(!data.PUNTAJE_MAXIMO.HasValue||data.PUNTAJE_MAXIMO<0||decimal.Round(data.PUNTAJE_MAXIMO.Value,2)!=data.PUNTAJE_MAXIMO.Value)
+     return Task.FromResult(ValidationError("Indique un puntaje maximo no negativo, con hasta dos decimales."));
+    data.PORCENTAJE_SECCION=0;
+   }
+   if(operacion!="QUITAR"&&data.ELEMENTO==BecaElemento.Puntaje) {
+    if(!data.PUNTAJE.HasValue||data.PUNTAJE<0||decimal.Round(data.PUNTAJE.Value,2)!=data.PUNTAJE.Value)
+     return Task.FromResult(ValidationError("Indique un puntaje de respuesta no negativo, con hasta dos decimales."));
+    data.PORCENTAJE=0;
+   }
    return _repo.GuardarCuestionarioAsync(operacion,data,usuario,estacion);
   }
  }

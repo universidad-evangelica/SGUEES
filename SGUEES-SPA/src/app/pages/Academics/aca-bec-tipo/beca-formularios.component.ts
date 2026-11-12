@@ -16,8 +16,8 @@ import { DxFormComponent, DxFormModule } from 'devextreme-angular/ui/form';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
-import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
+import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -30,10 +30,10 @@ export interface BecaVersionContexto { formulario:number; version:number; }
 
 @Component({
   selector: 'app-beca-formularios', standalone: true,
-  imports: [BecaCuestionarioComponent, CommonModule, DxButtonModule, DxFormModule, DxSelectBoxModule, DxLoadPanelModule, DxDateBoxModule, DxTextAreaModule, DxTextBoxModule, DataGridMttoModule, BarraDataMttoModule],
+  imports: [BecaCuestionarioComponent, CommonModule, DxButtonModule, DxFormModule, DxSelectBoxModule, DxLoadPanelModule, DxDateBoxModule, DxTextAreaModule, DxTextBoxModule, DataGridMttoModule,BarraDataMttoModule],
   templateUrl: './beca-formularios.component.html',
   styles: [`.acciones { display:flex; flex-wrap:wrap; gap:12px; margin:16px 0; }
-    .descripcion { margin:12px 0; overflow-wrap:anywhere; } .bloque { margin-top:20px; }`],
+    .descripcion { margin:12px 0; overflow-wrap:anywhere; } h3{font-size:20px;line-height:1.4;margin:0 0 12px;}.bloque { margin-top:20px; }`],
 })
 export class BecaFormulariosComponent extends CBaseComponent implements OnChanges {
   @Input() corrBeca = 0;
@@ -124,7 +124,7 @@ export class BecaFormulariosComponent extends CBaseComponent implements OnChange
   seleccionarVersion(event: { row?: { data?: BecaVersion } }): void { this.versionSeleccionada = event.row?.data; }
   seleccionarAsignacion(event: { row?: { data?: BecaAsignacion } }): void { this.asignacionSeleccionada = event.row?.data; }
 
-  private accionRapida(tipo:BecaAccionRapida['tipo']):void {
+  private async accionRapida(tipo:BecaAccionRapida['tipo']):Promise<void> {
     this.modoSencillo=true;
     if(tipo==='crear'){
       this.editarFormulario(true);
@@ -134,6 +134,7 @@ export class BecaFormulariosComponent extends CBaseComponent implements OnChange
       this.formularioItems=this.formularioItems.filter(i=>!['CODIGO_FORMULARIO','VERSION_FORMULARIO'].includes(('dataField' in i?i.dataField:'')??''));
     }else if(tipo==='modificar'){
       if(this.versionSeleccionada?.ESTADO_VERSION==='BORRADOR'){this.abrirCuestionario();return;}
+      if(this.versionSeleccionada?.CANT_SOLICITUDES===0){await this.reabrirVersion();return;}
       if(!this.versionSeleccionada||!this.permiteAdd)return;
       this.editarVersion(true);
       if(this.edicion!=='CrearVersion')return;
@@ -159,6 +160,12 @@ export class BecaFormulariosComponent extends CBaseComponent implements OnChange
       cicloItem.editorOptions={...cicloItem.editorOptions,onValueChanged:()=>this.prepararAsignacionRapida()};
       this.prepararAsignacionRapida();
     }
+  }
+  async reabrirVersion():Promise<void> {
+    const version=this.versionSeleccionada;
+    if(!version||version.CANT_SOLICITUDES!==0||version.ESTADO_VERSION!=='PUBLICADA'||!this.permiteEdit||this.loadingVisible||this.edicion)return;
+    if(!await confirm('Se editará esta misma versión, sin crear una copia. Mientras esté en borrador dejará de estar disponible en todas las becas que la utilizan. Sus asignaciones se conservan y volverán a aplicarse al publicarla. ¿Desea continuar?','Modificar versión sin solicitudes'))return;
+    this.ejecutar('ReabrirVersion',{CORR_BECA:this.corrBeca,ID:version.CORR_FORMULARIO_VERSION,VERSION_REGISTRO:version.VERSION_REGISTRO});
   }
   private prepararAsignacionRapida():void {
     const ciclo=this.ciclos.find(c=>c.CORR_PERIODO_ACADEMICO===this.datos.CICLO);
@@ -216,7 +223,7 @@ export class BecaFormulariosComponent extends CBaseComponent implements OnChange
   async publicar(): Promise<void> {
     const v=this.versionSeleccionada;
     if (!this.permiteEdit || this.loadingVisible || this.edicion || v?.ESTADO_VERSION !== 'BORRADOR') return;
-    if (!await confirm('La versión quedará en solo lectura. Su asignación a la beca se realiza después. ¿Desea publicarla?','Publicar versión')) return;
+    if (!await confirm('La versión estará disponible para asignarla a becas. Cuando tenga solicitudes, quedará protegida contra cambios. ¿Desea publicarla?','Publicar versión')) return;
     this.ejecutar('PublicarVersion',{CORR_BECA:this.corrBeca,ID:v.CORR_FORMULARIO_VERSION,VERSION_REGISTRO:v.VERSION_REGISTRO});
   }
   async retirar(): Promise<void> {
@@ -248,6 +255,7 @@ export class BecaFormulariosComponent extends CBaseComponent implements OnChange
         if(accion==='CrearFormulario')this.formularioId=Number(result.CodeHelper);
         if(accion==='CrearFormularioVacio'){this.formularioId=Number((result.Data as BecaCuestionarioCreado).CORR_FORMULARIO_BECA);this.versionParaAbrir=Number(result.CodeHelper);}
         if(accion==='CrearVersion'){this.formularioId=data.CORR_FORMULARIO_BECA??this.formularioId;this.versionParaAbrir=Number(result.CodeHelper);}
+        if(accion==='ReabrirVersion')this.versionParaAbrir=data.ID;
         if(this.versionParaAbrir)this.versionActiva.emit({formulario:this.formularioId,version:this.versionParaAbrir});
         if(accion==='AsignarVersion'&&data.CORR_VERSION_ORIGEN){
           const version=this.versiones.find(v=>v.CORR_FORMULARIO_VERSION===data.CORR_VERSION_ORIGEN);
