@@ -1,7 +1,9 @@
 // Qué hace: repositorio de acceso a datos para GEN_PARAMETRO_PLANTILLA y su vista V_GEN_PARAMETRO_PLANTILLA.
 // Cómo lo hace: hereda de BaseRepository e implementa métodos asíncronos para CRUD con eFramework.
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
@@ -158,73 +160,221 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: actualiza una plantilla de correo existente.
-		// Cómo lo hace: ejecuta objData.Update filtrando por CORR_EMPRESA y CORR_PARAMETRO_PLANTILLA.
+		private const string SqlExprVersionConCuerpo = @"SUM(
+			CASE
+				WHEN LEN(LTRIM(RTRIM(
+					REPLACE(REPLACE(REPLACE(ISNULL(CUERPO_PLANTILLA, N''), N'<p><br></p>', N''), N'<p></p>', N''), N'&nbsp;', N'')
+				))) > 0 THEN 1
+				ELSE 0
+			END
+		)";
+
+		// Qué hace: determina si el cuerpo HTML de la plantilla contiene texto visible o imágenes reales.
+		// Cómo lo hace: descarta etiquetas vacías y entidades de espacio verificando texto residual o presencia de etiqueta img.
+		private static bool TieneContenidoHtml(string html)
+		{
+			if (string.IsNullOrWhiteSpace(html))
+			{
+				return false;
+			}
+
+			if (html.Contains("<img", StringComparison.OrdinalIgnoreCase))
+			{
+				return true;
+			}
+
+			var texto = Regex.Replace(html, @"<[^>]+>|&nbsp;", " ", RegexOptions.IgnoreCase);
+			return !string.IsNullOrWhiteSpace(texto);
+		}
+
+		// Qué hace: actualiza una plantilla de correo y gestiona la creación o sincronización de su versión activa.
+		// Cómo lo hace: dentro de transacción actualiza GEN_PARAMETRO_PLANTILLA, crea o completa v1 al salir de Borrador, impide vaciar una plantilla ya versionada y relee V_GEN_PARAMETRO_PLANTILLA.
 		public async Task<CResult> UpdateAsync(GEN_PARAMETRO_PLANTILLATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
+			bool tieneContenido = TieneContenidoHtml(Data.CUERPO_PLANTILLA);
+			string cuerpoNormalizado = tieneContenido ? Data.CUERPO_PLANTILLA : "";
+
+			string sql = $@"
+SET NOCOUNT ON;
+BEGIN TRY
+	BEGIN TRAN;
+
+	UPDATE dbo.GEN_PARAMETRO_PLANTILLA
+	SET CODIGO_PLANTILLA = @CODIGO_PLANTILLA,
+		NOMBRE_PLANTILLA = @NOMBRE_PLANTILLA,
+		ASUNTO_PLANTILLA = @ASUNTO_PLANTILLA,
+		CUERPO_PLANTILLA = @CUERPO_PLANTILLA,
+		CORR_PARAMETRO_SMTP = @CORR_PARAMETRO_SMTP,
+		CORREO_CC = @CORREO_CC,
+		CORREO_CCO = @CORREO_CCO,
+		CODIGO_SISTEMA = @CODIGO_SISTEMA,
+		CODIGO_OPCION = @CODIGO_OPCION,
+		ACTIVO_PLANTILLA = @ACTIVO_PLANTILLA,
+		USUARIO_ACTU = @USUARIO_ACTU,
+		ESTACION_ACTU = @ESTACION_ACTU,
+		FECHA_ACTU = @FECHA_ACTU
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA;
+
+	IF @@ROWCOUNT = 0
+	BEGIN
+		ROLLBACK TRAN;
+		SELECT -1 AS ESTADO_OP, N'No se encontró la plantilla de correo a actualizar.' AS MENSAJE;
+		RETURN;
+	END
+
+	DECLARE @TOTAL_VERSIONES INT = 0;
+	DECLARE @VERSIONES_CON_CUERPO INT = 0;
+	DECLARE @NUMERO_VERSION_VACIA INT = NULL;
+
+	SELECT
+		@TOTAL_VERSIONES = COUNT(*),
+		@VERSIONES_CON_CUERPO = {SqlExprVersionConCuerpo},
+		@NUMERO_VERSION_VACIA = MIN(NUMERO_VERSION)
+	FROM dbo.GEN_PARAMETRO_PLANTILLA_VERSION WITH (UPDLOCK, HOLDLOCK)
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA;
+
+	DECLARE @ES_BORRADOR BIT = CASE WHEN @TOTAL_VERSIONES = 0 OR (@TOTAL_VERSIONES = 1 AND ISNULL(@VERSIONES_CON_CUERPO, 0) = 0) THEN 1 ELSE 0 END;
+
+	IF @ES_BORRADOR = 0
+	BEGIN
+		IF @TIENE_CONTENIDO = 0
+		BEGIN
+			ROLLBACK TRAN;
+			SELECT -2 AS ESTADO_OP, N'La plantilla ya posee versiones registradas; el cuerpo del correo no puede quedar vacío.' AS MENSAJE;
+			RETURN;
+		END
+
+		UPDATE dbo.GEN_PARAMETRO_PLANTILLA_VERSION
+		SET ASUNTO_PLANTILLA = @ASUNTO_PLANTILLA,
+			CUERPO_PLANTILLA = @CUERPO_PLANTILLA,
+			CORREO_CC = @CORREO_CC,
+			CORREO_CCO = @CORREO_CCO,
+			USUARIO_ACTU = @USUARIO_ACTU,
+			ESTACION_ACTU = @ESTACION_ACTU,
+			FECHA_ACTU = @FECHA_ACTU
+		WHERE CORR_EMPRESA = @CORR_EMPRESA
+		  AND CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA
+		  AND ES_VERSION_ACTIVA = 1;
+	END
+	ELSE IF @TIENE_CONTENIDO = 1
+	BEGIN
+		IF @TOTAL_VERSIONES = 0
+		BEGIN
+			INSERT INTO dbo.GEN_PARAMETRO_PLANTILLA_VERSION
+			(
+				CORR_EMPRESA,
+				CORR_PARAMETRO_PLANTILLA,
+				NUMERO_VERSION,
+				ASUNTO_PLANTILLA,
+				CUERPO_PLANTILLA,
+				CORREO_CC,
+				CORREO_CCO,
+				ES_VERSION_ACTIVA,
+				MOTIVO_VERSION,
+				USUARIO_CREA,
+				ESTACION_CREA,
+				FECHA_CREA
+			)
+			VALUES
+			(
+				@CORR_EMPRESA,
+				@CORR_PARAMETRO_PLANTILLA,
+				1,
+				@ASUNTO_PLANTILLA,
+				@CUERPO_PLANTILLA,
+				@CORREO_CC,
+				@CORREO_CCO,
+				1,
+				N'Versión inicial de plantilla de correo.',
+				@USUARIO_ACTU,
+				@ESTACION_ACTU,
+				@FECHA_ACTU
+			);
+		END
+		ELSE
+		BEGIN
+			UPDATE dbo.GEN_PARAMETRO_PLANTILLA_VERSION
+			SET ASUNTO_PLANTILLA = @ASUNTO_PLANTILLA,
+				CUERPO_PLANTILLA = @CUERPO_PLANTILLA,
+				CORREO_CC = @CORREO_CC,
+				CORREO_CCO = @CORREO_CCO,
+				ES_VERSION_ACTIVA = 1,
+				USUARIO_ACTU = @USUARIO_ACTU,
+				ESTACION_ACTU = @ESTACION_ACTU,
+				FECHA_ACTU = @FECHA_ACTU
+			WHERE CORR_EMPRESA = @CORR_EMPRESA
+			  AND CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA
+			  AND NUMERO_VERSION = @NUMERO_VERSION_VACIA;
+		END
+	END
+
+	COMMIT TRAN;
+
+	SELECT 1 AS ESTADO_OP, N'' AS MENSAJE;
+
+	SELECT *
+	FROM dbo.V_GEN_PARAMETRO_PLANTILLA
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA;
+END TRY
+BEGIN CATCH
+	IF @@TRANCOUNT > 0
+		ROLLBACK TRAN;
+	THROW;
+END CATCH;";
 
 			try
 			{
 				var p = new List<CParameter>
 				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_PARAMETRO_PLANTILLA", Value = Data.CORR_PARAMETRO_PLANTILLA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CODIGO_PLANTILLA", Value = Data.CODIGO_PLANTILLA, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "NOMBRE_PLANTILLA", Value = Data.NOMBRE_PLANTILLA, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ASUNTO_PLANTILLA", Value = Data.ASUNTO_PLANTILLA, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "CUERPO_PLANTILLA", Value = Data.CUERPO_PLANTILLA, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CUERPO_PLANTILLA", Value = (object)cuerpoNormalizado ?? DBNull.Value, DbType = System.Data.DbType.String, Size = -1 },
+					new CParameter() { ParameterName = "TIENE_CONTENIDO", Value = tieneContenido, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "CORR_PARAMETRO_SMTP", Value = Data.CORR_PARAMETRO_SMTP, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "CORREO_CC", Value = Data.CORREO_CC, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "CORREO_CCO", Value = Data.CORREO_CCO, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "CODIGO_SISTEMA", Value = Data.CODIGO_SISTEMA, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "CODIGO_OPCION", Value = Data.CODIGO_OPCION, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CORREO_CC", Value = (object)Data.CORREO_CC ?? DBNull.Value, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CORREO_CCO", Value = (object)Data.CORREO_CCO ?? DBNull.Value, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CODIGO_SISTEMA", Value = (object)Data.CODIGO_SISTEMA ?? DBNull.Value, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CODIGO_OPCION", Value = (object)Data.CODIGO_OPCION ?? DBNull.Value, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ACTIVO_PLANTILLA", Value = Data.ACTIVO_PLANTILLA, DbType = System.Data.DbType.Boolean },
-					new CParameter() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "ESTACION_ACTU", Value = vESTACION, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "FECHA_ACTU", Value = System.DateTime.Now, DbType = System.Data.DbType.DateTime },
+					new CParameter() { ParameterName = "USUARIO_ACTU", Value = (object)vLOGIN_SISTEMA ?? DBNull.Value, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "ESTACION_ACTU", Value = (object)vESTACION ?? DBNull.Value, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "FECHA_ACTU", Value = DateTime.Now, DbType = System.Data.DbType.DateTime },
 				};
 
-				var pWhere = new List<CParameter>
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, p);
+				int estadoOp = 0;
+				string mensaje = "No se pudo actualizar la plantilla de correo.";
+				GEN_PARAMETRO_PLANTILLAView response = null;
+
+				if (reader.Read())
 				{
-					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "CORR_PARAMETRO_PLANTILLA", Value = Data.CORR_PARAMETRO_PLANTILLA, DbType = System.Data.DbType.Int32 },
-				};
+					estadoOp = Convert.ToInt32(reader["ESTADO_OP"]);
+					mensaje = reader["MENSAJE"]?.ToString() ?? "";
+				}
 
-				var reader = await objData.Update(_TableName, p, pWhere);
-				var response = new List<GEN_PARAMETRO_PLANTILLAView>().FromDataReader(reader).FirstOrDefault();
+				if (estadoOp == 1 && reader.NextResult())
+				{
+					response = new List<GEN_PARAMETRO_PLANTILLAView>().FromDataReader(reader).FirstOrDefault();
+				}
+
 				reader.Close();
 
-				// Qué hace: sincroniza los cambios de la plantilla en su versión activa histórica.
-				// Cómo lo hace: ejecuta un update en GEN_PARAMETRO_PLANTILLA_VERSION para la versión con ES_VERSION_ACTIVA = 1.
-				var pWhereVersionActiva = new List<CParameter>
-				{
-					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "CORR_PARAMETRO_PLANTILLA", Value = Data.CORR_PARAMETRO_PLANTILLA, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "ES_VERSION_ACTIVA", Value = true, DbType = System.Data.DbType.Boolean },
-				};
-
-				var pVersionActiva = new List<CParameter>
-				{
-					new CParameter() { ParameterName = "ASUNTO_PLANTILLA", Value = Data.ASUNTO_PLANTILLA, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "CUERPO_PLANTILLA", Value = Data.CUERPO_PLANTILLA, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "CORREO_CC", Value = Data.CORREO_CC, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "CORREO_CCO", Value = Data.CORREO_CCO, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "ESTACION_ACTU", Value = vESTACION, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "FECHA_ACTU", Value = System.DateTime.Now, DbType = System.Data.DbType.DateTime },
-				};
-
-				var readerVersion = await objData.Update("GEN_PARAMETRO_PLANTILLA_VERSION", pVersionActiva, pWhereVersionActiva);
-				readerVersion.Close();
-
-				objResultado.Data = response;
-				objResultado.Result = true;
-				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = 0;
-				objResultado.ErrorMessage = "";
+				objResultado.Data = estadoOp == 1 ? response : null;
+				objResultado.Result = estadoOp == 1;
+				objResultado.RowsAffected = estadoOp == 1 ? 1 : 0;
+				objResultado.CodeHelper = estadoOp == 1 ? Data.CORR_PARAMETRO_PLANTILLA : 0;
+				objResultado.ErrorCode = estadoOp == 1 ? 0 : -1;
+				objResultado.ErrorMessage = estadoOp == 1 ? "" : mensaje;
 				objResultado.ErrorSource = "";
 			}
-			catch (System.Exception e)
+			catch (Exception e)
 			{
 				objResultado.Data = null;
 				objResultado.Result = false;
@@ -241,31 +391,100 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: elimina una plantilla de correo por sus llaves.
-		// Cómo lo hace: ejecuta objData.Delete en GEN_PARAMETRO_PLANTILLA.
+		// Qué hace: elimina una plantilla únicamente cuando se encuentra en estado Borrador (sin versiones consolidadas).
+		// Cómo lo hace: valida dentro de transacción que no tenga versiones con cuerpo ni historial múltiple, borra posible versión v1 vacía y elimina GEN_PARAMETRO_PLANTILLA.
 		public async Task<CResult> DeleteAsync(GEN_PARAMETRO_PLANTILLATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
 
+			if (Data == null || Data.CORR_PARAMETRO_PLANTILLA <= 0)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = "Debe seleccionar la plantilla de correo a eliminar.";
+				return objResultado;
+			}
+
+			string sql = $@"
+SET NOCOUNT ON;
+BEGIN TRY
+	BEGIN TRAN;
+
+	IF NOT EXISTS (
+		SELECT 1
+		FROM dbo.GEN_PARAMETRO_PLANTILLA WITH (UPDLOCK, HOLDLOCK)
+		WHERE CORR_EMPRESA = @CORR_EMPRESA
+		  AND CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA
+	)
+	BEGIN
+		ROLLBACK TRAN;
+		SELECT 0 AS ELIMINADO, N'No se encontró la plantilla de correo a eliminar.' AS MENSAJE;
+		RETURN;
+	END
+
+	DECLARE @TOTAL_VERSIONES INT = 0;
+	DECLARE @VERSIONES_CON_CUERPO INT = 0;
+
+	SELECT
+		@TOTAL_VERSIONES = COUNT(*),
+		@VERSIONES_CON_CUERPO = {SqlExprVersionConCuerpo}
+	FROM dbo.GEN_PARAMETRO_PLANTILLA_VERSION WITH (UPDLOCK, HOLDLOCK)
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA;
+
+	IF @TOTAL_VERSIONES > 1 OR ISNULL(@VERSIONES_CON_CUERPO, 0) > 0
+	BEGIN
+		ROLLBACK TRAN;
+		SELECT -1 AS ELIMINADO, N'No se puede eliminar la plantilla porque ya tiene versiones registradas.' AS MENSAJE;
+		RETURN;
+	END
+
+	DELETE FROM dbo.GEN_PARAMETRO_PLANTILLA_VERSION
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA;
+
+	DELETE FROM dbo.GEN_PARAMETRO_PLANTILLA
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA;
+
+	COMMIT TRAN;
+	SELECT 1 AS ELIMINADO, N'' AS MENSAJE;
+END TRY
+BEGIN CATCH
+	IF @@TRANCOUNT > 0
+		ROLLBACK TRAN;
+	THROW;
+END CATCH;";
+
 			try
 			{
-				var pWhere = new List<CParameter>
+				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PARAMETRO_PLANTILLA", Value = Data.CORR_PARAMETRO_PLANTILLA, DbType = System.Data.DbType.Int32 },
 				};
 
-				await objData.Delete(_TableName, pWhere);
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, p);
+				int eliminado = 0;
+				string mensaje = "No se pudo eliminar la plantilla de correo.";
+
+				if (reader.Read())
+				{
+					eliminado = Convert.ToInt32(reader["ELIMINADO"]);
+					mensaje = reader["MENSAJE"]?.ToString() ?? "";
+				}
+				reader.Close();
 
 				objResultado.Data = null;
-				objResultado.Result = true;
-				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = 0;
-				objResultado.ErrorMessage = "";
+				objResultado.Result = eliminado == 1;
+				objResultado.RowsAffected = eliminado == 1 ? 1 : 0;
+				objResultado.CodeHelper = eliminado == 1 ? Data.CORR_PARAMETRO_PLANTILLA : 0;
+				objResultado.ErrorCode = eliminado == 1 ? 0 : -1;
+				objResultado.ErrorMessage = eliminado == 1 ? "" : mensaje;
 				objResultado.ErrorSource = "";
 			}
-			catch (System.Exception e)
+			catch (Exception e)
 			{
 				objResultado.Data = null;
 				objResultado.Result = false;

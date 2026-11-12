@@ -3,7 +3,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
-import { confirm, custom } from 'devextreme/ui/dialog';
+import { custom } from 'devextreme/ui/dialog';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -77,8 +77,17 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		private versionService: GenParametroPlantillaVersionService
 	) {
 		super(appInfoService, router);
+		this.getPermiteDele = this.getPermiteDele.bind(this);
 		this.columns = this.service.getColumns();
 		this.model = this.fillData();
+	}
+
+	// Qué hace: controla por fila la visibilidad del botón Eliminar en la grilla principal.
+	// Cómo lo hace: solo permite eliminar cuando el usuario tiene permiso y la plantilla está en Borrador (sin versiones consolidadas).
+	override getPermiteDele(e: any): boolean {
+		const rowData = e?.row?.data ?? e?.data;
+		const tieneVersiones = Number(rowData?.CANT_VERSIONES ?? 0) > 0;
+		return this.permiteDele && !tieneVersiones;
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -124,6 +133,9 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 				CODIGO_OPCION: xModel.CODIGO_OPCION ?? null,
 				NOMBRE_OPCION: xModel.NOMBRE_OPCION ?? '',
 				ACTIVO_PLANTILLA: xModel.ACTIVO_PLANTILLA !== undefined ? xModel.ACTIVO_PLANTILLA : true,
+				CANT_VERSIONES: Number(xModel.CANT_VERSIONES ?? 0),
+				NUMERO_VERSION_ACTIVA: xModel.NUMERO_VERSION_ACTIVA ?? null,
+				ESTADO_PLANTILLA: xModel.ESTADO_PLANTILLA ?? this.service.resolverEstadoPlantilla(xModel),
 				CORREO_REMITENTE: xModel.CORREO_REMITENTE ?? '',
 				USUARIO_REMITENTE: xModel.USUARIO_REMITENTE ?? '',
 				USUARIO_CREA: xModel.USUARIO_CREA,
@@ -150,6 +162,9 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 			CODIGO_OPCION: null,
 			NOMBRE_OPCION: '',
 			ACTIVO_PLANTILLA: true,
+			CANT_VERSIONES: 0,
+			NUMERO_VERSION_ACTIVA: null,
+			ESTADO_PLANTILLA: 'Borrador',
 			CORREO_REMITENTE: '',
 			USUARIO_REMITENTE: '',
 			USUARIO_CREA: '',
@@ -483,36 +498,39 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		if (tablasRaizAzules.length > 0) {
 			const tablaEncabezado = tablasRaizAzules[0];
 			const imgEl = tablaEncabezado.querySelector('img');
+			// Qué hace: garantiza un logo válido y una cabecera plana compatible con correos y Quill.
+			// Cómo lo hace: valida el src existente contra rutas locales o base64 truncado y usa una tabla de 1 fila y 2 celdas sin anidación.
+			const srcOriginal = (imgEl?.getAttribute('src') || '').trim();
+			const esLogoInvalido =
+				!srcOriginal ||
+				srcOriginal.includes('assets/img/logo-xx') ||
+				(srcOriginal.startsWith('data:image/png;base64,') && srcOriginal.length < 6000);
+			const logoSrc = esLogoInvalido ? this.service.obtenerLogoInstitucionalDataUri() : srcOriginal;
+
 			const headerWrapper = document.createElement('div');
 			headerWrapper.innerHTML = `<table class="plantilla-uees-table tabla-encabezado" data-tipo="encabezado" align="center" width="680" cellpadding="0" cellspacing="0" border="0" bgcolor="#063b79" style="width:100%; max-width:680px; border-collapse:collapse; background-color:#063b79; margin:0 auto;">
   <tbody>
     <tr>
-      <td class="header" bgcolor="#063b79" style="padding:28px 35px 24px 35px; border-bottom:6px solid #ffcc00; background-color:#063b79; font-family:Arial, Helvetica, sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
-          <tr>
-            <td width="115" valign="middle" align="center" style="width:115px; vertical-align:middle; text-align:center; padding:0; border:none;">
-              <p style="margin:0; text-align:center; font-family:Arial, Helvetica, sans-serif;">
-                <img src="assets/img/logo-xx.png" alt="Logo UEES" width="95" height="77" style="width:95px; height:auto; max-width:100%; display:block; margin:0 auto; border:none;">
-              </p>
-            </td>
-            <td valign="middle" align="left" style="vertical-align:middle; text-align:left; border:none; border-left:2px solid #ffffff; padding:0 0 0 22px; font-family:Arial, Helvetica, sans-serif;">
-              <p style="margin:0 0 3px 0; color:#ffffff; font-size:20px; line-height:26px; font-weight:bold; letter-spacing:0.5px; text-align:left; font-family:Arial, Helvetica, sans-serif;">
-                UNIVERSIDAD EVANGÉLICA
-              </p>
-              <p style="margin:0; color:#ffffff; font-size:20px; line-height:26px; font-weight:bold; letter-spacing:0.5px; text-align:left; font-family:Arial, Helvetica, sans-serif;">
-                DE EL SALVADOR
-              </p>
-            </td>
-          </tr>
-        </table>
+      <td class="header" width="145" valign="middle" align="center" bgcolor="#063b79" style="width:145px; padding:24px 16px 20px 28px; vertical-align:middle; text-align:center; background-color:#063b79; border:none; border-bottom:6px solid #ffcc00;">
+        <p style="margin:0; text-align:center; font-family:Arial, Helvetica, sans-serif;">
+          <img alt="Logo UEES" width="95" height="77" style="width:95px; height:auto; max-width:100%; display:block; margin:0 auto; border:none;">
+        </p>
+      </td>
+      <td class="header" valign="middle" align="left" bgcolor="#063b79" style="padding:24px 28px 20px 22px; vertical-align:middle; text-align:left; background-color:#063b79; border:none; border-left:2px solid #ffffff; border-bottom:6px solid #ffcc00; font-family:Arial, Helvetica, sans-serif;">
+        <p style="margin:0 0 3px 0; color:#ffffff; font-size:20px; line-height:26px; font-weight:bold; letter-spacing:0.5px; text-align:left; font-family:Arial, Helvetica, sans-serif;">
+          UNIVERSIDAD EVANGÉLICA
+        </p>
+        <p style="margin:0; color:#ffffff; font-size:20px; line-height:26px; font-weight:bold; letter-spacing:0.5px; text-align:left; font-family:Arial, Helvetica, sans-serif;">
+          DE EL SALVADOR
+        </p>
       </td>
     </tr>
   </tbody>
 </table>`;
 			const nuevaImg = headerWrapper.querySelector('img');
-			if (nuevaImg && imgEl) {
-				nuevaImg.setAttribute('src', imgEl.getAttribute('src') || 'assets/img/logo-xx.png');
-				nuevaImg.setAttribute('alt', imgEl.getAttribute('alt') || 'Logo UEES');
+			if (nuevaImg) {
+				nuevaImg.setAttribute('src', logoSrc);
+				nuevaImg.setAttribute('alt', imgEl?.getAttribute('alt') || 'Logo UEES');
 			}
 			if (headerWrapper.firstElementChild) {
 				tablaEncabezado.replaceWith(headerWrapper.firstElementChild);
@@ -548,73 +566,90 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		return contenedor.innerHTML;
 	}
 
-	// Qué hace: ejecuta la persistencia de la plantilla (insert o update) y mantiene el parche en memoria.
-	// Cómo lo hace: inserta o actualiza según esNuevo, crea automáticamente la versión 1 inicial y refresca la lista local sin GetAll.
+	// Qué hace: actualiza o inserta en memoria una plantilla dentro del listado principal sin recargar con GetAll.
+	// Cómo lo hace: genera una nueva referencia de this.models y ordena por correlativo descendente para compatibilidad con OnPush.
+	private sincronizarFilaEnGrid(registro: GenParametroPlantilla, esNuevo: boolean): void {
+		const modelo = this.fillData(registro);
+		if (esNuevo) {
+			this.models = [modelo, ...(this.models || [])];
+		} else {
+			const idx = (this.models || []).findIndex(
+				(m) => m.CORR_PARAMETRO_PLANTILLA === modelo.CORR_PARAMETRO_PLANTILLA
+			);
+			if (idx !== -1) {
+				this.models = this.models.map((item, i) => (i === idx ? modelo : item));
+			}
+		}
+		this.ordenarModelsPorCorr();
+	}
+
+	// Qué hace: retira de memoria el registro eliminado sin recargar con GetAll.
+	// Cómo lo hace: genera un nuevo arreglo filtrando CORR_PARAMETRO_PLANTILLA para actualizar la vista OnPush.
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		if (!Array.isArray(this.models)) {
+			super.quitarRegistroDeGrid(keyValue);
+			return;
+		}
+		this.models = this.models.filter((m) => m.CORR_PARAMETRO_PLANTILLA !== keyValue);
+	}
+
+	// Qué hace: ejecuta la persistencia de la plantilla (insert en Borrador o update con promoción a v1) y mantiene el parche en memoria.
+	// Cómo lo hace: en alta guarda solo cabecera como Borrador y pasa a modo edición; en edición valida cuerpo cuando ya posee versiones, actualiza mediante el API y refresca this.models en memoria.
 	private ejecutarGuardado(esNuevo: boolean): void {
 		this.model.CUERPO_PLANTILLA = this.normalizarHtmlParaPersistencia(this.model.CUERPO_PLANTILLA);
+
 		if (esNuevo) {
 			this.service.insert(this.model).subscribe({
 				next: (response) => {
 					if (!response?.Result) {
-						this.notifyFx(response?.ErrorMessage || 'Error al guardar la plantilla.', NotifyType.Error);
+						this.notifyApiResponse(response);
 						return;
 					}
 					const registroGuardado = response.Data ?? this.model;
 					this.model = this.fillData(registroGuardado);
-
-					// Crear automáticamente la Versión 1 inicial
-					const versionInicial: GenParametroPlantillaVersion = {
-						CORR_EMPRESA: this.model.CORR_EMPRESA,
-						CORR_PARAMETRO_PLANTILLA: this.model.CORR_PARAMETRO_PLANTILLA,
-						NUMERO_VERSION: 1,
-						ASUNTO_PLANTILLA: this.model.ASUNTO_PLANTILLA,
-						CUERPO_PLANTILLA: this.model.CUERPO_PLANTILLA,
-						CORREO_CC: this.model.CORREO_CC,
-						CORREO_CCO: this.model.CORREO_CCO,
-						ES_VERSION_ACTIVA: true,
-						MOTIVO_VERSION: 'Versión inicial de plantilla de correo.',
-					};
-
-					this.versionService.crearVersion(versionInicial).subscribe({
-						next: () => {
-							this.cargarVersiones(this.model.CORR_PARAMETRO_PLANTILLA);
-						}
-					});
-
-					this.models = [this.model, ...(this.models || [])];
-					this.ordenarModelsPorCorr();
-					this.notifyFx('Plantilla de correo guardada con éxito.', NotifyType.Success);
-					this.AsignaStatus(UpdateType.Browse);
+					this.modelUpdate = this.fillData(this.model);
+					this.versiones = [];
+					this.versionSeleccionada = null;
+					this.sincronizarFilaEnGrid(this.model, true);
+					this.AsignaStatus(UpdateType.Update);
+					this.notifyFx(
+						'Plantilla guardada en borrador. Redacte el contenido del correo y guarde para generar la Versión 1.',
+						NotifyType.Success,
+						{ raw: true }
+					);
 				},
 				error: (err) => {
-					this.notifyFx(err?.message || 'Error al persistir la plantilla.', NotifyType.Error);
-				}
-			});
-		} else {
-			// En edición, actualizar plantilla y reflejar en memoria
-			this.service.update(this.model).subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyFx(response?.ErrorMessage || 'Error al actualizar la plantilla.', NotifyType.Error);
-						return;
-					}
-					const registroActualizado = response.Data ?? this.model;
-					this.model = this.fillData(registroActualizado);
-
-					const idx = this.models.findIndex(m => m.CORR_PARAMETRO_PLANTILLA === this.model.CORR_PARAMETRO_PLANTILLA);
-					if (idx !== -1) {
-						this.models[idx] = { ...this.model };
-						this.models = [...this.models];
-					}
-
-					this.notifyFx('Plantilla de correo actualizada con éxito.', NotifyType.Success);
-					this.AsignaStatus(UpdateType.Browse);
+					this.notifyApiError(err);
 				},
-				error: (err) => {
-					this.notifyFx(err?.message || 'Error al persistir cambios en la plantilla.', NotifyType.Error);
-				}
 			});
+			return;
 		}
+
+		if (this.tienePrimeraVersionGuardada() && !this.service.tieneContenidoHtml(this.model.CUERPO_PLANTILLA)) {
+			this.notifyFx(
+				'La plantilla ya posee versiones registradas; el cuerpo del correo no puede quedar vacío.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		this.service.update(this.model).subscribe({
+			next: (response) => {
+				if (!response?.Result) {
+					this.notifyApiResponse(response);
+					return;
+				}
+				const registroActualizado = response.Data ?? this.model;
+				this.model = this.fillData(registroActualizado);
+				this.sincronizarFilaEnGrid(this.model, false);
+				this.notifyFx('Plantilla de correo actualizada con éxito.', NotifyType.Success, { raw: true });
+				this.AsignaStatus(UpdateType.Browse);
+			},
+			error: (err) => {
+				this.notifyApiError(err);
+			},
+		});
 	}
 
 	override cancelar(): void {
@@ -622,34 +657,58 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		this.AsignaStatus(UpdateType.Browse);
 	}
 
+	// Qué hace: elimina un borrador de plantilla tras verificar que no posee versiones consolidadas y solicitar una única confirmación.
+	// Cómo lo hace: cancela el borrado nativo de DevExtreme, bloquea registros con versiones reales, confirma con confirmaAccion y usa ejecutarDelete retirando la fila en memoria.
 	rowRemoving(e: any): void {
 		e.cancel = true;
-		const row = e.data;
-		confirm('¿Está seguro de eliminar esta plantilla de correo?', 'Confirmación').then((ok) => {
-			if (!ok) return;
-			this.service.delete(row).subscribe({
-				next: (res) => {
-					if (res?.Result) {
-						this.models = this.models.filter(m => m.CORR_PARAMETRO_PLANTILLA !== row.CORR_PARAMETRO_PLANTILLA);
-						this.notifyFx('Plantilla eliminada con éxito.', NotifyType.Success);
-					} else {
-						this.notifyFx(res?.ErrorMessage || 'No se pudo eliminar la plantilla.', NotifyType.Error);
-					}
-				},
-				error: (err) => {
-					this.notifyFx(err?.message || 'Error al eliminar la plantilla.', NotifyType.Error);
-				}
-			});
-		});
+		const row = e?.data;
+		if (!row) return;
+
+		if (Number(row.CANT_VERSIONES ?? 0) > 0) {
+			this.notifyFx(
+				'No se puede eliminar la plantilla porque ya tiene versiones registradas.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		const etiqueta = row.CODIGO_PLANTILLA || row.NOMBRE_PLANTILLA || 'seleccionada';
+		this.confirmaAccion(
+			'Eliminar Borrador',
+			`¿Está seguro de eliminar el borrador de la plantilla "${etiqueta}"?`,
+			() => {
+				this.ejecutarDelete({
+					deleteFn: () => this.service.delete(row),
+					onSuccess: () => this.quitarRegistroDeGrid(row.CORR_PARAMETRO_PLANTILLA),
+					rowRemovingEvent: e,
+					successMessage: 'Plantilla eliminada con éxito.',
+				});
+			}
+		);
 	}
 
 	// === CONTROL DE VERSIONES ===
 
+	// Qué hace: determina si la plantilla cuenta con al menos una versión consolidada con contenido real.
+	// Cómo lo hace: valida CORR_PARAMETRO_PLANTILLA > 0 y comprueba versiones cargadas con cuerpo (o CANT_VERSIONES > 0), manteniendo en Borrador una v1 vacía.
 	tienePrimeraVersionGuardada(): boolean {
-		return !!this.model?.CORR_PARAMETRO_PLANTILLA &&
-			this.model.CORR_PARAMETRO_PLANTILLA > 0 &&
-			Array.isArray(this.versiones) &&
-			this.versiones.length > 0;
+		if (!this.model?.CORR_PARAMETRO_PLANTILLA || this.model.CORR_PARAMETRO_PLANTILLA <= 0) {
+			return false;
+		}
+		if (Array.isArray(this.versiones) && this.versiones.length > 0) {
+			if (this.versiones.length > 1) {
+				return true;
+			}
+			return this.service.tieneContenidoHtml(this.versiones[0]?.CUERPO_PLANTILLA);
+		}
+		return Number(this.model.CANT_VERSIONES ?? 0) > 0;
+	}
+
+	// Qué hace: determina si la plantilla ya fue guardada en BD pero continúa en estado Borrador sin versión consolidada.
+	// Cómo lo hace: combina esCabeceraBloqueada con la ausencia de versiones con contenido.
+	esBorradorGuardado(): boolean {
+		return this.esCabeceraBloqueada() && !this.tienePrimeraVersionGuardada();
 	}
 
 	esVersionActivaSeleccionada(): boolean {
@@ -691,7 +750,9 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		return `Versión ${item.NUMERO_VERSION}${estado}${fecha}`;
 	};
 
-	cargarVersiones(corrParametroPlantilla: number): void {
+	// Qué hace: Carga el historial de versiones de la plantilla seleccionada y, si se solicita, sincroniza el maestro en memoria
+	// Cómo lo hace: Llama al servicio de versiones, selecciona la versión activa y actualiza contadores/estado sin recargar todo el grid
+	cargarVersiones(corrParametroPlantilla: number, sincronizarGrid = false): void {
 		this.cargandoVersiones = true;
 		this.versionService.getAll(corrParametroPlantilla).subscribe({
 			next: (res) => {
@@ -700,6 +761,19 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 					this.versiones = res.Data;
 					const activa = this.versiones.find(v => v.ES_VERSION_ACTIVA);
 					this.versionSeleccionada = activa || this.versiones[0] || null;
+					if (sincronizarGrid && this.model && this.model.CORR_PARAMETRO_PLANTILLA === corrParametroPlantilla) {
+						const versionesConsolidadas = this.versiones.filter(v => this.service.tieneContenidoHtml(v.CUERPO_PLANTILLA));
+						this.model.CANT_VERSIONES = versionesConsolidadas.length;
+						this.model.NUMERO_VERSION_ACTIVA = activa ? activa.NUMERO_VERSION : (this.model.NUMERO_VERSION_ACTIVA ?? null);
+						this.model.ESTADO_PLANTILLA = this.service.resolverEstadoPlantilla(this.model);
+						if (activa) {
+							this.model.ASUNTO_PLANTILLA = activa.ASUNTO_PLANTILLA;
+							this.model.CUERPO_PLANTILLA = activa.CUERPO_PLANTILLA;
+							this.model.CORREO_CC = activa.CORREO_CC ?? '';
+							this.model.CORREO_CCO = activa.CORREO_CCO ?? '';
+						}
+						this.sincronizarFilaEnGrid(this.model, false);
+					}
 				} else {
 					this.versiones = [];
 					this.versionSeleccionada = null;
@@ -736,11 +810,18 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		this.motivoNuevaVersion = '';
 	}
 
+	// Qué hace: Crea una nueva versión consolidada a partir del contenido del editor y actualiza el grid maestro en memoria
+	// Cómo lo hace: Valida motivo y cuerpo HTML, invoca crearVersion, recarga versiones y sincroniza la fila sin GetAll del maestro
 	confirmarNuevaVersion(): void {
 		if (!this.versionService.esValidaNuevaVersion(this.motivoNuevaVersion, this.notifyFx.bind(this))) return;
 
-		this.guardandoNuevaVersion = true;
 		const cuerpoNormalizado = this.normalizarHtmlParaPersistencia(this.model.CUERPO_PLANTILLA);
+		if (!this.service.tieneContenidoHtml(cuerpoNormalizado)) {
+			this.notifyFx('Debe redactar el contenido del correo antes de crear una nueva versión.', NotifyType.Error);
+			return;
+		}
+
+		this.guardandoNuevaVersion = true;
 		this.model.CUERPO_PLANTILLA = cuerpoNormalizado;
 		const nuevaVersionPayload: GenParametroPlantillaVersion = {
 			CORR_EMPRESA: this.model.CORR_EMPRESA,
@@ -760,41 +841,46 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 				if (res?.Result) {
 					this.cerrarModalNuevaVersion();
 					this.notifyFx('Nueva versión creada y establecida como activa.', NotifyType.Success);
-					this.cargarVersiones(this.model.CORR_PARAMETRO_PLANTILLA);
+					this.cargarVersiones(this.model.CORR_PARAMETRO_PLANTILLA, true);
 				} else {
-					this.notifyFx(res?.ErrorMessage || 'Error al crear la nueva versión.', NotifyType.Error);
+					this.notifyApiResponse(res);
 				}
 			},
 			error: (err) => {
 				this.guardandoNuevaVersion = false;
-				this.notifyFx(err?.message || 'Error al procesar la nueva versión.', NotifyType.Error);
+				this.notifyApiError(err);
 			}
 		});
 	}
 
+	// Qué hace: Activa una versión histórica como vigente de envío y actualiza el registro maestro en memoria
+	// Cómo lo hace: Pide confirmación con confirmaAccion, ejecuta activarVersion y sincroniza versiones/grid en memoria
 	activarVersionSeleccionada(): void {
 		if (!this.versionSeleccionada || this.versionSeleccionada.ES_VERSION_ACTIVA) return;
 
-		confirm(`¿Desea activar la Versión ${this.versionSeleccionada.NUMERO_VERSION} como la versión vigente de envío?`, 'Activar Versión').then((ok) => {
-			if (!ok) return;
-			this.activandoVersion = true;
-			this.versionService.activarVersion(this.model.CORR_PARAMETRO_PLANTILLA, this.versionSeleccionada!.NUMERO_VERSION).subscribe({
-				next: (res) => {
-					this.activandoVersion = false;
-					if (res?.Result) {
-						this.notifyFx(`Versión ${this.versionSeleccionada!.NUMERO_VERSION} activada con éxito.`, NotifyType.Success);
-						this.cargarVersiones(this.model.CORR_PARAMETRO_PLANTILLA);
-					} else {
-						this.notifyFx(res?.ErrorMessage || 'Error al activar la versión.', NotifyType.Error);
+		const numeroVersion = this.versionSeleccionada.NUMERO_VERSION;
+		this.confirmaAccion(
+			'Activar Versión',
+			`¿Desea activar la Versión ${numeroVersion} como la versión vigente de envío?`,
+			() => {
+				this.activandoVersion = true;
+				this.versionService.activarVersion(this.model.CORR_PARAMETRO_PLANTILLA, numeroVersion).subscribe({
+					next: (res) => {
+						this.activandoVersion = false;
+						if (res?.Result) {
+							this.notifyFx(`Versión ${numeroVersion} activada con éxito.`, NotifyType.Success);
+							this.cargarVersiones(this.model.CORR_PARAMETRO_PLANTILLA, true);
+						} else {
+							this.notifyApiResponse(res);
+						}
+					},
+					error: (err) => {
+						this.activandoVersion = false;
+						this.notifyApiError(err);
 					}
-				},
-				error: (err) => {
-					this.activandoVersion = false;
-					this.notifyFx(err?.message || 'Error al activar la versión.', NotifyType.Error);
-				}
-			});
-		});
-
+				});
+			}
+		);
 	}
 
 	cargarFormatoBaseUEES(): void {

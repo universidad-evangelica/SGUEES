@@ -20,12 +20,19 @@
 
 	<!-- motivo: tarjeta de formulario para creación y edición de plantilla con editor y versiones -->
 	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
-		<!-- motivo: barra de versiones y acciones de historial visible si ya existe una versión guardada -->
-		<div class="plantilla-toolbar-container" *ngIf="tienePrimeraVersionGuardada() || (!tieneModuloYProcesoFijado() && !cargandoVersiones)">
+		<!-- motivo: barra de versiones y avisos según estado nuevo, borrador o versionado -->
+		<div class="plantilla-toolbar-container" *ngIf="tienePrimeraVersionGuardada() || (!cargandoVersiones && (!tieneModuloYProcesoFijado() || esBorradorGuardado()))">
 			<div class="version-alert-banner" style="background-color: #eff6ff; border-color: #3b82f6; color: #1e40af; width: 100%; margin: 0;" *ngIf="!tieneModuloYProcesoFijado() && !cargandoVersiones">
 				<i class="dx-icon-info" style="color: #2563eb;"></i>
 				<span>
 					Guarde la información principal para fijar el módulo y habilitar la redacción del correo en el editor.
+				</span>
+			</div>
+
+			<div class="version-alert-banner" style="background-color: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.45); color: #d97706; width: 100%; margin: 0;" *ngIf="esBorradorGuardado() && !cargandoVersiones">
+				<i class="dx-icon-info" style="color: #f59e0b;"></i>
+				<span>
+					Plantilla en borrador: redacte el contenido del correo y guarde para generar la Versión 1.
 				</span>
 			</div>
 
@@ -245,6 +252,7 @@
 		[permitePrint]="permitePrint"
 		[permiteEditar]="getPermiteEditar"
 		[permiteDele]="getPermiteDele"
+		[confirmDelete]="false"
 		[wordWrapEnabled]="true"
 		(rowDblClick)="rowDblClick($event)"
 		(editClick)="onEditClick($event)"

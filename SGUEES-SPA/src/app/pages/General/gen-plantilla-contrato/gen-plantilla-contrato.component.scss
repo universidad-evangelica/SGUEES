@@ -1,0 +1,531 @@
+// Qué hace: estilos locales del mantenimiento y editor de Plantillas de Contratos.
+// Cómo lo hace: estiliza la validación del lookup, distribuye en dos columnas parámetros/editor y compacta la barra de herramientas e iconos de dx-html-editor.
+
+:host ::ng-deep .tipo-contratacion-lookup-field--invalid .dx-dropdownbox.dx-texteditor {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .tipo-contratacion-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .tipo-contratacion-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-focused {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .tipo-contratacion-lookup-field--invalid .dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon {
+	color: var(--error-color, #d9534f);
+}
+
+// Contenedor de pestañas justo debajo de los campos superiores del encabezado.
+.contrato-tab-panel {
+	margin-top: 12px;
+	padding-top: 8px;
+	border-top: 1px solid var(--border-color, rgba(148, 163, 184, 0.25));
+}
+
+.contrato-bitacora-panel {
+	padding-top: 10px;
+
+	::ng-deep .dx-datagrid-rowsview td {
+		white-space: pre-line;
+	}
+}
+
+// Distribución compacta de dos columnas: panel lateral de parámetros + lienzo dx-html-editor con misma altura.
+.contrato-editor-layout {
+	display: grid;
+	grid-template-columns: 280px minmax(0, 1fr);
+	gap: 12px;
+	padding-top: 10px;
+	align-items: stretch;
+}
+
+.contrato-params-panel {
+	border: 1px solid var(--border-color, rgba(148, 163, 184, 0.3));
+	border-radius: 8px;
+	padding: 12px;
+	background-color: var(--base-bg, transparent);
+	height: 580px;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+}
+
+.contrato-params-panel__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.contrato-params-panel__title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.contrato-params-panel__hint {
+	margin: 0 0 8px;
+	font-size: 11.5px;
+	opacity: 0.78;
+	line-height: 1.35;
+
+	code {
+		color: #38bdf8;
+		font-weight: 600;
+	}
+}
+
+.contrato-params-groups {
+	margin-top: 10px;
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding-right: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.contrato-params-group {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.contrato-params-group__title {
+	font-size: 10.5px;
+	font-weight: 700;
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+	opacity: 0.7;
+}
+
+.contrato-param-chip {
+	width: 100%;
+	text-align: left;
+	font-family: 'Consolas', 'Courier New', monospace;
+	font-size: 11.5px;
+	font-weight: 600;
+	padding: 6px 9px;
+	border-radius: 6px;
+	border: 1px solid rgba(56, 189, 248, 0.35);
+	background-color: rgba(14, 165, 233, 0.08);
+	color: var(--accent-color, #0284c7);
+	cursor: pointer;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+	word-break: break-word;
+
+	&:hover:not(:disabled) {
+		border-color: #38bdf8;
+		background-color: rgba(14, 165, 233, 0.18);
+	}
+
+	&:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+}
+
+.contrato-params-empty {
+	padding: 14px 8px;
+	text-align: center;
+	font-size: 12px;
+	opacity: 0.7;
+}
+
+// Contenedor derecho sin padding extra y compactación del toolbar/iconos de dx-html-editor.
+.contrato-canvas-panel {
+	padding: 0;
+	border: none;
+	background: transparent;
+	height: 580px;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+
+	dx-html-editor {
+		flex: 1;
+		min-height: 0;
+	}
+
+	::ng-deep .dx-htmleditor {
+		border: 1px solid var(--border-color, rgba(148, 163, 184, 0.3)) !important;
+		border-radius: 8px !important;
+		overflow: hidden;
+
+		.dx-htmleditor-content {
+			overflow-x: hidden !important;
+			overflow-y: auto !important;
+
+			&::after {
+				content: '';
+				display: table;
+				clear: both;
+			}
+
+			img {
+				max-width: 100%;
+				cursor: grab;
+
+				&:active {
+					cursor: grabbing;
+				}
+			}
+
+			img[style*='float: right'],
+			img[style*='float:right'] {
+				margin: 0 0 8px 14px;
+			}
+
+			img[style*='float: left'],
+			img[style*='float:left'] {
+				margin: 0 14px 8px 0;
+			}
+
+			table {
+				width: 100% !important;
+				max-width: 100% !important;
+				table-layout: fixed !important;
+				box-sizing: border-box !important;
+			}
+
+			td,
+			th {
+				word-break: break-word;
+				overflow-wrap: anywhere;
+			}
+
+			table[style*='border-style: none'],
+			table[style*='border-style:none'],
+			table[style*='border-top-style: none'],
+			table[style*='border-top-style:none'],
+			table[style*='border-width: 0px'],
+			table[style*='border-width:0px'] {
+				border: none !important;
+
+				td,
+				th {
+					border: none !important;
+				}
+			}
+		}
+
+		.dx-htmleditor-toolbar-wrapper {
+			padding: 0 !important;
+			margin: 0 !important;
+			width: 100% !important;
+		}
+
+		.dx-htmleditor-toolbar {
+			width: 100% !important;
+			margin: 0 !important;
+			padding: 4px 8px !important;
+			border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.25)) !important;
+			box-sizing: border-box !important;
+
+			.dx-toolbar-items-container {
+				width: 100% !important;
+				height: auto !important;
+				padding: 0 !important;
+			}
+
+			.dx-toolbar-before {
+				display: flex !important;
+				align-items: center !important;
+				justify-content: flex-start !important;
+				flex-wrap: wrap !important;
+				gap: 2px !important;
+				width: 100% !important;
+				padding: 0 !important;
+			}
+
+			.dx-toolbar-item {
+				flex: 0 0 auto !important;
+				padding: 0 !important;
+				margin: 0 !important;
+				min-width: auto !important;
+			}
+
+			.dx-button {
+				height: 24px !important;
+				min-height: 24px !important;
+				max-height: 24px !important;
+				min-width: 24px !important;
+				padding: 0 4px !important;
+				border-radius: 4px !important;
+
+				&.dx-button-has-icon:not(.dx-button-has-text) {
+					width: 24px !important;
+					padding: 0 !important;
+				}
+
+				.dx-button-content {
+					padding: 0 !important;
+					height: 22px !important;
+					min-height: 22px !important;
+					display: flex !important;
+					align-items: center !important;
+					justify-content: center !important;
+					gap: 4px !important;
+				}
+
+				.dx-icon {
+					font-size: 13px !important;
+					width: 14px !important;
+					height: 14px !important;
+					line-height: 14px !important;
+				}
+
+				.dx-button-text {
+					font-size: 11px !important;
+					line-height: 14px !important;
+				}
+			}
+
+			.contrato-toolbar-firmas-btn,
+			.contrato-toolbar-limpiar-btn {
+				width: auto !important;
+				padding: 0 6px !important;
+
+				.dx-button-content {
+					padding: 0 2px !important;
+				}
+			}
+
+			.contrato-toolbar-dropdown-btn {
+				height: 24px !important;
+
+				.dx-button {
+					width: auto !important;
+					height: 24px !important;
+					min-height: 24px !important;
+					padding: 0 6px !important;
+
+					&.dx-dropdownbutton-toggle {
+						width: 24px !important;
+						padding: 0 !important;
+					}
+
+					.dx-button-content {
+						padding: 0 2px !important;
+						gap: 4px !important;
+					}
+				}
+			}
+
+			.dx-selectbox {
+				height: 24px !important;
+				min-height: 24px !important;
+				max-height: 24px !important;
+				font-size: 11px !important;
+
+				&.dx-htmleditor-toolbar-size {
+					width: 80px !important;
+				}
+
+				&.dx-htmleditor-toolbar-font {
+					width: 100px !important;
+				}
+
+				.dx-texteditor-input-container {
+					min-height: 24px !important;
+					height: 24px !important;
+				}
+
+				.dx-texteditor-input {
+					min-height: 22px !important;
+					height: 22px !important;
+					padding: 0 4px !important;
+					font-size: 11px !important;
+					line-height: 22px !important;
+				}
+
+				.dx-dropdowneditor-button {
+					min-width: 16px !important;
+					width: 16px !important;
+
+					.dx-dropdowneditor-icon {
+						font-size: 11px !important;
+					}
+				}
+			}
+
+			.dx-htmleditor-toolbar-separator {
+				height: 16px !important;
+				margin: 2px 3px !important;
+				opacity: 0.4;
+			}
+		}
+	}
+}
+
+:host-context(body.sguees-theme-dark) .contrato-param-chip {
+	color: #7dd3fc;
+}
+
+:host ::ng-deep .estado-badge--borrador {
+	color: #f59e0b;
+	background: rgba(245, 158, 11, 0.16);
+	border: 1px solid rgba(245, 158, 11, 0.38);
+}
+
+:host ::ng-deep .estado-badge--historica {
+	color: #475569;
+	background: rgba(100, 116, 139, 0.16);
+	border: 1px solid rgba(100, 116, 139, 0.36);
+}
+
+:host ::ng-deep .estado-badge--nueva-version {
+	color: #0284c7;
+	background: rgba(14, 165, 233, 0.14);
+	border: 1px solid rgba(14, 165, 233, 0.38);
+}
+
+:host-context(body.sguees-theme-dark) ::ng-deep .estado-badge--historica {
+	color: #cbd5e1;
+	background: rgba(148, 163, 184, 0.18);
+	border-color: rgba(148, 163, 184, 0.4);
+}
+
+:host-context(body.sguees-theme-dark) ::ng-deep .estado-badge--nueva-version {
+	color: #38bdf8;
+	background: rgba(56, 189, 248, 0.16);
+	border-color: rgba(56, 189, 248, 0.42);
+}
+
+// Barra superior de versiones en el editor de contrato.
+.contrato-version-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 10px;
+	padding: 8px 12px;
+	border: 1px solid var(--border-color, rgba(148, 163, 184, 0.28));
+	border-radius: 8px;
+	background: rgba(148, 163, 184, 0.06);
+}
+
+.contrato-version-bar__left,
+.contrato-version-bar__actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.contrato-version-bar__label {
+	font-size: 12px;
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+.contrato-version-bar__origin {
+	font-size: 12px;
+	opacity: 0.78;
+}
+
+.contrato-version-option {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+}
+
+.version-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 11.5px;
+	font-weight: 600;
+	line-height: 1.5;
+
+	&--sm {
+		padding: 1px 7px;
+		font-size: 10.5px;
+	}
+}
+
+.contrato-version-observacion {
+	margin-top: 8px;
+}
+
+.contrato-version-readonly-note {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
+	padding: 7px 12px;
+	border-radius: 6px;
+	font-size: 12px;
+	background: rgba(14, 165, 233, 0.09);
+	border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+@media (max-width: 992px) {
+	.contrato-editor-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.contrato-params-panel {
+		height: auto;
+	}
+
+	.contrato-params-groups {
+		flex: none;
+		max-height: 250px;
+	}
+
+	.contrato-canvas-panel {
+		height: 480px;
+	}
+}
+
+// Qué hace: espacia las indicaciones, el campo de observación y los botones del modal de nueva versión.
+// Cómo lo hace: incrementa el gap vertical y separa los párrafos informativos para que el label flotante no quede pegado.
+.contrato-motivo-modal {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	padding: 8px 2px 4px;
+}
+
+.contrato-motivo-modal__hint {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0 0 4px;
+	font-size: 13px;
+	line-height: 1.55;
+	opacity: 0.9;
+
+	p {
+		margin: 0;
+	}
+}
+
+.contrato-motivo-modal__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 4px;
+}
+
+// Qué hace: muestra cursor grab sobre las filas para indicar scroll horizontal por arrastre.
+// Cómo lo hace: aplica grab en .dx-data-row y conserva pointer en botones y enlaces de acción.
+:host ::ng-deep .dx-datagrid .dx-datagrid-rowsview .dx-data-row {
+	cursor: grab;
+
+	& a,
+	& button,
+	& .dx-link,
+	& .dx-button,
+	& [role='button'] {
+		cursor: pointer !important;
+	}
+}

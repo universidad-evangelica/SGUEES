@@ -7,6 +7,7 @@
 		[placeholder]="placeholder"
 		(valueChange)="onValueChange($event)"
 		(onInitialized)="onEditorInitialized($event)"
+		(onContentReady)="onEditorContentReady($event)"
 	>
 		<dxo-toolbar [multiline]="true">
 			<dxi-item name="undo"></dxi-item>
