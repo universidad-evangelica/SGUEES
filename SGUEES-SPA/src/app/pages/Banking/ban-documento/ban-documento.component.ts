@@ -69,8 +69,8 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		{ dataField: 'NOMBRE_TIPO_CHEQUE', caption: 'Tipo cheque', width: 280 },
 	];
 	proveedorLookupColumns: any[] = [
-		{ dataField: 'CODIGO_PROVEEDOR', caption: 'Código', width: 100 },
-		{ dataField: 'NOMBRE_PROVEEDOR', caption: 'Proveedor', width: 280 },
+		{ dataField: 'CODIGO_PROVEEDOR', caption: 'Código', width: 120 },
+		{ dataField: 'NOMBRE_PROVEEDOR', caption: 'Nombre proveedor', width: 320 },
 	];
 	empleadoLookupColumns: any[] = [
 		{ dataField: 'CORR_EMPLEADO', caption: 'Código', width: 80 },
@@ -235,7 +235,13 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.mCORR_PROVEEDOR = response.Data || [];
+						this.mCORR_PROVEEDOR = (response.Data || []).map((item: any) => ({
+							...item,
+							PROVEEDOR_DISPLAY: [item.CODIGO_PROVEEDOR, item.NOMBRE_PROVEEDOR]
+								.map((valor: string) => (valor || '').trim())
+								.filter((valor: string) => valor.length > 0)
+								.join(' - '),
+						}));
 					}
 				},
 				error: (error: any) => this.notifyFx(error, NotifyType.Error),
