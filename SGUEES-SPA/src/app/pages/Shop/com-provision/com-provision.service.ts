@@ -142,15 +142,15 @@ export class ComProvisionService {
 			{
 				dataField: 'CORR_PROVISION',
 				label: { text: 'Corr.' },
-				colSpan: 2,
+				colSpan: 1,
 				editorOptions: { readOnly: true },
 			},
 			{
 				dataField: 'ESTADO_PROVISION',
 				label: { text: 'Estado' },
-				colSpan: 2,
-				editorOptions: { readOnly: true },
-				template: 'ESTADO_PROVISIONLookup',
+				colSpan: 1,
+				cssClass: 'provision-estado-item',
+				template: 'ESTADO_PROVISIONChip',
 			},
 			{
 				dataField: 'FECHA_PROVISION',
@@ -173,6 +173,13 @@ export class ComProvisionService {
 				template: 'MES_PERIODOLookup',
 			},
 			{
+				dataField: 'NO_CONTABILIZAR',
+				label: { text: 'No contabilizar al importar' },
+				editorType: 'dxCheckBox',
+				colSpan: 2,
+				editorOptions: {},
+			},
+			{
 				dataField: 'CORR_PROVEEDOR',
 				label: { text: 'Proveedor' },
 				colSpan: 5,
@@ -193,25 +200,19 @@ export class ComProvisionService {
 				editorOptions: { format: '#,##0.00', readOnly: true },
 			},
 			{
-				dataField: 'NO_CONTABILIZAR',
-				label: { text: 'No contabilizar al importar' },
-				editorType: 'dxCheckBox',
-				colSpan: 2,
-				editorOptions: {},
-			},
-			{
 				dataField: 'FECHA_ANULACION',
 				label: { text: 'Fecha anulación' },
 				editorType: 'dxDateBox',
 				colSpan: 2,
-				editorOptions: { useMaskBehavior: true, displayFormat: 'dd/MM/yyyy', showClearButton: true },
+				visible: false,
+				editorOptions: { useMaskBehavior: true, displayFormat: 'dd/MM/yyyy', readOnly: true },
 			},
 			{
 				dataField: 'NOMBRE_PARTIDA',
 				label: { text: 'Descripción partida' },
-				colSpan: 4,
+				colSpan: 8,
 				editorType: 'dxTextArea',
-				editorOptions: { placeholder: 'Descripción partida...', height: 70, maxLength: 1000 },
+				editorOptions: { placeholder: 'Descripción partida...', height: 70, maxLength: 1000, width: '100%' },
 			},
 		];
 	}

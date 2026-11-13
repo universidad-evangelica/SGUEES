@@ -42,14 +42,10 @@
 
 <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
 	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="10" [items]="items">
-		<div *dxTemplate="let cellInfo of 'ESTADO_PROVISIONLookup'">
-			<app-data-lookup
-				[model]="mESTADO_PROVISION"
-				[(value)]="model.ESTADO_PROVISION"
-				[selectedRowKeys]="selectedLookUpLista"
-				[readOnly]="true"
-			>
-			</app-data-lookup>
+		<div *dxTemplate="let cellInfo of 'ESTADO_PROVISIONChip'">
+			<span class="estado-provision-chip" [ngClass]="getEstadoProvisionClass()">
+				{{ getEstadoProvisionTexto() }}
+			</span>
 		</div>
 		<div *dxTemplate="let cellInfo of 'MES_PERIODOLookup'">
 			<app-data-lookup
@@ -74,16 +70,14 @@
 		</div>
 	</dx-form>
 
-	<div class="form">
-		<div class="dx-fieldset">
-			<div class="dx-field">
-				<dx-tab-panel
-					[height]="'100%'"
-					[loop]="false"
-					[animationEnabled]="false"
-					[swipeEnabled]="true"
-					[selectedIndex]="IndexTab"
-				>
+	<dx-tab-panel
+		class="provision-tab-panel"
+		[height]="'100%'"
+		[loop]="false"
+		[animationEnabled]="false"
+		[swipeEnabled]="true"
+		[selectedIndex]="IndexTab"
+	>
 					<dxi-item title="Documentos" icon="doc">
 						<div class="dx-grid-deta">
 							<dx-data-grid
@@ -242,10 +236,7 @@
 							</dx-data-grid>
 						</div>
 					</dxi-item>
-				</dx-tab-panel>
-			</div>
-		</div>
-	</div>
+	</dx-tab-panel>
 </div>
 
 <app-data-grid-mtto

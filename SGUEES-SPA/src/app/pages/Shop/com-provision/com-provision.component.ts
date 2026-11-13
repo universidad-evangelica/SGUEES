@@ -191,7 +191,19 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 	}
 
 	selectedLookUpCORR_PROVEEDOR(vRow: any): any {
-		return vRow[0].CORR_PROVEEDOR;
+		const row = vRow?.[0];
+		if (!row) {
+			return null;
+		}
+		const corr = Number(row.CORR_PROVEEDOR);
+		const actual = Number(this.model?.CORR_PROVEEDOR ?? 0);
+		if (corr !== actual) {
+			const nombre = row.NOMBRE_PROVEEDOR ?? '';
+			this.model.NOMBRE_PROVEEDOR = nombre;
+			this.model.NOMBRE_BENEFICIARIO = nombre;
+			this.dataForm?.instance?.getEditor('NOMBRE_BENEFICIARIO')?.option('value', nombre);
+		}
+		return row.CORR_PROVEEDOR;
 	}
 
 	selectedLookUpCUENTA_CONTABLE(vRow: any): any {
@@ -291,6 +303,45 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 
 	puedeEditarDetalle(): boolean {
 		return !this.readOnly && this.model?.ESTADO_PROVISION === 'DI';
+	}
+
+	getEstadoProvisionTexto(): string {
+		const nombre = (this.model?.NOMBRE_ESTADO_PROVISION || '').trim();
+		if (nombre) {
+			return nombre;
+		}
+		switch (this.model?.ESTADO_PROVISION) {
+			case 'AP':
+				return 'Aplicado';
+			case 'AN':
+				return 'Anulado';
+			default:
+				return 'Digitado';
+		}
+	}
+
+	getEstadoProvisionClass(): string {
+		switch (this.model?.ESTADO_PROVISION) {
+			case 'AP':
+				return 'estado-provision-chip--ap';
+			case 'AN':
+				return 'estado-provision-chip--an';
+			default:
+				return 'estado-provision-chip--di';
+		}
+	}
+
+	private syncFechaAnulacion(): void {
+		const anulada = this.model?.ESTADO_PROVISION === 'AN';
+		const spacer = (this.items || []).find((item: any) => item.name === 'spacerFilaMontos');
+		const fecha = (this.items || []).find((item: any) => item.dataField === 'FECHA_ANULACION');
+		if (spacer) {
+			spacer.colSpan = anulada ? 4 : 6;
+		}
+		if (fecha) {
+			fecha.visible = anulada;
+		}
+		this.items = [...(this.items || [])];
 	}
 
 	refrescarBotones() {
@@ -544,6 +595,7 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 			'NOMBRE_PARTIDA',
 		];
 		campos.forEach((c) => this.dataForm?.instance?.getEditor(c)?.option('readOnly', true));
+		this.syncFechaAnulacion();
 	}
 
 	override habilitar(): void {
@@ -558,7 +610,8 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 		['FECHA_PROVISION', 'CORR_PROVEEDOR', 'NOMBRE_BENEFICIARIO', 'NO_CONTABILIZAR', 'NOMBRE_PARTIDA'].forEach((c) =>
 			this.dataForm?.instance?.getEditor(c)?.option('readOnly', !editable)
 		);
-		this.dataForm?.instance?.getEditor('FECHA_ANULACION')?.option('readOnly', this.model?.ESTADO_PROVISION !== 'AP');
+		this.dataForm?.instance?.getEditor('FECHA_ANULACION')?.option('readOnly', true);
+		this.syncFechaAnulacion();
 	}
 
 	override setFocus(): void {
