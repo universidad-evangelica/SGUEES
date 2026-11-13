@@ -1,10 +1,12 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using sguees.Models;
 using sguees.Services;
 
@@ -18,10 +20,13 @@ namespace sguees.Controllers
     public class ACA_PROSPECTO_BECA_ARCHIVOController : ControllerBase
     {
         private readonly IACA_PROSPECTO_BECA_ARCHIVOService _service;
+        private readonly ILogger<ACA_PROSPECTO_BECA_ARCHIVOController> _logger;
 
-        public ACA_PROSPECTO_BECA_ARCHIVOController(IACA_PROSPECTO_BECA_ARCHIVOService service)
+        public ACA_PROSPECTO_BECA_ARCHIVOController(IACA_PROSPECTO_BECA_ARCHIVOService service,
+            ILogger<ACA_PROSPECTO_BECA_ARCHIVOController> logger)
         {
             _service = service ?? throw new ArgumentNullException(nameof(service));
+            _logger = logger;
         }
 
         [HttpGet("GetArchivos")]
@@ -39,12 +44,25 @@ namespace sguees.Controllers
         public async Task<IActionResult> GetArchivo([FromQuery] ACA_PROSPECTO_BECAParam Data)
         {
             Data.CORR_EMPRESA = Empresa();
-            var archivo = await _service.AbrirArchivoAsync(Data);
-            if (archivo?.Stream == null)
-                return NotFound();
-            Response.Headers.ContentDisposition = "inline";
-            Response.RegisterForDispose(archivo.Stream);
-            return File(archivo.Stream, archivo.ContentType ?? "application/octet-stream");
+            try
+            {
+                var archivo = await _service.AbrirArchivoAsync(Data);
+                if (archivo?.Stream == null)
+                    return NotFound();
+                Response.Headers.ContentDisposition = "inline";
+                Response.RegisterForDispose(archivo.Stream);
+                return File(archivo.Stream, archivo.ContentType ?? "application/octet-stream");
+            }
+            catch (FileNotFoundException) { return NotFound(); }
+            catch (DirectoryNotFoundException) { return NotFound(); }
+            catch (OperationCanceledException) when (HttpContext.RequestAborted.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "No se pudo abrir el documento {Respuesta} de la solicitud {Solicitud} y empresa {Empresa}",
+                    Data.CORR_RESPUESTA_BECA, Data.CORR_PROSPECTO_BECA, Data.CORR_EMPRESA);
+                return Problem(statusCode: 500, title: "No se pudo abrir el documento",
+                    detail: "No fue posible consultar o leer el archivo. Consulte el registro de la API.");
+            }
         }
 
         // Qué hace: sustituye el archivo cargado en una pregunta de documento.

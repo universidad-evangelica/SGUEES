@@ -10,5 +10,7 @@ namespace sguees.Repositories
     {
         Task<CResult> GetArchivosAsync(List<CParameter> xWhere);
         Task<CResult> GetArchivoAsync(List<CParameter> xWhere);
+        Task<CResult> GetContextoArchivoAsync(List<CParameter> xWhere);
+        Task<CResult> GuardarArchivoAsync(List<CParameter> parameters);
     }
 }

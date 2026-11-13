@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Data.SqlClient;
 using sguees.Models;
 
 namespace sguees.Repositories
@@ -33,12 +35,30 @@ namespace sguees.Repositories
 
         public Task<CResult> GetArchivosAsync(List<CParameter> xWhere)
         {
-            return LeerAsync(xWhere, "ORDEN_SECCION, ORDEN_PREGUNTA, CORR_RESPUESTA_BECA");
+            return LeerAsync<ACA_PROSPECTO_BECA_ARCHIVOView>(_ViewName, xWhere, "ORDEN_SECCION, ORDEN_PREGUNTA, CORR_RESPUESTA_BECA");
         }
 
         public Task<CResult> GetArchivoAsync(List<CParameter> xWhere)
         {
-            return LeerAsync(xWhere, "CORR_RESPUESTA_BECA");
+            return LeerAsync<ACA_PROSPECTO_BECA_ARCHIVOView>(_ViewName, xWhere, "CORR_RESPUESTA_BECA");
+        }
+
+        public Task<CResult> GetContextoArchivoAsync(List<CParameter> xWhere)
+            => LeerAsync<ACA_PROSPECTO_BECA_ARCHIVO_EDICIONView>("V_ACA_PROSPECTO_BECA_ARCHIVO_EDICION", xWhere, "CORR_RESPUESTA_BECA");
+
+        public async Task<CResult> GuardarArchivoAsync(List<CParameter> parameters)
+        {
+            try
+            {
+                await objData.ExecCmd(CommandType.StoredProcedure, "PRAL_MTTO_ACA_PROSPECTO_BECA_ARCHIVO", true, parameters);
+                return new CResult { Result = true, RowsAffected = 1 };
+            }
+            catch (SqlException ex) when (ex.Number >= 51000 && ex.Number < 51100)
+            {
+                return new CResult { ErrorCode = ex.Number, ErrorMessage = ex.Message };
+            }
+            catch (Exception ex) { return new CResult { ErrorCode = -1, ErrorMessage = ex.Message }; }
+            finally { objData.objConnection.Close(); }
         }
 
         public Task<CResult> CreateAsync(ACA_PROSPECTO_BECA_ARCHIVOTable Data, string vLOGIN_SISTEMA, string vESTACION)
@@ -56,14 +76,14 @@ namespace sguees.Repositories
             return Task.FromResult(OperacionNoHabilitada());
         }
 
-        private async Task<CResult> LeerAsync(List<CParameter> xWhere, string orden)
+        private async Task<CResult> LeerAsync<T>(string vista, List<CParameter> xWhere, string orden)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader(_ViewName, xWhere, orden);
-                var response = new List<ACA_PROSPECTO_BECA_ARCHIVOView>().FromDataReader(reader).ToList();
+                var reader = await objData.GetDataReader(vista, xWhere, orden);
+                var response = new List<T>().FromDataReader(reader).ToList();
 
                 reader.Close();
                 reader = null;

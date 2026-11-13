@@ -520,7 +520,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     // Qué hace: abre el archivo en una pestaña del navegador.
-    // Cómo lo hace: la API lo lee de Documentacion Becas\{ciclo}_{solicitud} y lo devuelve.
+    // Cómo lo hace: la API resuelve la ruta autorizada y devuelve el contenido como Blob.
     abrirArchivo(row: AcaProspectoBecaArchivo): void {
         if (!row?.CORR_PROSPECTO_BECA || !row?.CORR_RESPUESTA_BECA) {
             return;

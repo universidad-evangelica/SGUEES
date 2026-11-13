@@ -9,9 +9,6 @@ namespace sguees.Repositories
         public Task<CResult> GetOpcionesAsync(List<CParameter> parameters)
             => LeerAsync<ACA_PROSPECTO_BECA_OPCIONView>("V_ACA_PROSPECTO_BECA_OPCION_EDICION", parameters, "ORDEN,CORR_OPCION_BECA");
 
-        public Task<CResult> GetContextoArchivoAsync(List<CParameter> parameters)
-            => LeerAsync<ACA_PROSPECTO_BECA_ARCHIVO_EDICIONView>("V_ACA_PROSPECTO_BECA_ARCHIVO_EDICION", parameters, "CORR_RESPUESTA_BECA");
-
         public async Task<CResult> GuardarRespuestaAsync(List<CParameter> parameters)
         {
             try
@@ -24,15 +21,5 @@ namespace sguees.Repositories
             finally { objData.objConnection.Close(); }
         }
 
-        public async Task<CResult> GuardarArchivoAsync(List<CParameter> parameters)
-        {
-            try
-            {
-                await objData.ExecCmd(CommandType.StoredProcedure, "PRAL_MTTO_ACA_PROSPECTO_BECA_ARCHIVO", true, parameters);
-                return new CResult { Result = true, RowsAffected = 1 };
-            }
-            catch (Exception ex) { return new CResult { ErrorCode = -1, ErrorMessage = ex.Message }; }
-            finally { objData.objConnection.Close(); }
-        }
     }
 }
