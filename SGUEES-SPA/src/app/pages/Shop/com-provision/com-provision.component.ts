@@ -366,6 +366,10 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 	}
 
 	guardar(): void {
+		if (this.banderaMtto === UpdateType.Update && this.model?.ESTADO_PROVISION !== 'DI') {
+			this.notifyFx('Solo se pueden modificar provisiones digitadas', NotifyType.Warning);
+			return;
+		}
 		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
 			return;
 		}
@@ -379,8 +383,9 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result && response.ErrorCode === 0) {
-							this.models.push(response.Data);
-							this.model = response.Data;
+							const data = this.conservarNoContabilizar(response.Data);
+							this.models.push(data);
+							this.model = data;
 							this.AsignaStatus(UpdateType.Browse);
 							this.notifyFx('Registro creado con éxito!', NotifyType.Success);
 							this.refrescarBotones();
@@ -401,15 +406,16 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result && response.ErrorCode === 0) {
-							this.model = response.Data;
+							const data = this.conservarNoContabilizar(response.Data);
+							this.model = data;
 							const vIndex = this.models.findIndex(
 								(item: any) =>
 									item.ANIO_PERIODO === response.Data.ANIO_PERIODO &&
 									item.MES_PERIODO === response.Data.MES_PERIODO &&
-									item.CORR_PROVISION === response.Data.CORR_PROVISION
+									item.CORR_PROVISION === data.CORR_PROVISION
 							);
 							if (vIndex >= 0) {
-								this.models[vIndex] = response.Data;
+								this.models[vIndex] = data;
 							}
 							this.AsignaStatus(UpdateType.Browse);
 							this.notifyFx('Registro modificado con éxito!', NotifyType.Success);
@@ -448,8 +454,9 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 				next: (response: any) => {
 					this.loadingVisible = false;
 					if (response.Result && response.ErrorCode === 0) {
-						this.models.push(response.Data);
-						this.model = response.Data;
+						const data = this.conservarNoContabilizar(response.Data);
+						this.models.push(data);
+						this.model = data;
 						this.modelUpdate = this.fillData(this.model);
 						this.AsignaStatus(UpdateType.Update);
 						this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
@@ -495,24 +502,30 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 	}
 
 	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.ANIO_PERIODO, e.data.MES_PERIODO, e.data.CORR_PROVISION))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con éxito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+		e.cancel = new Promise((resolve) => {
+			this.service
+				.delete(this.fillParam(e.data.ANIO_PERIODO, e.data.MES_PERIODO, e.data.CORR_PROVISION))
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.notifyFx('Registro eliminado con éxito!', NotifyType.Success);
+							resolve(false);
+						} else {
+							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							resolve(true);
+						}
+					},
+					error: (error: any) => {
+						this.notifyFx(error, NotifyType.Error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private conservarNoContabilizar(data: ComProvision): ComProvision {
+		return { ...data, NO_CONTABILIZAR: !!this.model?.NO_CONTABILIZAR };
 	}
 
 	override bloquear(): void {

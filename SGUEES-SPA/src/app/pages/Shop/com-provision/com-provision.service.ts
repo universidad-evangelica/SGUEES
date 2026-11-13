@@ -183,7 +183,7 @@ export class ComProvisionService {
 				dataField: 'NOMBRE_BENEFICIARIO',
 				label: { text: 'Beneficiario' },
 				colSpan: 5,
-				editorOptions: { placeholder: 'Beneficiario...', showClearButton: true },
+				editorOptions: { placeholder: 'Beneficiario...', showClearButton: true, maxLength: 255 },
 			},
 			{
 				dataField: 'MONTO_PAGO',
@@ -194,7 +194,7 @@ export class ComProvisionService {
 			},
 			{
 				dataField: 'NO_CONTABILIZAR',
-				label: { text: 'No contabilizar' },
+				label: { text: 'No contabilizar al importar' },
 				editorType: 'dxCheckBox',
 				colSpan: 2,
 				editorOptions: {},
@@ -209,9 +209,9 @@ export class ComProvisionService {
 			{
 				dataField: 'NOMBRE_PARTIDA',
 				label: { text: 'Descripción partida' },
-				colSpan: 8,
+				colSpan: 4,
 				editorType: 'dxTextArea',
-				editorOptions: { placeholder: 'Descripción partida...', height: 70 },
+				editorOptions: { placeholder: 'Descripción partida...', height: 70, maxLength: 1000 },
 			},
 		];
 	}
