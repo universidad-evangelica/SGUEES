@@ -27,6 +27,27 @@ export class ConPartidaService {
 			msg('Debe seleccionar el mes del periodo', NotifyType.Error);
 			return false;
 		}
+		if (!model.FECHA_PARTIDA) {
+			msg('Debe indicar la fecha de la partida', NotifyType.Error);
+			return false;
+		}
+		const fecha = model.FECHA_PARTIDA instanceof Date
+			? model.FECHA_PARTIDA
+			: new Date(model.FECHA_PARTIDA);
+		if (Number.isNaN(fecha.getTime())) {
+			msg('La fecha de la partida no es válida', NotifyType.Error);
+			return false;
+		}
+		if (
+			fecha.getFullYear() !== Number(model.ANIO_PERIODO) ||
+			fecha.getMonth() + 1 !== Number(model.MES_PERIODO)
+		) {
+			msg(
+				'La fecha debe pertenecer al mes y año del período contable seleccionado',
+				NotifyType.Error
+			);
+			return false;
+		}
 		if (!model.NOMBRE_PARTIDA?.trim()) {
 			msg('Debe digitar el concepto de la partida', NotifyType.Error);
 			return false;
@@ -163,7 +184,12 @@ export class ConPartidaService {
 				label: { text: 'Fecha' },
 				colSpan: 2,
 				editorType: 'dxDateBox',
-				editorOptions: { type: 'date', displayFormat: 'dd/MM/yyyy' },
+				editorOptions: {
+					type: 'date',
+					displayFormat: 'dd/MM/yyyy',
+					dateOutOfRangeMessage: 'La fecha debe estar dentro del mes del período contable',
+					invalidDateMessage: 'Fecha inválida',
+				},
 			},
 			{
 				dataField: 'CORR_CLASE_PARTIDA',

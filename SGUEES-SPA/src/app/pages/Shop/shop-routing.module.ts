@@ -23,6 +23,10 @@ import { ComTipoSoliCotizaComponent } from './com-tipo-soli-cotiza/com-tipo-soli
 import { ComDocumentoComponent } from './com-documento/com-documento.component';
 import { ComDocumentoDesAplicarComponent } from './com-documento-desaplicar/com-documento-desaplicar.component';
 import { ComDocumentoAnularComponent } from './com-documento-anular/com-documento-anular.component';
+import { ComProvisionComponent } from './com-provision/com-provision.component';
+import { ComProvisionDesAplicarComponent } from './com-provision-desaplicar/com-provision-desaplicar.component';
+import { ComPagoComponent } from './com-pago/com-pago.component';
+import { ComPagoDesAplicarComponent } from './com-pago-desaplicar/com-pago-desaplicar.component';
 
 const routes: Routes = [
   {
@@ -175,6 +179,38 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./com-documento-anular/com-documento-anular.module').then(m => m.ComDocumentoAnularModule)
+  },
+  {
+    path: 'com-provision',
+    component: ComProvisionComponent,
+    data: { titulo: 'Provisiones' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./com-provision/com-provision.module').then(m => m.ComProvisionModule)
+  },
+  {
+    path: 'com-provision-desaplicar',
+    component: ComProvisionDesAplicarComponent,
+    data: { titulo: 'Desaplicar Provisiones' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./com-provision-desaplicar/com-provision-desaplicar.module').then(m => m.ComProvisionDesAplicarModule)
+  },
+  {
+    path: 'com-pago',
+    component: ComPagoComponent,
+    data: { titulo: 'Pagos' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./com-pago/com-pago.module').then(m => m.ComPagoModule)
+  },
+  {
+    path: 'com-pago-desaplicar',
+    component: ComPagoDesAplicarComponent,
+    data: { titulo: 'Desaplicar Pagos' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./com-pago-desaplicar/com-pago-desaplicar.module').then(m => m.ComPagoDesAplicarModule)
   }
 ];
 

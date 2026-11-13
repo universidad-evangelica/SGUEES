@@ -1,0 +1,42 @@
+<div class="sguees-mtto-view content-block dx-card responsive-paddings">
+	<app-page-header [title]="tituloVentana" variant="enterprise"></app-page-header>
+	<p class="partida-especial-intro">
+		Genere partidas automáticas de <strong>apertura</strong>, <strong>liquidación</strong> o <strong>cierre</strong> para el período indicado.
+		La partida queda en estado <em>Digitado</em> hasta que la aplique.
+	</p>
+
+	<div class="partida-especial-periodo">
+		<div class="partida-especial-label">Período</div>
+		<dx-number-box [(value)]="vANIO_PERIODO" [min]="2000" [max]="2100" [showSpinButtons]="true" [width]="100"></dx-number-box>
+		<dx-number-box [(value)]="vMES_PERIODO" [min]="1" [max]="12" [showSpinButtons]="true" [width]="80"></dx-number-box>
+	</div>
+
+	<div class="partida-especial-actions">
+		<dx-button
+			*ngIf="permiteEdit"
+			text="Apertura"
+			icon="unlock"
+			type="default"
+			stylingMode="contained"
+			(onClick)="ejecutar('APE')"
+		></dx-button>
+		<dx-button
+			*ngIf="permiteEdit"
+			text="Liquidación"
+			icon="money"
+			type="success"
+			stylingMode="contained"
+			(onClick)="ejecutar('LIQ')"
+		></dx-button>
+		<dx-button
+			*ngIf="permiteEdit"
+			text="Cierre"
+			icon="lock"
+			type="danger"
+			stylingMode="contained"
+			(onClick)="ejecutar('CIE')"
+		></dx-button>
+	</div>
+</div>
+
+<dx-load-panel [visible]="loadingVisible" [showPane]="true" [shading]="true"></dx-load-panel>

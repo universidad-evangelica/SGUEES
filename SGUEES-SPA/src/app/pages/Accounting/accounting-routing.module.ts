@@ -214,6 +214,18 @@ const routes: Routes = [
 
   {
 
+    path: 'con-partida-especial',
+
+    data: { titulo: 'Partidas de Cierre y Apertura' },
+
+    canActivate: [ AuthGuardService ],
+
+    loadChildren: () => import('./con-partida-especial/con-partida-especial.module').then(m => m.ConPartidaEspecialModule)
+
+  },
+
+  {
+
     path: 'con-partida-aplicar',
 
     component: ConPartidaOperacionComponent,

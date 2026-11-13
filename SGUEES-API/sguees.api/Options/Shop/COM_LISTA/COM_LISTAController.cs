@@ -78,5 +78,12 @@ namespace sguees.Controllers
         {
             return _service.GetESTADO_ADMINISTRATIVO();
         }
+
+        [HttpGet("GetESTADO_PROVISION_COM_PROVISION")]
+		[Authorize(Policy = "/com-provision|R")]
+        public CResult GetESTADO_PROVISION_COM_PROVISION()
+        {
+            return _service.GetESTADO_DOCUMENTO();
+        }
     }
 }

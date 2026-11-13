@@ -1,0 +1,145 @@
+<div class="contrapartida-modal">
+	<p class="contrapartida-modal__lead">
+		Consulte partidas <strong>aplicadas</strong> en un período <strong>cerrado</strong>, seleccione una fila y genere la contrapartida en un período
+		<strong>abierto</strong>. La nueva partida queda en estado <span class="contrapartida-badge">Digitado</span>.
+	</p>
+
+	<section class="contrapartida-panel contrapartida-panel--filtros dx-card responsive-paddings">
+		<div class="contrapartida-panel__head">
+			<span class="contrapartida-panel__title">Criterios</span>
+			<span class="contrapartida-panel__hint">Paso 1: período cerrado · Paso 2: consultar y elegir fila · Paso 3: generar</span>
+		</div>
+
+		<div class="contrapartida-filtros">
+			<div class="contrapartida-filtro contrapartida-filtro--origen">
+				<span class="contrapartida-filtro__group-label">Período cerrado (origen)</span>
+				<div class="contrapartida-filtro__fields">
+					<div class="contrapartida-filtro__item">
+						<label class="contrapartida-filtro__label">Año</label>
+						<dx-number-box
+							class="contrapartida-control"
+							[(value)]="filtroAnio"
+							[min]="2000"
+							[max]="2100"
+							[showSpinButtons]="true"
+							[width]="120"
+							[height]="44"
+						></dx-number-box>
+					</div>
+					<div class="contrapartida-filtro__item">
+						<label class="contrapartida-filtro__label">Mes</label>
+						<dx-select-box
+							class="contrapartida-control"
+							[items]="mesesPeriodo"
+							displayExpr="NOMBRE_MES_PERIODO"
+							valueExpr="MES_PERIODO"
+							[(value)]="filtroMes"
+							[width]="160"
+							[height]="44"
+						></dx-select-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="contrapartida-filtro contrapartida-filtro--destino">
+				<span class="contrapartida-filtro__group-label">Período abierto (destino)</span>
+				<div class="contrapartida-filtro__item">
+					<label class="contrapartida-filtro__label">Registrar contrapartida en</label>
+					<dx-select-box
+						class="contrapartida-control"
+						[items]="periodosAbiertos"
+						displayExpr="label"
+						valueExpr="key"
+						[(value)]="periodoDestinoKey"
+						[width]="240"
+						[height]="44"
+						placeholder="Seleccione período abierto"
+					></dx-select-box>
+				</div>
+			</div>
+
+			<div class="contrapartida-filtro contrapartida-filtro--acciones">
+				<dx-button
+					class="contrapartida-btn"
+					text="Consultar"
+					icon="search"
+					type="default"
+					[width]="150"
+					[height]="44"
+					(onClick)="consultar()"
+				></dx-button>
+				<dx-button
+					*ngIf="permiteGenerar"
+					class="contrapartida-btn"
+					text="Generar"
+					icon="revert"
+					type="success"
+					[width]="170"
+					[height]="44"
+					[disabled]="!partidaSeleccionada"
+					(onClick)="generarContrapartida()"
+				></dx-button>
+				<dx-button
+					class="contrapartida-btn"
+					text="Cerrar"
+					type="normal"
+					stylingMode="outlined"
+					[width]="120"
+					[height]="44"
+					(onClick)="cerrar()"
+				></dx-button>
+			</div>
+		</div>
+	</section>
+
+	<div class="contrapartida-seleccion" *ngIf="partidaSeleccionada" role="status">
+		<i class="dx-icon-check contrapartida-seleccion__icon"></i>
+		<div class="contrapartida-seleccion__text">
+			<strong>Partida {{ partidaSeleccionada.CORR_PARTIDA }}</strong>
+			· {{ partidaSeleccionada.MES_PERIODO }}/{{ partidaSeleccionada.ANIO_PERIODO }}
+			<span *ngIf="partidaSeleccionada.NOMBRE_PARTIDA" class="contrapartida-seleccion__concepto">
+				— {{ partidaSeleccionada.NOMBRE_PARTIDA }}
+			</span>
+		</div>
+	</div>
+
+	<section class="contrapartida-panel contrapartida-panel--grid">
+		<div class="contrapartida-panel__head contrapartida-panel__head--grid">
+			<span class="contrapartida-panel__title">Partidas aplicadas (elegibles)</span>
+			<span class="contrapartida-panel__count" *ngIf="models?.length">{{ models.length }} registro(s)</span>
+		</div>
+
+		<dx-data-grid
+			class="contrapartida-grid"
+			[dataSource]="models"
+			[columns]="columns"
+			[showBorders]="true"
+			[showColumnLines]="true"
+			[showRowLines]="true"
+			[rowAlternationEnabled]="true"
+			[hoverStateEnabled]="true"
+			[allowColumnResizing]="true"
+			[columnResizingMode]="'widget'"
+			[focusedRowEnabled]="true"
+			[autoNavigateToFocusedRow]="true"
+			[height]="gridHeight"
+			[columnAutoWidth]="false"
+			[wordWrapEnabled]="true"
+			[noDataText]="noDataText"
+			(onFocusedRowChanged)="onFocusedRowChanged($event)"
+			(onRowDblClick)="onRowDblClick($event)"
+			[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO', 'CORR_CLASE_PARTIDA', 'CORR_PARTIDA']"
+		>
+			<dxo-paging [pageSize]="15"></dxo-paging>
+			<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[15, 30, 50]" [showInfo]="true"></dxo-pager>
+			<dxo-filter-row [visible]="true"></dxo-filter-row>
+		</dx-data-grid>
+	</section>
+</div>
+
+<dx-load-panel
+	[visible]="loadingVisible"
+	[showPane]="true"
+	[shading]="true"
+	[position]="{ of: '.contrapartida-modal' }"
+></dx-load-panel>

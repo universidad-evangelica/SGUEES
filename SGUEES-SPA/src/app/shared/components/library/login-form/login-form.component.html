@@ -104,7 +104,10 @@
 <!-- Modal de cambio de contraseña obligatorio -->
 <app-change-password-modal
   [visible]="showChangePasswordModal"
+  (visibleChange)="showChangePasswordModal = $event"
   [loginSistema]="loginSistemaForPasswordChange"
+  [currentPassword]="pendingLoginPassword"
   [changeReason]="passwordChangeReason"
-  (onPasswordChanged)="onPasswordChanged()">
+  (cancelled)="onPasswordChangeCancelled()"
+  (onPasswordChanged)="onPasswordChanged($event)">
 </app-change-password-modal>

@@ -263,6 +263,31 @@ namespace sguees.Services
 
 			=> _repo.GenerarPartidaAperturaAsync(param, vLOGIN_SISTEMA, vESTACION);
 
+		public async Task<CResult> GetAllContrapartidaElegibleAsync(CON_PARTIDAParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "FECHA_INICIAL", Value = xWhere.FECHA_INICIAL, DbType = System.Data.DbType.Date },
+				new CParameter() { ParameterName = "FECHA_FINAL", Value = xWhere.FECHA_FINAL, DbType = System.Data.DbType.Date },
+				new CParameter() { ParameterName = "FILTRO_ANIO_PERIODO", Value = xWhere.FILTRO_ANIO_PERIODO, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "FILTRO_MES_PERIODO", Value = xWhere.FILTRO_MES_PERIODO, DbType = System.Data.DbType.Int32 },
+			};
+			return await _repo.GetAllContrapartidaElegibleAsync(p);
+		}
+
+		public Task<CResult> GenerarContrapartidaAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION)
+			=> _repo.GenerarContrapartidaAsync(param, vLOGIN_SISTEMA, vESTACION);
+
+		public async Task<CResult> GetPeriodosDestinoContrapartidaAsync(CON_PARTIDAParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+			};
+			return await _repo.GetPeriodosDestinoContrapartidaAsync(p);
+		}
+
 	}
 
 }

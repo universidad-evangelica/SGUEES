@@ -89,5 +89,13 @@ namespace sguees.Controllers
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetTipoDocumentosAsync(Data);
         }
+
+		[HttpGet("GetCORR_TIPO_DOC_COM_PAGO")]
+		[Authorize(Policy = "/com-pago|R")]
+		public async Task<CResult> GetCORR_TIPO_DOC_COM_PAGO([FromQuery] GEN_TIPO_DOCUMENTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetTipoDocumentosAsync(Data);
+		}
 	}
 }

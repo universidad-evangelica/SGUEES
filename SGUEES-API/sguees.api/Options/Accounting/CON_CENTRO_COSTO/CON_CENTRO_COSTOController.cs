@@ -137,6 +137,14 @@ namespace sguees.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		[HttpGet("GetCORR_CENTRO_COSTO_COM_PROVISION")]
+		[Authorize(Policy = "/com-provision|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_COM_PROVISION([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
 		[HttpGet("GetCORR_CENTRO_COSTO_BAN_DOCUMENTO")]
 		[Authorize(Policy = "/ban-documento|R")]
 		public async Task<CResult> GetCORR_CENTRO_COSTO_BAN_DOCUMENTO([FromQuery] CON_CENTRO_COSTOParam Data)

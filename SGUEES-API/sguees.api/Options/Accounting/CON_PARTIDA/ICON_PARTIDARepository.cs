@@ -21,5 +21,8 @@ namespace sguees.Repositories
 		Task<CResult> GenerarPartidaLiquidacionAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> GenerarPartidaCierreAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> GenerarPartidaAperturaAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetAllContrapartidaElegibleAsync(List<CParameter> xWhere);
+		Task<CResult> GenerarContrapartidaAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetPeriodosDestinoContrapartidaAsync(List<CParameter> xWhere);
 	}
 }
