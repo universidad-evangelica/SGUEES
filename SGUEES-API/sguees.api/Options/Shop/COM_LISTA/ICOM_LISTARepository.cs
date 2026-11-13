@@ -12,5 +12,6 @@ namespace sguees.Repositories
 		CResult GetCLASE_TIPO_SOLI_COTIZA();
 		CResult GetESTADO_DOCUMENTO();
 		CResult GetESTADO_ADMINISTRATIVO();
+		CResult GetESTADO_ORDEN();
 	}
 }

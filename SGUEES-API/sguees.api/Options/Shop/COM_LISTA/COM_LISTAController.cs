@@ -85,5 +85,12 @@ namespace sguees.Controllers
         {
             return _service.GetESTADO_DOCUMENTO();
         }
+
+		[HttpGet("GetESTADO_ORDEN_COM_ORDEN_COMPRA")]
+		[Authorize(Policy = "/com-orden-compra|R")]
+		public CResult GetESTADO_ORDEN_COM_ORDEN_COMPRA()
+		{
+			return _service.GetESTADO_ORDEN();
+		}
     }
 }

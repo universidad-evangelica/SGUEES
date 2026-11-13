@@ -185,5 +185,28 @@ namespace sguees.Repositories
 
             return objResultado;
         }
+
+		public CResult GetESTADO_ORDEN()
+		{
+			CResult objResultado = new();
+
+			objResultado.Data = new List<COM_LISTAView>()
+			{
+				new() { Key = "DI", Value = "Digitada" },
+				new() { Key = "SO", Value = "Solicitada" },
+				new() { Key = "AP", Value = "Aplicada" },
+				new() { Key = "AN", Value = "Anulada" },
+				new() { Key = "FI", Value = "Recibido" },
+			};
+
+			objResultado.Result = true;
+			objResultado.RowsAffected = 1;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+
+			return objResultado;
+		}
     }
 }

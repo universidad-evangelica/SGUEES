@@ -14,7 +14,7 @@ export class ComOrdenCompraDetaRepository {
 	constructor(private objData: CData) {}
 
 	get(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'getAll', xWhere, environment.UrlCOMPRASAPI);
+		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlCOMPRASAPI);
 	}
 
 	create(model: any): Observable<IResult> {

@@ -110,5 +110,12 @@ namespace sguees.Controllers
 		{
 			return await _service.GetAllAsync(Data);
 		}
+
+		[HttpGet("GetCORR_FORMA_PAGO_COM_ORDEN_COMPRA")]
+		[Authorize(Policy = "/com-orden-compra|R")]
+		public async Task<CResult> GetCORR_FORMA_PAGO_COM_ORDEN_COMPRA([FromQuery] GEN_FORMA_PAGOParam Data)
+		{
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

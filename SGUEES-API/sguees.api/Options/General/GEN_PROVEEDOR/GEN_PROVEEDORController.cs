@@ -213,6 +213,13 @@ namespace sguees.Controllers
 			return await _service.GetLookupAsync(GetCorrEmpresa());
 		}
 
+		[HttpGet("GetCORR_PROVEEDOR_COM_ORDEN_COMPRA")]
+		[Authorize(Policy = "/com-orden-compra|R")]
+		public async Task<CResult> GetCORR_PROVEEDOR_COM_ORDEN_COMPRA()
+		{
+			return await _service.GetLookupAsync(GetCorrEmpresa());
+		}
+
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");

@@ -69,7 +69,7 @@ namespace sguees.Controllers
 		}
 		
 		[HttpDelete]
-		[Authorize(Policy = "/com-cuadro-comparativo-orden-compra|D")]
+		[Authorize(Policy = "/com-cuadro-comparativo|D")]
 		public async Task<IActionResult> Delete([FromQuery] COM_CUADRO_COMPARATIVO_ORDEN_COMPRATable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

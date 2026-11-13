@@ -49,5 +49,10 @@ namespace sguees.Services
 		{
 			return _repo.GetESTADO_ADMINISTRATIVO();
 		}
+
+		public CResult GetESTADO_ORDEN()
+		{
+			return _repo.GetESTADO_ORDEN();
+		}
 	}
 }
