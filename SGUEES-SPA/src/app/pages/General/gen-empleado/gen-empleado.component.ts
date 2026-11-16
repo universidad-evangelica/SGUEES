@@ -6528,8 +6528,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		});
 	}
 
-	// Qué hace: abre el visor PDF del contrato para ver o imprimir con la misma interfaz que ver firmado.
-	// Cómo lo hace: consulta el cuerpo congelado del contrato y lo compila a PDF respetando el espaciado compacto.
+	// Qué hace: abre el visor del contrato para ver o imprimir mostrando exactamente la misma vista previa del editor.
+	// Cómo lo hace: consulta el cuerpo congelado del contrato, lo normaliza, enlaza al lienzo HTML sin distorsiones y habilita zoom e impresión nativa.
 	abrirPreviewContrato(fila?: GenEmpleadoContrato | null): void {
 		const objetivo = fila ?? this.contratoSeleccionado;
 		if (!objetivo?.CORR_EMPLEADO_CONTRATO) {
@@ -6543,20 +6543,133 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
+					this.loadingVisible = false;
 					if (!response?.Result || !response.Data) {
-						this.loadingVisible = false;
 						this.notifyFx(response?.ErrorMessage || 'No se pudo cargar el contenido del contrato.', NotifyType.Warning);
 						return;
 					}
 					const detalle = this.mapContratoRow(response.Data);
 					this.contratoPreviewActual = detalle;
-					this.generarPdfDesdeHtmlContrato(detalle);
+					const html = this.normalizarHtmlContrato(detalle.CUERPO_CONTRATO || '');
+					this.contratoPreviewHtml = this.sanitization.bypassSecurityTrustHtml(html);
+					this.contratoPreviewZoom = 85;
+					this.popupContratoPreviewVisible = true;
 				},
 				error: (error) => {
 					this.loadingVisible = false;
 					this.notifyApiError(error);
 				},
 			});
+	}
+
+		// Qué hace: dispara la impresión nativa del contrato con la misma tipografía y distribución exacta de la vista previa.
+	// Cómo lo hace: cambia temporalmente document.title al nombre del contrato para que el navegador sugiera ese nombre de archivo al guardar PDF, y lo restaura al finalizar.
+	imprimirContratoHtml(): void {
+		const cuerpo = this.contratoPreviewActual?.CUERPO_CONTRATO;
+		if (!cuerpo) {
+			this.notifyFx('No hay contenido para imprimir.', NotifyType.Warning);
+			return;
+		}
+
+		// 1. Guardamos el título original de la app y asignamos el nombre del contrato
+		const tituloOriginal = document.title;
+		const nombreDoc = this.contratoPreviewActual?.NOMBRE_PLANTILLA?.trim() || 'Docente Hora Clase';
+		document.title = nombreDoc;
+
+		const iframe = document.createElement('iframe');
+		iframe.style.position = 'fixed';
+		iframe.style.right = '0';
+		iframe.style.bottom = '0';
+		iframe.style.width = '0';
+		iframe.style.height = '0';
+		iframe.style.border = '0';
+		document.body.appendChild(iframe);
+
+		const doc = iframe.contentWindow?.document;
+		if (!doc) {
+			document.title = tituloOriginal;
+			document.body.removeChild(iframe);
+			return;
+		}
+
+		doc.open();
+		doc.write(`
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<meta charset="utf-8">
+				<title>${nombreDoc}</title>
+				<style>
+					@page {
+						size: letter portrait;
+						margin: 0;
+					}
+					body {
+						margin: 0;
+						padding: 14mm 15mm 12mm 15mm;
+						font-family: 'Times New Roman', Georgia, serif;
+						font-size: 11pt;
+						line-height: 1.40;
+						color: #111827;
+						background: #fff;
+					}
+					p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote {
+						margin: 0;
+						padding: 0;
+						line-height: 1.40;
+					}
+					ul, ol { padding-left: 1.5em; }
+					table {
+						width: 100% !important;
+						border-collapse: collapse !important;
+						table-layout: fixed !important;
+						margin: 4px 0;
+					}
+					td, th {
+						padding: 3px 5px !important;
+						vertical-align: middle !important;
+						word-break: break-word;
+					}
+					tr > td:first-child:nth-last-child(3) { width: 18% !important; }
+					tr > td:nth-child(2):nth-last-child(2) { width: 64% !important; text-align: center !important; }
+					tr > td:nth-child(3):last-child { width: 18% !important; text-align: right !important; }
+					tr > td:nth-child(3):last-child img { max-width: 100% !important; height: auto !important; }
+					tr > td:first-child:nth-last-child(2) { width: 50% !important; }
+					tr > td:nth-child(2):last-child { width: 50% !important; }
+					table[style*='border-style: none'], table[style*='border-style:none'],
+					table[style*='border-top-style: none'], table[style*='border-top-style:none'],
+					table[style*='border-width: 0px'], table[style*='border-width:0px'] {
+						border: none !important;
+					}
+					table[style*='border-style: none'] td, table[style*='border-style:none'] td,
+					table[style*='border-top-style: none'] td, table[style*='border-top-style:none'] td,
+					table[style*='border-width: 0px'] td, table[style*='border-width:0px'] td {
+						border: none !important;
+					}
+					.ql-align-center { text-align: center; }
+					.ql-align-right { text-align: right; }
+					.ql-align-justify { text-align: justify; }
+					img { max-width: 100%; height: auto; }
+				</style>
+			</head>
+			<body>
+				${this.normalizarHtmlContrato(cuerpo)}
+			</body>
+			</html>
+		`);
+		doc.close();
+
+		setTimeout(() => {
+			iframe.contentWindow?.focus();
+			iframe.contentWindow?.print();
+			// 2. Restauramos el título original de la aplicación tras imprimir
+			setTimeout(() => {
+				document.title = tituloOriginal;
+				if (document.body.contains(iframe)) {
+					document.body.removeChild(iframe);
+				}
+			}, 1000);
+		}, 300);
 	}
 
 	// Qué hace: normaliza el HTML del contrato para que tablas con anchos fijos en px no desborden la hoja A4.
@@ -6570,9 +6683,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.replace(/width:\s*420px/gi, 'width: 64%');
 	}
 
-	// Qué hace: compila el HTML del contrato en PDF respetando estilos compactos, fuentes e imágenes sin cortar líneas.
-	// Cómo lo hace: monta un contenedor visible para el motor pero oculto tras el z-index, espera a que carguen las imágenes
-	//              y genera el canvas con html2canvas asegurando dimensiones reales antes de paginar.
+	// Qué hace: compila el HTML del contrato en PDF respetando la tipografía, márgenes y distribución exacta de la vista previa del editor.
+	// Cómo lo hace: monta un contenedor temporal con la misma tipografía Times New Roman, padding 40px 38px y reglas de tabla de contrato-studio__sheet;
+	//              espera la carga de imágenes, renderiza mediante html2canvas y pagina en jsPDF ajustando escala si cabe en una página.
 	private async generarPdfDesdeHtmlContrato(detalle: GenEmpleadoContrato): Promise<void> {
 		const htmlContenido = this.normalizarHtmlContrato(detalle.CUERPO_CONTRATO || '');
 		if (!htmlContenido.trim()) {
@@ -6581,28 +6694,67 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return;
 		}
 
-		// Contenedor temporal: debe estar en el flujo visible del documento para que html2canvas lo dibuje,
-		// pero detrás de todo (z-index negativo) y con opacidad controlada.
+		// Contenedor temporal: debe estar en el DOM para que html2canvas lo dibuje,
+		// replicando fielmente las dimensiones y tipografía de .contrato-studio__sheet
 		const container = document.createElement('div');
 		container.style.position = 'absolute';
 		container.style.left = '0';
 		container.style.top = '0';
 		container.style.zIndex = '-9999';
 		container.style.width = '794px'; // Ancho A4 exacto a 96 DPI
-		container.style.padding = '30px 45px';
+		container.style.padding = '40px 38px';
 		container.style.boxSizing = 'border-box';
 		container.style.background = '#ffffff';
 		container.style.color = '#111827';
-		container.style.fontFamily = "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+		container.style.fontFamily = "'Times New Roman', Georgia, serif";
 		container.style.fontSize = '12px';
-		container.style.lineHeight = '1.35'; // Interlineado compacto
+		container.style.lineHeight = '1.42';
 
 		container.innerHTML = `
         <style>
-            p { margin: 0 0 6px 0; padding: 0; line-height: 1.35; }
-            h1, h2, h3, h4, h5 { margin: 6px 0 4px 0; line-height: 1.25; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 6px; }
-            td, th { vertical-align: top; padding: 2px 4px; }
+            p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote {
+                margin: 0;
+                padding: 0;
+                line-height: 1.42;
+            }
+            ul, ol { padding-left: 1.5em; }
+            table {
+                width: 100% !important;
+                max-width: 100% !important;
+                border-collapse: collapse !important;
+                table-layout: fixed !important;
+                box-sizing: border-box !important;
+                margin: 4px 0;
+            }
+            td, th {
+                padding: 4px 6px !important;
+                vertical-align: middle !important;
+                word-break: break-word;
+                overflow-wrap: anywhere;
+                box-sizing: border-box !important;
+            }
+            /* Encabezado institucional de 3 columnas (espacio / título centrado / logo a la derecha) */
+            tr > td:first-child:nth-last-child(3) { width: 18% !important; }
+            tr > td:nth-child(2):nth-last-child(2) { width: 64% !important; text-align: center !important; }
+            tr > td:nth-child(3):last-child { width: 18% !important; text-align: right !important; }
+            tr > td:nth-child(3):last-child img { max-width: 100% !important; height: auto !important; display: inline-block !important; }
+
+            /* Firmas institucionales de 2 columnas (Universidad / Empleado) */
+            tr > td:first-child:nth-last-child(2) { width: 50% !important; }
+            tr > td:nth-child(2):last-child { width: 50% !important; }
+
+            /* Tablas sin bordes para encabezados y firmas */
+            table[style*='border-style: none'], table[style*='border-style:none'],
+            table[style*='border-top-style: none'], table[style*='border-top-style:none'],
+            table[style*='border-width: 0px'], table[style*='border-width:0px'] {
+                border: none !important;
+            }
+            table[style*='border-style: none'] td, table[style*='border-style:none'] td,
+            table[style*='border-top-style: none'] td, table[style*='border-top-style:none'] td,
+            table[style*='border-width: 0px'] td, table[style*='border-width:0px'] td {
+                border: none !important;
+            }
+
             .ql-align-center { text-align: center; }
             .ql-align-right { text-align: right; }
             .ql-align-justify { text-align: justify; }
@@ -6647,47 +6799,56 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 			const pageWidthMm = 210;
 			const pageHeightMm = 297;
-			const marginY = 8; // Margen superior e inferior
-			const printableHeightMm = pageHeightMm - marginY * 2;
+			const marginY = 6; // Margen superior e inferior compacto
+			const printableHeightMm = pageHeightMm - marginY * 2; // 285 mm
 
 			const imgWidthPx = canvas.width;
 			const imgHeightPx = canvas.height;
 			const totalHeightMm = (imgHeightPx / imgWidthPx) * pageWidthMm;
 
-			// Renderizado por cortes proporcionales en página
-			const canvasPageHeightPx = (printableHeightMm / totalHeightMm) * imgHeightPx;
-			let renderedHeightPx = 0;
-			let pageNumber = 0;
+			// Si el documento entra en 1 página o se desborda por un margen mínimo (hasta 6%),
+			// se ajusta para que quepa perfectamente completo en 1 sola página.
+			if (totalHeightMm <= printableHeightMm * 1.06) {
+				const escalaUnica = Math.min(1, printableHeightMm / totalHeightMm);
+				const finalWidthMm = pageWidthMm * escalaUnica;
+				const finalHeightMm = totalHeightMm * escalaUnica;
+				const offsetX = (pageWidthMm - finalWidthMm) / 2;
+				const pageData = canvas.toDataURL('image/jpeg', 0.95);
+				pdf.addImage(pageData, 'JPEG', offsetX, marginY, finalWidthMm, finalHeightMm);
+			} else {
+				// Renderizado multipágina para contratos extensos
+				const canvasPageHeightPx = (printableHeightMm / totalHeightMm) * imgHeightPx;
+				let renderedHeightPx = 0;
+				let pageNumber = 0;
 
-			while (renderedHeightPx < imgHeightPx) {
-				if (pageNumber > 0) {
-					pdf.addPage();
+				while (renderedHeightPx < imgHeightPx) {
+					if (pageNumber > 0) {
+						pdf.addPage();
+					}
+
+					const currentSliceHeightPx = Math.min(canvasPageHeightPx, imgHeightPx - renderedHeightPx);
+					const pageCanvas = document.createElement('canvas');
+					pageCanvas.width = imgWidthPx;
+					pageCanvas.height = currentSliceHeightPx;
+					const ctx = pageCanvas.getContext('2d');
+
+					if (ctx) {
+						ctx.fillStyle = '#ffffff';
+						ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+						ctx.drawImage(
+							canvas,
+							0, renderedHeightPx, imgWidthPx, currentSliceHeightPx,
+							0, 0, imgWidthPx, currentSliceHeightPx
+						);
+
+						const sliceHeightMm = (currentSliceHeightPx / imgWidthPx) * pageWidthMm;
+						const pageData = pageCanvas.toDataURL('image/jpeg', 0.95);
+						pdf.addImage(pageData, 'JPEG', 0, marginY, pageWidthMm, sliceHeightMm);
+					}
+
+					renderedHeightPx += currentSliceHeightPx;
+					pageNumber++;
 				}
-
-				const currentSliceHeightPx = Math.min(canvasPageHeightPx, imgHeightPx - renderedHeightPx);
-
-				// Creamos un sub-canvas para cada página sin romper el buffer
-				const pageCanvas = document.createElement('canvas');
-				pageCanvas.width = imgWidthPx;
-				pageCanvas.height = currentSliceHeightPx;
-				const ctx = pageCanvas.getContext('2d');
-
-				if (ctx) {
-					ctx.fillStyle = '#ffffff';
-					ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-					ctx.drawImage(
-						canvas,
-						0, renderedHeightPx, imgWidthPx, currentSliceHeightPx,
-						0, 0, imgWidthPx, currentSliceHeightPx
-					);
-
-					const sliceHeightMm = (currentSliceHeightPx / imgWidthPx) * pageWidthMm;
-					const pageData = pageCanvas.toDataURL('image/jpeg', 0.95);
-					pdf.addImage(pageData, 'JPEG', 0, marginY, pageWidthMm, sliceHeightMm);
-				}
-
-				renderedHeightPx += currentSliceHeightPx;
-				pageNumber++;
 			}
 
 			this.loadingVisible = false;
@@ -6711,7 +6872,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.notifyFx('No se pudo generar el visor PDF del contrato.', NotifyType.Error);
 		}
 	}
-	
+
 	// Qué hace: limpia y revoca el ObjectURL del visor de vista previa al cerrarlo.
 	// Cómo lo hace: llama a URL.revokeObjectURL y limpia variables de enlace.
 	alOcultarPopupContratoPreview(): void {

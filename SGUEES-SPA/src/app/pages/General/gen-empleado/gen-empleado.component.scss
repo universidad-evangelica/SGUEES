@@ -1815,14 +1815,13 @@
 	min-height: 100%;
 }
 
-// Qué hace: simulación visual de hoja de papel A4 para la vista previa del contrato.
-// Cómo lo hace: replica las reglas de contención de gen-plantilla-contrato evitando que tablas,
-//              logos o elementos flotantes se desborden hacia el fondo oscuro del canvas.
+// Qué hace: simulación visual de hoja tamaño Carta para la vista previa del contrato.
+// Cómo lo hace: define un ancho proporcional de 740px con padding de 36px para replicar fielmente el papel Letter.
 .contrato-studio__sheet {
-	width: 794px;
+	width: 740px;
 	max-width: 100%;
-	min-height: 920px;
-	padding: 40px 38px;
+	min-height: 950px;
+	padding: 36px 34px;
 	box-sizing: border-box;
 	position: relative;
 	background: #ffffff;
@@ -1831,8 +1830,8 @@
 	border-radius: 4px;
 	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
 	font-family: 'Times New Roman', Georgia, serif;
-	line-height: 1.42;
-
+	line-height: 1.40;
+	
 	&::after {
 		content: '';
 		display: table;
@@ -2091,6 +2090,61 @@
 		padding: 24px 20px;
 		min-height: 480px;
 	}
+}
+
+/* Visor de contrato con la misma hoja del editor */
+::ng-deep .contrato-viewer-popup .dx-popup-content {
+	padding: 0 !important;
+	display: flex;
+	flex-direction: column;
+	background: var(--sguees-surface-canvas, #0f172a);
+	overflow: hidden;
+}
+
+.contrato-viewer {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+}
+
+.contrato-viewer__toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 10px 20px;
+	background: var(--sguees-surface-card, var(--card-background));
+	border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+	flex-shrink: 0;
+}
+
+.contrato-viewer__pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--sguees-text-primary, var(--base-text-color));
+}
+
+.contrato-viewer__actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.contrato-viewer__scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.contrato-viewer__canvas {
+	padding: 24px 28px 36px;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	min-height: 100%;
 }
 
 

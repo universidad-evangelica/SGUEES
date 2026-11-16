@@ -3339,20 +3339,58 @@
 	</div>
 </dx-popup>
 
-<!-- motivo: visor de contrato para ver o imprimir a pantalla completa con la misma apariencia que ver firmado -->
+<!-- motivo: visor de contrato para ver o imprimir con la misma apariencia y fidelidad exacta que la vista previa del editor -->
 <dx-popup
 	[(visible)]="popupContratoPreviewVisible"
 	[showTitle]="false"
 	[showCloseButton]="false"
 	[fullScreen]="true"
 	[dragEnabled]="false"
-	[wrapperAttr]="{ class: 'contrato-firmado-popup' }"
+	[wrapperAttr]="{ class: 'contrato-viewer-popup' }"
 	(onHidden)="alOcultarPopupContratoPreview()"
 >
-	<div *dxTemplate="let data of 'content'" class="contrato-firmado-viewer">
-		<!-- motivo: barra superior única con la X de cerrar idéntica a ver firmado -->
-		<header class="contrato-firmado-viewer__toolbar">
-			<div class="contrato-firmado-viewer__actions">
+	<div *dxTemplate="let data of 'content'" class="contrato-viewer">
+		<!-- motivo: barra superior con título del contrato, controles de zoom, botón de imprimir y botón cerrar -->
+		<header class="contrato-viewer__toolbar">
+			<div class="contrato-viewer__meta">
+				<span class="contrato-viewer__pill">
+					<i class="dx-icon dx-icon-doc"></i>
+					{{ contratoPreviewActual?.NOMBRE_PLANTILLA || 'Contrato' }} — {{ contratoPreviewActual?.NOMBRE_EMPLEADO || '' }}
+				</span>
+			</div>
+			<div class="contrato-viewer__actions">
+				<div class="contrato-studio__zoom-controls">
+					<dx-button
+						icon="minus"
+						stylingMode="text"
+						hint="Reducir zoom"
+						(onClick)="ajustarZoomPreviewContrato(-10)"
+						[disabled]="contratoPreviewZoom <= 70"
+					></dx-button>
+					<button
+						type="button"
+						class="contrato-studio__zoom-label"
+						(click)="restablecerZoomPreviewContrato()"
+						title="Restablecer al 100%"
+					>
+						{{ contratoPreviewZoom }}%
+					</button>
+					<dx-button
+						icon="plus"
+						stylingMode="text"
+						hint="Acercar zoom"
+						(onClick)="ajustarZoomPreviewContrato(10)"
+						[disabled]="contratoPreviewZoom >= 140"
+					></dx-button>
+				</div>
+				<dx-button
+					text="Imprimir"
+					icon="print"
+					type="default"
+					stylingMode="contained"
+					hint="Imprimir contrato o guardar en PDF"
+					(onClick)="imprimirContratoHtml()"
+				></dx-button>
 				<dx-button
 					icon="close"
 					stylingMode="text"
@@ -3362,18 +3400,18 @@
 				></dx-button>
 			</div>
 		</header>
-		<!-- motivo: visor PDF a pantalla completa con lector nativo del navegador -->
-		<div class="contrato-firmado-viewer__body" *ngIf="contratoPreviewPdfUrl">
-			<object
-				class="contrato-firmado-viewer__pdf"
-				[data]="contratoPreviewPdfUrl"
-				type="application/pdf"
-				width="100%"
-				height="100%"
-			>
-				<embed [src]="contratoPreviewPdfUrl" type="application/pdf" />
-			</object>
-		</div>
+
+		<!-- motivo: lienzo de vista previa idéntico a la hoja del editor con scroll y zoom sin cortes de página -->
+		<dx-scroll-view class="contrato-viewer__scroll" direction="both">
+			<div class="contrato-viewer__canvas">
+				<div
+					*ngIf="contratoPreviewHtml"
+					class="contrato-studio__sheet contrato-viewer__sheet"
+					[style.zoom]="contratoPreviewZoom / 100"
+					[innerHTML]="contratoPreviewHtml"
+				></div>
+			</div>
+		</dx-scroll-view>
 	</div>
 </dx-popup>
 
