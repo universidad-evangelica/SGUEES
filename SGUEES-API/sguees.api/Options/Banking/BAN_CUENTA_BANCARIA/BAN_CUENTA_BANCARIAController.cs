@@ -125,5 +125,13 @@ namespace sguees.Controllers
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAsync(Data);
 		}
+
+		[HttpGet("GetCORR_CUENTA_BANCO_COM_PAGO")]
+		[Authorize(Policy = "/com-pago|R")]
+		public async Task<CResult> GetCORR_CUENTA_BANCO_COM_PAGO([FromQuery] BAN_CUENTA_BANCARIAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

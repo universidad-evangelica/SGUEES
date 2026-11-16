@@ -132,5 +132,12 @@ namespace sguees.Controllers
         {
             return await _service.GetProveedoresComprasAsync(Data);
         }
+
+		[HttpGet("GetCORR_PROVEEDOR_COM_ORDEN_COMPRA")]
+		[Authorize(Policy = "/com-orden-compra|R")]
+		public async Task<CResult> GetCORR_PROVEEDOR_COM_ORDEN_COMPRA([FromQuery] COM_PROVEEDORParam Data)
+		{
+			return await _service.GetProveedoresAsync(Data);
+		}
 	}
 }

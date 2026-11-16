@@ -518,7 +518,7 @@
               'CORR_EMPRESA',
               'ANIO_PERIODO',
               'CORR_CUADRO_COMPARATIVO',
-              'NUMERO_ORDEN',
+              'CORR_ORDEN_COMPRA',
               'CORR_PROVEEDOR',
             ]"
             (onFocusedRowChanged)="gDataCuadroComparativoOrdenesCompraFocusedRowChanged($event)"
@@ -557,19 +557,25 @@
             <dxo-load-panel [enabled]="false"></dxo-load-panel>
             <dxo-search-panel [visible]="true"></dxo-search-panel>
             <dxo-export [enabled]="true" fileName="Ordenes Compra"></dxo-export>
-            <dxi-column dataField="NUMERO_ORDEN" caption="N° Orden" [visible]="true" [dataType]="'number'" [width]="'150px'">
+            <dxi-column dataField="NUMERO_ORDEN" caption="N° Orden" [visible]="true" [dataType]="'number'" [width]="'120px'">
             </dxi-column>
-            <dxi-column dataField="NOMBRE_ESTADO_ORDEN_COMPRA" caption="Estado" [dataType]="'string'" [width]="'150'">
+            <dxi-column dataField="CORR_ORDEN_COMPRA" caption="Corr. OC" [dataType]="'number'" [width]="'100px'">
             </dxi-column>
-            <dxi-column dataField="MONTO_TOTAL_ORDEN" caption="Total" [dataType]="'number'" [editorOptions]="{ format: '#,##0.00', readOnly: true }" [width]="'150px'">
+            <dxi-column dataField="NUMERO_ORDEN_COMPRA" caption="No. OC Nativo" [dataType]="'number'" [width]="'120px'">
             </dxi-column>
-            <dxi-column dataField="NOMBRE_PROVEEDOR" caption="Proveedor" [dataType]="'string'" [width]="'300px'">
+            <dxi-column dataField="FECHA_ORDEN_COMPRA" caption="Fecha" [dataType]="'date'" [format]="'dd/MM/yyyy'" [width]="'110px'">
             </dxi-column>
-            <dxi-column dataField="NOMBRE_CONDICION_PAGO" caption="Condición Pago" [dataType]="'string'" [width]="'300px'">
+            <dxi-column dataField="NOMBRE_ESTADO_ORDEN_COMPRA" caption="Estado" [dataType]="'string'" [width]="'120'">
             </dxi-column>
-            <dxi-column dataField="NOMBRE_FORMA_PAGO" caption="Forma Pago" [dataType]="'string'" [width]="'300px'">
+            <dxi-column dataField="MONTO_TOTAL_ORDEN" caption="Total" [dataType]="'number'" [editorOptions]="{ format: '#,##0.00', readOnly: true }" [width]="'130px'">
             </dxi-column>
-            <dxi-column dataField="DETALLE_FORMA_PAGO" caption="Detalle Forma Pago" [dataType]="'string'" [width]="'300px'">
+            <dxi-column dataField="NOMBRE_PROVEEDOR" caption="Proveedor" [dataType]="'string'" [width]="'280px'">
+            </dxi-column>
+            <dxi-column dataField="NOMBRE_CONDICION_PAGO" caption="Condición Pago" [dataType]="'string'" [width]="'220px'">
+            </dxi-column>
+            <dxi-column dataField="NOMBRE_FORMA_PAGO" caption="Forma Pago" [dataType]="'string'" [width]="'200px'">
+            </dxi-column>
+            <dxi-column dataField="DETALLE_FORMA_PAGO" caption="Detalle Forma Pago" [dataType]="'string'" [width]="'220px'">
             </dxi-column>
             <dxo-summary>
               <dxi-total-item

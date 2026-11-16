@@ -256,7 +256,6 @@ namespace sguees.Services
                 // Validar en AD existencia/habilitación (cambios mínimos):
                 // Si AD está habilitado, validar por `USUARIO_AD` si existe, sino por `LOGIN_SISTEMA`.
                 var adEnabled = _config.GetSection("ActiveDirectory:Enabled").Get<bool>();
-                bool adUserExists = false; // se usará para decidir si mostrar modal de cambio de clave
                 if (adEnabled && !string.IsNullOrWhiteSpace(DataUsuario.USUARIO_AD))
                 {
                     // Si AD está habilitado Y el usuario tiene USUARIO_AD, SIEMPRE validar en AD
@@ -306,8 +305,6 @@ namespace sguees.Services
                         return objResultado;
                     }
 
-                    // Si llegó aquí, el usuario existe y está activo en AD
-                    adUserExists = true;
                 }
 
                 // Usuario Autenticado y se busca sus Autorizaciones
@@ -341,9 +338,8 @@ namespace sguees.Services
                 var validacionExpiracion = await _repo.ValidarExpiracionClaveAsync(LOGIN_SISTEMA);
                 _logger.LogInformation($"[LoginAsync] Validación expiración - Requiere cambio: {validacionExpiracion.REQUIERE_CAMBIO_CLAVE}, Días para expirar: {validacionExpiracion.DIAS_PARA_EXPIRAR}");
                 
-                // Si no existe un usuario en AD (o no tiene USUARIO_AD), no mostrar modal: requiereCambio=false
-                // También requiere cambio si la contraseña ha expirado
-                bool requiereCambio = (esPrimerLogin && adUserExists) || validacionExpiracion.REQUIERE_CAMBIO_CLAVE;
+                // Primer login: cambio obligatorio para todos (local o AD). También si la clave expiró.
+                bool requiereCambio = esPrimerLogin || validacionExpiracion.REQUIERE_CAMBIO_CLAVE;
 
                 var Data = new SEG_USUARIO_LOGINView() {
                     LOGIN_SISTEMA = LOGIN_SISTEMA,
@@ -637,7 +633,8 @@ namespace sguees.Services
         #endregion
         public async Task<CResult> CambioClave(SEG_USUARIO_LOGINParam Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            return await EjecutarCambioClaveAsync(Data, vLOGIN_SISTEMA, vESTACION, true);
+            // Primer login / clave vencida: clave local en SGUEES. USUARIO_AD es opcional (login AD es aparte).
+            return await EjecutarCambioClaveAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         public async Task<CResult> SolicitarResetContrasenaAsync(string LOGIN_SISTEMA)
@@ -777,7 +774,13 @@ namespace sguees.Services
                 if (!tokenValido)
                 {
                     _logger.LogWarning("[ResetPassword] Token inválido o expirado para usuario {LoginSistema}.", Data?.LOGIN_SISTEMA);
-                    return new CResult { Result = false, ErrorCode = -1, RowsAffected = 0, ErrorMessage = "Token inválido o expirado" };
+                    return new CResult
+                    {
+                        Result = false,
+                        ErrorCode = -1,
+                        RowsAffected = 0,
+                        ErrorMessage = "El enlace de recuperación expiró o no es válido. Solicite un correo nuevo y use solo el último enlace recibido."
+                    };
                 }
 
                 var cambioData = new SEG_USUARIO_LOGINParam
@@ -787,7 +790,7 @@ namespace sguees.Services
                     CODIGO_SUITE = "SGUEES"
                 };
 
-                var resultado = await EjecutarCambioClaveAsync(cambioData, Data.LOGIN_SISTEMA, "self-service", false);
+                var resultado = await EjecutarCambioClaveAsync(cambioData, Data.LOGIN_SISTEMA, "self-service");
                 if (!resultado.Result)
                 {
                     if (string.IsNullOrWhiteSpace(resultado.ErrorMessage))
@@ -889,7 +892,7 @@ namespace sguees.Services
 			return await _repo.GetAllAsync(p);
         }
 
-        private async Task<CResult> EjecutarCambioClaveAsync(SEG_USUARIO_LOGINParam Data, string vLOGIN_SISTEMA, string vESTACION, bool validarUsuarioAD)
+        private async Task<CResult> EjecutarCambioClaveAsync(SEG_USUARIO_LOGINParam Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validaUsuario = await _repo.GetAsync(new List<CParameter>
             {
@@ -902,16 +905,6 @@ namespace sguees.Services
             }
 
             var usuario = (SEG_USUARIOView)validaUsuario.Data;
-            if (validarUsuarioAD && string.IsNullOrWhiteSpace(usuario.USUARIO_AD))
-            {
-                return new CResult
-                {
-                    Result = false,
-                    ErrorCode = -1,
-                    ErrorMessage = "Cambio de contraseña permitido solo para usuarios con USUARIO_AD asignado",
-                    RowsAffected = 0
-                };
-            }
 
             if (!string.IsNullOrWhiteSpace(Data.CLAVE_USUARIO))
             {
@@ -983,7 +976,7 @@ namespace sguees.Services
         private string GenerarTokenResetContrasena(string loginSistema, int corrEmpresa)
         {
             var secretKey = _config.GetSection("AppSetting:Token").Value;
-            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secretKey));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
 
             var claims = new List<Claim>
@@ -1012,7 +1005,7 @@ namespace sguees.Services
             {
                 var secretKey = _config.GetSection("AppSetting:Token").Value;
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(secretKey);
+                var key = Encoding.UTF8.GetBytes(secretKey);
 
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
@@ -1158,7 +1151,7 @@ namespace sguees.Services
 				CODIGO_SUITE = data.CODIGO_SUITE ?? "SGUEES",
 			};
 
-			return await EjecutarCambioClaveAsync(cambioData, loginSistema, loginSistema, false);
+			return await EjecutarCambioClaveAsync(cambioData, loginSistema, loginSistema);
 		}
 
 		private static CResult ValidarPoliticaClave(string clave)

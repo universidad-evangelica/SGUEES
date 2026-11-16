@@ -122,7 +122,8 @@ namespace sguees.Controllers
 		[HttpGet("menu")]
 		public async Task<IActionResult> GetMenu()
 		{
-			var LOGIN_SISTEMA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value.ToLower();
+			// Mismo login que el JWT (casing original). ToLower() rompe usuarios como AuditoriaI en BD CS_AS.
+			var LOGIN_SISTEMA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 			var CODIGO_SUITE = User.Claims.ToList().SingleOrDefault(e => e.Type == "CODIGO_SUITE").Value;
 
 			var Response = await _service.GetMenuAsync(LOGIN_SISTEMA, CODIGO_SUITE);

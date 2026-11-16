@@ -31,6 +31,7 @@ export class AppComponent implements OnInit, OnDestroy {
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {
         this.isPublicPortal = this.resolvePublicPortal();
+        this.sincronizarVistaSinSesion();
       });
   }
 
@@ -58,13 +59,14 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.esRutaLogin();
   }
 
-  // Qué hace: si la sesión ya no está y la ruta sigue siendo del sistema, abre el login.
-  // Cómo lo hace: el outlet queda oculto hasta que la ruta sea el login.
-  asegurarLogin(): boolean {
-    if (!this.authService.loggedIn && !this.esRutaLogin() && !this.isPublicPortal) {
-      this.authService.irAlLogin();
-    }
-    return true;
+  /** Login / recuperación con layout split pantalla completa (sin tarjeta 330px). */
+  esRutaAccesoPantallaCompleta(): boolean {
+    const path = this.rutaActual();
+    return (
+      path.includes('login-form') ||
+      path.includes('recuperar-contrasena') ||
+      path.includes('reset-password')
+    );
   }
 
   ngOnDestroy(): void {
@@ -82,10 +84,21 @@ export class AppComponent implements OnInit, OnDestroy {
 			void this.notificationSignalRService.startConnection();
 		}
     this.isPublicPortal = this.resolvePublicPortal();
+    this.sincronizarVistaSinSesion();
 	}
 
+  /**
+   * Incluye pathname real: al arrancar router.url puede estar vacío
+   * y eso provocaba redirect infinito (parpadeo) en /login-form.
+   */
+  private rutaActual(): string {
+    const routerPath = `${this.router.url || ''}`.split('?')[0];
+    const browserPath = `${window.location?.pathname || ''}`.split('?')[0];
+    return `${routerPath} ${browserPath}`.toLowerCase();
+  }
+
   private esRutaLogin(): boolean {
-    const path = `${this.router.url || ''}`.split('?')[0];
+    const path = this.rutaActual();
     return (
       path.includes('login-form') ||
       path.includes('recuperar-contrasena') ||
@@ -96,7 +109,22 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private resolvePublicPortal(): boolean {
-    const path = `${this.router.url || ''} ${window.location.pathname || ''}`.split('?')[0];
-    return path.includes('formulario-empleo');
+    return this.rutaActual().includes('formulario-empleo');
+  }
+
+  /** Sin side-effects en el template: limpia cierre y solo redirige si NO estamos en login. */
+  private sincronizarVistaSinSesion(): void {
+    if (this.authService.loggedIn || this.isPublicPortal) {
+      return;
+    }
+
+    if (this.esRutaLogin()) {
+      document.body.classList.remove('sguees-sesion-cerrada');
+      return;
+    }
+
+    if (!this.authService.cerrandoSesion) {
+      this.authService.irAlLogin();
+    }
   }
 }

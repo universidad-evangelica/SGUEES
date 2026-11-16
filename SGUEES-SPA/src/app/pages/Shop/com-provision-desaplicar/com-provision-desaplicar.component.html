@@ -1,0 +1,128 @@
+<div class="sguees-mtto-view">
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="true"
+	[showRibbon]="true"
+	[permiteAdd]="false"
+	[showRefresh]="true"
+	[showDates]="true"
+	(consultar)="consultar()"
+	[(FECHA_INICIAL)]="vFECHA_INICIAL"
+	[(FECHA_FINAL)]="vFECHA_FINAL"
+	[btn1]="'Desaplicar'"
+	[btn1Icon]="'revert'"
+	[btn1Type]="'success'"
+	(btn1Click)="desAplicar()"
+	[btn1Width]="130"
+	[btn1Mode]="'contained'"
+>
+</app-barra-data-mtto>
+
+	<dx-data-grid
+		[dataSource]="models"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[focusedRowEnabled]="true"
+		[height]="600"
+		[width]="'100%'"
+		[keyExpr]="['ANIO_PERIODO','MES_PERIODO','CORR_PROVISION']"
+		(onExporting)="onExporting($event)"
+	>
+		<dxo-toolbar>
+			<dxi-item location="before" [visible]="true">
+				<div *dxTemplate>
+					<dx-button
+						icon="add"
+						text="Todos"
+						type="success"
+						(onClick)="selectTodos()"
+						[visible]="!readOnly"
+						width="100"
+					>
+					</dx-button>
+				</div>
+			</dxi-item>
+			<dxi-item location="before" [visible]="true">
+				<div *dxTemplate>
+					<dx-button
+						text="Ninguno"
+						icon="minus"
+						type="danger"
+						(onClick)="selectNinguno()"
+						[visible]="!readOnly"
+						width="105"
+					>
+					</dx-button>
+				</div>
+			</dxi-item>
+			<dxi-item name="exportButton" location="after"></dxi-item>
+			<dxi-item name="searchPanel" location="after"></dxi-item>
+		</dxo-toolbar>
+		<dxo-editing
+			mode="cell"
+			[refreshMode]="'reshape'"
+			[allowAdding]="false"
+			[allowUpdating]="!readOnly"
+			[allowDeleting]="false"
+			[useIcons]="true"
+		>
+		</dxo-editing>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-search-panel [visible]="true"></dxo-search-panel>
+		<dxo-export [enabled]="true" fileName="ProvisionesDesaplicar"></dxo-export>
+		<dxo-group-panel [visible]="true"></dxo-group-panel>
+		<dxo-grouping [autoExpandAll]="true"></dxo-grouping>
+		<dxo-filter-panel [visible]="true"></dxo-filter-panel>
+		<dxo-filter-row [visible]="true"></dxo-filter-row>
+		<dxo-header-filter [visible]="true"></dxo-header-filter>
+		<dxo-scrolling mode="virtual" useNative="true"></dxo-scrolling>
+
+		<dxi-column dataField="SELECCION" caption="" [dataType]="'boolean'" width="100" [allowEditing]="true"></dxi-column>
+		<dxi-column dataField="ANIO_PERIODO" caption="Año" width="90" [groupIndex]="0" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="MES_PERIODO" caption="Mes" width="80" [groupIndex]="1" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="CORR_PROVISION" caption="Corr." width="90" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="FECHA_PROVISION" caption="Fecha" dataType="date" width="120" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="NOMBRE_ESTADO_PROVISION" caption="Estado" width="110" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="NOMBRE_PROVEEDOR" caption="Proveedor" width="260" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="MONTO_PAGO" caption="Monto" dataType="number" width="120" [allowEditing]="allowEditing">
+			<dxo-format type="fixedPoint" [precision]="2"></dxo-format>
+		</dxi-column>
+		<dxi-column dataField="NOMBRE_PARTIDA" caption="Descripción partida" width="320" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="NOMBRE_CLASE_PARTIDA" caption="Clase partida" width="160" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="CORR_PARTIDA" caption="Partida" width="100" [allowEditing]="allowEditing"></dxi-column>
+
+		<dxo-summary>
+			<dxi-total-item
+				column="CORR_PROVISION"
+				summaryType="count"
+				valueFormat="#,##0"
+				displayFormat="Cant: {0}"
+			>
+			</dxi-total-item>
+			<dxi-total-item
+				column="MONTO_PAGO"
+				summaryType="sum"
+				valueFormat="#,##0.00"
+				displayFormat="Total: {0}"
+			>
+			</dxi-total-item>
+		</dxo-summary>
+	</dx-data-grid>
+</div>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

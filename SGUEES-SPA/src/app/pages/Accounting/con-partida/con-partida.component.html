@@ -51,68 +51,12 @@
 	[btn5Icon]="'paste'"
 	[btn5Width]="180"
 	(btn5Click)="irGenerarDesdeModelo()"
+	[btn6]="btnContrapartida"
+	[btn6Icon]="'revert'"
+	[btn6Width]="160"
+	(btn6Click)="abrirContrapartida()"
+	[btn6Type]="'default'"
 >
-	<ng-template barraRibbonTabTitle="Procesos contables" [barraRibbonTabVisible]="showProcesosEnGrid">
-		<div class="partida-procesos-left">
-			<div class="partida-procesos-header">
-				<div class="partida-procesos-title">Procesos Contables</div>
-				<div class="partida-procesos-subtitle">
-					Apertura, liquidación y cierre del período seleccionado
-				</div>
-			</div>
-
-			<div class="partida-periodo-box">
-				<div class="partida-periodo-label">Período</div>
-				<div class="partida-periodo-inputs">
-					<dx-number-box
-						[(value)]="vANIO_PERIODO_CIERRE"
-						[min]="2000"
-						[max]="2100"
-						[showSpinButtons]="true"
-						[width]="90"
-						[height]="44"
-					></dx-number-box>
-					<dx-number-box
-						[(value)]="vMES_PERIODO_CIERRE"
-						[min]="1"
-						[max]="12"
-						[showSpinButtons]="true"
-						[width]="70"
-						[height]="44"
-					></dx-number-box>
-				</div>
-			</div>
-
-			<div class="partida-procesos-actions">
-				<dx-button
-					*ngIf="btnPartidaApertura"
-					text="Apertura"
-					icon="unlock"
-					type="default"
-					stylingMode="contained"
-					(onClick)="ejecutarPartidaEspecial('APE')"
-				></dx-button>
-				<dx-button
-					*ngIf="btnPartidaLiquidacion"
-					text="Liquidación"
-					icon="money"
-					stylingMode="contained"
-					type="success"
-					(onClick)="ejecutarPartidaEspecial('LIQ')"
-				></dx-button>
-				<dx-button
-					*ngIf="btnPartidaCierre"
-					text="Cierre"
-					icon="lock"
-					type="danger"
-					stylingMode="contained"
-					(onClick)="ejecutarPartidaEspecial('CIE')"
-				></dx-button>
-			</div>
-		</div>
-	</ng-template>
-
-	
 </app-barra-data-mtto>
 
 <div *ngIf="!isBrowse()" class="partida-edit-shell">
@@ -137,6 +81,7 @@
 				[(value)]="model.MES_PERIODO"
 				[selectedRowKeys]="selectedLookUpLista"
 				[readOnly]="readOnly"
+				(valueChange)="onMesPeriodoChanged($event)"
 			>
 			</app-data-lookup>
 		</div>
@@ -501,6 +446,27 @@
 >
 </app-data-grid-mtto>
 </div>
+
+<dx-popup
+	[(visible)]="contrapartidaModalVisible"
+	title="Contrapartida"
+	[width]="'94%'"
+	[maxWidth]="1280"
+	[height]="'90%'"
+	[maxHeight]="800"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="false"
+>
+	<div *dxTemplate="let data of 'content'" class="con-partida-contrapartida-popup">
+		<app-con-partida-contrapartida-modal
+			*ngIf="contrapartidaModalVisible"
+			[permiteGenerar]="permiteEdit"
+			(generated)="onContrapartidaGenerada()"
+			(cancelled)="contrapartidaModalVisible = false"
+		></app-con-partida-contrapartida-modal>
+	</div>
+</dx-popup>
 
 <dx-popup
 	[(visible)]="importExcelVisible"

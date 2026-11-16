@@ -37,6 +37,7 @@ export class LoginFormComponent {
   // Variables para modal de cambio de contraseña
   showChangePasswordModal = false;
   loginSistemaForPasswordChange = '';
+  pendingLoginPassword = '';
   passwordChangeReason: 'first-login' | 'password-expired' = 'first-login';
 
   passwordEditorOptions = {
@@ -82,9 +83,9 @@ export class LoginFormComponent {
         if (response && response.Result) {
           // Verificar si requiere cambio de contraseña
           if (response.Data.REQUIERE_CAMBIO_CLAVE) {
+            this.authService.clearPendingLoginSession();
             this.loginSistemaForPasswordChange = usuario;
-            // Determinar razón del cambio de contraseña
-            // Primer login si ES_PRIMER_LOGIN es true, sino expiración
+            this.pendingLoginPassword = password;
             this.passwordChangeReason = response.Data.ES_PRIMER_LOGIN
               ? 'first-login'
               : 'password-expired';
@@ -226,23 +227,52 @@ export class LoginFormComponent {
     return label ? `${label}: ${message}` : message;
   }
 
-  onPasswordChanged() {
-    // Después del cambio de contraseña exitoso
+  onPasswordChanged(nuevaClave: string) {
     this.showChangePasswordModal = false;
+    this.loading = true;
 
+    this.authService
+      .logIn(this.loginSistemaForPasswordChange, nuevaClave)
+      .pipe(take(1))
+      .subscribe({
+        next: (response: any) => {
+          this.loading = false;
+          this.pendingLoginPassword = '';
+          if (response?.Result && !response.Data?.REQUIERE_CAMBIO_CLAVE) {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Éxito',
+              detail: 'Contraseña actualizada. Bienvenido.',
+              life: 2500,
+            });
+            void this.notificationSignalRService.startConnection();
+            this.router.navigate(['/home']);
+            return;
+          }
+          this.showLoginError(response?.ErrorMessage || 'Inicie sesión con su nueva contraseña.');
+        },
+        error: () => {
+          this.loading = false;
+          this.pendingLoginPassword = '';
+          this.showLoginError('No se pudo iniciar sesión con la nueva contraseña.');
+        },
+      });
+  }
+
+  onPasswordChangeCancelled() {
+    this.authService.clearPendingLoginSession();
+    this.showChangePasswordModal = false;
+    this.pendingLoginPassword = '';
+    this.loginSistemaForPasswordChange = '';
+    if (this.formData) {
+      this.formData.password = '';
+    }
     this.messageService.add({
-      severity: 'success',
-      summary: 'Éxito',
-      detail: 'Contraseña actualizada. Redirigiendo...',
-      life: 2000
+      severity: 'info',
+      summary: 'Cambio pendiente',
+      detail: 'Debe cambiar su contraseña para ingresar al sistema.',
+      life: 4000,
     });
-
-    // Redirigir al home (si ya hay JWT de sesión, abrir SignalR).
-    setTimeout(() => {
-      this.formData = {};
-      void this.notificationSignalRService.startConnection();
-      this.router.navigate(['/home']);
-    }, 2000);
   }
 }
 

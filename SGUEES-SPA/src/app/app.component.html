@@ -39,14 +39,14 @@
     </app-side-nav-outer-toolbar>
   </ng-container>
 
-  <!-- Qué hace: sin sesión solo se ve el login. La pantalla que estaba abierta no entra en la tarjeta de 330px. -->
+  <!-- Sin sesión: un solo outlet estable. Login/recuperación a pantalla completa (sin tarjeta 330px). -->
   <ng-template #fueraDeSesion>
-    <app-unauthenticated-content *ngIf="esRutaAcceso(); else salidaOculta"></app-unauthenticated-content>
-    <ng-template #salidaOculta>
-      <div class="sguees-salida-sesion" *ngIf="asegurarLogin()">
-        <router-outlet></router-outlet>
-      </div>
+    <router-outlet *ngIf="esRutaAccesoPantallaCompleta(); else accesoConTarjeta"></router-outlet>
+    <ng-template #accesoConTarjeta>
+      <app-unauthenticated-content *ngIf="esRutaAcceso(); else salidaOculta"></app-unauthenticated-content>
+      <ng-template #salidaOculta>
+        <div class="sguees-salida-sesion"></div>
+      </ng-template>
     </ng-template>
   </ng-template>
 </ng-template>
-

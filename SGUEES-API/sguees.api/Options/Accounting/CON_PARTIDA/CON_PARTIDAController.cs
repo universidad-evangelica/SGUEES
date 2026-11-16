@@ -213,8 +213,35 @@ namespace sguees.Controllers
 			}
 		}
 
+		[HttpGet("GetPeriodosDestinoContrapartida")]
+		[Authorize(Policy = "/con-partida|R")]
+		public async Task<CResult> GetPeriodosDestinoContrapartida([FromQuery] CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetPeriodosDestinoContrapartidaAsync(Data);
+		}
+
+		[HttpGet("GetAllContrapartidaElegible")]
+		[Authorize(Policy = "/con-partida|R")]
+		public async Task<CResult> GetAllContrapartidaElegible([FromQuery] CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllContrapartidaElegibleAsync(Data);
+		}
+
+		[HttpPut("GenerarContrapartida")]
+		[Authorize(Policy = "/con-partida|C")]
+		public async Task<IActionResult> GenerarContrapartida(CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var login = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value?.ToLower() ?? "";
+			var estacion = ClientInfoHelper.GetClientStation(HttpContext);
+			var resultado = await _service.GenerarContrapartidaAsync(Data, login, estacion);
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
 		[HttpPut("GenerarPartidaLiquidacion")]
-		[Authorize(Policy = "/con-partida|U")]
+		[Authorize(Policy = "/con-partida-especial|U")]
 		public async Task<IActionResult> GenerarPartidaLiquidacion(CON_PARTIDAParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -225,7 +252,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpPut("GenerarPartidaCierre")]
-		[Authorize(Policy = "/con-partida|U")]
+		[Authorize(Policy = "/con-partida-especial|U")]
 		public async Task<IActionResult> GenerarPartidaCierre(CON_PARTIDAParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -236,7 +263,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpPut("GenerarPartidaApertura")]
-		[Authorize(Policy = "/con-partida|U")]
+		[Authorize(Policy = "/con-partida-especial|U")]
 		public async Task<IActionResult> GenerarPartidaApertura(CON_PARTIDAParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

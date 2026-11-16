@@ -171,6 +171,13 @@ namespace sguees.Controllers
             return _service.GetMES();
         }
 
+        [HttpGet("GetMES_COM_PROVISION")]
+        [Authorize(Policy = "/com-provision|R")]
+        public CResult GetMES_COM_PROVISION()
+        {
+            return _service.GetMES();
+        }
+
         [HttpGet("GetMES_CON_PARTIDA")]
         [Authorize(Policy = "/con-partida|R")]
         public CResult GetMES_CON_PARTIDA()

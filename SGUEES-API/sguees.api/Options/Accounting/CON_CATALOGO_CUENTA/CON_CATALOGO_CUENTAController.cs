@@ -110,6 +110,13 @@ namespace sguees.Controllers
 			return await GetCuentasDetalleAsync(Data);
 		}
 
+		[HttpGet("GetCUENTA_CONTABLE_COM_PROVISION")]
+		[Authorize(Policy = "/com-provision|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_COM_PROVISION([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			return await GetCuentasDetalleAsync(Data);
+		}
+
 		[HttpGet("GetCUENTA_CONTABLE_BAN_DOCUMENTO")]
 		[Authorize(Policy = "/ban-documento|R")]
 		public async Task<CResult> GetCUENTA_CONTABLE_BAN_DOCUMENTO([FromQuery] CON_CATALOGO_CUENTAParam Data)

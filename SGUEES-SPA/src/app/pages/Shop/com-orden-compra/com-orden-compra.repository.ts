@@ -17,6 +17,10 @@ export class ComOrdenCompraRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlCOMPRASAPI);
 	}
 
+	getOne(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlCOMPRASAPI);
+	}
+
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlCOMPRASAPI);
 	}
@@ -29,8 +33,19 @@ export class ComOrdenCompraRepository {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlCOMPRASAPI);
 	}
 
-  getPDF(xWhere: IParam[]): Observable<Blob> {
-		return this.objData.GetBlob(this.xController, 'getPDF', xWhere, environment.UrlCOMPRASAPI);
+	Aplicar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'Aplicar', xWhere, environment.UrlCOMPRASAPI);
 	}
 
+	Anular(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'Anular', xWhere, environment.UrlCOMPRASAPI);
+	}
+
+	DesAplicar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'DesAplicar', xWhere, environment.UrlCOMPRASAPI);
+	}
+
+	getPDF(xWhere: IParam[]): Observable<Blob> {
+		return this.objData.GetBlob(this.xController, 'getPDF', xWhere, environment.UrlCOMPRASAPI);
+	}
 }

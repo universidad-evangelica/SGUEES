@@ -64,9 +64,14 @@ body.sguees-theme-dark .dx-drawer-panel-content {
 // Cómo lo hace: oculta el marco, los popup y el outlet de paso hasta que el login ya está en pantalla.
 body.sguees-sesion-cerrada app-side-nav-outer-toolbar,
 body.sguees-sesion-cerrada .dx-popup-wrapper,
-body.sguees-sesion-cerrada .dx-overlay-shader,
-.sguees-salida-sesion {
+body.sguees-sesion-cerrada .dx-overlay-shader {
   display: none !important;
+}
+
+// Durante el cierre, no mostrar la vista anterior; el login llega por recarga o por ruta de acceso.
+body.sguees-sesion-cerrada .sguees-salida-sesion {
+  min-height: 100vh;
+  visibility: hidden;
 }
 
 a {

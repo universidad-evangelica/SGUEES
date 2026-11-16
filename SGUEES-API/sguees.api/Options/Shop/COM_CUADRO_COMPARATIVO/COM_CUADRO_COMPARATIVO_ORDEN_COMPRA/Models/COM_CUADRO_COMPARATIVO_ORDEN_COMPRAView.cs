@@ -8,6 +8,7 @@ namespace sguees.Models
 		public int ANIO_PERIODO { get; set; }
 		public int CORR_CUADRO_COMPARATIVO { get; set; }
 		public int NUMERO_ORDEN { get; set; }
+		public int? CORR_ORDEN_COMPRA { get; set; }
 		public int CORR_PROVEEDOR { get; set; }
 		public string NOMBRE_PROVEEDOR { get; set; }
 		public decimal MONTO_TOTAL_ORDEN { get; set; }
@@ -18,6 +19,8 @@ namespace sguees.Models
 		public string NOMBRE_FORMA_PAGO { get; set; }
 		public string DETALLE_FORMA_PAGO { get; set; }
 		public string ESTADO_ORDEN_COMPRA { get; set; }
-        public string NOMBRE_ESTADO_ORDEN_COMPRA { get; set; }
+		public string NOMBRE_ESTADO_ORDEN_COMPRA { get; set; }
+		public DateTime? FECHA_ORDEN_COMPRA { get; set; }
+		public int? NUMERO_ORDEN_COMPRA { get; set; }
 	}
 }

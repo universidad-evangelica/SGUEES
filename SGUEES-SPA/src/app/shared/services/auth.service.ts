@@ -4,7 +4,7 @@ import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from
 import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { JwtHelperService } from '@auth0/angular-jwt';
-import { map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { Observable, lastValueFrom, of } from 'rxjs';
 import notify from 'devextreme/ui/notify';
 
@@ -171,24 +171,31 @@ export class AuthService {
   }
 
   async changePassword(password: string, recoveryCode: string, loginSistema: string) {
+    const fallback =
+      'No fue posible restablecer la contraseña. Solicite un nuevo enlace de recuperación e inténtelo nuevamente.';
+
     try {
       const response: any = await lastValueFrom(
-        this.http.post(this.urlMtto + 'restablecer-contrasena', {
-          LOGIN_SISTEMA: loginSistema,
-          RESET_TOKEN: recoveryCode,
-          CLAVE_USUARIO_NUEVA: password,
-        })
+        this.http
+          .post(this.urlMtto + 'restablecer-contrasena', {
+            LOGIN_SISTEMA: loginSistema,
+            RESET_TOKEN: recoveryCode,
+            CLAVE_USUARIO_NUEVA: password,
+          })
+          .pipe(
+            catchError((error: any) =>
+              of({
+                Result: false,
+                ErrorMessage: this.resolveHttpFailure(error, fallback),
+              })
+            )
+          )
       );
 
       if (response?.Result === false) {
-        const backendMessage =
-          response?.ErrorMessage ||
-          response?.errorMessage ||
-          response?.message;
-
         return {
           isOk: false,
-          message: backendMessage || 'No fue posible restablecer la contraseña',
+          message: this.normalizeResetPasswordError(response, fallback),
         };
       }
 
@@ -198,9 +205,52 @@ export class AuthService {
     } catch (error: any) {
       return {
         isOk: false,
-        message: this.extractErrorMessage(error, 'No fue posible restablecer la contraseña'),
+        message: this.resolveHttpFailure(error, fallback),
       };
     }
+  }
+
+  private normalizeResetPasswordError(payload: any, fallback: string): string {
+    const backendMessage =
+      payload?.ErrorMessage || payload?.errorMessage || payload?.message;
+
+    if (typeof backendMessage === 'string' && backendMessage.trim()) {
+      return backendMessage.trim();
+    }
+
+    return fallback;
+  }
+
+  /** ErrorInterceptor suele devolver string "Error: ..."; aquí se reconstruye el mensaje útil. */
+  private resolveHttpFailure(error: any, fallback: string): string {
+    if (typeof error === 'string') {
+      const cleaned = error.replace(/^Error:\s*/i, '').trim();
+      return cleaned || fallback;
+    }
+
+    const payload = error?.error ?? error;
+
+    if (typeof payload === 'string') {
+      const trimmed = payload.trim();
+      if (trimmed.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (parsed?.ErrorMessage) {
+            return String(parsed.ErrorMessage).trim();
+          }
+        } catch {
+          // ignore
+        }
+      }
+      const cleaned = trimmed.replace(/^Error:\s*/i, '').trim();
+      return cleaned || fallback;
+    }
+
+    if (payload?.ErrorMessage && typeof payload.ErrorMessage === 'string') {
+      return payload.ErrorMessage.trim();
+    }
+
+    return this.extractErrorMessage(error, fallback);
   }
 
   async resetPassword(loginSistema: string) {
@@ -274,6 +324,13 @@ export class AuthService {
 		return fromToken || fromSession || 'SGUEES';
 	}
 
+	/** Limpia token y contexto sin navegar (p. ej. cancelar cambio de clave obligatorio). */
+	clearPendingLoginSession(): void {
+		this.clearOwnedSession();
+		this.decodedToken = {} as any;
+		this.mainMenu = [];
+	}
+
 	applyLoginSession(loginData: any): void {
 		if (!loginData?.TOKEN) {
 			return;
@@ -341,9 +398,7 @@ export class AuthService {
 
 	private handlingSessionExpiry = false;
 	private sessionClosing = false;
-	private yendoAlLogin: Promise<boolean> | null = null;
-	private loginProgramado = false;
-	private intentosLogin = 0;
+	private redireccionLoginEnCurso = false;
 
 	get isHandlingSessionExpiry(): boolean {
 		return this.handlingSessionExpiry;
@@ -384,51 +439,43 @@ export class AuthService {
 
 	async logOut(): Promise<void> {
 		this.sessionClosing = true;
+		this.handlingSessionExpiry = false;
 		document.body.classList.add('sguees-sesion-cerrada');
 		this.clearOwnedSession();
 		this.decodedToken = {} as any;
 		this.mainMenu = [];
-		this.irAlLogin();
+		this.redirigirAlLoginFormulario(true);
 	}
 
-	// Qué hace: manda al login y no suelta el cierre hasta que esa ruta ya está en pantalla.
-	// Cómo lo hace: si la navegación se cancela, la reintenta. Así la pantalla abierta no cae en la tarjeta de 330px.
+	// Cierre de sesión o ruta protegida sin token: recarga al login (evita bucle router + pantalla en blanco en /sguees/.../opción).
 	irAlLogin(): void {
-		this.sessionClosing = true;
-		document.body.classList.add('sguees-sesion-cerrada');
+		this.redirigirAlLoginFormulario(false);
+	}
+
+	private redirigirAlLoginFormulario(forzar: boolean): void {
 		if (this.estaEnRutaAcceso()) {
+			this.redireccionLoginEnCurso = false;
 			this.soltarCierreDeSesion();
 			return;
 		}
-		if (this.yendoAlLogin || this.loginProgramado) {
-			return;
-		}
-		if (this.intentosLogin >= 3) {
-			window.location.assign(this.location.prepareExternalUrl('/login-form'));
+
+		if (this.redireccionLoginEnCurso && !forzar) {
 			return;
 		}
 
-		this.loginProgramado = true;
-		setTimeout(() => {
-			this.loginProgramado = false;
-			if (this.estaEnRutaAcceso()) {
-				this.soltarCierreDeSesion();
-				return;
-			}
-			if (this.yendoAlLogin) {
-				return;
-			}
-			this.intentosLogin += 1;
-			this.yendoAlLogin = this.router.navigate(['/login-form'], { replaceUrl: true }).finally(() => {
-				this.yendoAlLogin = null;
-				if (this.estaEnRutaAcceso()) {
-					this.intentosLogin = 0;
-					this.soltarCierreDeSesion();
-					return;
-				}
-				this.irAlLogin();
-			});
-		}, 0);
+		const destino = this.location.prepareExternalUrl('/login-form');
+		const actual = `${window.location.pathname || ''}${window.location.search || ''}${window.location.hash || ''}`;
+		// Evita reload infinito si ya estamos en login (pathname vs router.url desfasados).
+		if (actual.toLowerCase().includes('login-form')) {
+			this.redireccionLoginEnCurso = false;
+			this.soltarCierreDeSesion();
+			return;
+		}
+
+		this.redireccionLoginEnCurso = true;
+		this.sessionClosing = true;
+		document.body.classList.add('sguees-sesion-cerrada');
+		window.location.assign(destino);
 	}
 
 	// Qué hace: ya se puede mostrar el login.
@@ -440,7 +487,9 @@ export class AuthService {
 	}
 
 	private estaEnRutaAcceso(): boolean {
-		const path = `${this.router.url || ''}`.split('?')[0];
+		const routerPath = `${this.router.url || ''}`.split('?')[0];
+		const browserPath = `${window.location?.pathname || ''}`.split('?')[0];
+		const path = `${routerPath} ${browserPath}`.toLowerCase();
 		return (
 			path.includes('login-form') ||
 			path.includes('recuperar-contrasena') ||
@@ -754,7 +803,7 @@ export class AuthGuardService implements CanActivate {
 		// eslint-disable-next-line prefer-const
 		routerUrl = '/' + primerSegmento;
 
-		if (isLoggedIn && isAuthForm && !isPublicForm) {
+		if (isLoggedIn && isAuthForm && !isPublicForm && !this.authService.cerrandoSesion) {
 			this.authService.lastAuthenticatedPath = defaultPath;
 			this.router.navigate([defaultPath]);
 			return false;
@@ -762,6 +811,7 @@ export class AuthGuardService implements CanActivate {
 
 		if (!isLoggedIn && !isAuthForm) {
 			this.authService.irAlLogin();
+			return isAuthForm;
 		}
 
 		if (isLoggedIn) {

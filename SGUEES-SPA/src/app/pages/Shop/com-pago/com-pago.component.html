@@ -1,0 +1,396 @@
+<div class="sguees-mtto-view">
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[showRibbon]="true"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+	[showRefresh]="true"
+	[showDates]="true"
+	(consultar)="consultar()"
+	[(FECHA_INICIAL)]="vFECHA_INICIAL"
+	[(FECHA_FINAL)]="vFECHA_FINAL"
+	[btn1]="btnAplicar"
+	[btn1Icon]="'check'"
+	[btn1Type]="'success'"
+	(btn1Click)="Aplicar()"
+	[btn1Width]="100"
+	[btn1Mode]="'contained'"
+	[btn2]="btnAnular"
+	[btn2Icon]="'close'"
+	[btn2Type]="'danger'"
+	(btn2Click)="Anular()"
+	[btn2Width]="100"
+	[btn2Mode]="'contained'"
+	[btn3]="btnGenerarConta"
+	[btn3Icon]="'formula'"
+	[btn3Type]="'default'"
+	(btn3Click)="GenerarConta()"
+	[btn3Width]="140"
+	[btn3Mode]="'contained'"
+	[btn4]="btnAsignarArchivo"
+	[btn4Icon]="'attach'"
+	[btn4Type]="'default'"
+	(btn4Click)="MostrarAsignarArchivo()"
+	[btn4Width]="150"
+	[btn4Mode]="'contained'"
+>
+</app-barra-data-mtto>
+
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="10" [items]="items">
+		<div *dxTemplate="let cellInfo of 'ESTADO_PAGOLookup'">
+			<app-data-lookup
+				[model]="mESTADO_PAGO"
+				[(value)]="model.ESTADO_PAGO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="true"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_TIPO_DOCLookup'">
+			<app-data-lookup
+				[model]="mCORR_TIPO_DOC"
+				[(value)]="model.CORR_TIPO_DOC"
+				[valueExpr]="'CORR_TIPO_DOC'"
+				[displayExpr]="'NOMBRE_TIPO_DOC'"
+				[selectedRowKeys]="selectedLookUpCORR_TIPO_DOC"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_PROVEEDORLookup'">
+			<app-data-lookup
+				[model]="mCORR_PROVEEDOR"
+				[(value)]="model.CORR_PROVEEDOR"
+				[valueExpr]="'CORR_PROVEEDOR'"
+				[displayExpr]="'NOMBRE_PROVEEDOR'"
+				[lookupColumns]="proveedorLookupColumns"
+				[selectedRowKeys]="selectedLookUpCORR_PROVEEDOR"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_CUENTA_BANCOLookup'">
+			<app-data-lookup
+				[model]="mCORR_CUENTA_BANCO"
+				[(value)]="model.CORR_CUENTA_BANCO"
+				[valueExpr]="'CORR_CUENTA_BANCO'"
+				[displayExpr]="'NOMBRE_CUENTA_BANCO'"
+				[lookupColumns]="cuentaLookupColumns"
+				[selectedRowKeys]="selectedLookUpCORR_CUENTA_BANCO"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_TIPO_CHEQUELookup'">
+			<app-data-lookup
+				[model]="mCORR_TIPO_CHEQUE"
+				[(value)]="model.CORR_TIPO_CHEQUE"
+				[valueExpr]="'CORR_TIPO_CHEQUE'"
+				[displayExpr]="'NOMBRE_TIPO_CHEQUE'"
+				[lookupColumns]="tipoChequeLookupColumns"
+				[selectedRowKeys]="selectedLookUpCORR_TIPO_CHEQUE"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+
+	<dx-tab-panel
+		[height]="'100%'"
+		[loop]="false"
+		[animationEnabled]="false"
+		[swipeEnabled]="true"
+		[(selectedIndex)]="IndexTab"
+	>
+		<dxi-item title="Documentos" icon="doc">
+			<div class="form">
+				<div class="dx-fieldset">
+					<div class="dx-field">
+						<dx-data-grid
+							#gridDetalle
+							[dataSource]="mCOM_PAGO_DETA"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[repaintChangesOnly]="true"
+							[height]="360"
+							[width]="'100%'"
+							keyExpr="CORR_DETA"
+							(onRowUpdating)="detalleRowUpdating($event)"
+							(onRowRemoving)="detalleRowRemoving($event)"
+						>
+							<dxo-toolbar>
+								<dxi-item location="before" [visible]="true">
+									<div *dxTemplate>
+										<dx-button
+											icon="add"
+											text="Agregar Doc."
+											type="default"
+											stylingMode="contained"
+											(onClick)="MostrarPendientes()"
+											[visible]="puedeEditarDetalle()"
+											width="140"
+										></dx-button>
+										<dx-button
+											icon="trash"
+											text="Borrar Detalle"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="BorrarTodoDetalle()"
+											[visible]="puedeEditarDetalle()"
+											width="145"
+											style="margin-left: 8px"
+										></dx-button>
+									</div>
+								</dxi-item>
+								<dxi-item name="searchPanel" location="after"></dxi-item>
+							</dxo-toolbar>
+							<dxo-editing
+								[mode]="'cell'"
+								[refreshMode]="'reshape'"
+								[allowAdding]="false"
+								[allowUpdating]="puedeEditarDetalle()"
+								[allowDeleting]="puedeEditarDetalle()"
+								[useIcons]="true"
+							></dxo-editing>
+							<dxo-search-panel [visible]="true"></dxo-search-panel>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column dataField="NUMERO_DOCUMENTO" caption="No. Documento" [width]="140" [allowEditing]="false"></dxi-column>
+							<dxi-column dataField="NOMBRE_TIPO_DOC" caption="Tipo Doc." [width]="180" [allowEditing]="false"></dxi-column>
+							<dxi-column dataField="FECHA_DOCUMENTO" caption="Fecha Doc." dataType="date" [width]="110" [allowEditing]="false"></dxi-column>
+							<dxi-column dataField="TOTAL_DOCUMENTO" caption="Total Doc." dataType="number" [width]="120" format="#,##0.00" [allowEditing]="false"></dxi-column>
+							<dxi-column dataField="MONTO_INICIAL" caption="Saldo Inicial" dataType="number" [width]="120" format="#,##0.00" [allowEditing]="false"></dxi-column>
+							<dxi-column dataField="MONTO_PAGO" caption="Monto Pago" dataType="number" [width]="120" format="#,##0.00"></dxi-column>
+							<dxi-column dataField="MONTO_FINAL" caption="Saldo Final" dataType="number" [width]="120" format="#,##0.00" [allowEditing]="false"></dxi-column>
+							<dxo-summary>
+								<dxi-total-item column="CORR_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+								<dxi-total-item column="MONTO_PAGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="Total: {0}"></dxi-total-item>
+							</dxo-summary>
+						</dx-data-grid>
+					</div>
+				</div>
+			</div>
+		</dxi-item>
+
+		<dxi-item title="Contabilidad" icon="money">
+			<div class="form">
+				<div class="dx-fieldset">
+					<div class="dx-field">
+						<dx-data-grid
+							[dataSource]="mCOM_PAGO_CONTA"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[height]="360"
+							[width]="'100%'"
+							keyExpr="CORR_DETA"
+							(onRowUpdating)="contaRowUpdating($event)"
+							(onRowRemoving)="contaRowRemoving($event)"
+						>
+							<dxo-toolbar>
+								<dxi-item location="before" [visible]="true">
+									<div *dxTemplate>
+										<dx-button
+											icon="refresh"
+											text="Actualizar Cuenta"
+											type="default"
+											stylingMode="contained"
+											(onClick)="ActualizarCuenta()"
+											[visible]="puedeEditarDetalle()"
+											width="160"
+										></dx-button>
+									</div>
+								</dxi-item>
+								<dxi-item name="searchPanel" location="after"></dxi-item>
+							</dxo-toolbar>
+							<dxo-editing
+								[mode]="'cell'"
+								[refreshMode]="'reshape'"
+								[allowAdding]="false"
+								[allowUpdating]="puedeEditarDetalle()"
+								[allowDeleting]="puedeEditarDetalle()"
+								[useIcons]="true"
+							></dxo-editing>
+							<dxo-search-panel [visible]="true"></dxo-search-panel>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column dataField="CUENTA_CONTABLE" caption="Cuenta" [width]="130"></dxi-column>
+							<dxi-column dataField="NOMBRE_CUENTA" caption="Nombre Cuenta" [width]="240" [allowEditing]="false"></dxi-column>
+							<dxi-column dataField="NOMBRE_TRAN" caption="Concepto" [width]="280"></dxi-column>
+							<dxi-column dataField="CORR_CENTRO_COSTO" caption="Centro Costo" [width]="120"></dxi-column>
+							<dxi-column dataField="NOMBRE_AUXILIAR" caption="Auxiliar" [width]="180" [allowEditing]="false"></dxi-column>
+							<dxi-column dataField="MONTO_CARGO" caption="Cargo" dataType="number" [width]="120" format="#,##0.00"></dxi-column>
+							<dxi-column dataField="MONTO_ABONO" caption="Abono" dataType="number" [width]="120" format="#,##0.00"></dxi-column>
+							<dxo-summary>
+								<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+								<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+							</dxo-summary>
+						</dx-data-grid>
+					</div>
+				</div>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
+</div>
+
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="['ANIO_PERIODO','MES_PERIODO','CORR_PAGO']"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+</div>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>
+
+<dx-popup
+	[width]="'90%'"
+	[height]="'85%'"
+	[showTitle]="true"
+	title="Documentos pendientes de pago"
+	[dragEnabled]="false"
+	[closeOnOutsideClick]="false"
+	[showCloseButton]="false"
+	[(visible)]="popupVisiblePendientes"
+>
+	<dxi-popup-toolbar-item
+		location="before"
+		toolbar="bottom"
+		widget="dxButton"
+		[options]="{
+			icon: 'save',
+			text: 'Aceptar',
+			type: 'success',
+			stylingMode: 'contained',
+			onClick: guardarPendientesPopup
+		}"
+	></dxi-popup-toolbar-item>
+	<dxi-popup-toolbar-item
+		location="before"
+		toolbar="bottom"
+		widget="dxButton"
+		[options]="{
+			icon: 'close',
+			text: 'Cancelar',
+			type: 'danger',
+			stylingMode: 'contained',
+			onClick: hidePendientesPopup
+		}"
+	></dxi-popup-toolbar-item>
+	<div *dxTemplate="let data of 'content'">
+		<dx-data-grid
+			[dataSource]="mCOM_PAGO_PENDIENTES"
+			[columnAutoWidth]="false"
+			[showBorders]="true"
+			[height]="'100%'"
+			[width]="'100%'"
+			[keyExpr]="['ANIO_PERIODO_COM','MES_PERIODO_COM','CORR_DOCUMENTO_COM']"
+		>
+			<dxo-toolbar>
+				<dxi-item location="before">
+					<div *dxTemplate>
+						<dx-button text="Todos" icon="add" type="success" (onClick)="selectTodosPendientes()" width="100"></dx-button>
+						<dx-button text="Ninguno" icon="minus" type="danger" (onClick)="selectNingunoPendientes()" width="110" style="margin-left: 8px"></dx-button>
+					</div>
+				</dxi-item>
+				<dxi-item name="searchPanel" location="after"></dxi-item>
+			</dxo-toolbar>
+			<dxo-editing mode="cell" [allowUpdating]="true" [allowAdding]="false" [allowDeleting]="false"></dxo-editing>
+			<dxo-search-panel [visible]="true"></dxo-search-panel>
+			<dxo-filter-row [visible]="true"></dxo-filter-row>
+			<dxi-column dataField="SELECCION" caption="" dataType="boolean" [width]="80"></dxi-column>
+			<dxi-column dataField="NUMERO_DOCUMENTO" caption="No. Documento" [width]="140" [allowEditing]="false"></dxi-column>
+			<dxi-column dataField="NOMBRE_TIPO_DOC" caption="Tipo Doc." [width]="180" [allowEditing]="false"></dxi-column>
+			<dxi-column dataField="FECHA_DOCUMENTO" caption="Fecha" dataType="date" [width]="110" [allowEditing]="false"></dxi-column>
+			<dxi-column dataField="TOTAL_DOCUMENTO" caption="Total" dataType="number" [width]="120" format="#,##0.00" [allowEditing]="false"></dxi-column>
+			<dxi-column dataField="SALDO_DOCUMENTO" caption="Saldo" dataType="number" [width]="120" format="#,##0.00" [allowEditing]="false"></dxi-column>
+		</dx-data-grid>
+	</div>
+</dx-popup>
+
+<dx-popup
+	[width]="'70%'"
+	[height]="'70%'"
+	[showTitle]="true"
+	title="Asignar archivo de pago"
+	[dragEnabled]="false"
+	[closeOnOutsideClick]="false"
+	[showCloseButton]="false"
+	[(visible)]="popupVisibleArchivo"
+>
+	<dxi-popup-toolbar-item
+		location="before"
+		toolbar="bottom"
+		widget="dxButton"
+		[options]="{
+			icon: 'save',
+			text: 'Asignar',
+			type: 'success',
+			stylingMode: 'contained',
+			onClick: guardarArchivoPopup
+		}"
+	></dxi-popup-toolbar-item>
+	<dxi-popup-toolbar-item
+		location="before"
+		toolbar="bottom"
+		widget="dxButton"
+		[options]="{
+			icon: 'close',
+			text: 'Cancelar',
+			type: 'danger',
+			stylingMode: 'contained',
+			onClick: hideArchivoPopup
+		}"
+	></dxi-popup-toolbar-item>
+	<div *dxTemplate="let data of 'content'">
+		<dx-data-grid
+			[dataSource]="mCOM_PAGO_ARCHIVO"
+			[columnAutoWidth]="false"
+			[showBorders]="true"
+			[height]="'100%'"
+			[width]="'100%'"
+			keyExpr="CORR_ARCHIVO"
+			[focusedRowEnabled]="true"
+			(onFocusedRowChanged)="focusedArchivoChanged($event)"
+		>
+			<dxo-search-panel [visible]="true"></dxo-search-panel>
+			<dxo-filter-row [visible]="true"></dxo-filter-row>
+			<dxi-column dataField="CORR_ARCHIVO" caption="Corr. Archivo" [width]="120"></dxi-column>
+			<dxi-column dataField="CORRELATIVO" caption="Correlativo" [width]="160"></dxi-column>
+			<dxi-column dataField="CODIGO_EMPRESARIAL" caption="Código Empresarial" [width]="180"></dxi-column>
+			<dxi-column dataField="FECHA_PAGO" caption="Fecha Pago" dataType="date" [width]="120"></dxi-column>
+			<dxi-column dataField="CORR_CUENTA_BANCO" caption="Cuenta Banco" [width]="120"></dxi-column>
+		</dx-data-grid>
+	</div>
+</dx-popup>

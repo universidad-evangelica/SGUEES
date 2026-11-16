@@ -4,20 +4,42 @@
     [isBrowse]="isBrowse()"
     [isForm]="isForm()"
     [showRibbon]="true"
-    [permiteAdd]="false"
+    [permiteAdd]="permiteAdd"
+    (nuevo)="nuevo()"
+    (guardar)="guardar()"
     (cancelar)="cancelar()"
-    [btn1]="'Vista Previa'"
-    [btn1Icon]="'export'"
-    [btn1Type]="'default'"
-    (btn1Click)="obtenerPDF()"
-    [btn1Width]="150"
     [showRefresh]="true"
     [showDates]="true"
     (consultar)="consultar()"
     [(FECHA_INICIAL)]="vFECHA_INICIAL"
     [(FECHA_FINAL)]="vFECHA_FINAL"
+    [btn1]="btnAplicar"
+    [btn1Icon]="'check'"
+    [btn1Type]="'success'"
+    (btn1Click)="Aplicar()"
+    [btn1Width]="100"
+    [btn1Mode]="'contained'"
+    [btn2]="btnAnular"
+    [btn2Icon]="'close'"
+    [btn2Type]="'danger'"
+    (btn2Click)="Anular()"
+    [btn2Width]="100"
+    [btn2Mode]="'contained'"
+    [btn3]="btnDesAplicar"
+    [btn3Icon]="'undo'"
+    [btn3Type]="'default'"
+    (btn3Click)="DesAplicar()"
+    [btn3Width]="120"
+    [btn3Mode]="'contained'"
+    [btn4]="btnVistaPrevia"
+    [btn4Icon]="'export'"
+    [btn4Type]="'default'"
+    (btn4Click)="obtenerPDF()"
+    [btn4Width]="140"
+    [btn4Mode]="'contained'"
   >
   </app-barra-data-mtto>
+
   <div *ngIf="!isBrowse()">
     <dx-form
       #fData
@@ -29,20 +51,55 @@
     >
       <div *dxTemplate="let cellInfo of 'ESTADO_ORDEN_COMPRALookup'">
         <app-data-lookup
-          [model]="mESTADO_COM_ORDEN_COMPRA"
-          [(value)]="model.ESTADO_COM_ORDEN_COMPRA"
+          [model]="mESTADO_ORDEN_COMPRA"
+          [(value)]="model.ESTADO_ORDEN_COMPRA"
           [selectedRowKeys]="selectedLookUpLista"
           [readOnly]="true"
         >
         </app-data-lookup>
       </div>
+      <div *dxTemplate="let cellInfo of 'CORR_PROVEEDORLookup'">
+        <app-data-lookup
+          [model]="mCORR_PROVEEDOR"
+          [(value)]="model.CORR_PROVEEDOR"
+          [valueExpr]="'CORR_PROVEEDOR'"
+          [displayExpr]="'NOMBRE_PROVEEDOR'"
+          [lookupColumns]="proveedorLookupColumns"
+          [selectedRowKeys]="selectedLookUpCORR_PROVEEDOR"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CORR_CONDICION_PAGOLookup'">
+        <app-data-lookup
+          [model]="mCORR_CONDICION_PAGO"
+          [(value)]="model.CORR_CONDICION_PAGO"
+          [valueExpr]="'CORR_CONDICION_PAGO'"
+          [displayExpr]="'NOMBRE_CONDICION_PAGO'"
+          [selectedRowKeys]="selectedLookUpCORR_CONDICION_PAGO"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CORR_FORMA_PAGOLookup'">
+        <app-data-lookup
+          [model]="mCORR_FORMA_PAGO"
+          [(value)]="model.CORR_FORMA_PAGO"
+          [valueExpr]="'CORR_FORMA_PAGO'"
+          [displayExpr]="'NOMBRE_FORMA_PAGO'"
+          [selectedRowKeys]="selectedLookUpCORR_FORMA_PAGO"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
     </dx-form>
+
     <dx-tab-panel #tabPanel [selectedIndex]="0">
-      <dxi-item title="Detalle de Item" [icon]="'cart'">
+      <dxi-item title="Detalle de Ítem" [icon]="'cart'">
         <div class="dx-grid-deta">
           <dx-data-grid
             #DataOrdenCompraDetalle
-            [dataSource]="mCOM_COM_ORDEN_COMPRA_DETA"
+            [dataSource]="mCOM_ORDEN_COMPRA_DETA"
             [columnAutoWidth]="false"
             [showBorders]="true"
             [showColumnLines]="true"
@@ -55,46 +112,87 @@
             [focusedRowEnabled]="true"
             [height]="'100%'"
             [width]="'100%'"
-            [editing]="{ mode: 'cell', allowUpdating: false }"
-            [keyExpr]="[
-              'NOMBRE_ITEM',
-            ]"
+            [keyExpr]="'CORR_ORDEN_COMPRA_DETA'"
+            (onRowInserting)="detalleRowInserting($event)"
+            (onRowUpdating)="detalleRowUpdating($event)"
+            (onRowRemoving)="detalleRowRemoving($event)"
+            (onEditorPreparing)="onDetalleEditorPreparing($event)"
           >
-            <dxo-keyboard-navigation
-              [editOnKeyPress]="true"
-            ></dxo-keyboard-navigation>
+            <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
             <dxo-toolbar>
+              <dxi-item name="addRowButton" location="before"></dxi-item>
               <dxi-item name="exportButton" location="after"></dxi-item>
               <dxi-item name="searchPanel" location="after"></dxi-item>
             </dxo-toolbar>
             <dxo-editing
               [mode]="'cell'"
               [refreshMode]="'reshape'"
-              [allowUpdating]="false"
-              [allowAdding]="false"
-              [allowDeleting]="false"
+              [allowUpdating]="puedeEditarDetalle()"
+              [allowAdding]="puedeEditarDetalle()"
+              [allowDeleting]="puedeEditarDetalle()"
               [useIcons]="true"
             >
             </dxo-editing>
-            <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
             <dxo-load-panel [enabled]="false"></dxo-load-panel>
             <dxo-search-panel [visible]="true"></dxo-search-panel>
-            <dxo-export [enabled]="true" fileName="Autorizaciones"></dxo-export>
-            <dxi-column dataField="CANTIDAD" caption="Cantidad" [dataType]="'number'" [editorOptions]="{ format: '#,##0.00' }" [width]="'100'">
+            <dxo-export [enabled]="true" fileName="Detalle Orden Compra"></dxo-export>
+            <dxi-column dataField="CODIGO_ITEM" caption="Código" [dataType]="'string'" [width]="'120px'">
             </dxi-column>
-            <dxi-column dataField="NOMBRE_UNIDAD_MEDIDA" caption="Unidad" [dataType]="'string'" [width]="'80px'">
+            <dxi-column dataField="NOMBRE_ITEM" caption="Descripción" [dataType]="'string'" [width]="'300px'" [allowEditing]="false">
             </dxi-column>
-            <dxi-column dataField="NOMBRE_ITEM" caption="Descripción" [dataType]="'string'" [width]="'350px'">
+            <dxi-column
+              dataField="CORR_UNIDAD_MEDIDA"
+              caption="Unidad"
+              [width]="'140px'"
+              editCellTemplate="CORR_UNIDAD_MEDIDALookup"
+            >
+              <dxo-lookup
+                [dataSource]="mCORR_UNIDAD_MEDIDA"
+                valueExpr="CORR_UNIDAD_MEDIDA"
+                displayExpr="NOMBRE_UNIDAD_MEDIDA"
+              ></dxo-lookup>
             </dxi-column>
-            <dxi-column dataField="PRECIO_UNITARIO" caption="Precio U." [dataType]="'number'" [editorOptions]="{ format: '#,##0.0000' }" [width]="'110px'">
+            <div *dxTemplate="let cellInfo of 'CORR_UNIDAD_MEDIDALookup'">
+              <app-data-lookup
+                [model]="mCORR_UNIDAD_MEDIDA"
+                [(value)]="cellInfo.data.CORR_UNIDAD_MEDIDA"
+                [valueExpr]="'CORR_UNIDAD_MEDIDA'"
+                [displayExpr]="'NOMBRE_UNIDAD_MEDIDA'"
+                [lookupColumns]="unidadLookupColumns"
+                [selectedRowKeys]="selectedLookUpCORR_UNIDAD_MEDIDA"
+                [setValue]="cellInfo.setValue"
+                [readOnly]="!puedeEditarDetalle()"
+              >
+              </app-data-lookup>
+            </div>
+            <dxi-column
+              dataField="CANTIDAD"
+              caption="Cantidad"
+              [dataType]="'number'"
+              [editorOptions]="{ format: '#,##0.00' }"
+              [width]="'100'"
+            >
             </dxi-column>
-            <dxi-column dataField="MONTO_SUBTOTAL" caption="Total" [dataType]="'number'" [editorOptions]="{ format: '#,##0.00', readOnly: true }" [width]="'110px'">
+            <dxi-column
+              dataField="PRECIO_UNITARIO"
+              caption="Precio U."
+              [dataType]="'number'"
+              [editorOptions]="{ format: '#,##0.0000' }"
+              [width]="'110px'"
+            >
             </dxi-column>
-            <dxi-column dataField="" caption="" [dataType]="'number'" [editorOptions]="{ format: '#,##0.00', readOnly: true }" [width]="'100px'">
+            <dxi-column
+              dataField="MONTO_SUBTOTAL"
+              caption="Total"
+              [dataType]="'number'"
+              [allowEditing]="false"
+              [editorOptions]="{ format: '#,##0.00', readOnly: true }"
+              [width]="'110px'"
+            >
             </dxi-column>
             <dxo-summary>
               <dxi-total-item
-                column="NOMBRE_ITEM"
+                column="CODIGO_ITEM"
                 summaryType="count"
                 valueFormat="#,##0"
                 displayFormat="Cant: {0}"
@@ -110,26 +208,17 @@
             </dxo-summary>
           </dx-data-grid>
         </div>
-        <!-- <dx-form #fData id="fDataTotal" [formData]="model" [labelLocation]="'left'" [colCount]="6"> -->
-                <!-- <dxi-item itemType="group" caption="Anexo de la Operación" [location]="'after'" class="dx-fieldset dx-fieldset3"> -->
-                  <!-- <dxi-item dataField="NOMBRE_DEPARTAMENTO" [label]="{ text: 'Unidad Solicitante' }" [editorOptions]="{placeholder: 'Unidad Solicitante...',readOnly: true}" [colSpan]="3"></dxi-item> -->
-                  <!-- <dxi-item dataField="SUB_TOTAL"  [label]="{ text: 'Sumas' }" [editorOptions]="{placeholder: 'Sumas...',readOnly: true}"  [colSpan]="1"></dxi-item> -->
-                  <!-- <dxi-item dataField="NUMERO_SOLI_COTIZACION"  [label]="{ text: 'No. Solicitud Compra' }" [editorOptions]="{placeholder: 'No. Solicitud Compra...',readOnly: true}" [colSpan]="3"></dxi-item> -->
-                  <!-- <dxi-item dataField="TOTAL_IMPUESTO" [label]="{ text: 'IVA' }" [editorOptions]="{placeholder: 'IVA...',readOnly: true}"  [colSpan]="1"></dxi-item> -->
-                  <!-- <dxi-item dataField="OBSERVACIONES"  [label]="{ text: 'Observaciones' }" [editorOptions]="{placeholder: 'Observaciones...',readOnly: true}" [colSpan]="6"></dxi-item> -->
-                  <!-- <dxi-item dataField="TOTAL_ORDEN" [label]="{ text: 'Total' }" [editorOptions]="{placeholder: 'Total...',readOnly: true}" [colSpan]="1"></dxi-item> -->
-                  <!-- <dxi-item dataField="TOTAL_EN_LETRAS"  [label]="{ text: 'Son' }" [editorOptions]="{placeholder: 'Son...',readOnly: true}" [colSpan]="5"></dxi-item> -->
-                  <!-- <dxi-item itemtype="empty" [colSpan]="4"></dxi-item> -->
-                  <!-- <dxi-item itemtype="empty" [colSpan]="4"></dxi-item> -->
-                  <!-- <dxi-item itemtype="empty" [colSpan]="4"></dxi-item> -->
-                <!-- </dxi-item> -->
-        <!-- </dx-form> -->
       </dxi-item>
-      <dxi-item title="Detalle de Autorizaciones" [icon]="'user'">
+
+      <dxi-item
+        title="Autorizaciones cuadro"
+        [icon]="'user'"
+        [visible]="tieneCuadroComparativo()"
+      >
         <div class="dx-grid-deta">
           <dx-data-grid
             #DataCuadroComparativoAutorizaciones
-            [dataSource]="mCOM_COM_ORDEN_COMPRA_AUTORIZACIONES"
+            [dataSource]="mCOM_ORDEN_COMPRA_AUTORIZACIONES"
             [columnAutoWidth]="false"
             [showBorders]="true"
             [showColumnLines]="true"
@@ -147,12 +236,10 @@
               'CORR_EMPRESA',
               'LOGIN_SISTEMA',
               'ANIO_PERIODO',
-              'CORR_COM_ORDEN_COMPRA',
+              'CORR_CUADRO_COMPARATIVO'
             ]"
           >
-            <dxo-keyboard-navigation
-              [editOnKeyPress]="true"
-            ></dxo-keyboard-navigation>
+            <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
             <dxo-toolbar>
               <dxi-item name="exportButton" location="after"></dxi-item>
               <dxi-item name="searchPanel" location="after"></dxi-item>
@@ -166,7 +253,6 @@
               [useIcons]="true"
             >
             </dxo-editing>
-            <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
             <dxo-load-panel [enabled]="false"></dxo-load-panel>
             <dxo-search-panel [visible]="true"></dxo-search-panel>
             <dxo-export [enabled]="true" fileName="Autorizaciones"></dxo-export>
@@ -174,13 +260,24 @@
             </dxi-column>
             <dxi-column dataField="NOMBRE_USUARIO" caption="Usuario" [dataType]="'string'" [width]="'250px'">
             </dxi-column>
-            <dxi-column dataField="FECHA_AUTORIZACION" caption="Fecha Autorizacion" [editorOptions]="{ readOnly: true }" [dataType]="'datetime'" [format]="'dd/MM/yyyy HH:mm'" [width]="'200px'">
+            <dxi-column
+              dataField="FECHA_AUTORIZACION"
+              caption="Fecha Autorización"
+              [editorOptions]="{ readOnly: true }"
+              [dataType]="'datetime'"
+              [format]="'dd/MM/yyyy HH:mm'"
+              [width]="'200px'"
+            >
             </dxi-column>
-            <dxi-column dataField="NOMBRE_ESTADO_AUTORIZACION" caption="Estado Autorizacion" [dataType]="'string'" [width]="'150px'">
+            <dxi-column dataField="NOMBRE_ESTADO_AUTORIZACION" caption="Estado Autorización" [dataType]="'string'" [width]="'150px'">
             </dxi-column>
-            <dxi-column dataField="ORDEN_REVISION" caption="Orden Revision" [dataType]="'number'" [editorOptions]="{ format: 'N0', readOnly: true }" [width]="'120px'">
-            </dxi-column>
-            <dxi-column dataField="" caption="" [dataType]="'number'" [editorOptions]="{ format: '#,##0.00', readOnly: true }" [width]="'100px'">
+            <dxi-column
+              dataField="ORDEN_REVISION"
+              caption="Orden Revisión"
+              [dataType]="'number'"
+              [editorOptions]="{ format: 'N0', readOnly: true }"
+              [width]="'120px'"
+            >
             </dxi-column>
             <dxo-summary>
               <dxi-total-item
@@ -196,15 +293,18 @@
       </dxi-item>
     </dx-tab-panel>
   </div>
+
   <app-data-grid-mtto
     [isBrowse]="isBrowse()"
     [models]="models"
     [columns]="columns"
     [summary]="summary"
-    [keyExpr]="'NUMERO_ORDEN_COMPRA'"
-    [permiteEditar]="false"
-    [permiteDele]="false"
+    [keyExpr]="['ANIO_PERIODO', 'CORR_ORDEN_COMPRA']"
+    [permiteEditar]="getPermiteEditar"
+    [permiteDele]="getPermiteDele"
+    (editClick)="editarClick($event)"
     (rowDblClick)="rowDblClick($event)"
+    (rowRemoving)="rowRemoving($event)"
     (focusedRowChanged)="focusedRowChanged($event)"
     [filterValue]="FilterValue"
   >
@@ -222,6 +322,7 @@
   (onShown)="(loadingVisible)"
 >
 </dx-load-panel>
+
 <dx-popup
   [width]="'1200px'"
   [position]="'top'"
@@ -235,8 +336,7 @@
   [(visible)]="popupVisiblePdf"
   class="popout"
 >
-  <object [data]="PDF" type="application/pdf" width="100%" height="95%" >
+  <object [data]="PDF" type="application/pdf" width="100%" height="95%">
     <embed [src]="PDF" type="application/pdf" />
   </object>
 </dx-popup>
-

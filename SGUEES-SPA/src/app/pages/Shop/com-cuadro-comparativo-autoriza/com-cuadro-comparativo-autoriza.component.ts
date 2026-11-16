@@ -905,7 +905,8 @@ consultarCOM_CUADRO_COMPARATIVO_COMENTARIO() {
               .subscribe({
                 next: (response: any) => {
                   if (response.Result) {
-                    this.notifyFx('Autorizado con exito..!', NotifyType.Success);
+                    this.notifyFx('Autorizado con éxito.', NotifyType.Success);
+                    this.consultarCOM_CUADRO_COMPARATIVO_ORDEN_COMPRA();
                     this.consultar();
                     this.AsignaStatus(UpdateType.Browse);
                   } else {

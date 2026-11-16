@@ -13,6 +13,7 @@ import { ThemeSwitcherModule } from 'src/app/shared/components/library/theme-swi
 import { NotificationBellModule } from 'src/app/shared/components/library/notification-bell/notification-bell.component';
 import { RecorridoGuiaModule } from 'src/app/shared/recorrido-guia/recorrido-guia.module';
 import { RecorridoGuiaService } from 'src/app/shared/recorrido-guia/recorrido-guia.service';
+import { NotificationSignalRService } from 'src/app/services/notification-signalr.service';
 
 @Component({
   standalone: false,
@@ -46,14 +47,16 @@ export class AppHeaderComponent implements OnInit {
     hint: 'Cerrar sesión del sistema',
     icon: 'runner',
     onClick: () => {
-      this.authService.logOut();
+      void this.notificationSignalRService.stopConnection();
+      void this.authService.logOut();
     }
   }];
 
   constructor(
     private authService: AuthService,
     private router: Router,
-    private recorridoGuia: RecorridoGuiaService
+    private recorridoGuia: RecorridoGuiaService,
+    private notificationSignalRService: NotificationSignalRService
   ) { }
 
   ngOnInit() {

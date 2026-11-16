@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Input, Output, NgModule, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from 'src/app/shared/services';
 import { HttpClient } from '@angular/common/http';
+import { catchError, lastValueFrom, of } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import notify from 'devextreme/ui/notify';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
@@ -11,7 +11,7 @@ import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 
 interface PasswordStrength {
-  score: number; // 0-3
+  score: number;
   message: string;
   color: string;
 }
@@ -20,140 +20,107 @@ interface PasswordStrength {
   standalone: false,
   selector: 'app-change-password-modal',
   templateUrl: './change-password-modal.component.html',
-  styleUrls: ['./change-password-modal.component.scss']
+  styleUrls: ['./change-password-modal.component.scss'],
 })
 export class ChangePasswordModalComponent implements OnChanges {
   @Input() visible = false;
   @Input() loginSistema = '';
+  @Input() currentPassword = '';
   @Input() changeReason: 'first-login' | 'password-expired' = 'first-login';
-  @Output() onPasswordChanged = new EventEmitter<void>();
+  @Output() visibleChange = new EventEmitter<boolean>();
+  @Output() onPasswordChanged = new EventEmitter<string>();
+  @Output() cancelled = new EventEmitter<void>();
 
   loading = false;
   formData = {
-    claveActual: 'temporal123',
+    claveActual: '',
     nuevaClave: '',
-    confirmarClave: ''
+    confirmarClave: '',
   };
 
+  currentPasswordMode = 'password';
   passwordMode = 'password';
   confirmPasswordMode = 'password';
   passwordStrength: PasswordStrength = { score: 0, message: '', color: '' };
+  private suppressCancelOnHide = false;
 
-  // Propiedades para el template
   get modalTitle(): string {
     return this.changeReason === 'password-expired'
-      ? '⏰ Actualización de Contraseña'
-      : '🔐 Cambio de Contraseña Obligatorio';
+      ? 'Actualización de contraseña'
+      : 'Cambio de contraseña obligatorio';
   }
 
   get headerMessage(): string {
-    return this.changeReason === 'password-expired'
-      ? 'Contraseña Expirada'
-      : 'Bienvenido por primera vez';
+    return this.changeReason === 'password-expired' ? 'Contraseña expirada' : 'Bienvenido por primera vez';
   }
 
   get descriptionMessage(): string {
     return this.changeReason === 'password-expired'
-      ? 'Su contraseña ha expirado por razones de seguridad. Debe cambiarla para continuar usando el sistema.'
-      : 'Por seguridad, debe cambiar la contraseña temporal asignada por el administrador. Esta es una medida para proteger su cuenta.';
+      ? 'Su contraseña venció por política de seguridad. Actualícela para continuar.'
+      : 'Por seguridad debe definir una contraseña personal antes de usar el sistema.';
   }
 
   get currentPasswordLabel(): string {
-    return this.changeReason === 'password-expired'
-      ? 'Contraseña Actual'
-      : 'Contraseña Temporal (Actual)';
+    return this.changeReason === 'password-expired' ? 'Contraseña actual' : 'Contraseña temporal (actual)';
   }
 
   get currentPasswordPlaceholder(): string {
-    return this.changeReason === 'password-expired'
-      ? 'Su contraseña actual'
-      : 'Contraseña temporal';
+    return this.changeReason === 'password-expired' ? 'Escriba su contraseña actual' : 'Contraseña que usó para ingresar';
   }
 
-  constructor(
-    private authService: AuthService,
-    private http: HttpClient
-  ) {}
+  constructor(private http: HttpClient) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Limpiar formulario cuando la modal se abre
-    if (changes['visible'] && changes['visible'].currentValue === true) {
+    if (changes['visible']?.currentValue === true) {
       this.resetForm();
+    }
+    if (changes['currentPassword'] && this.visible) {
+      this.formData.claveActual = this.currentPassword || '';
     }
   }
 
   private resetForm(): void {
     this.formData = {
-      claveActual: 'temporal123',
+      claveActual: this.currentPassword || '',
       nuevaClave: '',
-      confirmarClave: ''
+      confirmarClave: '',
     };
+    this.currentPasswordMode = 'password';
     this.passwordMode = 'password';
     this.confirmPasswordMode = 'password';
     this.passwordStrength = { score: 0, message: '', color: '' };
     this.loading = false;
   }
 
-  // Validar fortaleza de contraseña
   validatePasswordStrength(password: string): PasswordStrength {
-    let score = 0;
     const hasNumbers = /\d/.test(password);
     const hasLetters = /[a-zA-Z]/.test(password);
-    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
     const isLongEnough = password.length >= 8;
 
-    // Requiere: 8+ caracteres, números Y letras
     if (!isLongEnough) {
-      return {
-        score: 0,
-        message: 'Mínimo 8 caracteres requerido',
-        color: '#dc3545'
-      };
+      return { score: 0, message: 'Mínimo 8 caracteres', color: '#e57373' };
     }
-
     if (!hasNumbers) {
-      return {
-        score: 1,
-        message: 'Debe contener números (0-9)',
-        color: '#dc3545'
-      };
+      return { score: 1, message: 'Agregue al menos un número', color: '#e57373' };
     }
-
     if (!hasLetters) {
-      return {
-        score: 1,
-        message: 'Debe contener letras (A-Z)',
-        color: '#dc3545'
-      };
+      return { score: 1, message: 'Agregue al menos una letra', color: '#e57373' };
     }
-
-    // Si tiene 8+, números y letras
-    score = 2;
-
-    // Bonus por tener caracteres especiales
     if (hasSpecial) {
-      score = 3;
-      return {
-        score: 3,
-        message: '✓ Contraseña fuerte',
-        color: '#28a745'
-      };
+      return { score: 3, message: 'Contraseña fuerte', color: '#4caf50' };
     }
-
-    return {
-      score: 2,
-      message: '✓ Contraseña válida',
-      color: '#ffc107'
-    };
+    return { score: 2, message: 'Contraseña válida', color: '#ffb74d' };
   }
 
-  // Actualizar fortaleza mientras escribe
-  onPasswordChange() {
+  onPasswordChange(): void {
     this.passwordStrength = this.validatePasswordStrength(this.formData.nuevaClave);
   }
 
-  togglePasswordVisibility(field: 'password' | 'confirm') {
-    if (field === 'password') {
+  togglePasswordVisibility(field: 'current' | 'password' | 'confirm'): void {
+    if (field === 'current') {
+      this.currentPasswordMode = this.currentPasswordMode === 'password' ? 'text' : 'password';
+    } else if (field === 'password') {
       this.passwordMode = this.passwordMode === 'password' ? 'text' : 'password';
     } else {
       this.confirmPasswordMode = this.confirmPasswordMode === 'password' ? 'text' : 'password';
@@ -161,27 +128,19 @@ export class ChangePasswordModalComponent implements OnChanges {
   }
 
   isPasswordValid(): boolean {
-    const { nuevaClave, confirmarClave } = this.formData;
-
-    if (!nuevaClave || !confirmarClave) {
+    const { claveActual, nuevaClave, confirmarClave } = this.formData;
+    if (!claveActual?.trim() || !nuevaClave || !confirmarClave) {
       return false;
     }
-
-    if (nuevaClave !== confirmarClave) {
+    if (nuevaClave !== confirmarClave || nuevaClave === claveActual) {
       return false;
     }
-
     if (nuevaClave.length < 8) {
       return false;
     }
-
-    const hasNumbers = /\d/.test(nuevaClave);
-    const hasLetters = /[a-zA-Z]/.test(nuevaClave);
-
-    return hasNumbers && hasLetters;
+    return /\d/.test(nuevaClave) && /[a-zA-Z]/.test(nuevaClave);
   }
 
-  // Helper methods para el template
   hasMinLength(): boolean {
     return this.formData.nuevaClave.length >= 8;
   }
@@ -194,33 +153,51 @@ export class ChangePasswordModalComponent implements OnChanges {
     return /[a-zA-Z]/.test(this.formData.nuevaClave);
   }
 
-  async onSubmit(e: Event) {
+  requestClose(): void {
+    if (this.loading) {
+      return;
+    }
+    this.closeModal(true);
+  }
+
+  onHiding(e: { cancel?: boolean }): void {
+    if (this.loading) {
+      e.cancel = true;
+      return;
+    }
+    if (this.suppressCancelOnHide) {
+      this.suppressCancelOnHide = false;
+      return;
+    }
+    if (this.visible) {
+      e.cancel = true;
+      this.closeModal(true);
+    }
+  }
+
+  private closeModal(cancelled: boolean): void {
+    this.visibleChange.emit(false);
+    if (cancelled) {
+      this.cancelled.emit();
+    }
+    this.resetForm();
+  }
+
+  async onSubmit(e: Event): Promise<void> {
     e.preventDefault();
 
-    if (!this.formData.nuevaClave || !this.formData.confirmarClave) {
-      notify({
-        message: 'Por favor complete todos los campos',
-        type: 'error',
-        displayTime: 3000
-      });
+    if (!this.formData.claveActual?.trim()) {
+      notify({ message: 'Ingrese su contraseña actual', type: 'error', displayTime: 3000 });
       return;
     }
 
-    if (this.formData.nuevaClave !== this.formData.confirmarClave) {
-      notify({
-        message: 'Las contraseñas no coinciden',
-        type: 'error',
-        displayTime: 3000
-      });
+    if (this.formData.nuevaClave === this.formData.claveActual) {
+      notify({ message: 'La nueva contraseña debe ser diferente a la actual', type: 'error', displayTime: 3500 });
       return;
     }
 
     if (!this.isPasswordValid()) {
-      notify({
-        message: 'La contraseña no cumple con los requisitos de seguridad',
-        type: 'error',
-        displayTime: 3000
-      });
+      notify({ message: 'Revise los requisitos y que ambas contraseñas coincidan', type: 'error', displayTime: 3500 });
       return;
     }
 
@@ -228,75 +205,78 @@ export class ChangePasswordModalComponent implements OnChanges {
 
     try {
       const url = environment.UrlSEGURIDADAPI + 'SEG_USUARIO/cambio-clave';
-      const response: any = await this.http.post(url, {
-        LOGIN_SISTEMA: this.loginSistema,
-        CLAVE_USUARIO: this.formData.claveActual,
-        CLAVE_USUARIO_NUEVA: this.formData.nuevaClave,
-        CODIGO_SUITE: 'SGUEES'
-      }).toPromise();
+      const response: any = await lastValueFrom(
+        this.http
+          .post(url, {
+            LOGIN_SISTEMA: this.loginSistema,
+            CLAVE_USUARIO: this.formData.claveActual,
+            CLAVE_USUARIO_NUEVA: this.formData.nuevaClave,
+            CODIGO_SUITE: 'SGUEES',
+          })
+          .pipe(
+            catchError((error: any) =>
+              of({
+                Result: false,
+                ErrorMessage: this.extractApiError(error),
+              })
+            )
+          )
+      );
 
       this.loading = false;
 
-      if (response && response.Result) {
+      if (response?.Result) {
         notify({
-          message: '✓ Contraseña cambiada exitosamente. Iniciando sesión...',
-          width: 'auto',
+          message: 'Contraseña actualizada. Iniciando sesión…',
           type: 'success',
-          displayTime: 2000
+          displayTime: 2000,
         });
-
-        // Esperar 2 segundos y emitir evento
-        setTimeout(() => {
-          this.onPasswordChanged.emit();
-        }, 2000);
+        const nuevaClave = this.formData.nuevaClave;
+        this.suppressCancelOnHide = true;
+        this.visibleChange.emit(false);
+        this.resetForm();
+        setTimeout(() => this.onPasswordChanged.emit(nuevaClave), 400);
       } else {
         notify({
-          message: response?.ErrorMessage || 'Error al cambiar la contraseña',
-          width: 'auto',
+          message: response?.ErrorMessage || 'No se pudo cambiar la contraseña',
           type: 'error',
-          displayTime: 5000
+          displayTime: 5000,
         });
       }
     } catch (error: any) {
       this.loading = false;
-      console.error('Error al cambiar contraseña:', error);
-
-      let errorMessage = 'Error al cambiar la contraseña';
-
-      if (error?.error?.ErrorMessage) {
-        errorMessage = error.error.ErrorMessage;
-      } else if (error?.error?.message) {
-        errorMessage = error.error.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-
-      notify({
-        message: errorMessage,
-        width: 'auto',
-        type: 'error',
-        displayTime: 5000
-      });
+      notify({ message: this.extractApiError(error), type: 'error', displayTime: 5000 });
     }
   }
 
-  onHiding() {
-    // No permitir cerrar el modal, es obligatorio cambiar la contraseña
+  private extractApiError(error: any): string {
+    const payload = error?.error ?? error;
+    if (typeof error === 'string') {
+      return error.replace(/^Error:\s*/i, '').trim() || 'No se pudo cambiar la contraseña';
+    }
+    if (typeof payload === 'string') {
+      if (payload.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(payload);
+          if (parsed?.ErrorMessage) {
+            return String(parsed.ErrorMessage);
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return payload.replace(/^Error:\s*/i, '').trim() || 'No se pudo cambiar la contraseña';
+    }
+    if (payload?.ErrorMessage) {
+      return String(payload.ErrorMessage);
+    }
+    return 'No se pudo cambiar la contraseña';
   }
 }
 
 @NgModule({
-  imports: [
-    CommonModule,
-    FormsModule,
-    DxPopupModule,
-    DxFormModule,
-    DxButtonModule,
-    DxLoadIndicatorModule
-  ],
+  imports: [CommonModule, FormsModule, DxPopupModule, DxFormModule, DxButtonModule, DxLoadIndicatorModule],
   declarations: [ChangePasswordModalComponent],
-  exports: [ChangePasswordModalComponent]
+  exports: [ChangePasswordModalComponent],
 })
-export class ChangePasswordModalModule { }
+export class ChangePasswordModalModule {}

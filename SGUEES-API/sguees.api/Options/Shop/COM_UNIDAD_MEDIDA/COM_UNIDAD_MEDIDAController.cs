@@ -110,5 +110,13 @@ namespace sguees.Controllers
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAsync(Data);
 		}
+
+		[HttpGet("GetCORR_UNIDAD_MEDIDA_COM_ORDEN_COMPRA")]
+		[Authorize(Policy = "/com-orden-compra|R")]
+		public async Task<CResult> GetCORR_UNIDAD_MEDIDA_COM_ORDEN_COMPRA([FromQuery] COM_UNIDAD_MEDIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

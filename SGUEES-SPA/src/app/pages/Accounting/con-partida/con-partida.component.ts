@@ -62,13 +62,10 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	btnCrearModelo = '';
 	btnImportarExcel = '';
 	btnGenerarDesdeModelo = '';
+	btnContrapartida = '';
 	btnImprimir = '';
 	btnImprimirDx = '';
-	btnPartidaLiquidacion = '';
-	btnPartidaCierre = '';
-	btnPartidaApertura = '';
-	vANIO_PERIODO_CIERRE = new Date().getFullYear();
-	vMES_PERIODO_CIERRE = new Date().getMonth() + 1;
+	contrapartidaModalVisible = false;
 	popupVisiblePdf = false;
 	vPDF: Blob | null = null;
 	PDF!: SafeUrl;
@@ -378,7 +375,73 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			(['FECHA_PARTIDA', 'NUMERO_DOCUMENTO', 'NOMBRE_PARTIDA'] as const).forEach((campo) => {
 				form.getEditor(campo)?.option('readOnly', soloLectura);
 			});
+			this.aplicarLimiteFechaPartida();
 		});
+	}
+
+	/** Rango calendario = mes/año del período contable de la partida. */
+	private getRangoFechaPeriodo(): { min: Date; max: Date } | null {
+		const anio = Number(this.model?.ANIO_PERIODO);
+		const mes = Number(this.model?.MES_PERIODO);
+		if (!anio || anio <= 0 || !mes || mes < 1 || mes > 12) {
+			return null;
+		}
+		return {
+			min: new Date(anio, mes - 1, 1),
+			max: new Date(anio, mes, 0),
+		};
+	}
+
+	private aplicarLimiteFechaPartida(): void {
+		const editor = this.dataForm?.instance?.getEditor('FECHA_PARTIDA') as any;
+		if (!editor?.option) {
+			return;
+		}
+		const rango = this.getRangoFechaPeriodo();
+		if (!rango) {
+			editor.option('min', undefined);
+			editor.option('max', undefined);
+			return;
+		}
+		editor.option('min', rango.min);
+		editor.option('max', rango.max);
+		editor.option(
+			'dateOutOfRangeMessage',
+			'La fecha debe estar dentro del mes del período contable'
+		);
+	}
+
+	/** Si la fecha queda fuera del período, la mueve al día válido más cercano del mes. */
+	private alinearFechaConPeriodo(): void {
+		const rango = this.getRangoFechaPeriodo();
+		if (!rango || !this.model) {
+			return;
+		}
+		const actual = this.model.FECHA_PARTIDA
+			? this.model.FECHA_PARTIDA instanceof Date
+				? this.model.FECHA_PARTIDA
+				: new Date(this.model.FECHA_PARTIDA)
+			: null;
+		if (!actual || Number.isNaN(actual.getTime())) {
+			this.model.FECHA_PARTIDA = rango.min;
+			return;
+		}
+		if (actual < rango.min) {
+			this.model.FECHA_PARTIDA = rango.min;
+			return;
+		}
+		if (actual > rango.max) {
+			this.model.FECHA_PARTIDA = rango.max;
+		}
+	}
+
+	onMesPeriodoChanged(mes: any): void {
+		if (!this.model) {
+			return;
+		}
+		this.model.MES_PERIODO = Number(mes) || 0;
+		this.alinearFechaConPeriodo();
+		setTimeout(() => this.aplicarLimiteFechaPartida());
 	}
 
 	partidaEditablePorEstado(estado?: string): boolean {
@@ -435,6 +498,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.consultarDetalles();
 		this.consultarDocumentos();
 		this.consultarBitacora();
+		this.alinearFechaConPeriodo();
 		this.habilitar();
 		this.refrescarBotones();
 	}
@@ -447,6 +511,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.detalleEditando = false;
 		this.detalleEdicionExplicita = false;
 		this.mainTabIndex = 0;
+		this.alinearFechaConPeriodo();
 		this.habilitar();
 		this.refrescarBotones();
 	}
@@ -463,29 +528,21 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		if (this.isBrowse()) {
 			this.btnImportarExcel = this.permiteAdd ? 'Importar Excel' : '';
 			this.btnGenerarDesdeModelo = this.permiteEdit ? 'Generar Partida' : '';
+			this.btnContrapartida = this.permiteEdit ? 'Contrapartida' : '';
 			this.btnCrearModelo = this.permiteEdit ? 'Crear Modelo' : '';
 			this.btnImprimir = this.permitePrint ? 'Imprimir' : '';
 			this.btnImprimirDx = this.permitePrint ? 'Imprimir DX' : '';
-			this.btnPartidaLiquidacion = this.permiteEdit ? 'Part. Liquidación' : '';
-			this.btnPartidaCierre = this.permiteEdit ? 'Part. Cierre' : '';
-			this.btnPartidaApertura = this.permiteEdit ? 'Part. Apertura' : '';
 			return;
 		}
 
 		this.btnImportarExcel = '';
 		this.btnGenerarDesdeModelo = '';
+		this.btnContrapartida = '';
 		const puedeImprimirPartida =
 			this.permitePrint && this.banderaMtto === UpdateType.Update && this.hasPartidaSeleccionada();
 		this.btnImprimir = puedeImprimirPartida ? 'Imprimir' : '';
 		this.btnImprimirDx = puedeImprimirPartida ? 'Imprimir DX' : '';
-		this.btnPartidaLiquidacion = '';
-		this.btnPartidaCierre = '';
-		this.btnPartidaApertura = '';
 		this.btnCrearModelo = this.puedeCrearModelo() ? 'Crear Modelo' : '';
-	}
-
-	get showProcesosEnGrid(): boolean {
-		return !!(this.btnPartidaApertura || this.btnPartidaLiquidacion || this.btnPartidaCierre);
 	}
 
 	hasPartidaSeleccionada(): boolean {
@@ -544,45 +601,13 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.abrirPdfPartida((params) => this.service.getPDFDx(params));
 	}
 
-	ejecutarPartidaEspecial(tipo: 'LIQ' | 'CIE' | 'APE'): void {
-		if (!this.vANIO_PERIODO_CIERRE || !this.vMES_PERIODO_CIERRE) {
-			this.notifyFx('Indique año y mes del periodo', NotifyType.Warning);
-			return;
-		}
-		const labels = { LIQ: 'liquidación', CIE: 'cierre', APE: 'apertura' };
-		const confirma = custom({
-			title: 'Confirmar',
-			messageHtml: `¿Generar partida de ${labels[tipo]} para ${this.vMES_PERIODO_CIERRE}/${this.vANIO_PERIODO_CIERRE}?`,
-			buttons: [
-				{ text: 'Sí', onClick: () => true },
-				{ text: 'No', onClick: () => false },
-			],
-		});
-		confirma.show().then((result: boolean) => {
-			if (!result) return;
-			this.loadingVisible = true;
-			const call =
-				tipo === 'LIQ'
-					? this.service.generarPartidaLiquidacion(this.vANIO_PERIODO_CIERRE, this.vMES_PERIODO_CIERRE)
-					: tipo === 'CIE'
-						? this.service.generarPartidaCierre(this.vANIO_PERIODO_CIERRE, this.vMES_PERIODO_CIERRE)
-						: this.service.generarPartidaApertura(this.vANIO_PERIODO_CIERRE, this.vMES_PERIODO_CIERRE);
-			call.pipe(take(1)).subscribe({
-				next: (response: any) => {
-					this.loadingVisible = false;
-					if (response?.ErrorCode === 0) {
-						this.notifyFx(`Partida de ${labels[tipo]} generada`, NotifyType.Success);
-						this.consultar();
-					} else {
-						this.notifyFx(response?.ErrorMessage || 'Error al generar partida', NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					this.loadingVisible = false;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
-		});
+	abrirContrapartida(): void {
+		this.contrapartidaModalVisible = true;
+	}
+
+	onContrapartidaGenerada(): void {
+		this.contrapartidaModalVisible = false;
+		this.consultar();
 	}
 
 	irImportarExcel(): void {
