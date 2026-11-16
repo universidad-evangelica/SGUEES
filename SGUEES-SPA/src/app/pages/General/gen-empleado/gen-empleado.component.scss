@@ -1316,4 +1316,781 @@
 	}
 }
 
+.empleado-contrato-grid {
+	min-height: 240px;
+}
+
+/* Qué hace: Configuración visual para la columna de botones de acción Options en contratos */
+/* Cómo lo hace: Asegura el estilo de enlace azul y espaciado nativo idéntico al de las demás pantallas */
+::ng-deep .empleado-contrato-grid {
+	.dx-command-edit .dx-link {
+		color: var(--accent-color, #337ab7) !important;
+		margin: 0 4px;
+		cursor: pointer !important;
+
+		.dx-icon {
+			font-size: 18px;
+			width: 18px;
+			height: 18px;
+			line-height: 18px;
+		}
+	}
+}
+
+/* Qué hace: Configura cursor grab en las filas para indicar desplazamiento horizontal por arrastre (drag-to-scroll) */
+/* Cómo lo hace: Aplica cursor grab a las filas de la grilla de contratos, respetando cursor pointer en botones y controles */
+::ng-deep .empleado-contrato-grid .dx-datagrid-rowsview .dx-data-row {
+	cursor: grab;
+
+	& a,
+	& button,
+	& .dx-link,
+	& .dx-button,
+	& [role="button"] {
+		cursor: pointer !important;
+	}
+}
+
+.contrato-badge--borrador {
+	color: #b45309;
+	background: color-mix(in srgb, #f59e0b 18%, transparent);
+	border: 1px solid color-mix(in srgb, #f59e0b 38%, transparent);
+}
+
+.contrato-badge--vigente {
+	color: #15803d;
+	background: color-mix(in srgb, #22c55e 18%, transparent);
+	border: 1px solid color-mix(in srgb, #22c55e 38%, transparent);
+}
+
+.contrato-badge--finalizado {
+	color: #1d4ed8;
+	background: color-mix(in srgb, #3b82f6 18%, transparent);
+	border: 1px solid color-mix(in srgb, #3b82f6 38%, transparent);
+}
+
+.contrato-badge--anulado {
+	color: #b91c1c;
+	background: color-mix(in srgb, #ef4444 18%, transparent);
+	border: 1px solid color-mix(in srgb, #ef4444 38%, transparent);
+}
+
+.contrato-archivo-ok {
+	font-weight: 600;
+	color: var(--accent-color, #1976d2);
+}
+
+.contrato-archivo-vacio {
+	font-size: 12px;
+	color: var(--sguees-text-muted, var(--sguees-text-secondary, #94a3b8));
+}
+
+.contrato-preview-modal {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	gap: 12px;
+}
+
+.contrato-preview-modal__bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 10px 14px;
+	border-radius: var(--sguees-radius-md, 10px);
+	background: var(--sguees-surface-subtle, color-mix(in srgb, var(--base-text-color) 6%, transparent));
+	border: 1px solid var(--sguees-border-subtle, var(--border-color));
+}
+
+.contrato-preview-modal__meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+}
+
+.contrato-preview-modal__motivo {
+	font-size: 13px;
+	color: #dc2626;
+	font-weight: 600;
+}
+
+.contrato-preview-modal__scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.contrato-preview-sheet {
+	max-width: 820px;
+	margin: 0 auto;
+	padding: 28px 34px;
+	background: #ffffff;
+	color: #111827;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	box-shadow: var(--sguees-shadow-sm);
+	font-family: 'Times New Roman', Georgia, serif;
+	line-height: 1.42;
+
+	&::after {
+		content: '';
+		display: table;
+		clear: both;
+	}
+
+	::ng-deep p,
+	::ng-deep h1,
+	::ng-deep h2,
+	::ng-deep h3,
+	::ng-deep h4,
+	::ng-deep h5,
+	::ng-deep h6,
+	::ng-deep ul,
+	::ng-deep ol,
+	::ng-deep blockquote {
+		margin: 0;
+		padding: 0;
+	}
+
+	::ng-deep ul,
+	::ng-deep ol {
+		padding-left: 1.5em;
+	}
+
+	::ng-deep table {
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
+	}
+
+	::ng-deep td,
+	::ng-deep th {
+		padding: 4px 6px;
+		vertical-align: top;
+	}
+
+	::ng-deep img {
+		max-width: 100%;
+		height: auto;
+	}
+}
+
+/* Qué hace: visor de documento firmado y vista previa a pantalla completa exacta sin márgenes ni espacios vacíos. */
+/* Cómo: fija el popup a inset 0 con 100% real y quita todo padding interno de DevExtreme. */
+::ng-deep .contrato-firmado-popup,
+::ng-deep .contrato-preview-popup {
+	.dx-overlay-content.dx-popup-normal {
+		position: fixed !important;
+		inset: 0 !important;
+		width: 100% !important;
+		height: 100% !important;
+		max-width: none !important;
+		max-height: none !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		border-radius: 0 !important;
+		border: 0 !important;
+		box-shadow: none !important;
+		transform: none !important;
+		background: #111827 !important;
+		overflow: hidden !important;
+	}
+
+	.dx-popup-content {
+		padding: 0 !important;
+		margin: 0 !important;
+		display: flex !important;
+		flex-direction: column !important;
+		width: 100% !important;
+		height: 100% !important;
+		max-height: 100% !important;
+		overflow: hidden !important;
+
+		> .dx-template-wrapper {
+			display: flex;
+			flex-direction: column;
+			flex: 1 1 0;
+			width: 100%;
+			height: 100%;
+			min-height: 0;
+			margin: 0;
+			padding: 0;
+		}
+	}
+}
+
+
+.contrato-firmado-viewer {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 0;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+	gap: 0;
+	overflow: hidden;
+	background: #111827;
+}
+
+.contrato-firmado-viewer__toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	height: 40px;
+	padding: 0 12px;
+	background: #1e2430;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	flex-shrink: 0;
+}
+
+.contrato-firmado-viewer__actions {
+	display: flex;
+	align-items: center;
+}
+
+.contrato-firmado-viewer__body {
+	flex: 1 1 0;
+	width: 100%;
+	height: calc(100vh - 40px);
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	align-items: stretch;
+	justify-content: center;
+	overflow: hidden;
+	background: #525659;
+}
+
+.contrato-firmado-viewer__pdf {
+	display: block;
+	width: 100%;
+	height: 100%;
+	flex: 1 1 0;
+	border: 0;
+	margin: 0;
+	padding: 0;
+}
+
+.contrato-firmado-viewer__img {
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
+	margin: auto;
+}
+
+/* Modal amplio de vista simultánea (Parámetros + Contrato compilado en tiempo real) */
+::ng-deep .contrato-studio-popup .dx-popup-content {
+	padding: 0 !important;
+	display: flex;
+	flex-direction: column;
+	background: var(--sguees-surface-card, var(--card-background));
+	color: var(--sguees-text-primary, var(--base-text-color));
+	overflow: hidden;
+
+	> .dx-template-wrapper,
+	> .contrato-studio {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 0;
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+	}
+}
+
+.contrato-studio {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 0;
+	height: 100%;
+	min-height: 0;
+	background: var(--sguees-surface-card, var(--card-background));
+	color: var(--sguees-text-primary, var(--base-text-color));
+}
+
+.contrato-studio__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 14px 20px;
+	border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: var(--sguees-surface-card, var(--card-background));
+	flex-shrink: 0;
+}
+
+.contrato-studio__title-wrap {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+
+.contrato-studio__icon {
+	width: 38px;
+	height: 38px;
+	border-radius: 10px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	color: var(--sguees-brand-primary, var(--accent-color, #1976d2));
+	background: color-mix(in srgb, var(--sguees-brand-primary, var(--accent-color, #1976d2)) 14%, transparent);
+	border: 1px solid color-mix(in srgb, var(--sguees-brand-primary, var(--accent-color, #1976d2)) 28%, transparent);
+
+	.dx-icon {
+		font-size: 18px;
+	}
+}
+
+.contrato-studio__title {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.25;
+	color: var(--sguees-text-primary, var(--base-text-color));
+}
+
+.contrato-studio__subtitle {
+	margin: 2px 0 0;
+	font-size: 12px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.contrato-studio__header-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-shrink: 0;
+}
+
+.contrato-studio__mode-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 11px;
+	border-radius: 8px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sguees-brand-primary, var(--accent-color, #1976d2));
+	background: color-mix(in srgb, var(--sguees-brand-primary, var(--accent-color, #1976d2)) 12%, transparent);
+	border: 1px solid color-mix(in srgb, var(--sguees-brand-primary, var(--accent-color, #1976d2)) 28%, transparent);
+}
+
+.contrato-studio__body {
+	display: grid;
+	grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
+	flex: 1 1 0;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.contrato-studio__sidebar {
+	border-right: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: var(--sguees-surface-card, var(--card-background));
+	min-height: 0;
+	height: 100%;
+}
+
+.contrato-studio__sidebar-inner {
+	padding: 16px 18px 20px;
+}
+
+.contrato-studio__section-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 14px;
+}
+
+.contrato-studio__section-title {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	color: var(--sguees-text-muted, var(--sguees-text-secondary, #94a3b8));
+}
+
+.contrato-studio__live-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	font-weight: 600;
+	color: #16a34a;
+
+	&--loading {
+		color: var(--sguees-brand-primary, var(--accent-color, #1976d2));
+	}
+}
+
+.contrato-studio__live-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+.contrato-studio__preview {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	background: var(--sguees-page-bg, var(--base-bg));
+}
+
+.contrato-studio__preview-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 8px 16px;
+	border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: var(--sguees-surface-subtle, var(--background-gray-color));
+	flex-shrink: 0;
+}
+
+.contrato-studio__preview-meta {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.contrato-studio__preview-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sguees-brand-primary, var(--accent-color, #1976d2));
+	background: color-mix(in srgb, var(--sguees-brand-primary, var(--accent-color, #1976d2)) 14%, transparent);
+	border: 1px solid color-mix(in srgb, var(--sguees-brand-primary, var(--accent-color, #1976d2)) 28%, transparent);
+}
+
+.contrato-studio__preview-sep,
+.contrato-studio__preview-format {
+	font-size: 12px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.contrato-studio__zoom-controls {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.contrato-studio__zoom-label {
+	min-width: 48px;
+	padding: 4px 6px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--sguees-text-primary, var(--base-text-color));
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+
+	&:hover {
+		background: color-mix(in srgb, var(--base-text-color) 8%, transparent);
+	}
+}
+
+.contrato-studio__canvas-scroll {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.contrato-studio__canvas {
+	padding: 24px 28px 36px;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	min-height: 100%;
+}
+
+// Qué hace: simulación visual de hoja de papel A4 para la vista previa del contrato.
+// Cómo lo hace: replica las reglas de contención de gen-plantilla-contrato evitando que tablas,
+//              logos o elementos flotantes se desborden hacia el fondo oscuro del canvas.
+.contrato-studio__sheet {
+	width: 794px;
+	max-width: 100%;
+	min-height: 920px;
+	padding: 40px 38px;
+	box-sizing: border-box;
+	position: relative;
+	background: #ffffff;
+	color: #111827;
+	border: 1px solid var(--sguees-border-subtle, #e5e7eb);
+	border-radius: 4px;
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+	font-family: 'Times New Roman', Georgia, serif;
+	line-height: 1.42;
+
+	&::after {
+		content: '';
+		display: table;
+		clear: both;
+	}
+
+	::ng-deep p,
+	::ng-deep h1,
+	::ng-deep h2,
+	::ng-deep h3,
+	::ng-deep h4,
+	::ng-deep h5,
+	::ng-deep h6,
+	::ng-deep ul,
+	::ng-deep ol,
+	::ng-deep blockquote {
+		margin: 0;
+		padding: 0;
+		line-height: 1.42;
+	}
+
+	::ng-deep ul,
+	::ng-deep ol {
+		padding-left: 1.5em;
+	}
+
+	// Tablas contenidas al 100% con distribución proporcional de columnas
+	::ng-deep table {
+		width: 100% !important;
+		max-width: 100% !important;
+		border-collapse: collapse !important;
+		table-layout: fixed !important;
+		box-sizing: border-box !important;
+		margin: 4px 0;
+
+		tr {
+			width: 100% !important;
+
+			// Encabezado institucional de 3 columnas (espacio / título centrado / logo a la derecha)
+			> td:first-child:nth-last-child(3),
+			> td:first-child:nth-last-child(3) ~ td {
+				box-sizing: border-box !important;
+			}
+			> td:first-child:nth-last-child(3) {
+				width: 18% !important;
+			}
+			> td:nth-child(2):nth-last-child(2) {
+				width: 64% !important;
+				text-align: center !important;
+			}
+			> td:nth-child(3):last-child {
+				width: 18% !important;
+				text-align: right !important;
+
+				img {
+					max-width: 100% !important;
+					height: auto !important;
+					display: inline-block !important;
+				}
+			}
+
+			// Firmas institucionales de 2 columnas (Universidad / Empleado)
+			> td:first-child:nth-last-child(2),
+			> td:first-child:nth-last-child(2) ~ td {
+				box-sizing: border-box !important;
+			}
+			> td:first-child:nth-last-child(2) {
+				width: 50% !important;
+			}
+			> td:nth-child(2):last-child {
+				width: 50% !important;
+			}
+		}
+	}
+
+	::ng-deep td,
+	::ng-deep th {
+		padding: 4px 6px !important;
+		vertical-align: middle !important;
+		word-break: break-word;
+		overflow-wrap: anywhere;
+		box-sizing: border-box !important;
+	}
+
+	// Tablas sin bordes (encabezados de logo y firmas)
+	::ng-deep table[style*='border-style: none'],
+	::ng-deep table[style*='border-style:none'],
+	::ng-deep table[style*='border-top-style: none'],
+	::ng-deep table[style*='border-top-style:none'],
+	::ng-deep table[style*='border-width: 0px'],
+	::ng-deep table[style*='border-width:0px'] {
+		border: none !important;
+
+		td,
+		th {
+			border: none !important;
+		}
+	}
+
+	// Imágenes y logos contenidos dentro de la hoja
+	::ng-deep img {
+		max-width: 100% !important;
+		height: auto !important;
+		box-sizing: border-box;
+	}
+
+	::ng-deep img[style*='float: right'],
+	::ng-deep img[style*='float:right'] {
+		margin: 0 0 8px 14px;
+	}
+
+	::ng-deep img[style*='float: left'],
+	::ng-deep img[style*='float:left'] {
+		margin: 0 14px 8px 0;
+	}
+
+	// Soporte para alineaciones generadas por Quill/DevExtreme
+	::ng-deep .ql-align-center {
+		text-align: center !important;
+	}
+
+	::ng-deep .ql-align-right {
+		text-align: right !important;
+	}
+
+	::ng-deep .ql-align-justify {
+		text-align: justify !important;
+	}
+
+	::ng-deep .ql-align-left {
+		text-align: left !important;
+	}
+
+	::ng-deep .contrato-param-highlight {
+		display: inline;
+		padding: 0 4px;
+		border-radius: 3px;
+		font-weight: 600;
+		background-color: color-mix(in srgb, #22c55e 18%, transparent);
+		border-bottom: 2px solid #22c55e;
+		color: #064e3b;
+	}
+
+	::ng-deep .contrato-param-missing {
+		display: inline;
+		padding: 0 4px;
+		border-radius: 3px;
+		font-weight: 600;
+		background-color: color-mix(in srgb, #f97316 20%, transparent);
+		border-bottom: 2px solid #f97316;
+		color: #9a3412;
+	}
+}
+
+.contrato-studio__empty-preview {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 64px 24px;
+	text-align: center;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+
+	.dx-icon {
+		font-size: 32px;
+		opacity: 0.7;
+	}
+
+	p {
+		margin: 0;
+		font-size: 13px;
+	}
+}
+
+.contrato-studio__footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 12px;
+	padding: 12px 20px;
+	border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: var(--sguees-surface-card, var(--card-background));
+	flex: 0 0 auto;
+}
+
+.contrato-studio__status {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.contrato-studio__status-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #22c55e;
+	flex-shrink: 0;
+}
+
+.contrato-studio__footer-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.contrato-studio__missing-alert {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	background: color-mix(in srgb, #f97316 14%, transparent);
+	border: 1px solid color-mix(in srgb, #f97316 38%, transparent);
+	color: var(--sguees-text-primary, var(--base-text-color));
+	font-size: 12px;
+	line-height: 1.45;
+	word-break: break-word;
+
+	.dx-icon {
+		color: #f97316;
+		font-size: 16px;
+		margin-top: 1px;
+		flex-shrink: 0;
+	}
+
+	strong {
+		display: block;
+		color: #ea580c;
+		margin-bottom: 2px;
+	}
+}
+
+@media (max-width: 960px) {
+	.contrato-studio__mode-pill {
+		display: none;
+	}
+
+	.contrato-studio__body {
+		grid-template-columns: 1fr;
+		grid-template-rows: minmax(220px, 46%) minmax(0, 1fr);
+	}
+
+	.contrato-studio__sidebar {
+		border-right: 0;
+		border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+	}
+
+	.contrato-studio__canvas {
+		padding: 14px;
+	}
+
+	.contrato-studio__sheet {
+		padding: 24px 20px;
+		min-height: 480px;
+	}
+}
+
 

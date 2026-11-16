@@ -1,7 +1,7 @@
 // Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos + Familiares + Formación + Experiencia + Adicional + Referencias).
 // Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos/formación/experiencia/UEES/referencias anidados.
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { DomSanitizer, SafeHtml, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom, from, Observable, of } from 'rxjs';
 import { catchError, concatMap, map, take, toArray } from 'rxjs/operators';
@@ -30,7 +30,14 @@ import { GenEmpleadoPuesto } from './gen-empleado-puesto/models/gen-empleado-pue
 import { ScDescriptorAsignadoEmpleado } from '../../SelectionHiring/sc-descriptor-puesto/sc-descriptor-puesto-empleado/models/sc-descriptor-puesto-empleado';
 import { FORMATO_AMBOS, FORMATO_CORTO, FORMATO_EXTENSO } from '../../SelectionHiring/sc-descriptor-puesto/models/sc-descriptor-puesto';
 import { GenPersonaParentescoContacto } from './gen-persona-parentesco-contacto/models/gen-persona-parentesco-contacto';
+import {
+	GenEmpleadoContrato,
+	GenEmpleadoContratoAccion,
+	GenPlantillaContratoActiva,
+} from './gen-empleado-contrato/models/gen-empleado-contrato';
 import { GenEmpleadoService } from './gen-empleado.service';
+import { jsPDF } from 'jspdf';
+import * as html2canvasLib from 'html2canvas';
 import {
 	aplicarLimiteDocumentoIdentidad,
 	documentoVisiblePorAplicaPara,
@@ -59,12 +66,12 @@ type SubmodalFamiliarTipo = 'familiar' | 'hijo';
 type SubmodalFormacionTipo = 'estudio' | 'idioma' | 'competencia';
 
 @Component({
-  standalone: false,
+	standalone: false,
 	selector: 'app-gen-empleado',
 	templateUrl: './gen-empleado.component.html',
 	styleUrls: ['./gen-empleado.component.scss'],
 })
-export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDestroy {
+export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDestroy, AfterViewInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	// Qué hace: referencia al popup de descriptores de puesto asignables al empleado.
 	// Cómo lo hace: captura el componente DxPopupComponent mediante la variable de plantilla #popupDescriptoresEmpleado.
@@ -72,6 +79,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	// Qué hace: referencia a la grilla de descriptores de puesto dentro del modal.
 	// Cómo lo hace: captura el componente DxDataGridComponent mediante la variable de plantilla #gridDescriptoresEmpleado.
 	@ViewChild('gridDescriptoresEmpleado') gridDescriptoresEmpleado?: any;
+	// Qué hace: referencia al input oculto para subir el documento firmado del contrato.
+	// Cómo lo hace: dispara la selección nativa de PDF o imagen sin exponer controles HTML crudos.
+	@ViewChild('contratoFirmadoInput', { static: false }) contratoFirmadoInput?: ElementRef<HTMLInputElement>;
+
+	// Qué hace: función de limpieza de listeners de arrastre horizontal (drag-to-scroll) en la grilla de contratos.
+	private cleanupDragToScrollContratos?: () => void;
 
 	protected override etiquetaRegistro = 'el empleado';
 	protected override requiereEmpresaSesion = true;
@@ -289,6 +302,50 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	mESTADO_NIP: any[] = [];
 	mCORR_AFP: any[] = [];
 	mCORR_SEGURO_SOCIAL: any[] = [];
+	mESTADO_CONTRATO: any[] = [];
+
+	// Qué hace: estado en memoria y modales del tab Contratos (GEN_EMPLEADO_CONTRATO).
+	contratos: GenEmpleadoContrato[] = [];
+	contratoSeleccionadoKeys: number[] = [];
+	plantillasContratoActivas: GenPlantillaContratoActiva[] = [];
+	cargandoContratos = false;
+	guardandoContrato = false;
+	popupContratoFormVisible = false;
+	contratoEditandoEsNuevo = true;
+	contratoFormDraft: GenEmpleadoContratoAccion = {
+		CORR_EMPLEADO_CONTRATO: 0,
+		CORR_EMPLEADO: 0,
+		CORR_UNIDAD: null,
+		CORR_PUESTO: null,
+		CORR_PLANTILLA_CONTRATO_VERSION: 0,
+		FECHA_INICIO: null,
+		FECHA_FIN: null,
+		FECHA_FIRMA: null,
+		REGENERAR_CONTENIDO: true,
+		CUERPO_CONTRATO: '',
+	};
+	contratoPuestoSelectorKey = '';
+	contratoPuestosOpciones: { key: string; label: string; CORR_UNIDAD: number | null; CORR_PUESTO: number | null; FECHA_INGRESO?: string | null; FECHA_FIN?: string | null }[] = [];
+	popupContratoPreviewVisible = false;
+	contratoPreviewActual: GenEmpleadoContrato | null = null;
+	contratoPreviewHtml: SafeHtml = '';
+	contratoPreviewPdfUrl: SafeUrl | null = null;
+	private contratoPreviewPdfObjectUrl: string | null = null;
+	contratoFormPreviewHtml: SafeHtml = '';
+	contratoFormPreviewError = '';
+	contratoParametrosFaltantes: string[] = [];
+	cargandoContratoFormPreview = false;
+	contratoPreviewZoom = 100;
+	popupContratoAnularVisible = false;
+	motivoAnulacionContrato = '';
+	popupContratoFirmadoVisible = false;
+	tituloContratoFirmado = 'Documento firmado';
+	contratoFirmadoUrl: SafeUrl | null = null;
+	contratoFirmadoEsImagen = false;
+	private contratoFirmadoObjectUrl: string | null = null;
+	private contratoParaSubirFirmadoId = 0;
+	private contratoFormPreviewSeq = 0;
+	private contratoFormPreviewTimer: ReturnType<typeof setTimeout> | null = null;
 
 	/** Código ISO / NOMBRE_CORTO de El Salvador en GEN_PAIS. */
 	private static readonly CODIGO_PAIS_EL_SALVADOR = 'SV';
@@ -297,7 +354,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: GenEmpleadoService,
-		private sanitization: DomSanitizer
+		private sanitization: DomSanitizer,
+		private elRef: ElementRef
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -314,9 +372,21 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.consultar();
 	}
 
+	// Qué hace: Inicializa listeners de interfaz luego de renderizar la vista.
+	// Cómo lo hace: Activa el desplazamiento horizontal por arrastre (drag-to-scroll) para la grilla de contratos.
+	ngAfterViewInit(): void {
+		this.initDragToScrollContratos();
+	}
+
 	ngOnDestroy(): void {
+		if (this.cleanupDragToScrollContratos) {
+			this.cleanupDragToScrollContratos();
+		}
 		this.revocarFotoPersona();
 		this.revocarFotoLocal();
+		this.revocarContratoFirmadoUrl();
+		this.revocarContratoPreviewPdfUrl();
+		this.clearContratoFormPreviewTimer();
 		this.clearPreviewPanelCloseTimer();
 		this.revocarPreviewFoto();
 	}
@@ -352,6 +422,40 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	// Cómo lo hace: solo en edición del empleado y con permiso de modificar.
 	get puedeAsignarDescriptores(): boolean {
 		return !!this.permiteEdit && !this.readOnlyPersonales && this.tienePersonaBase;
+	}
+
+	// Qué hace: indica si el usuario puede asignar, editar, emitir, finalizar o adjuntar contratos.
+	// Cómo lo hace: exige permiso de edición, empleado guardado y formulario fuera de solo lectura.
+	get puedeGestionarContratos(): boolean {
+		return !!this.permiteEdit && !this.readOnlyPersonales && this.tienePersonaBase;
+	}
+
+	// Qué hace: indica si el usuario puede eliminar un contrato aún en borrador.
+	// Cómo lo hace: exige permiso de eliminación y modo edición del empleado.
+	get puedeEliminarContratos(): boolean {
+		return !!this.permiteDele && !this.readOnlyPersonales && this.tienePersonaBase;
+	}
+
+	// Qué hace: devuelve la fila de contrato actualmente seleccionada en la grilla del tab Contratos.
+	// Cómo lo hace: busca por CORR_EMPLEADO_CONTRATO en el arreglo contratos en memoria.
+	get contratoSeleccionado(): GenEmpleadoContrato | null {
+		const id = Number(this.contratoSeleccionadoKeys?.[0] ?? 0);
+		if (id <= 0) {
+			return null;
+		}
+		return this.contratos.find((c) => Number(c.CORR_EMPLEADO_CONTRATO) === id) ?? null;
+	}
+
+	get contratoSeleccionadoEsBorrador(): boolean {
+		return Number(this.contratoSeleccionado?.ESTADO_CONTRATO) === 1;
+	}
+
+	get contratoSeleccionadoEsVigente(): boolean {
+		return Number(this.contratoSeleccionado?.ESTADO_CONTRATO) === 2;
+	}
+
+	get contratoSeleccionadoEsAnulado(): boolean {
+		return Number(this.contratoSeleccionado?.ESTADO_CONTRATO) === 4;
 	}
 
 	// Qué hace: descriptor marcado en el tab para imprimir su reporte.
@@ -655,6 +759,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.descriptorImpresionKeys = [];
 		this.popupVisiblePdfDescriptor = false;
 		this.popupDescriptorEmpleadoVisible = false;
+		this.contratos = [];
+		this.contratoSeleccionadoKeys = [];
+		this.popupContratoFormVisible = false;
+		this.popupContratoPreviewVisible = false;
+		this.popupContratoAnularVisible = false;
+		this.popupContratoFirmadoVisible = false;
+		this.revocarContratoFirmadoUrl();
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
@@ -695,23 +806,23 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 													this.guardarReferenciasPersonalesDesdeModal(() => {
 														this.guardarReferenciasLaboralesDesdeModal(() => {
 															this.guardarDomiciliosDesdeModal(() => {
-												this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
-												this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
-												this.contactosOriginal = this.clonarContactos(this.contactos);
-												this.familiaresOriginal = this.clonarFamiliares(this.familiares);
-												this.hijosOriginal = this.clonarHijos(this.hijos);
-												this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
-												this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
-												this.competenciasOriginal = this.clonarCompetencias(this.competencias);
-												this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
-												this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
-												this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
-												this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
-												this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
-												this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
-												this.puestosOriginal = this.clonarPuestos(this.puestos);
-												this.fotoUrlNueva = '';
-												this.volverBrowseTrasGuardar();
+																this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+																this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+																this.contactosOriginal = this.clonarContactos(this.contactos);
+																this.familiaresOriginal = this.clonarFamiliares(this.familiares);
+																this.hijosOriginal = this.clonarHijos(this.hijos);
+																this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
+																this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
+																this.competenciasOriginal = this.clonarCompetencias(this.competencias);
+																this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
+																this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
+																this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
+																this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
+																this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
+																this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
+																this.puestosOriginal = this.clonarPuestos(this.puestos);
+																this.fotoUrlNueva = '';
+																this.volverBrowseTrasGuardar();
 															});
 														});
 													});
@@ -770,33 +881,33 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.guardarReferenciasPersonalesDesdeModal(() => {
 													this.guardarReferenciasLaboralesDesdeModal(() => {
 														this.guardarDomiciliosDesdeModal(() => {
-											this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
-											this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
-											this.contactosOriginal = this.clonarContactos(this.contactos);
-											this.familiaresOriginal = this.clonarFamiliares(this.familiares);
-											this.hijosOriginal = this.clonarHijos(this.hijos);
-											this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
-											this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
-											this.competenciasOriginal = this.clonarCompetencias(this.competencias);
-											this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
-											this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
-											this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
-											this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
-											this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
-											this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
-											this.puestosOriginal = this.clonarPuestos(this.puestos);
-											this.fotoUrlNueva = '';
-											this.omitirRestaurarPopupPersonales = true;
-											this.popupPersonalesVisible = false;
-											this.cargarFotoPersona(
-												Number(this.model.CORR_PERSONA),
-												this.modelPersonaNatural.FOTO_URL
-											);
-											if (this.modelPersonaNatural.NOMBRE_COMPLETO) {
-												this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
-												this.aplicarRegistroEnGrid(this.fillData(this.model), false);
-											}
-											this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+															this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+															this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+															this.contactosOriginal = this.clonarContactos(this.contactos);
+															this.familiaresOriginal = this.clonarFamiliares(this.familiares);
+															this.hijosOriginal = this.clonarHijos(this.hijos);
+															this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
+															this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
+															this.competenciasOriginal = this.clonarCompetencias(this.competencias);
+															this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
+															this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
+															this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
+															this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
+															this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
+															this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
+															this.puestosOriginal = this.clonarPuestos(this.puestos);
+															this.fotoUrlNueva = '';
+															this.omitirRestaurarPopupPersonales = true;
+															this.popupPersonalesVisible = false;
+															this.cargarFotoPersona(
+																Number(this.model.CORR_PERSONA),
+																this.modelPersonaNatural.FOTO_URL
+															);
+															if (this.modelPersonaNatural.NOMBRE_COMPLETO) {
+																this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
+																this.aplicarRegistroEnGrid(this.fillData(this.model), false);
+															}
+															this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
 														});
 													});
 												});
@@ -1402,6 +1513,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarParentescoContactos();
 		this.cargarPuestos();
 		this.cargarDescriptoresEmpleado();
+		this.cargarContratosEmpleado();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL + GEN_EMPLEADO (SP).
@@ -1445,6 +1557,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargarParentescoContactos();
 					this.cargarPuestos();
 					this.cargarDescriptoresEmpleado();
+					this.cargarContratosEmpleado();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -2922,12 +3035,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			JEFE_INMEDIATO: `${this.submodalExperienciaDraft?.JEFE_INMEDIATO ?? ''}`.trim(),
 			SALARIO_INICIAL:
 				this.submodalExperienciaDraft?.SALARIO_INICIAL == null ||
-				this.submodalExperienciaDraft?.SALARIO_INICIAL === ''
+					this.submodalExperienciaDraft?.SALARIO_INICIAL === ''
 					? null
 					: Number(this.submodalExperienciaDraft.SALARIO_INICIAL),
 			SALARIO_FINAL:
 				this.submodalExperienciaDraft?.SALARIO_FINAL == null ||
-				this.submodalExperienciaDraft?.SALARIO_FINAL === ''
+					this.submodalExperienciaDraft?.SALARIO_FINAL === ''
 					? null
 					: Number(this.submodalExperienciaDraft.SALARIO_FINAL),
 			FECHA_INICIO: this.submodalExperienciaDraft?.FECHA_INICIO ?? null,
@@ -3094,7 +3207,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		}
 		const corrParentesco =
 			this.submodalFamiliarUeesDraft?.CORR_PARENTESCO == null ||
-			Number(this.submodalFamiliarUeesDraft.CORR_PARENTESCO) <= 0
+				Number(this.submodalFamiliarUeesDraft.CORR_PARENTESCO) <= 0
 				? null
 				: Number(this.submodalFamiliarUeesDraft.CORR_PARENTESCO);
 		const row: GenPersonaFamiliarUees = {
@@ -3255,7 +3368,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			CORR_REFERENCIA_PERSONAL:
 				this.submodalReferenciaPersonalEditIndex != null
 					? this.referenciasPersonales[this.submodalReferenciaPersonalEditIndex]
-							.CORR_REFERENCIA_PERSONAL
+						.CORR_REFERENCIA_PERSONAL
 					: this.tempCorrReferenciaPersonal--,
 			NOMBRE_COMPLETO: nombre,
 			DIRECCION: `${this.submodalReferenciaPersonalDraft?.DIRECCION ?? ''}`.trim(),
@@ -3405,7 +3518,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			CORR_REFERENCIA_LABORAL:
 				this.submodalReferenciaLaboralEditIndex != null
 					? this.referenciasLaborales[this.submodalReferenciaLaboralEditIndex]
-							.CORR_REFERENCIA_LABORAL
+						.CORR_REFERENCIA_LABORAL
 					: this.tempCorrReferenciaLaboral--,
 			NOMBRE_COMPLETO: nombre,
 			LUGAR_TRABAJO: `${this.submodalReferenciaLaboralDraft?.LUGAR_TRABAJO ?? ''}`.trim(),
@@ -3938,12 +4051,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	resumenDomicilio(item: GenPersonaDomicilio): string {
 		const partes = this.esEmpleadoDomiciliado
 			? [
-					item?.NOMBRE_PAIS || null,
-					item?.NOMBRE_DEPTO || null,
-					item?.NOMBRE_MUNICIPIO || null,
-					item?.NOMBRE_DISTRITO || null,
-					item?.DIRECCION || null,
-			  ]
+				item?.NOMBRE_PAIS || null,
+				item?.NOMBRE_DEPTO || null,
+				item?.NOMBRE_MUNICIPIO || null,
+				item?.NOMBRE_DISTRITO || null,
+				item?.DIRECCION || null,
+			]
 			: [item?.NOMBRE_PAIS || null, item?.DIRECCION || null];
 		return partes.filter((x) => !!x && `${x}`.trim()).join(' · ') || 'Sin detalle';
 	}
@@ -4720,6 +4833,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.getESTADO_NIP();
 		this.getCORR_AFP();
 		this.getCORR_SEGURO_SOCIAL();
+		this.getESTADO_CONTRATO();
 		this.getCORR_UNIDAD_PUESTO();
 		this.getCORR_TIPO_CONTRATACION_PUESTO();
 		this.getCORR_TIPO_MODALIDAD_PUESTO();
@@ -4863,6 +4977,19 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.subscribe({
 				next: (response: any) => {
 					this.mESTADO_NIP = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga estados de contrato desde GEN_LISTA para badge y filtro del tab Contratos.
+	// Cómo lo hace: invoca GEN_LISTA/GetESTADO_CONTRATO_GEN_EMPLEADO → Key/Value en mESTADO_CONTRATO.
+	private getESTADO_CONTRATO(): void {
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_LISTA', 'GetESTADO_CONTRATO', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mESTADO_CONTRATO = response?.Result ? response.Data ?? [] : [];
 				},
 			});
 	}
@@ -5193,21 +5320,21 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			NOMBRE_TIPO_CONTRATACION:
 				tipoContratacion > 0
 					? this.nombreCatalogo(
-							this.mCORR_TIPO_CONTRATACION,
-							'CORR_TIPO_CONTRATACION',
-							tipoContratacion,
-							'NOMBRE_TIPO_CONTRATACION'
-						)
+						this.mCORR_TIPO_CONTRATACION,
+						'CORR_TIPO_CONTRATACION',
+						tipoContratacion,
+						'NOMBRE_TIPO_CONTRATACION'
+					)
 					: '',
 			CORR_TIPO_MODALIDAD: tipoModalidad,
 			MODALIDAD_NOMBRE:
 				tipoModalidad > 0
 					? this.nombreCatalogo(
-							this.mCORR_TIPO_MODALIDAD,
-							'CORR_TIPO_MODALIDAD',
-							tipoModalidad,
-							'MODALIDAD_NOMBRE'
-						)
+						this.mCORR_TIPO_MODALIDAD,
+						'CORR_TIPO_MODALIDAD',
+						tipoModalidad,
+						'MODALIDAD_NOMBRE'
+					)
 					: '',
 		};
 		if (this.submodalPuestoEditIndex != null) {
@@ -5954,6 +6081,1212 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.mCORR_DISTRITO_NACIMIENTO = response?.Result ? response.Data ?? [] : [];
 				},
 			});
+	}
+
+	// ============================================================================
+	// Tab Contratos (GEN_EMPLEADO_CONTRATO)
+	// ============================================================================
+
+	// Qué hace: carga los contratos asignados al empleado al abrir su ficha.
+	// Cómo lo hace: invoca GetAll una sola vez; altas, cambios y adjuntos parchean el arreglo en memoria.
+	private cargarContratosEmpleado(): void {
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		if (corrEmpleado <= 0) {
+			this.contratos = [];
+			this.contratoSeleccionadoKeys = [];
+			return;
+		}
+
+		this.cargandoContratos = true;
+		this.service
+			.getContratos(corrEmpleado)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoContratos = false;
+					this.contratos = response?.Result
+						? (response.Data ?? []).map((item: GenEmpleadoContrato) => this.mapContratoRow(item))
+						: [];
+					this.conservarSeleccionContrato();
+				},
+				error: (error) => {
+					this.cargandoContratos = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: carga el catálogo de plantillas de contrato con versión activa.
+	// Cómo lo hace: consulta GetPlantillasActivas y ejecuta el callback cuando ya están disponibles.
+	private asegurarPlantillasContratoActivas(despues?: () => void): void {
+		if (this.plantillasContratoActivas.length > 0) {
+			despues?.();
+			return;
+		}
+
+		this.cargandoContratos = true;
+		this.service
+			.getPlantillasContratoActivas()
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoContratos = false;
+					this.plantillasContratoActivas = response?.Result ? response.Data ?? [] : [];
+					if (!this.plantillasContratoActivas.length) {
+						this.notifyFx(
+							'No hay plantillas de contrato con versión activa configuradas.',
+							NotifyType.Warning
+						);
+						return;
+					}
+					despues?.();
+				},
+				error: (error) => {
+					this.cargandoContratos = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: guarda la llave del contrato marcado en la grilla del tab Contratos.
+	// Cómo lo hace: mantiene selección única para habilitar acciones de barra según el estado.
+	onContratoSeleccionado(e: { selectedRowKeys?: number[] }): void {
+		const keys = e?.selectedRowKeys ?? [];
+		this.contratoSeleccionadoKeys = keys.length ? [Number(keys[0])] : [];
+	}
+
+	// Qué hace: devuelve la clase CSS para el badge visual de ESTADO_CONTRATO.
+	// Cómo lo hace: asigna estilos según 1=BORRADOR, 2=VIGENTE, 3=FINALIZADO o 4=ANULADO (o sus equivalentes en string).
+	cssEstadoContrato(estado: number | string | null | undefined): string {
+		const val = typeof estado === 'number' ? estado : Number(estado);
+		switch (val) {
+			case 2:
+				return 'contrato-badge--vigente';
+			case 3:
+				return 'contrato-badge--finalizado';
+			case 4:
+				return 'contrato-badge--anulado';
+			case 1:
+			default:
+				const texto = String(estado ?? '').toUpperCase();
+				if (texto === 'VIGENTE') return 'contrato-badge--vigente';
+				if (texto === 'FINALIZADO') return 'contrato-badge--finalizado';
+				if (texto === 'ANULADO') return 'contrato-badge--anulado';
+				return 'contrato-badge--borrador';
+		}
+	}
+
+	// Qué hace: abre el modal para asignar y generar un nuevo borrador de contrato.
+	// Cómo lo hace: precarga el puesto activo del empleado y sus fechas, y carga plantillas activas disponibles.
+	abrirNuevoContrato(): void {
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		if (!this.puedeGestionarContratos || corrEmpleado <= 0) {
+			return;
+		}
+
+		this.asegurarPlantillasContratoActivas(() => {
+			this.construirOpcionesPuestoContrato(null, null, null);
+			const puestoActivo = (this.puestos ?? []).find((p) => p?.ACTIVO_PUESTO !== false) ?? null;
+			const opcionInicial = puestoActivo
+				? this.contratoPuestosOpciones.find(
+					(o) =>
+						Number(o.CORR_UNIDAD) === Number(puestoActivo.CORR_UNIDAD) &&
+						Number(o.CORR_PUESTO) === Number(puestoActivo.CORR_PUESTO)
+				)
+				: null;
+
+			this.contratoEditandoEsNuevo = true;
+			this.contratoPuestoSelectorKey = opcionInicial?.key ?? '';
+			this.contratoFormDraft = {
+				CORR_EMPLEADO_CONTRATO: 0,
+				CORR_EMPLEADO: corrEmpleado,
+				CORR_UNIDAD: opcionInicial?.CORR_UNIDAD ?? null,
+				CORR_PUESTO: opcionInicial?.CORR_PUESTO ?? null,
+				CORR_PLANTILLA_CONTRATO_VERSION:
+					Number(this.plantillasContratoActivas[0]?.CORR_PLANTILLA_CONTRATO_VERSION ?? 0) || 0,
+				FECHA_INICIO: opcionInicial?.FECHA_INGRESO ? this.normalizarFechaContrato(opcionInicial.FECHA_INGRESO) : new Date(),
+				FECHA_FIN: opcionInicial?.FECHA_FIN ? this.normalizarFechaContrato(opcionInicial.FECHA_FIN) : null,
+				FECHA_FIRMA: new Date(),
+				REGENERAR_CONTENIDO: true,
+				CUERPO_CONTRATO: '',
+			};
+			this.contratoPreviewZoom = 100;
+			this.contratoFormPreviewHtml = '';
+			this.contratoFormPreviewError = '';
+			this.contratoParametrosFaltantes = [];
+			this.popupContratoFormVisible = true;
+			this.programarPreviewModalContrato(0);
+		});
+	}
+
+	// Qué hace: determina si el botón Editar es visible para la fila de contrato en la grilla.
+	// Cómo lo hace: verifica permisos de gestión y que el contrato esté en estado BORRADOR (1).
+	contratoEditButtonVisible = (e: any): boolean => {
+		return !!this.puedeGestionarContratos && Number(e?.row?.data?.ESTADO_CONTRATO) === 1;
+	};
+
+	// Qué hace: determina si el botón Eliminar es visible para la fila de contrato en la grilla.
+	// Cómo lo hace: verifica permisos de eliminación y que el contrato esté en estado BORRADOR (1).
+	contratoDeleteButtonVisible = (e: any): boolean => {
+		return !!this.puedeEliminarContratos && Number(e?.row?.data?.ESTADO_CONTRATO) === 1;
+	};
+
+	// Qué hace: maneja el clic en el botón de edición nativo de la fila de contratos.
+	// Cómo lo hace: extrae la fila y abre el modal de edición de contrato.
+	onEditarContratoFilaClick = (e: any): void => {
+		if (e?.row?.data) {
+			this.abrirEditarContrato(e.row.data);
+		}
+	};
+
+	// Qué hace: maneja el clic en el botón de eliminación nativo de la fila de contratos.
+	// Cómo lo hace: extrae la fila y ejecuta la eliminación con confirmación.
+	onEliminarContratoFilaClick = (e: any): void => {
+		if (e?.row?.data) {
+			this.eliminarContratoBorradorFila(e.row.data);
+		}
+	};
+
+	// Qué hace: abre el modal para editar o regenerar un contrato existente en estado BORRADOR.
+	// Cómo lo hace: consulta Get por llave para traer su CUERPO_CONTRATO completo antes de mostrar el editor.
+	abrirEditarContrato(filaDirecta?: GenEmpleadoContrato | null): void {
+		const fila = filaDirecta || this.contratoSeleccionado;
+		if (!this.puedeGestionarContratos || !fila || Number(fila.ESTADO_CONTRATO) !== 1) {
+			return;
+		}
+		this.contratoSeleccionadoKeys = [fila.CORR_EMPLEADO_CONTRATO];
+
+		this.asegurarPlantillasContratoActivas(() => {
+			this.cargandoContratos = true;
+			this.service
+				.getContrato(fila.CORR_EMPLEADO_CONTRATO)
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						this.cargandoContratos = false;
+						if (!response?.Result || !response.Data) {
+							this.notifyFx(response?.ErrorMessage || 'No se pudo cargar el borrador del contrato.', NotifyType.Warning);
+							return;
+						}
+
+						const detalle: GenEmpleadoContrato = response.Data;
+						this.construirOpcionesPuestoContrato(
+							detalle.CORR_UNIDAD ?? null,
+							detalle.CORR_PUESTO ?? null,
+							`${detalle.NOMBRE_PUESTO ?? ''}${detalle.NOMBRE_UNIDAD ? ' - ' + detalle.NOMBRE_UNIDAD : ''}`.trim()
+						);
+						this.contratoPuestoSelectorKey =
+							detalle.CORR_UNIDAD && detalle.CORR_PUESTO
+								? `${detalle.CORR_UNIDAD}_${detalle.CORR_PUESTO}`
+								: '';
+						this.contratoEditandoEsNuevo = false;
+						if (
+							detalle.CORR_PLANTILLA_CONTRATO_VERSION > 0 &&
+							!this.plantillasContratoActivas.some(
+								(p) => Number(p.CORR_PLANTILLA_CONTRATO_VERSION) === Number(detalle.CORR_PLANTILLA_CONTRATO_VERSION)
+							)
+						) {
+							this.plantillasContratoActivas = [
+								{
+									CORR_PLANTILLA_CONTRATO: detalle.CORR_PLANTILLA_CONTRATO ?? 0,
+									NOMBRE_PLANTILLA: detalle.NOMBRE_PLANTILLA || `Plantilla #${detalle.CORR_PLANTILLA_CONTRATO ?? 0}`,
+									CORR_TIPO_CONTRATACION: detalle.CORR_TIPO_CONTRATACION ?? 0,
+									NOMBRE_TIPO_CONTRATACION: detalle.NOMBRE_TIPO_CONTRATACION || '',
+									CORR_PLANTILLA_CONTRATO_VERSION: detalle.CORR_PLANTILLA_CONTRATO_VERSION,
+									NUMERO_VERSION: detalle.NUMERO_VERSION ?? 0,
+									NOMBRE_VERSION: detalle.NOMBRE_VERSION || `Versión ${detalle.CORR_PLANTILLA_CONTRATO_VERSION}`,
+								},
+								...this.plantillasContratoActivas,
+							];
+						}
+						this.contratoFormDraft = {
+							CORR_EMPLEADO_CONTRATO: detalle.CORR_EMPLEADO_CONTRATO,
+							CORR_EMPLEADO: detalle.CORR_EMPLEADO,
+							CORR_UNIDAD: detalle.CORR_UNIDAD ?? null,
+							CORR_PUESTO: detalle.CORR_PUESTO ?? null,
+							CORR_PLANTILLA_CONTRATO_VERSION: detalle.CORR_PLANTILLA_CONTRATO_VERSION,
+							FECHA_INICIO: this.normalizarFechaContrato(detalle.FECHA_INICIO),
+							FECHA_FIN: this.normalizarFechaContrato(detalle.FECHA_FIN),
+							FECHA_FIRMA: this.normalizarFechaContrato(detalle.FECHA_FIRMA),
+							REGENERAR_CONTENIDO: true,
+							CUERPO_CONTRATO: '',
+						};
+						this.contratoPreviewZoom = 100;
+						this.contratoFormPreviewError = '';
+						this.contratoParametrosFaltantes = [];
+						this.contratoFormPreviewHtml = '';
+						this.popupContratoFormVisible = true;
+						this.programarPreviewModalContrato(0);
+					},
+					error: (error) => {
+						this.cargandoContratos = false;
+						this.notifyApiError(error);
+					},
+				});
+		});
+	}
+
+	// Qué hace: actualiza unidad, puesto y fechas sugeridas cuando cambia el puesto elegido en el modal de contrato.
+	// Cómo lo hace: busca la opción seleccionada y sincroniza CORR_UNIDAD y CORR_PUESTO en contratoFormDraft.
+	onPuestoContratoSeleccionadoChanged(key: string | null | undefined): void {
+		const opcion = this.contratoPuestosOpciones.find((o) => o.key === (key ?? '')) ?? null;
+		this.contratoFormDraft.CORR_UNIDAD = opcion?.CORR_UNIDAD ?? null;
+		this.contratoFormDraft.CORR_PUESTO = opcion?.CORR_PUESTO ?? null;
+		if (this.contratoEditandoEsNuevo && opcion) {
+			if (opcion.FECHA_INGRESO) {
+				this.contratoFormDraft.FECHA_INICIO = this.normalizarFechaContrato(opcion.FECHA_INGRESO);
+			}
+			this.contratoFormDraft.FECHA_FIN = opcion.FECHA_FIN ? this.normalizarFechaContrato(opcion.FECHA_FIN) : null;
+		}
+		this.programarPreviewModalContrato(80);
+	}
+
+	// Qué hace: programa la actualización de la vista previa del contrato dentro del modal sin saturar el API.
+	// Cómo lo hace: consulta Preview con debounce al cambiar cualquier parámetro.
+	programarPreviewModalContrato(debounceMs = 220): void {
+		this.clearContratoFormPreviewTimer();
+
+		if (Number(this.contratoFormDraft.CORR_PLANTILLA_CONTRATO_VERSION ?? 0) <= 0) {
+			this.cargandoContratoFormPreview = false;
+			this.contratoFormPreviewHtml = '';
+			this.contratoParametrosFaltantes = [];
+			return;
+		}
+
+		this.contratoFormPreviewTimer = setTimeout(() => {
+			this.contratoFormPreviewTimer = null;
+			this.cargarPreviewModalContrato();
+		}, Math.max(0, debounceMs));
+	}
+
+	// Qué hace: solicita al backend el HTML interpolado exacto según los parámetros actuales del modal.
+	// Cómo lo hace: invoca GEN_EMPLEADO_CONTRATO/Preview descartando respuestas obsoletas por número de secuencia.
+	cargarPreviewModalContrato(): void {
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		const corrVersion = Number(this.contratoFormDraft.CORR_PLANTILLA_CONTRATO_VERSION ?? 0);
+		if (corrEmpleado <= 0 || corrVersion <= 0) {
+			return;
+		}
+
+		const seq = ++this.contratoFormPreviewSeq;
+		const fechaInicio =
+			this.formatearFechaApi(this.contratoFormDraft.FECHA_INICIO) ?? this.formatearFechaApi(new Date());
+		const payload: GenEmpleadoContratoAccion = {
+			CORR_EMPLEADO_CONTRATO: this.contratoFormDraft.CORR_EMPLEADO_CONTRATO ?? 0,
+			CORR_EMPLEADO: corrEmpleado,
+			CORR_UNIDAD: this.contratoFormDraft.CORR_UNIDAD || null,
+			CORR_PUESTO: this.contratoFormDraft.CORR_PUESTO || null,
+			CORR_PLANTILLA_CONTRATO_VERSION: corrVersion,
+			FECHA_INICIO: fechaInicio,
+			FECHA_FIN: this.formatearFechaApi(this.contratoFormDraft.FECHA_FIN),
+			FECHA_FIRMA: this.formatearFechaApi(this.contratoFormDraft.FECHA_FIRMA),
+			REGENERAR_CONTENIDO: true,
+		};
+
+		this.cargandoContratoFormPreview = true;
+		this.contratoFormPreviewError = '';
+		this.service
+			.previewContrato(payload)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (seq !== this.contratoFormPreviewSeq) {
+						return;
+					}
+					this.cargandoContratoFormPreview = false;
+					if (response?.Result && response.Data) {
+						const rawHtml = `${response.Data?.CUERPO_CONTRATO ?? ''}`;
+						const html = this.normalizarHtmlContrato(rawHtml);
+						const faltantes = Array.isArray(response.Data?.PARAMETROS_FALTANTES)
+							? response.Data.PARAMETROS_FALTANTES.map((x: any) => `${x}`.trim()).filter(Boolean)
+							: [];
+						this.contratoFormPreviewError = '';
+						this.contratoParametrosFaltantes = faltantes;
+						this.contratoFormPreviewHtml = this.sanitization.bypassSecurityTrustHtml(html);
+					} else {
+						this.contratoFormPreviewHtml = '';
+						this.contratoParametrosFaltantes = [];
+						this.contratoFormPreviewError =
+							response?.ErrorMessage || 'No se pudo generar la vista previa del contrato.';
+					}
+				},
+				error: (error) => {
+					if (seq !== this.contratoFormPreviewSeq) {
+						return;
+					}
+					this.cargandoContratoFormPreview = false;
+					this.contratoFormPreviewHtml = '';
+					this.contratoParametrosFaltantes = [];
+					this.contratoFormPreviewError = this.textoErrorDescriptorEmpleado(
+						error,
+						'No se pudo cargar la vista previa del contrato. Verifique que el API esté actualizado y en ejecución.'
+					);
+				},
+			});
+	}
+
+	// Qué hace: ajusta el zoom visual de la hoja A4 en la vista previa del modal.
+	// Cómo lo hace: restringe la escala entre 70% y 140% en pasos de 10%.
+	ajustarZoomPreviewContrato(delta: number): void {
+		const next = Math.min(140, Math.max(70, this.contratoPreviewZoom + delta));
+		this.contratoPreviewZoom = next;
+	}
+
+	restablecerZoomPreviewContrato(): void {
+		this.contratoPreviewZoom = 100;
+	}
+
+	// Qué hace: limpia timers activos cuando se oculta el modal de creación/edición de contrato.
+	// Cómo lo hace: cancela el debounce de vista previa para evitar peticiones tardías tras cerrar.
+	alOcultarPopupContratoForm(): void {
+		this.clearContratoFormPreviewTimer();
+	}
+
+	private clearContratoFormPreviewTimer(): void {
+		if (this.contratoFormPreviewTimer !== null) {
+			clearTimeout(this.contratoFormPreviewTimer);
+			this.contratoFormPreviewTimer = null;
+		}
+	}
+
+	// Qué hace: guarda un borrador nuevo o actualiza un borrador existente y parchea la grilla sin GetAll.
+	// Cómo lo hace: valida plantilla y fechas, envía fechas en formato ISO YYYY-MM-DD y reemplaza la fila en memoria.
+	guardarContratoBorrador(): void {
+		if (!this.puedeGestionarContratos || this.guardandoContrato) {
+			return;
+		}
+
+		if (Number(this.contratoFormDraft.CORR_PLANTILLA_CONTRATO_VERSION ?? 0) <= 0) {
+			this.notifyFx('Seleccione una plantilla de contrato.', NotifyType.Warning);
+			return;
+		}
+
+		const fechaInicio = this.formatearFechaApi(this.contratoFormDraft.FECHA_INICIO);
+		if (!fechaInicio) {
+			this.notifyFx('Indique la fecha de inicio del contrato.', NotifyType.Warning);
+			return;
+		}
+
+		const fechaFin = this.formatearFechaApi(this.contratoFormDraft.FECHA_FIN);
+		if (fechaFin && fechaFin < fechaInicio) {
+			this.notifyFx('La fecha de finalización no puede ser menor que la fecha de inicio.', NotifyType.Warning);
+			return;
+		}
+
+		if (this.cargandoContratoFormPreview) {
+			this.notifyFx('Espere a que termine de validarse la vista previa del contrato.', NotifyType.Warning);
+			return;
+		}
+
+		if (this.contratoParametrosFaltantes.length > 0) {
+			this.notifyFx(
+				'Hay campos faltantes sin datos en el contrato. Complete los parámetros resaltados antes de guardar.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		const payload: GenEmpleadoContratoAccion = {
+			CORR_EMPLEADO_CONTRATO: this.contratoEditandoEsNuevo ? 0 : this.contratoFormDraft.CORR_EMPLEADO_CONTRATO,
+			CORR_EMPLEADO: Number(this.model?.CORR_EMPLEADO ?? 0),
+			CORR_UNIDAD: this.contratoFormDraft.CORR_UNIDAD || null,
+			CORR_PUESTO: this.contratoFormDraft.CORR_PUESTO || null,
+			CORR_PLANTILLA_CONTRATO_VERSION: Number(this.contratoFormDraft.CORR_PLANTILLA_CONTRATO_VERSION),
+			FECHA_INICIO: fechaInicio,
+			FECHA_FIN: fechaFin,
+			FECHA_FIRMA: this.formatearFechaApi(this.contratoFormDraft.FECHA_FIRMA),
+			REGENERAR_CONTENIDO: true,
+			CUERPO_CONTRATO: null,
+		};
+
+		this.guardandoContrato = true;
+		const peticion = this.contratoEditandoEsNuevo
+			? this.service.asignarContratoBorrador(payload)
+			: this.service.actualizarContratoBorrador(payload);
+
+		peticion.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				this.guardandoContrato = false;
+				if (!response?.Result || !response.Data) {
+					this.notifyFx(response?.ErrorMessage || 'No se pudo guardar el contrato.', NotifyType.Warning);
+					return;
+				}
+				const guardado = this.mapContratoRow(response.Data);
+				this.aplicarContratoEnMemoria(guardado, this.contratoEditandoEsNuevo);
+				this.contratoSeleccionadoKeys = [guardado.CORR_EMPLEADO_CONTRATO];
+				this.popupContratoFormVisible = false;
+				this.notifyFx(
+					this.contratoEditandoEsNuevo ? 'Contrato generado en borrador.' : 'Borrador actualizado.',
+					NotifyType.Success,
+					{ raw: true }
+				);
+			},
+			error: (error) => {
+				this.guardandoContrato = false;
+				this.notifyApiError(error);
+			},
+		});
+	}
+
+	// Qué hace: abre el visor PDF del contrato para ver o imprimir con la misma interfaz que ver firmado.
+	// Cómo lo hace: consulta el cuerpo congelado del contrato y lo compila a PDF respetando el espaciado compacto.
+	abrirPreviewContrato(fila?: GenEmpleadoContrato | null): void {
+		const objetivo = fila ?? this.contratoSeleccionado;
+		if (!objetivo?.CORR_EMPLEADO_CONTRATO) {
+			this.notifyFx('Seleccione un contrato para visualizar.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.getContrato(objetivo.CORR_EMPLEADO_CONTRATO)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !response.Data) {
+						this.loadingVisible = false;
+						this.notifyFx(response?.ErrorMessage || 'No se pudo cargar el contenido del contrato.', NotifyType.Warning);
+						return;
+					}
+					const detalle = this.mapContratoRow(response.Data);
+					this.contratoPreviewActual = detalle;
+					this.generarPdfDesdeHtmlContrato(detalle);
+				},
+				error: (error) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: normaliza el HTML del contrato para que tablas con anchos fijos en px no desborden la hoja A4.
+	// Cómo lo hace: limpia anchos rígidos en píxeles de tablas y celdas para que las reglas CSS del Studio distribuyan los anchos porcentualmente.
+	private normalizarHtmlContrato(html: string): string {
+		if (!html) return '';
+		return html
+			.replace(/(<table\b[^>]*?)\bwidth=["']?\d+px?["']?/gi, '$1 width="100%"')
+			.replace(/(<td\b[^>]*?style=["'][^"']*?)width:\s*\d+px;?/gi, '$1')
+			.replace(/width:\s*190px/gi, 'width: 18%')
+			.replace(/width:\s*420px/gi, 'width: 64%');
+	}
+
+	// Qué hace: compila el HTML del contrato en PDF respetando estilos compactos, fuentes e imágenes sin cortar líneas.
+	// Cómo lo hace: monta un contenedor visible para el motor pero oculto tras el z-index, espera a que carguen las imágenes
+	//              y genera el canvas con html2canvas asegurando dimensiones reales antes de paginar.
+	private async generarPdfDesdeHtmlContrato(detalle: GenEmpleadoContrato): Promise<void> {
+		const htmlContenido = this.normalizarHtmlContrato(detalle.CUERPO_CONTRATO || '');
+		if (!htmlContenido.trim()) {
+			this.loadingVisible = false;
+			this.notifyFx('El contrato no tiene contenido para visualizar.', NotifyType.Warning);
+			return;
+		}
+
+		// Contenedor temporal: debe estar en el flujo visible del documento para que html2canvas lo dibuje,
+		// pero detrás de todo (z-index negativo) y con opacidad controlada.
+		const container = document.createElement('div');
+		container.style.position = 'absolute';
+		container.style.left = '0';
+		container.style.top = '0';
+		container.style.zIndex = '-9999';
+		container.style.width = '794px'; // Ancho A4 exacto a 96 DPI
+		container.style.padding = '30px 45px';
+		container.style.boxSizing = 'border-box';
+		container.style.background = '#ffffff';
+		container.style.color = '#111827';
+		container.style.fontFamily = "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+		container.style.fontSize = '12px';
+		container.style.lineHeight = '1.35'; // Interlineado compacto
+
+		container.innerHTML = `
+        <style>
+            p { margin: 0 0 6px 0; padding: 0; line-height: 1.35; }
+            h1, h2, h3, h4, h5 { margin: 6px 0 4px 0; line-height: 1.25; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 6px; }
+            td, th { vertical-align: top; padding: 2px 4px; }
+            .ql-align-center { text-align: center; }
+            .ql-align-right { text-align: right; }
+            .ql-align-justify { text-align: justify; }
+            img { max-width: 100%; height: auto; }
+        </style>
+        ${htmlContenido}
+    `;
+
+		document.body.appendChild(container);
+
+		// Esperar a que las imágenes (como el logo de la UEES) se carguen completamente antes de renderizar
+		const imagenes = Array.from(container.querySelectorAll('img'));
+		await Promise.all(
+			imagenes.map((img) => {
+				if (img.complete) return Promise.resolve();
+				return new Promise((resolve) => {
+					img.onload = () => resolve(true);
+					img.onerror = () => resolve(true);
+				});
+			})
+		);
+
+		// Pequeño ciclo de render para que el navegador aplique los estilos CSS
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		try {
+			const h2c = (html2canvasLib as any).default ?? (html2canvasLib as any);
+			const canvas = await h2c(container, {
+				scale: 2,
+				useCORS: true,
+				allowTaint: true,
+				backgroundColor: '#ffffff',
+				windowWidth: 794,
+				scrollX: 0,
+				scrollY: 0,
+			});
+
+			if (document.body.contains(container)) {
+				document.body.removeChild(container);
+			}
+
+			const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+			const pageWidthMm = 210;
+			const pageHeightMm = 297;
+			const marginY = 8; // Margen superior e inferior
+			const printableHeightMm = pageHeightMm - marginY * 2;
+
+			const imgWidthPx = canvas.width;
+			const imgHeightPx = canvas.height;
+			const totalHeightMm = (imgHeightPx / imgWidthPx) * pageWidthMm;
+
+			// Renderizado por cortes proporcionales en página
+			const canvasPageHeightPx = (printableHeightMm / totalHeightMm) * imgHeightPx;
+			let renderedHeightPx = 0;
+			let pageNumber = 0;
+
+			while (renderedHeightPx < imgHeightPx) {
+				if (pageNumber > 0) {
+					pdf.addPage();
+				}
+
+				const currentSliceHeightPx = Math.min(canvasPageHeightPx, imgHeightPx - renderedHeightPx);
+
+				// Creamos un sub-canvas para cada página sin romper el buffer
+				const pageCanvas = document.createElement('canvas');
+				pageCanvas.width = imgWidthPx;
+				pageCanvas.height = currentSliceHeightPx;
+				const ctx = pageCanvas.getContext('2d');
+
+				if (ctx) {
+					ctx.fillStyle = '#ffffff';
+					ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+					ctx.drawImage(
+						canvas,
+						0, renderedHeightPx, imgWidthPx, currentSliceHeightPx,
+						0, 0, imgWidthPx, currentSliceHeightPx
+					);
+
+					const sliceHeightMm = (currentSliceHeightPx / imgWidthPx) * pageWidthMm;
+					const pageData = pageCanvas.toDataURL('image/jpeg', 0.95);
+					pdf.addImage(pageData, 'JPEG', 0, marginY, pageWidthMm, sliceHeightMm);
+				}
+
+				renderedHeightPx += currentSliceHeightPx;
+				pageNumber++;
+			}
+
+			this.loadingVisible = false;
+			const nombrePlantilla = detalle.NOMBRE_PLANTILLA?.trim() || 'Contrato';
+			pdf.setProperties({
+				title: nombrePlantilla,
+				subject: nombrePlantilla,
+			});
+			const blob = pdf.output('blob');
+			this.revocarContratoPreviewPdfUrl();
+			const archivoPdf = new File([blob], `${nombrePlantilla}.pdf`, { type: 'application/pdf' });
+			const objectUrl = window.URL.createObjectURL(archivoPdf);
+			this.contratoPreviewPdfObjectUrl = objectUrl;
+			this.contratoPreviewPdfUrl = this.sanitization.bypassSecurityTrustResourceUrl(objectUrl);
+			this.popupContratoPreviewVisible = true;
+		} catch (e) {
+			if (document.body.contains(container)) {
+				document.body.removeChild(container);
+			}
+			this.loadingVisible = false;
+			this.notifyFx('No se pudo generar el visor PDF del contrato.', NotifyType.Error);
+		}
+	}
+	
+	// Qué hace: limpia y revoca el ObjectURL del visor de vista previa al cerrarlo.
+	// Cómo lo hace: llama a URL.revokeObjectURL y limpia variables de enlace.
+	alOcultarPopupContratoPreview(): void {
+		this.popupContratoPreviewVisible = false;
+		this.revocarContratoPreviewPdfUrl();
+	}
+
+	private revocarContratoPreviewPdfUrl(): void {
+		if (this.contratoPreviewPdfObjectUrl) {
+			window.URL.revokeObjectURL(this.contratoPreviewPdfObjectUrl);
+			this.contratoPreviewPdfObjectUrl = null;
+		}
+		this.contratoPreviewPdfUrl = null;
+	}
+
+	// Qué hace: emite oficialmente un contrato BORRADOR dejándolo VIGENTE e inmutable.
+	// Cómo lo hace: valida documento firmado obligatorio, pide confirmación y actualiza la fila en memoria sin volver a consultar GetAll.
+	emitirContratoSeleccionado(): void {
+		const fila = this.contratoSeleccionado;
+		if (!this.puedeGestionarContratos || !fila || !this.contratoSeleccionadoEsBorrador) {
+			return;
+		}
+
+		// Qué hace: restringe la emisión si el contrato no posee su archivo firmado adjunto.
+		// Cómo lo hace: evalúa TIENE_ARCHIVO_FIRMADO en la fila seleccionada y notifica advertencia.
+		if (!fila.TIENE_ARCHIVO_FIRMADO) {
+			this.notifyFx(
+				'Debe adjuntar el documento firmado antes de emitir el contrato.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		this.confirmaAccion(
+			'Emitir contrato',
+			'Al emitir el contrato pasará a estado VIGENTE y su contenido quedará congelado permanentemente (no podrá editarse). ¿Desea continuar?',
+			() => {
+				this.cargandoContratos = true;
+				this.service
+					.emitirContrato(fila.CORR_EMPLEADO_CONTRATO)
+					.pipe(take(1))
+					.subscribe({
+						next: (response: any) => {
+							this.cargandoContratos = false;
+							if (!response?.Result || !response.Data) {
+								this.notifyFx(response?.ErrorMessage || 'No se pudo emitir el contrato.', NotifyType.Warning);
+								return;
+							}
+							this.aplicarContratoEnMemoria(this.mapContratoRow(response.Data), false);
+							this.notifyFx('Contrato emitido correctamente.', NotifyType.Success, { raw: true });
+						},
+						error: (error) => {
+							this.cargandoContratos = false;
+							this.notifyApiError(error);
+						},
+					});
+			}
+		);
+	}
+
+	// Qué hace: marca como FINALIZADO un contrato VIGENTE al concluir su plazo.
+	// Cómo lo hace: solicita confirmación y parchea la fila devuelta por el API en memoria.
+	finalizarContratoSeleccionado(): void {
+		const fila = this.contratoSeleccionado;
+		if (!this.puedeGestionarContratos || !fila || !this.contratoSeleccionadoEsVigente) {
+			return;
+		}
+
+		this.confirmaAccion(
+			'Finalizar contrato',
+			'El contrato pasará a estado FINALIZADO. ¿Desea continuar?',
+			() => {
+				this.cargandoContratos = true;
+				this.service
+					.finalizarContrato(fila.CORR_EMPLEADO_CONTRATO)
+					.pipe(take(1))
+					.subscribe({
+						next: (response: any) => {
+							this.cargandoContratos = false;
+							if (!response?.Result || !response.Data) {
+								this.notifyFx(response?.ErrorMessage || 'No se pudo finalizar el contrato.', NotifyType.Warning);
+								return;
+							}
+							this.aplicarContratoEnMemoria(this.mapContratoRow(response.Data), false);
+							this.notifyFx('Contrato finalizado.', NotifyType.Success, { raw: true });
+						},
+						error: (error) => {
+							this.cargandoContratos = false;
+							this.notifyApiError(error);
+						},
+					});
+			}
+		);
+	}
+
+	// Qué hace: abre el modal para capturar el motivo obligatorio de anulación.
+	// Cómo lo hace: verifica estado BORRADOR o VIGENTE y limpia el campo motivo antes de mostrar el popup.
+	abrirAnularContrato(): void {
+		const fila = this.contratoSeleccionado;
+		if (!this.puedeGestionarContratos || !fila || (!this.contratoSeleccionadoEsBorrador && !this.contratoSeleccionadoEsVigente)) {
+			return;
+		}
+		this.motivoAnulacionContrato = '';
+		this.popupContratoAnularVisible = true;
+	}
+
+	// Qué hace: confirma la anulación enviando el motivo al API y actualizando la grilla en memoria.
+	// Cómo lo hace: valida motivo no vacío y reemplaza la fila con response.Data.
+	confirmarAnularContrato(): void {
+		const fila = this.contratoSeleccionado;
+		const motivo = `${this.motivoAnulacionContrato ?? ''}`.trim();
+		if (!this.puedeGestionarContratos || !fila) {
+			return;
+		}
+		if (!motivo) {
+			this.notifyFx('Debe ingresar el motivo de anulación.', NotifyType.Warning);
+			return;
+		}
+
+		this.guardandoContrato = true;
+		this.service
+			.anularContrato(fila.CORR_EMPLEADO_CONTRATO, motivo)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.guardandoContrato = false;
+					if (!response?.Result || !response.Data) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo anular el contrato.', NotifyType.Warning);
+						return;
+					}
+					this.aplicarContratoEnMemoria(this.mapContratoRow(response.Data), false);
+					this.popupContratoAnularVisible = false;
+					this.notifyFx('Contrato anulado.', NotifyType.Success, { raw: true });
+				},
+				error: (error) => {
+					this.guardandoContrato = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: elimina definitivamente un contrato en estado BORRADOR desde la fila o desde la selección.
+	// Cómo lo hace: solicita confirmación, invoca DELETE y remueve el registro del arreglo en memoria.
+	eliminarContratoBorradorFila(filaDirecta?: GenEmpleadoContrato | null): void {
+		const fila = filaDirecta || this.contratoSeleccionado;
+		if (!this.puedeEliminarContratos || !fila || Number(fila.ESTADO_CONTRATO) !== 1) {
+			return;
+		}
+		this.contratoSeleccionadoKeys = [fila.CORR_EMPLEADO_CONTRATO];
+
+		this.confirmaAccion(
+			'Eliminar borrador',
+			'Se eliminará definitivamente el borrador seleccionado. ¿Desea continuar?',
+			() => {
+				this.cargandoContratos = true;
+				this.service
+					.eliminarContratoBorrador(fila.CORR_EMPLEADO_CONTRATO)
+					.pipe(take(1))
+					.subscribe({
+						next: (response: any) => {
+							this.cargandoContratos = false;
+							if (!response?.Result) {
+								this.notifyFx(response?.ErrorMessage || 'No se pudo eliminar el borrador.', NotifyType.Warning);
+								return;
+							}
+							this.contratos = this.contratos.filter(
+								(c) => Number(c.CORR_EMPLEADO_CONTRATO) !== Number(fila.CORR_EMPLEADO_CONTRATO)
+							);
+							this.conservarSeleccionContrato();
+							this.notifyFx('Borrador eliminado.', NotifyType.Success, { raw: true });
+						},
+						error: (error) => {
+							this.cargandoContratos = false;
+							this.notifyApiError(error);
+						},
+					});
+			}
+		);
+	}
+
+	// Qué hace: mantiene compatibilidad para eliminar el borrador actualmente seleccionado.
+	// Cómo lo hace: delega la ejecución a eliminarContratoBorradorFila.
+	eliminarContratoBorradorSeleccionado(): void {
+		this.eliminarContratoBorradorFila();
+	}
+
+	// Qué hace: abre el selector nativo de archivo para adjuntar o reemplazar el contrato firmado solo en borradores.
+	// Cómo lo hace: valida que el contrato esté en estado BORRADOR y no VIGENTE/FINALIZADO/ANULADO antes de invocar el input file.
+	solicitarSubirContratoFirmado(fila?: GenEmpleadoContrato | null): void {
+		const objetivo = fila ?? this.contratoSeleccionado;
+		const estado = Number(objetivo?.ESTADO_CONTRATO);
+		if (!this.puedeGestionarContratos || !objetivo) {
+			return;
+		}
+		if (estado !== 1) {
+			this.notifyFx(
+				`No se pueden subir documentos a un contrato en estado ${objetivo.NOMBRE_ESTADO_CONTRATO || estado}. Solo se permite en contratos en BORRADOR.`,
+				NotifyType.Warning
+			);
+			return;
+		}
+		this.contratoParaSubirFirmadoId = Number(objetivo.CORR_EMPLEADO_CONTRATO);
+		const input = this.contratoFirmadoInput?.nativeElement;
+		if (input) {
+			input.value = '';
+			input.click();
+		}
+	}
+
+	// Qué hace: valida y envía al servidor el PDF o imagen del contrato firmado seleccionado por el usuario.
+	// Cómo lo hace: verifica que el contrato siga siendo BORRADOR, sube vía FormData (PostDoc) y parchea TIENE_ARCHIVO_FIRMADO / NOMBRE_ARCHIVO en memoria.
+	onContratoFirmadoSeleccionado(event: Event): void {
+		const input = event.target as HTMLInputElement | null;
+		const file = input?.files?.[0];
+		const corrContrato = this.contratoParaSubirFirmadoId;
+		if (!file || corrContrato <= 0) {
+			return;
+		}
+
+		const contratoActual = this.contratos.find((c) => Number(c.CORR_EMPLEADO_CONTRATO) === corrContrato);
+		const estadoActual = Number(contratoActual?.ESTADO_CONTRATO);
+		if (estadoActual !== 1) {
+			this.notifyFx(
+				`No se puede adjuntar documento firmado porque el contrato está en estado ${contratoActual?.NOMBRE_ESTADO_CONTRATO || estadoActual}.`,
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		const nombreLower = (file.name || '').toLowerCase();
+		const valido = /\.(pdf|jpg|jpeg|png|webp)$/i.test(nombreLower);
+		if (!valido) {
+			this.notifyFx('Formato no permitido. Use PDF o imagen (JPG, PNG, WEBP).', NotifyType.Warning);
+			return;
+		}
+
+		if (file.size > 10 * 1024 * 1024) {
+			this.notifyFx('El archivo firmado no puede superar 10 MB.', NotifyType.Warning);
+			return;
+		}
+
+		this.cargandoContratos = true;
+		this.service
+			.subirDocumentoFirmadoContrato(corrContrato, file)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoContratos = false;
+					if (!response?.Result || !response.Data) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo subir el documento firmado.', NotifyType.Warning);
+						return;
+					}
+					const actualizado = this.mapContratoRow(response.Data);
+					this.aplicarContratoEnMemoria(actualizado, false);
+					this.contratoSeleccionadoKeys = [actualizado.CORR_EMPLEADO_CONTRATO];
+					this.notifyFx('Documento firmado adjuntado correctamente.', NotifyType.Success, { raw: true });
+				},
+				error: (error) => {
+					this.cargandoContratos = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: descarga y abre en visor popup el PDF o imagen firmado almacenado para el contrato.
+	// Cómo lo hace: obtiene Blob desde GetDoc, genera ObjectURL segura y revoca cualquier URL anterior al cerrar.
+	verDocumentoFirmadoContrato(fila?: GenEmpleadoContrato | null): void {
+		const objetivo = fila ?? this.contratoSeleccionado;
+		if (!objetivo?.CORR_EMPLEADO_CONTRATO || !objetivo.TIENE_ARCHIVO_FIRMADO) {
+			this.notifyFx('Este contrato aún no tiene documento firmado adjunto.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.getDocumentoFirmadoContrato(objetivo.CORR_EMPLEADO_CONTRATO)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob: Blob) => {
+					this.loadingVisible = false;
+					if (!blob?.size) {
+						this.notifyFx('No se recibió el archivo del documento firmado.', NotifyType.Error);
+						return;
+					}
+					this.revocarContratoFirmadoUrl();
+					const nombreArchivo = objetivo.NOMBRE_ARCHIVO?.trim() || 'documento_firmado.pdf';
+					const mimeType = blob.type || (/\.pdf$/i.test(nombreArchivo) ? 'application/pdf' : 'image/jpeg');
+					const archivoFirmado = new File([blob], nombreArchivo, { type: mimeType });
+					const objectUrl = window.URL.createObjectURL(archivoFirmado);
+					this.contratoFirmadoObjectUrl = objectUrl;
+					this.contratoFirmadoUrl = this.sanitization.bypassSecurityTrustResourceUrl(objectUrl);
+					const nombre = nombreArchivo.toLowerCase();
+					this.contratoFirmadoEsImagen =
+						blob.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(nombre);
+					this.tituloContratoFirmado = objetivo.NOMBRE_ARCHIVO
+						? `Documento firmado — ${objetivo.NOMBRE_ARCHIVO}`
+						: 'Documento firmado';
+					this.popupContratoFirmadoVisible = true;
+				},
+				error: (error) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: descarga directamente el archivo del documento firmado en el navegador del usuario.
+	// Cómo lo hace: solicita Blob al API y dispara descarga temporal con NOMBRE_ARCHIVO original.
+	descargarDocumentoFirmadoContrato(): void {
+		const fila = this.contratoSeleccionado;
+		if (!fila?.CORR_EMPLEADO_CONTRATO || !fila.TIENE_ARCHIVO_FIRMADO) {
+			return;
+		}
+		this.loadingVisible = true;
+		this.service
+			.getDocumentoFirmadoContrato(fila.CORR_EMPLEADO_CONTRATO)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob: Blob) => {
+					this.loadingVisible = false;
+					const url = window.URL.createObjectURL(blob);
+					const anchor = document.createElement('a');
+					anchor.href = url;
+					anchor.download = fila.NOMBRE_ARCHIVO || `contrato_${fila.CORR_EMPLEADO_CONTRATO}.pdf`;
+					anchor.click();
+					setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+				},
+				error: (error) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: revoca la URL temporal del visor cuando se cierra el popup de documento firmado.
+	// Cómo lo hace: limpia objeto URL de memoria al evento onHidden del DxPopup.
+	alOcultarPopupContratoFirmado(): void {
+		this.revocarContratoFirmadoUrl();
+	}
+
+	private revocarContratoFirmadoUrl(): void {
+		if (this.contratoFirmadoObjectUrl) {
+			window.URL.revokeObjectURL(this.contratoFirmadoObjectUrl);
+			this.contratoFirmadoObjectUrl = null;
+		}
+		this.contratoFirmadoUrl = null;
+		this.contratoFirmadoEsImagen = false;
+	}
+
+	private construirOpcionesPuestoContrato(
+		corrUnidadActual: number | null,
+		corrPuestoActual: number | null,
+		etiquetaActual: string | null
+	): void {
+		const opciones: {
+			key: string;
+			label: string;
+			CORR_UNIDAD: number | null;
+			CORR_PUESTO: number | null;
+			FECHA_INGRESO?: string | null;
+			FECHA_FIN?: string | null;
+		}[] = [{ key: '', label: '(Sin puesto específico)', CORR_UNIDAD: null, CORR_PUESTO: null }];
+
+		for (const p of this.puestos ?? []) {
+			if (!p?.CORR_UNIDAD || !p?.CORR_PUESTO) {
+				continue;
+			}
+			const key = `${p.CORR_UNIDAD}_${p.CORR_PUESTO}`;
+			if (opciones.some((o) => o.key === key)) {
+				continue;
+			}
+			const estado = p.ACTIVO_PUESTO === false ? 'Histórico' : 'Activo';
+			opciones.push({
+				key,
+				label: `${p.NOMBRE_PUESTO || 'Puesto'} — ${p.NOMBRE_UNIDAD || 'Unidad'} (${estado})`,
+				CORR_UNIDAD: Number(p.CORR_UNIDAD),
+				CORR_PUESTO: Number(p.CORR_PUESTO),
+				FECHA_INGRESO: p.FECHA_INGRESO ?? null,
+				FECHA_FIN: p.FECHA_FIN ?? null,
+			});
+		}
+
+		if (corrUnidadActual && corrPuestoActual) {
+			const keyActual = `${corrUnidadActual}_${corrPuestoActual}`;
+			if (!opciones.some((o) => o.key === keyActual)) {
+				opciones.push({
+					key: keyActual,
+					label: etiquetaActual || `Unidad ${corrUnidadActual} — Puesto ${corrPuestoActual}`,
+					CORR_UNIDAD: corrUnidadActual,
+					CORR_PUESTO: corrPuestoActual,
+				});
+			}
+		}
+
+		this.contratoPuestosOpciones = opciones;
+	}
+
+	private aplicarContratoEnMemoria(row: GenEmpleadoContrato, alInicio: boolean): void {
+		const idx = this.contratos.findIndex(
+			(item) => Number(item.CORR_EMPLEADO_CONTRATO) === Number(row.CORR_EMPLEADO_CONTRATO)
+		);
+		if (idx >= 0) {
+			this.contratos = this.contratos.map((item, i) => (i === idx ? row : item));
+		} else {
+			this.contratos = alInicio ? [row, ...this.contratos] : [...this.contratos, row];
+		}
+	}
+
+	private conservarSeleccionContrato(): void {
+		const id = Number(this.contratoSeleccionadoKeys?.[0] ?? 0);
+		if (id <= 0) {
+			return;
+		}
+		if (!this.contratos.some((c) => Number(c.CORR_EMPLEADO_CONTRATO) === id)) {
+			this.contratoSeleccionadoKeys = [];
+		}
+	}
+
+	private mapContratoRow(item: any): GenEmpleadoContrato {
+		return {
+			CORR_EMPRESA: Number(item?.CORR_EMPRESA ?? 0),
+			CORR_EMPLEADO_CONTRATO: Number(item?.CORR_EMPLEADO_CONTRATO ?? 0),
+			CORR_EMPLEADO: Number(item?.CORR_EMPLEADO ?? this.model?.CORR_EMPLEADO ?? 0),
+			CODIGO_EMPLEADO: item?.CODIGO_EMPLEADO ?? '',
+			NOMBRE_EMPLEADO: item?.NOMBRE_EMPLEADO ?? '',
+			DUI: item?.DUI ?? '',
+			CORR_UNIDAD: item?.CORR_UNIDAD != null ? Number(item.CORR_UNIDAD) : null,
+			NOMBRE_UNIDAD: item?.NOMBRE_UNIDAD ?? '',
+			CORR_PUESTO: item?.CORR_PUESTO != null ? Number(item.CORR_PUESTO) : null,
+			NOMBRE_PUESTO: item?.NOMBRE_PUESTO ?? '',
+			CORR_PLANTILLA_CONTRATO_VERSION: Number(item?.CORR_PLANTILLA_CONTRATO_VERSION ?? 0),
+			CORR_PLANTILLA_CONTRATO:
+				item?.CORR_PLANTILLA_CONTRATO != null ? Number(item.CORR_PLANTILLA_CONTRATO) : null,
+			NOMBRE_PLANTILLA: item?.NOMBRE_PLANTILLA ?? '',
+			CORR_TIPO_CONTRATACION:
+				item?.CORR_TIPO_CONTRATACION != null ? Number(item.CORR_TIPO_CONTRATACION) : null,
+			NOMBRE_TIPO_CONTRATACION: item?.NOMBRE_TIPO_CONTRATACION ?? '',
+			NUMERO_VERSION: item?.NUMERO_VERSION != null ? Number(item.NUMERO_VERSION) : null,
+			NOMBRE_VERSION: item?.NOMBRE_VERSION ?? '',
+			CUERPO_CONTRATO: item?.CUERPO_CONTRATO ?? '',
+			FECHA_INICIO: item?.FECHA_INICIO ?? null,
+			FECHA_FIN: item?.FECHA_FIN ?? null,
+			FECHA_FIRMA: item?.FECHA_FIRMA ?? null,
+			ESTADO_CONTRATO: item?.ESTADO_CONTRATO != null ? Number(item.ESTADO_CONTRATO) : 1,
+			NOMBRE_ESTADO_CONTRATO: item?.NOMBRE_ESTADO_CONTRATO ?? '',
+			NOMBRE_ARCHIVO: item?.NOMBRE_ARCHIVO ?? null,
+			RUTA_ARCHIVO: item?.RUTA_ARCHIVO ?? null,
+			TIENE_ARCHIVO_FIRMADO: !!item?.TIENE_ARCHIVO_FIRMADO,
+			FECHA_CARGA: item?.FECHA_CARGA ?? null,
+			MOTIVO_ANULACION: item?.MOTIVO_ANULACION ?? null,
+			USUARIO_CREA: item?.USUARIO_CREA ?? null,
+			ESTACION_CREA: item?.ESTACION_CREA ?? null,
+			FECHA_CREA: item?.FECHA_CREA ?? null,
+			USUARIO_ACTU: item?.USUARIO_ACTU ?? null,
+			ESTACION_ACTU: item?.ESTACION_ACTU ?? null,
+			FECHA_ACTU: item?.FECHA_ACTU ?? null,
+		};
+	}
+
+	private normalizarFechaContrato(valor: string | Date | null | undefined): Date | null {
+		if (!valor) {
+			return null;
+		}
+		if (valor instanceof Date) {
+			return Number.isNaN(valor.getTime()) ? null : valor;
+		}
+		const txt = `${valor}`.trim();
+		const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(txt);
+		if (m) {
+			return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+		}
+		const parsed = new Date(txt);
+		return Number.isNaN(parsed.getTime()) ? null : parsed;
+	}
+
+	private formatearFechaApi(valor: string | Date | null | undefined): string | null {
+		const date = this.normalizarFechaContrato(valor);
+		if (!date) {
+			return null;
+		}
+		const y = date.getFullYear();
+		const m = String(date.getMonth() + 1).padStart(2, '0');
+		const d = String(date.getDate()).padStart(2, '0');
+		return `${y}-${m}-${d}`;
+	}
+
+	private extraerMarcadoresSinReemplazar(html: string): string[] {
+		const encontrados: string[] = [];
+		const regex = /\{\{\s*([A-Z0-9_]+)\s*\}\}/gi;
+		let match: RegExpExecArray | null;
+		while ((match = regex.exec(html ?? '')) !== null) {
+			const key = `${match[1] ?? ''}`.toUpperCase();
+			if (key && !encontrados.includes(key)) {
+				encontrados.push(key);
+			}
+		}
+		return encontrados;
+	}
+
+	// Qué hace: Permite hacer scroll horizontal en la grilla de contratos mediante clic y arrastre desde cualquier fila.
+	// Cómo lo hace: Captura mousedown, mousemove y mouseup en .empleado-contrato-grid .dx-datagrid-rowsview y actualiza scrollLeft según el desplazamiento del ratón.
+	private initDragToScrollContratos(): void {
+		const host = this.elRef.nativeElement;
+		let isDown = false;
+		let startX = 0;
+		let scrollLeft = 0;
+		let hasDragged = false;
+		let scrollContainer: HTMLElement | null = null;
+
+		// Qué hace: Inicia el arrastre horizontal sobre registros sin interferir con la barra de scroll inferior ni controles.
+		// Cómo lo hace: Ignora clics en la barra de scroll y controles interactivos, asegurando que el clic provenga de filas de la grilla de contratos.
+		const onMouseDown = (e: MouseEvent) => {
+			if (e.button !== 0) return; // Solo botón izquierdo
+			const target = e.target as HTMLElement;
+
+			// Ignorar clics sobre la barra de desplazamiento inferior y sus deslizadores
+			if (target.closest('.dx-scrollable-scrollbar, .dx-scrollable-scroll, .dx-scrollbar-horizontal, .dx-scrollbar-vertical')) {
+				return;
+			}
+
+			// No activar arrastre sobre botones, inputs, links o iconos de acción
+			if (target.closest('button, .dx-button, a, input, select, textarea, .dx-checkbox, .dx-link, [role="button"]')) {
+				return;
+			}
+
+			// Verificar que el clic provenga de las filas/contenido de la grilla de contratos
+			const rowsView = target.closest('.empleado-contrato-grid .dx-datagrid-rowsview');
+			const isTableContent = !!target.closest('.dx-data-row, .dx-datagrid-content');
+			if (!rowsView || !isTableContent) return;
+
+			scrollContainer = host.querySelector('.empleado-contrato-grid .dx-datagrid-rowsview .dx-scrollable-container');
+			if (!scrollContainer) return;
+
+			isDown = true;
+			hasDragged = false;
+			startX = e.pageX;
+			scrollLeft = scrollContainer.scrollLeft;
+		};
+
+		const onMouseMove = (e: MouseEvent) => {
+			if (!isDown || !scrollContainer) return;
+			const walk = e.pageX - startX;
+			if (Math.abs(walk) > 4) {
+				hasDragged = true;
+				scrollContainer.scrollLeft = scrollLeft - walk;
+				document.body.style.cursor = 'grabbing';
+				document.body.style.userSelect = 'none';
+			}
+		};
+
+		const onMouseUp = () => {
+			if (!isDown) return;
+			isDown = false;
+			document.body.style.cursor = '';
+			document.body.style.removeProperty('user-select');
+			if (hasDragged) {
+				const suppressClick = (ev: MouseEvent) => {
+					ev.stopPropagation();
+					ev.preventDefault();
+					window.removeEventListener('click', suppressClick, true);
+				};
+				window.addEventListener('click', suppressClick, true);
+			}
+		};
+
+		host.addEventListener('mousedown', onMouseDown);
+		window.addEventListener('mousemove', onMouseMove);
+		window.addEventListener('mouseup', onMouseUp);
+
+		this.cleanupDragToScrollContratos = () => {
+			host.removeEventListener('mousedown', onMouseDown);
+			window.removeEventListener('mousemove', onMouseMove);
+			window.removeEventListener('mouseup', onMouseUp);
+		};
 	}
 }
 

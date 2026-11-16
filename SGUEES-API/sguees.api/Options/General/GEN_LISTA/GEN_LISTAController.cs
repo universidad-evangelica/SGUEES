@@ -307,5 +307,14 @@ namespace sguees.Controllers
 		{
 			return _service.GetESTADO_NIP();
 		}
+
+		// Qué hace: lookup ESTADO_CONTRATO (CHECK GEN_EMPLEADO_CONTRATO) para el tab Contratos de gen-empleado.
+		// Cómo lo hace: devuelve Key/Value de BORRADOR, VIGENTE, FINALIZADO y ANULADO bajo permiso /gen-empleado|R.
+		[HttpGet("GetESTADO_CONTRATO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetESTADO_CONTRATO_GEN_EMPLEADO()
+		{
+			return _service.GetESTADO_CONTRATO();
+		}
 	}
 }

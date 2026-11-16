@@ -104,5 +104,8 @@ namespace sguees.Services
 		public CResult GetSI_NO() => _repo.GetSI_NO();
 		public CResult GetNIVEL_ACADEMICO() => _repo.GetNIVEL_ACADEMICO();
 		public CResult GetESTADO_NIP() => _repo.GetESTADO_NIP();
+		// Qué hace: lista de estados de contrato de empleado (CHECK de GEN_EMPLEADO_CONTRATO).
+		// Cómo lo hace: delega en GetESTADO_CONTRATO del repositorio.
+		public CResult GetESTADO_CONTRATO() => _repo.GetESTADO_CONTRATO();
 	}
 }

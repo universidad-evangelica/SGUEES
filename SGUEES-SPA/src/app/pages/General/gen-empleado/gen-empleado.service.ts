@@ -22,6 +22,8 @@ import { GenEmpleadoPuestoRepository } from './gen-empleado-puesto/gen-empleado-
 import { ScDescriptorPuestoEmpleadoRepository } from '../../SelectionHiring/sc-descriptor-puesto/sc-descriptor-puesto-empleado/sc-descriptor-puesto-empleado.repository';
 import { GenPersonaContactoRepository } from './gen-persona-contacto/gen-persona-contacto.repository';
 import { GenPersonaParentescoContactoRepository } from './gen-persona-parentesco-contacto/gen-persona-parentesco-contacto.repository';
+import { GenEmpleadoContratoRepository } from './gen-empleado-contrato/gen-empleado-contrato.repository';
+import { GenEmpleadoContratoAccion } from './gen-empleado-contrato/models/gen-empleado-contrato';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 
@@ -43,7 +45,8 @@ export class GenEmpleadoService {
 		private contactoRepo: GenPersonaContactoRepository,
 		private parentescoContactoRepo: GenPersonaParentescoContactoRepository,
 		private puestoRepo: GenEmpleadoPuestoRepository,
-		private descriptorEmpleadoRepo: ScDescriptorPuestoEmpleadoRepository
+		private descriptorEmpleadoRepo: ScDescriptorPuestoEmpleadoRepository,
+		private contratoRepo: GenEmpleadoContratoRepository
 	) {}
 
 	getAll(param: any): Observable<IResult> {
@@ -279,6 +282,78 @@ export class GenEmpleadoService {
 
 	saveParentescoContactos(corrPersona: number, rows: any[]): Observable<IResult> {
 		return this.parentescoContactoRepo.saveAll(corrPersona, rows);
+	}
+
+	// Qué hace: lista los contratos generados para el empleado abierto.
+	// Cómo lo hace: invoca GEN_EMPLEADO_CONTRATO/GetAll por CORR_EMPLEADO.
+	getContratos(corrEmpleado: number): Observable<IResult> {
+		return this.contratoRepo.getAll([{ Parameter: 'CORR_EMPLEADO', Value: corrEmpleado ?? 0 }]);
+	}
+
+	// Qué hace: carga un contrato completo con su HTML congelado CUERPO_CONTRATO.
+	// Cómo lo hace: invoca GEN_EMPLEADO_CONTRATO/Get por CORR_EMPLEADO_CONTRATO.
+	getContrato(corrEmpleadoContrato: number): Observable<IResult> {
+		return this.contratoRepo.get([{ Parameter: 'CORR_EMPLEADO_CONTRATO', Value: corrEmpleadoContrato }]);
+	}
+
+	// Qué hace: obtiene el catálogo de plantillas que cuentan con versión activa.
+	// Cómo lo hace: invoca GEN_EMPLEADO_CONTRATO/GetPlantillasActivas.
+	getPlantillasContratoActivas(): Observable<IResult> {
+		return this.contratoRepo.getPlantillasActivas();
+	}
+
+	// Qué hace: genera la vista previa HTML del contrato en tiempo real dentro del modal.
+	// Cómo lo hace: envía parámetros seleccionados a GEN_EMPLEADO_CONTRATO/Preview sin escribir en BD.
+	previewContrato(payload: GenEmpleadoContratoAccion): Observable<IResult> {
+		return this.contratoRepo.preview(payload);
+	}
+
+	// Qué hace: genera y guarda un borrador de contrato para el empleado.
+	// Cómo lo hace: envía payload al endpoint Post que interpola parámetros y persiste copia fija.
+	asignarContratoBorrador(payload: GenEmpleadoContratoAccion): Observable<IResult> {
+		return this.contratoRepo.create(payload);
+	}
+
+	// Qué hace: actualiza o regenera un contrato en estado BORRADOR.
+	// Cómo lo hace: envía payload al endpoint Put y recibe la fila actualizada desde BD.
+	actualizarContratoBorrador(payload: GenEmpleadoContratoAccion): Observable<IResult> {
+		return this.contratoRepo.update(payload);
+	}
+
+	// Qué hace: emite un contrato BORRADOR dejándolo VIGENTE (inmutable).
+	// Cómo lo hace: ejecuta transición Emitir en GEN_EMPLEADO_CONTRATO.
+	emitirContrato(corrEmpleadoContrato: number): Observable<IResult> {
+		return this.contratoRepo.emitir(corrEmpleadoContrato);
+	}
+
+	// Qué hace: finaliza un contrato VIGENTE al cerrar su período.
+	// Cómo lo hace: ejecuta transición Finalizar en GEN_EMPLEADO_CONTRATO.
+	finalizarContrato(corrEmpleadoContrato: number): Observable<IResult> {
+		return this.contratoRepo.finalizar(corrEmpleadoContrato);
+	}
+
+	// Qué hace: anula un contrato registrando motivo obligatorio.
+	// Cómo lo hace: ejecuta transición Anular en GEN_EMPLEADO_CONTRATO.
+	anularContrato(corrEmpleadoContrato: number, motivoAnulacion: string): Observable<IResult> {
+		return this.contratoRepo.anular(corrEmpleadoContrato, motivoAnulacion);
+	}
+
+	// Qué hace: sube o reemplaza el archivo PDF/imagen firmado de un contrato.
+	// Cómo lo hace: delega a postDoc con FormData multipart.
+	subirDocumentoFirmadoContrato(corrEmpleadoContrato: number, file: File): Observable<IResult> {
+		return this.contratoRepo.postDoc(corrEmpleadoContrato, file);
+	}
+
+	// Qué hace: descarga como Blob el documento firmado del contrato para vista previa/descarga.
+	// Cómo lo hace: delega a getDoc pasando CORR_EMPLEADO_CONTRATO.
+	getDocumentoFirmadoContrato(corrEmpleadoContrato: number): Observable<Blob> {
+		return this.contratoRepo.getDoc([{ Parameter: 'CORR_EMPLEADO_CONTRATO', Value: corrEmpleadoContrato }]);
+	}
+
+	// Qué hace: elimina definitivamente un contrato en estado BORRADOR.
+	// Cómo lo hace: invoca DELETE sobre GEN_EMPLEADO_CONTRATO/Delete.
+	eliminarContratoBorrador(corrEmpleadoContrato: number): Observable<IResult> {
+		return this.contratoRepo.delete([{ Parameter: 'CORR_EMPLEADO_CONTRATO', Value: corrEmpleadoContrato }]);
 	}
 
 	getColumns(): any {
