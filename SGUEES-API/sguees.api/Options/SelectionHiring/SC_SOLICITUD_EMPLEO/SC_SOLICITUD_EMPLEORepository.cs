@@ -727,6 +727,9 @@ namespace sguees.Repositories
 					   AND v.ES_VERSION_ACTIVA = 1
 					WHERE p.CORR_EMPRESA = @CORR_EMPRESA
 					  AND p.ACTIVO_PLANTILLA = 1
+					  AND LEN(LTRIM(RTRIM(
+					      REPLACE(REPLACE(REPLACE(ISNULL(v.CUERPO_PLANTILLA, ISNULL(p.CUERPO_PLANTILLA, N'')), N'<p><br></p>', N''), N'<p></p>', N''), N'&nbsp;', N'')
+					  ))) > 0
 					  AND (
 					      p.CODIGO_OPCION = 'SC_SOLICITUD_EMPLEO'
 					      OR (p.CODIGO_SISTEMA = 'SELECCIONCONTRATACION' AND (p.CODIGO_OPCION IS NULL OR p.CODIGO_OPCION = ''))

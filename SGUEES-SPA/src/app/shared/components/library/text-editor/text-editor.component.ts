@@ -38,6 +38,11 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 	private dropDownButtonInstance: any = null;
 	private ultimaSeleccion: { index: number; length: number } | null = null;
 	private themeSubscription?: Subscription;
+	private editorInstance: any = null;
+	private boundQuillInstance: any = null;
+	private boundQuillRoot: HTMLElement | null = null;
+	private linkDialogPatched: boolean = false;
+	private ultimoValorEmitido: string | undefined = undefined;
 
 	constructor(@Optional() private themeService?: ThemeService) {}
 
@@ -60,11 +65,12 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 	}
 
 	// Qué hace: cierra el panel desplegable de parámetros únicamente cuando el usuario interactúa fuera de él en la página externa.
-	// Cómo lo hace: verifica si el target o sus contenedores pertenecen al popover o al botón de activación; si pertenecen, cancela el cierre.
+	// Cómo lo hace: verifica si el target soporta closest y pertenece al popover o botón de activación; si no pertenece, cancela el cierre.
 	private cerrarMenuParametrosSiAplica = (e: Event): void => {
-		const target = e.target as HTMLElement;
+		const target = e.target as HTMLElement | null;
 		if (
 			target &&
+			typeof target.closest === 'function' &&
 			(target.closest('.editor-parametros-popover-wrapper') ||
 				target.closest('.dx-popover') ||
 				target.closest('.dx-popover-wrapper') ||
@@ -78,6 +84,24 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 
 		if (this.menuParametrosVisible) {
 			this.menuParametrosVisible = false;
+		}
+	};
+
+	// Qué hace: handler para el evento text-change de Quill manteniendo el diseño institucional.
+	// Cómo lo hace: programa sincronización visual en cambios originados por el usuario sobre la instancia viva de Quill.
+	private textChangeHandler = (_delta: any, _oldDelta: any, source: string) => {
+		if (source !== 'user') return;
+		const quill = this.obtenerQuillActivo();
+		if (quill) {
+			this.programarSincronizacionDiseno(quill, 20);
+		}
+	};
+
+	// Qué hace: handler para el evento selection-change de Quill.
+	// Cómo lo hace: conserva el último rango de selección válido emitido por Quill.
+	private selectionChangeHandler = (range: any) => {
+		if (range && typeof range.index === 'number') {
+			this.ultimaSeleccion = range;
 		}
 	};
 
@@ -120,20 +144,20 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		}
 		if (changes['value']) {
 			const val = changes['value'].currentValue;
+			const esCambioExterno = val !== this.ultimoValorEmitido;
+			if (esCambioExterno) {
+				this.ultimaSeleccion = null;
+				this.ultimoValorEmitido = val;
+			}
 			this.evaluarEstadoPlantilla(val);
-			if (
-				typeof val === 'string' &&
-				(val.includes('plantilla-uees') ||
-					val.includes('universidad evang') ||
-					val.includes('uees.edu.sv') ||
-					val.includes('data-tipo'))
-			) {
+			if (this.esValorPlantillaInstitucional(val)) {
 				setTimeout(() => {
-					if (this.quillInstance) {
-						this.sincronizarDisenoInstitucional(this.quillInstance);
-						this.posicionarEnTarjetaCentral();
+					const quill = this.obtenerQuillActivo();
+					if (quill) {
+						this.sincronizarDisenoInstitucional(quill);
+						this.posicionarEnTarjetaCentral(esCambioExterno);
 					}
-				}, 60);
+				}, 80);
 			}
 		}
 	}
@@ -143,12 +167,7 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		document.removeEventListener('dragstart', this.dragStartHandler);
 		window.removeEventListener('scroll', this.cerrarMenuParametrosSiAplica, true);
 		window.removeEventListener('wheel', this.cerrarMenuParametrosSiAplica, true);
-		if (this.quillInstance?.root) {
-			this.quillInstance.root.removeEventListener('dragover', this.dragOverHandler);
-			this.quillInstance.root.removeEventListener('drop', this.dropHandler);
-			this.quillInstance.root.removeEventListener('mousedown', this.mouseDownHandler);
-			this.quillInstance.root.removeEventListener('paste', this.pasteHandler, true);
-		}
+		this.desenlazarEventosQuill();
 	}
 
 	// Qué hace: intercepta el inicio de arrastre de un parámetro dinámico desde el menú desplegable o la lista de tarjetas.
@@ -224,30 +243,35 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 	}
 
 	// Qué hace: inserta el token del parámetro soltado en la posición exacta del puntero garantizando permanencia en la tarjeta central.
-	// Cómo lo hace: intercepta drops sobre la tabla o celdas institucionales, resuelve el índice interno de la celda y previene expulsiones al separador exterior.
+	// Cómo lo hace: intercepta drops en captura sobre el lienzo vivo de Quill, resuelve el índice real de destino e inyecta el token con su formato.
 	private handleDrop(e: DragEvent): void {
-		if (!this.quillInstance || this.readOnly) return;
+		const quill = this.obtenerQuillActivo();
+		if (!quill || this.readOnly) return;
 		const token = e.dataTransfer?.getData('text/plain');
 		if (!token || !token.startsWith('{{') || !token.endsWith('}}')) return;
 
 		e.preventDefault();
 		e.stopPropagation();
+		e.stopImmediatePropagation();
 
 		let dropIndex = -1;
 
-		// 1. Verificar si el drop cayó dentro de la tabla institucional o en sus áreas vacías
-		const elementUnderPointer = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
-		const tablaOcelda = elementUnderPointer?.closest('.plantilla-uees-table, table, td');
-		const tdCentral = (tablaOcelda?.tagName === 'TD' ? tablaOcelda : tablaOcelda?.querySelector('td')) as HTMLElement;
+		// 1. Verificar si el drop cayó dentro de una celda o tabla de la plantilla
+		const elementUnderPointer =
+			(document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null) ||
+			(e.target as HTMLElement | null);
+		const celdaDirecta = elementUnderPointer?.closest('td, th') as HTMLElement | null;
+		const tablaContenedora = elementUnderPointer?.closest('.plantilla-uees-table, table') as HTMLElement | null;
+		const tdDestino = celdaDirecta || (tablaContenedora?.querySelector('td, th') as HTMLElement | null);
 
-		if (tdCentral) {
-			const indiceCelda = this.obtenerIndiceInternoCelda(tdCentral, e.clientY, e.clientX);
+		if (tdDestino) {
+			const indiceCelda = this.obtenerIndiceInternoCelda(tdDestino, e.clientY, e.clientX, quill);
 			if (indiceCelda !== null && indiceCelda >= 0) {
 				dropIndex = indiceCelda;
 			}
 		}
 
-		// 2. Fallback por rango nativo si no fue una celda institucional directa
+		// 2. Fallback por rango nativo si no cayó dentro de una tabla
 		if (dropIndex < 0) {
 			let nativeRange: Range | null = null;
 			if (document.caretRangeFromPoint) {
@@ -259,68 +283,40 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 				}
 			}
 
-			if (nativeRange && nativeRange.startContainer) {
-				try {
-					let targetNode = nativeRange.startContainer;
-					let targetOffset = nativeRange.startOffset;
-
-					if (targetNode.nodeType === Node.ELEMENT_NODE && targetNode.childNodes.length > 0) {
-						const childIndex = Math.min(targetOffset, targetNode.childNodes.length - 1);
-						targetNode = targetNode.childNodes[childIndex];
-						targetOffset = (targetOffset >= targetNode.childNodes.length) ? (targetNode.textContent?.length ?? 0) : 0;
-					}
-
-					const blot = this.quillInstance.scroll?.find(targetNode, true);
-					if (blot && typeof blot.offset === 'function') {
-						dropIndex = blot.offset(this.quillInstance.scroll) + targetOffset;
-					}
-				} catch (err) {
-					console.warn('Error al calcular offset de drop en Quill:', err);
-				}
+			const indiceRange = this.resolverIndiceDesdeRange(quill, nativeRange);
+			if (indiceRange !== null && indiceRange >= 0) {
+				dropIndex = indiceRange;
 			}
 		}
 
 		// 3. Fallback de seguridad si no se resolvió posición
 		if (dropIndex < 0) {
-			dropIndex = this.obtenerIndiceInsercionValido();
+			dropIndex = this.obtenerIndiceInsercionValido(quill);
 		}
 
-		this.quillInstance.focus();
-		const formatos: Record<string, any> = {
-			bold: this.formatoParametro?.bold ?? true,
-			color: this.formatoParametro?.color ?? '#000000',
-			size: this.formatoParametro?.size ?? '12pt',
-		};
-		this.quillInstance.insertText(dropIndex, token, formatos, 'user');
-		this.aplicarFormatoParametro(dropIndex, token.length);
-		const nuevoIndex = dropIndex + token.length;
-		this.quillInstance.setSelection(nuevoIndex, 0, 'user');
-		this.ultimaSeleccion = { index: nuevoIndex, length: 0 };
-
-		this.menuParametrosVisible = false;
-
-		setTimeout(() => {
-			this.quillInstance?.focus();
-		}, 60);
+		this.insertarTokenEnIndice(quill, token, dropIndex, 0, true);
 	}
 
 	// Qué hace: asegura que al hacer clic en el relleno exterior vacío de una celda se enfoque el editor sin mover clics válidos del usuario.
 	// Cómo lo hace: verifica si el clic cayó directamente en la celda TD vacía sin que exista selección; si el usuario hizo clic en texto o en la línea, respeta la posición del navegador.
 	private handleMouseDown(e: MouseEvent): void {
-		if (this.readOnly || !this.quillInstance) return;
+		const quill = this.obtenerQuillActivo();
+		if (this.readOnly || !quill) return;
 		const target = e.target as HTMLElement;
 		// Solo intervenir si el clic fue directamente sobre el TD o TABLE vacío (relleno exterior)
 		if (target.tagName === 'TD' || target.tagName === 'TABLE' || target.tagName === 'TR' || target.tagName === 'TBODY') {
 			setTimeout(() => {
-				const selection = this.quillInstance?.getSelection(false);
+				const quillActual = this.obtenerQuillActivo();
+				if (!quillActual) return;
+				const selection = quillActual.getSelection?.(false);
 				if (!selection) {
 					const td = (target.tagName === 'TD' ? target : target.querySelector('td')) as HTMLElement;
 					if (td) {
-						const indice = this.obtenerIndiceInternoCelda(td, e.clientY, e.clientX);
+						const indice = this.obtenerIndiceInternoCelda(td, e.clientY, e.clientX, quillActual);
 						if (indice !== null) {
 							this.ultimaSeleccion = { index: indice, length: 0 };
 							try {
-								this.quillInstance.setSelection(indice, 0, 'user');
+								quillActual.setSelection(indice, 0, 'user');
 							} catch {}
 						}
 					}
@@ -329,186 +325,227 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		}
 	}
 
-	// Qué hace: localiza la posición editable exacta dentro de una celda de tabla distinguiendo inicio, renglones y final.
-	// Cómo lo hace: evalúa si las coordenadas verticales caen en el relleno superior (retorna inicio del primer bloque), en el relleno inferior (retorna final del último bloque) o en renglones intermedios mediante caretRangeFromPoint.
-	private obtenerIndiceInternoCelda(td: HTMLElement, clientY?: number, clientX?: number): number | null {
-		if (!td || !this.quillInstance?.scroll) return null;
+	// Qué hace: convierte un Range nativo del navegador en un índice lineal seguro dentro del documento de Quill.
+	// Cómo lo hace: utiliza el normalizador nativo de Quill cuando está disponible o resuelve el nodo de texto mediante scroll.find.
+	private resolverIndiceDesdeRange(quill: any, range: Range | null): number | null {
+		if (!quill || !range?.startContainer) return null;
 
-		const lineElements = Array.from(td.querySelectorAll('p, .ql-table-cell-line')) as HTMLElement[];
-		if (lineElements.length === 0) {
-			const targetChild = td.firstElementChild || td.firstChild || td;
-			const blot = this.quillInstance.scroll.find(targetChild, true);
-			return (blot && typeof blot.offset === 'function') ? blot.offset(this.quillInstance.scroll) : null;
-		}
-
-		// 1. Si se proporciona clientY, verificar si cayó en el relleno superior (arriba del primer párrafo) o inferior (abajo del último)
-		const primerP = lineElements[0];
-		const ultimoP = lineElements[lineElements.length - 1];
-
-		if (typeof clientY === 'number') {
-			const primerRect = primerP.getBoundingClientRect();
-			if (clientY <= primerRect.top + 6) {
-				// Clic o drop en el área gris superior: posicionar al INICIO del primer bloque
-				const primerBlot = this.quillInstance.scroll.find(primerP.firstChild || primerP, true);
-				return primerBlot && typeof primerBlot.offset === 'function' ? primerBlot.offset(this.quillInstance.scroll) : 0;
-			}
-
-			const ultimoRect = ultimoP.getBoundingClientRect();
-			if (clientY >= ultimoRect.bottom - 4) {
-				// Clic o drop en el área gris inferior: posicionar al FINAL del último bloque
-				const ultimoBlot = this.quillInstance.scroll.find(ultimoP.firstChild || ultimoP, true);
-				if (ultimoBlot && typeof ultimoBlot.offset === 'function') {
-					const baseOffset = ultimoBlot.offset(this.quillInstance.scroll);
-					const blotLength = typeof ultimoBlot.length === 'function' ? ultimoBlot.length() : 0;
-					return baseOffset + Math.max(0, blotLength - 1);
+		if (
+			quill.selection &&
+			typeof quill.selection.normalizeNative === 'function' &&
+			typeof quill.selection.normalizedToRange === 'function'
+		) {
+			try {
+				const normalized = quill.selection.normalizeNative(range);
+				const qRange = normalized ? quill.selection.normalizedToRange(normalized) : null;
+				if (qRange && typeof qRange.index === 'number') {
+					return qRange.index;
 				}
-			}
+			} catch {}
 		}
 
-		// 2. Intentar resolución exacta por coordenadas intermedias
-		if (typeof clientX === 'number' && typeof clientY === 'number' && document.caretRangeFromPoint) {
-			const range = document.caretRangeFromPoint(clientX, clientY);
-			if (range && range.startContainer && td.contains(range.startContainer)) {
-				const blot = this.quillInstance.scroll.find(range.startContainer, true);
-				if (blot && typeof blot.offset === 'function') {
-					let offset = blot.offset(this.quillInstance.scroll);
-					if (range.startOffset > 0) {
-						offset += typeof (blot as any).index === 'function'
-							? (blot as any).index(range.startContainer, range.startOffset)
-							: range.startOffset;
-					}
-					return offset;
+		try {
+			let targetNode: Node = range.startContainer;
+			let targetOffset = range.startOffset;
+
+			if (targetNode.nodeType === Node.ELEMENT_NODE && targetNode.childNodes.length > 0) {
+				const childIndex = Math.min(targetOffset, targetNode.childNodes.length - 1);
+				const child = targetNode.childNodes[childIndex];
+				const alFinal = targetOffset >= targetNode.childNodes.length;
+				targetNode = child;
+				targetOffset = alFinal ? (child.textContent?.length ?? 0) : 0;
+			}
+
+			const blot = quill.scroll?.find(targetNode, true);
+			if (blot && typeof blot.offset === 'function') {
+				const base = blot.offset(quill.scroll);
+				if (targetNode.nodeType === Node.TEXT_NODE) {
+					const len = typeof blot.length === 'function' ? blot.length() : (targetNode.textContent?.length ?? 0);
+					return base + Math.min(targetOffset, len);
 				}
+				return base;
 			}
+		} catch (err) {
+			console.warn('Error al resolver offset desde Range en Quill:', err);
 		}
 
-		// 3. Fallback: encontrar el párrafo verticalmente más cercano
-		let targetP = primerP;
-		if (typeof clientY === 'number') {
-			let menorDistancia = Infinity;
-			for (const p of lineElements) {
-				const rect = p.getBoundingClientRect();
-				const centroY = (rect.top + rect.bottom) / 2;
-				const distancia = Math.abs(clientY - centroY);
-				if (distancia < menorDistancia) {
-					menorDistancia = distancia;
-					targetP = p;
-				}
-			}
+		return null;
+	}
+
+	// Qué hace: obtiene el índice lineal en Quill al inicio o al final de un párrafo o línea de celda.
+	// Cómo lo hace: resuelve el blot completo del bloque de línea para abarcar todos sus segmentos con formato y parámetros previos.
+	private obtenerIndiceDeLineaBlot(quill: any, linea: HTMLElement, alFinal: boolean = true): number | null {
+		if (!quill?.scroll || !linea) return null;
+
+		const blockBlot = quill.scroll.find(linea, true);
+		if (blockBlot && typeof blockBlot.offset === 'function') {
+			const baseOffset = blockBlot.offset(quill.scroll);
+			if (!alFinal) return baseOffset;
+			const blotLength = typeof blockBlot.length === 'function' ? blockBlot.length() : 0;
+			return baseOffset + Math.max(0, blotLength - 1);
 		}
 
-		let blot = this.quillInstance.scroll.find(targetP.firstChild || targetP, true);
-		if (blot && typeof blot.offset === 'function') {
-			const baseOffset = blot.offset(this.quillInstance.scroll);
-			const blotLength = typeof blot.length === 'function' ? blot.length() : 0;
+		const fallbackBlot = linea.firstChild ? quill.scroll.find(linea.firstChild, true) : null;
+		if (fallbackBlot && typeof fallbackBlot.offset === 'function') {
+			const baseOffset = fallbackBlot.offset(quill.scroll);
+			if (!alFinal) return baseOffset;
+			const blotLength = typeof fallbackBlot.length === 'function' ? fallbackBlot.length() : 0;
 			return baseOffset + Math.max(0, blotLength - 1);
 		}
 
 		return null;
 	}
 
-	// Qué hace: posiciona la selección activa y el cursor de texto dentro de la tarjeta central blanca de contenido institucional.
-	// Cómo lo hace: localiza la celda de contenido institucional (td.content o data-tipo="cuerpo"), resuelve su índice interno y actualiza ultimaSeleccion y la selección de Quill.
-	private posicionarEnTarjetaCentral(): void {
-		if (!this.quillInstance?.root || this.quillInstance.hasFocus?.() || this.ultimaSeleccion) return;
-		const tdContent = this.quillInstance.root.querySelector('td.content') as HTMLElement;
-		if (tdContent) {
-			const indice = this.obtenerIndiceInternoCelda(tdContent);
-			if (indice !== null) {
-				this.ultimaSeleccion = { index: indice, length: 0 };
-				try {
-					this.quillInstance.setSelection(indice, 0, 'silent');
-				} catch {}
-			}
-			return;
+	// Qué hace: localiza la posición editable exacta dentro de una celda de tabla distinguiendo inicio, renglones y final.
+	// Cómo lo hace: evalúa coordenadas en relleno superior/inferior o caretRangeFromPoint cuando hay puntero; sin puntero apunta al final del último bloque editable.
+	private obtenerIndiceInternoCelda(td: HTMLElement, clientY?: number, clientX?: number, quillArg?: any): number | null {
+		const quill = quillArg || this.obtenerQuillActivo();
+		if (!td || !quill?.scroll) return null;
+
+		const lineElements = Array.from(td.querySelectorAll('p, .ql-table-cell-line')) as HTMLElement[];
+		if (lineElements.length === 0) {
+			const targetChild = td.firstElementChild || td.firstChild || td;
+			const blot = quill.scroll.find(targetChild, true);
+			return blot && typeof blot.offset === 'function' ? blot.offset(quill.scroll) : null;
 		}
 
-		const tables = Array.from(this.quillInstance.root.querySelectorAll('table')) as HTMLTableElement[];
-		if (tables.length === 0) return;
+		const primerP = lineElements[0];
+		const ultimoP = lineElements[lineElements.length - 1];
 
-		const tablaCentral = tables.find(t => t.getAttribute('data-tipo') === 'cuerpo') ||
-			(tables.length >= 2 ? tables[1] : tables[0]);
+		if (typeof clientY !== 'number') {
+			return this.obtenerIndiceDeLineaBlot(quill, ultimoP, true);
+		}
 
-		if (tablaCentral) {
-			const td = tablaCentral.querySelector('td');
-			if (td) {
-				const indice = this.obtenerIndiceInternoCelda(td);
-				if (indice !== null) {
-					this.ultimaSeleccion = { index: indice, length: 0 };
-					try {
-						this.quillInstance.setSelection(indice, 0, 'silent');
-					} catch {}
+		// 1. Verificar si cayó en el relleno superior o inferior de la celda
+		const primerRect = primerP.getBoundingClientRect();
+		if (clientY <= primerRect.top + 6) {
+			return this.obtenerIndiceDeLineaBlot(quill, primerP, false) ?? 0;
+		}
+
+		const ultimoRect = ultimoP.getBoundingClientRect();
+		if (clientY >= ultimoRect.bottom - 4) {
+			const finUltimo = this.obtenerIndiceDeLineaBlot(quill, ultimoP, true);
+			if (finUltimo !== null) {
+				return finUltimo;
+			}
+		}
+
+		// 2. Intentar resolución exacta por coordenadas intermedias dentro de la celda
+		if (typeof clientX === 'number' && document.caretRangeFromPoint) {
+			const range = document.caretRangeFromPoint(clientX, clientY);
+			if (range && range.startContainer && td.contains(range.startContainer)) {
+				const indiceExacto = this.resolverIndiceDesdeRange(quill, range);
+				if (indiceExacto !== null) {
+					return indiceExacto;
 				}
 			}
 		}
+
+		// 3. Fallback: encontrar el párrafo verticalmente más cercano
+		let targetP = primerP;
+		let menorDistancia = Infinity;
+		for (const p of lineElements) {
+			const rect = p.getBoundingClientRect();
+			const centroY = (rect.top + rect.bottom) / 2;
+			const distancia = Math.abs(clientY - centroY);
+			if (distancia < menorDistancia) {
+				menorDistancia = distancia;
+				targetP = p;
+			}
+		}
+
+		return this.obtenerIndiceDeLineaBlot(quill, targetP, true);
 	}
 
-	// Qué hace: calcula la posición adecuada donde insertar el parámetro en el editor.
-	// Cómo lo hace: verifica la última selección activa del usuario; si no existe, localiza el texto editable dentro de la celda de contenido (td.content o data-tipo="cuerpo") usando obtenerIndiceInternoCelda o retorna el inicio.
-	private obtenerIndiceInsercionValido(): number {
-		const selection = this.quillInstance?.getSelection(false);
+	// Qué hace: localiza la celda editable correspondiente al cuerpo central de la plantilla institucional.
+	// Cómo lo hace: busca td.content o la tabla marcada como cuerpo (o la segunda tabla en el diseño de tres bloques).
+	private resolverCeldaCuerpoInstitucional(quill: any): HTMLElement | null {
+		if (!quill?.root) return null;
+
+		const tdContent = quill.root.querySelector('td.content') as HTMLElement | null;
+		if (tdContent) return tdContent;
+
+		const tables = Array.from(quill.root.querySelectorAll('table')) as HTMLTableElement[];
+		if (tables.length === 0) return null;
+
+		const tablaCentral =
+			tables.find((t) => t.getAttribute('data-tipo') === 'cuerpo') ||
+			(tables.length >= 2 ? tables[1] : tables[0]);
+
+		return (tablaCentral?.querySelector('td, th') as HTMLElement | null) || null;
+	}
+
+	// Qué hace: verifica si un índice de Quill apunta dentro de la tabla de encabezado institucional.
+	// Cómo lo hace: obtiene la hoja DOM en ese índice y comprueba si pertenece a la tabla marcada como encabezado o primera tabla multipanel.
+	private estaIndiceEnEncabezado(quill: any, index: number): boolean {
+		try {
+			const [leaf] = quill?.getLeaf?.(index) || [];
+			const domNode = leaf?.domNode as Node | undefined;
+			const el = domNode?.nodeType === Node.ELEMENT_NODE ? (domNode as HTMLElement) : domNode?.parentElement;
+			const tbl = el?.closest('table');
+			if (!tbl) return false;
+			if (tbl.getAttribute('data-tipo') === 'encabezado') return true;
+			const tables = Array.from(quill.root?.querySelectorAll('table') || []);
+			return tables.length >= 2 && tbl === tables[0] && this.esPlantillaInstitucional(quill);
+		} catch {
+			return false;
+		}
+	}
+
+	// Qué hace: posiciona la selección activa y el cursor de texto dentro de la tarjeta central blanca de contenido institucional.
+	// Cómo lo hace: localiza la celda del cuerpo mediante resolverCeldaCuerpoInstitucional y ubica ultimaSeleccion en el último renglón editable.
+	private posicionarEnTarjetaCentral(forzar: boolean = false): void {
+		const quill = this.obtenerQuillActivo();
+		if (!quill?.root || quill.hasFocus?.()) return;
+		if (!forzar && this.ultimaSeleccion) return;
+
+		const tdCuerpo = this.resolverCeldaCuerpoInstitucional(quill);
+		if (!tdCuerpo) return;
+
+		const indice = this.obtenerIndiceInternoCelda(tdCuerpo, undefined, undefined, quill);
+		if (indice !== null) {
+			this.ultimaSeleccion = { index: indice, length: 0 };
+			try {
+				quill.setSelection(indice, 0, 'silent');
+			} catch {}
+		}
+	}
+
+	// Qué hace: calcula la posición adecuada y segura donde insertar un parámetro en el editor.
+	// Cómo lo hace: prioriza la selección activa acotada, descarta selecciones obsoletas o en el encabezado, y recurre a la celda del cuerpo o final del contenido.
+	private obtenerIndiceInsercionValido(quillArg?: any): number {
+		const quill = quillArg || this.obtenerQuillActivo();
+		if (!quill) return 0;
+
+		const maxIndex = Math.max(0, (typeof quill.getLength === 'function' ? quill.getLength() : 1) - 1);
+		const selection = quill.getSelection?.(false);
 		if (selection && typeof selection.index === 'number') {
-			this.ultimaSeleccion = selection;
-			return selection.index;
+			const indiceActual = Math.max(0, Math.min(selection.index, maxIndex));
+			this.ultimaSeleccion = { index: indiceActual, length: selection.length ?? 0 };
+			return indiceActual;
 		}
 
 		if (this.ultimaSeleccion && typeof this.ultimaSeleccion.index === 'number') {
-			return this.ultimaSeleccion.index;
-		}
-
-		if (this.quillInstance?.root) {
-			const tdContent = this.quillInstance.root.querySelector('td.content') as HTMLElement;
-			if (tdContent) {
-				const indice = this.obtenerIndiceInternoCelda(tdContent);
-				if (indice !== null) {
-					return indice;
-				}
-			}
-
-			const tables = Array.from(this.quillInstance.root.querySelectorAll('table')) as HTMLTableElement[];
-			if (tables.length > 0) {
-				const tablaCentral = tables.find(t => t.getAttribute('data-tipo') === 'cuerpo') ||
-					(tables.length >= 2 ? tables[1] : tables[0]);
-
-				if (tablaCentral) {
-					const td = tablaCentral.querySelector('td');
-					if (td) {
-						const indice = this.obtenerIndiceInternoCelda(td);
-						if (indice !== null) {
-							return indice;
-						}
-					}
-				}
+			const indicePrevio = Math.max(0, Math.min(this.ultimaSeleccion.index, maxIndex));
+			if (!this.estaIndiceEnEncabezado(quill, indicePrevio)) {
+				return indicePrevio;
 			}
 		}
 
-		return 0;
+		const tdCuerpo = this.resolverCeldaCuerpoInstitucional(quill);
+		if (tdCuerpo) {
+			const indice = this.obtenerIndiceInternoCelda(tdCuerpo, undefined, undefined, quill);
+			if (indice !== null) {
+				return Math.max(0, Math.min(indice, maxIndex));
+			}
+		}
+
+		return maxIndex;
 	}
 
-	// Qué hace: genera la configuración del botón desplegable de parámetros para la barra de herramientas del editor.
-	// Cómo lo hace: construye el botón permanentemente visible y lo inhabilita cuando el editor está en modo de solo lectura.
-	private actualizarOpcionesBotonParametros(): void {
-		this.parametrosFiltrados = [...(this.parametros || [])];
-
-		this.opcionesBotonParametros = {
-			text: 'Parámetros',
-			icon: 'mention',
-			stylingMode: 'text',
-			height: 24,
-			disabled: this.readOnly,
-			elementAttr: {
-				class: 'editor-toolbar-parametros-btn',
-			},
-			onClick: () => {
-				this.menuParametrosVisible = !this.menuParametrosVisible;
-			},
-		};
-	}
-
-	// Qué hace: filtra dinámicamente los parámetros disponibles por título, clave o descripción.
-	// Cómo lo hace: evalúa el texto introducido en el input contra los atributos de cada parámetro.
-	onSearchInput(e: any): void {
-		this.filtroParametro = e?.target?.value ?? '';
+	// Qué hace: sincroniza la lista filtrada de parámetros visibles en el panel desplegable.
+	// Cómo lo hace: evalúa el criterio filtroParametro contra label, key y descripción sin recrear el botón de la barra.
+	private filtrarParametros(): void {
 		const query = this.filtroParametro.trim().toLowerCase();
 		if (!query) {
 			this.parametrosFiltrados = [...(this.parametros || [])];
@@ -522,11 +559,48 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		);
 	}
 
+	// Qué hace: configura el botón desplegable de parámetros en la barra evitando invalidaciones innecesarias de Quill.
+	// Cómo lo hace: inicializa opcionesBotonParametros una sola vez y solo genera una nueva referencia si cambia el estado readOnly.
+	private actualizarOpcionesBotonParametros(): void {
+		this.filtrarParametros();
+
+		if (!this.opcionesBotonParametros) {
+			this.opcionesBotonParametros = {
+				text: 'Parámetros',
+				icon: 'mention',
+				stylingMode: 'text',
+				height: 24,
+				disabled: this.readOnly,
+				elementAttr: {
+					class: 'editor-toolbar-parametros-btn',
+				},
+				onClick: () => {
+					this.menuParametrosVisible = !this.menuParametrosVisible;
+				},
+			};
+			return;
+		}
+
+		if (this.opcionesBotonParametros.disabled !== this.readOnly) {
+			this.opcionesBotonParametros = {
+				...this.opcionesBotonParametros,
+				disabled: this.readOnly,
+			};
+		}
+	}
+
+	// Qué hace: filtra dinámicamente los parámetros disponibles por título, clave o descripción.
+	// Cómo lo hace: actualiza filtroParametro e invoca filtrarParametros para refrescar la lista visible.
+	onSearchInput(e: any): void {
+		this.filtroParametro = e?.target?.value ?? '';
+		this.filtrarParametros();
+	}
+
 	// Qué hace: limpia el campo de búsqueda de parámetros y restaura la lista completa.
-	// Cómo lo hace: restablece filtroParametro a vacío y refresca parametrosFiltrados.
+	// Cómo lo hace: restablece filtroParametro a vacío y ejecuta filtrarParametros.
 	limpiarFiltro(): void {
 		this.filtroParametro = '';
-		this.parametrosFiltrados = [...(this.parametros || [])];
+		this.filtrarParametros();
 	}
 
 	// Qué hace: inserta el parámetro en el cursor al hacer clic sobre una tarjeta y oculta el panel.
@@ -553,19 +627,43 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 	}
 
 	// Qué hace: inserta el token del parámetro en la posición actual del cursor con formato tipográfico (negrita, color negro y tamaño 12).
-	// Cómo lo hace: obtiene la posición de inserción de Quill, remueve selección previa si existe, inyecta el token atómicamente con los atributos configurados y refuerza el formato individualmente.
+	// Cómo lo hace: obtiene la instancia viva de Quill, calcula el índice seguro de inserción y delega en insertarTokenEnIndice.
 	insertarParametroEnCursor(item: any): void {
-		if (!item?.key || !this.quillInstance || this.readOnly) {
+		const quill = this.obtenerQuillActivo();
+		if (!item?.key || !quill || this.readOnly) {
 			return;
 		}
 		const token = `{{${item.key}}}`;
-		const index = this.obtenerIndiceInsercionValido();
-		const length = (this.ultimaSeleccion && this.ultimaSeleccion.length > 0) ? this.ultimaSeleccion.length : 0;
+		const index = this.obtenerIndiceInsercionValido(quill);
+		const length =
+			this.ultimaSeleccion &&
+			this.ultimaSeleccion.index === index &&
+			this.ultimaSeleccion.length > 0
+				? this.ultimaSeleccion.length
+				: 0;
 
-		this.quillInstance.focus();
+		this.insertarTokenEnIndice(quill, token, index, length, false);
+	}
+
+	// Qué hace: inserta un token de parámetro en una posición dada de Quill, aplica formato y actualiza cursor y foco.
+	// Cómo lo hace: acota el índice al rango válido del documento, reemplaza selección si existe, inserta con formato y refuerza estilos.
+	private insertarTokenEnIndice(
+		quill: any,
+		token: string,
+		index: number,
+		length: number = 0,
+		cerrarMenu: boolean = false
+	): void {
+		const maxIndex = Math.max(0, (typeof quill.getLength === 'function' ? quill.getLength() : 1) - 1);
+		const indiceSeguro = Math.max(0, Math.min(index, maxIndex));
+
+		quill.focus();
 
 		if (length > 0) {
-			this.quillInstance.deleteText(index, length, 'user');
+			const maxBorrado = Math.max(0, maxIndex - indiceSeguro);
+			if (maxBorrado > 0) {
+				quill.deleteText(indiceSeguro, Math.min(length, maxBorrado), 'user');
+			}
 		}
 
 		const formatos: Record<string, any> = {
@@ -574,56 +672,67 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 			size: this.formatoParametro?.size ?? '12pt',
 		};
 
-		this.quillInstance.insertText(index, token, formatos, 'user');
-		this.aplicarFormatoParametro(index, token.length);
-		const nuevoIndex = index + token.length;
-		this.quillInstance.setSelection(nuevoIndex, 0, 'user');
+		quill.insertText(indiceSeguro, token, formatos, 'user');
+		this.aplicarFormatoParametro(indiceSeguro, token.length, quill);
+		const nuevoIndex = indiceSeguro + token.length;
+		quill.setSelection(nuevoIndex, 0, 'user');
 		this.ultimaSeleccion = { index: nuevoIndex, length: 0 };
 
+		if (cerrarMenu) {
+			this.menuParametrosVisible = false;
+		}
 		if (this.dropDownButtonInstance && typeof this.dropDownButtonInstance.close === 'function') {
 			this.dropDownButtonInstance.close();
 		}
 		setTimeout(() => {
-			this.quillInstance?.focus();
+			this.obtenerQuillActivo()?.focus?.();
 		}, 60);
 	}
 
 	// Qué hace: aplica y refuerza el formato tipográfico predeterminado (negrita, color negro y tamaño 12) sobre el rango exacto del token insertado.
-	// Cómo lo hace: aplica de forma directa e individual bold, color y size en la instancia de Quill garantizando que no se pierdan ante estilos de tema oscuro.
-	private aplicarFormatoParametro(index: number, length: number): void {
-		if (!this.quillInstance || length <= 0) return;
+	// Cómo lo hace: aplica de forma directa e individual bold, color y size en la instancia activa de Quill garantizando que no se pierdan ante estilos de tema oscuro.
+	private aplicarFormatoParametro(index: number, length: number, quillArg?: any): void {
+		const quill = quillArg || this.obtenerQuillActivo();
+		if (!quill || length <= 0) return;
 		const bold = this.formatoParametro?.bold ?? true;
 		const color = this.formatoParametro?.color ?? '#000000';
 		const size = this.formatoParametro?.size ?? '12pt';
 
 		try {
 			if (bold) {
-				this.quillInstance.formatText(index, length, 'bold', true, 'user');
+				quill.formatText(index, length, 'bold', true, 'user');
 			}
 			if (color) {
-				this.quillInstance.formatText(index, length, 'color', color, 'user');
+				quill.formatText(index, length, 'color', color, 'user');
 			}
 			if (size) {
-				this.quillInstance.formatText(index, length, 'size', size, 'user');
+				quill.formatText(index, length, 'size', size, 'user');
 			}
 		} catch (err) {
 			console.warn('Error al aplicar formato predeterminado al parámetro:', err);
 		}
 	}
 
+	// Qué hace: detecta si una cadena HTML corresponde a una estructura de plantilla institucional UEES.
+	// Cómo lo hace: evalúa los marcadores de clase, dominio y atributos de bloque propios del formato institucional.
+	private esValorPlantillaInstitucional(val?: string | null): boolean {
+		if (typeof val !== 'string') return false;
+		return (
+			val.includes('plantilla-uees') ||
+			val.includes('universidad evang') ||
+			val.includes('uees.edu.sv') ||
+			val.includes('data-tipo')
+		);
+	}
+
 	onValueChange(val: string): void {
 		this.value = val;
+		this.ultimoValorEmitido = val;
 		this.evaluarEstadoPlantilla(val);
 		this.valueChange.emit(val);
-		if (
-			this.quillInstance &&
-			typeof val === 'string' &&
-			(val.includes('plantilla-uees') ||
-				val.includes('universidad evang') ||
-				val.includes('uees.edu.sv') ||
-				val.includes('data-tipo'))
-		) {
-			this.programarSincronizacionDiseno(this.quillInstance, 40);
+		const quill = this.obtenerQuillActivo();
+		if (quill && this.esValorPlantillaInstitucional(val)) {
+			this.programarSincronizacionDiseno(quill, 40);
 		}
 	}
 
@@ -722,7 +831,7 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 	// Qué hace: intercepta el pegado dentro de los recuadros institucionales para no dejar que Quill reescriba la tabla.
 	// Cómo lo hace: en fase captura, si el destino es una celda institucional, cancela el pegado nativo, inserta texto plano en el índice actual y reprograma la sincronización de colores y clase.
 	private handlePaste(e: ClipboardEvent): void {
-		const quill = this.quillInstance;
+		const quill = this.obtenerQuillActivo();
 		if (!quill || this.readOnly) {
 			return;
 		}
@@ -752,7 +861,7 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		}
 
 		const rango = quill.getSelection(true) || this.ultimaSeleccion;
-		const index = rango && typeof rango.index === 'number' ? rango.index : this.obtenerIndiceInsercionValido();
+		const index = rango && typeof rango.index === 'number' ? rango.index : this.obtenerIndiceInsercionValido(quill);
 		const length = rango && typeof rango.length === 'number' ? rango.length : 0;
 
 		try {
@@ -787,38 +896,73 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 		}, delay);
 	}
 
-	// Qué hace: intercepta la inicialización del editor para obtener la instancia real de Quill, garantizar que las tablas se puedan insertar en lienzo vacío, redistribuir anchos de columnas equitativamente y preservar el diseño institucional ante ediciones o pegado de texto.
-	// Cómo lo hace: resuelve la instancia subyacente de Quill mediante getQuillInstance(), asegura la posición del cursor, intercepta operaciones de tabla y monitorea text-change y paste en captura con reintento si la sincronización está ocupada.
-	onEditorInitialized(e: any): void {
-		this.quillInstance =
-			e?.component?.getQuillInstance?.() ||
-			e?.component?._quillInstance ||
-			(e?.component as any)?.getQuill?.();
-		const quill = this.quillInstance;
-		const tableModule = quill?.getModule('table');
+	// Qué hace: obtiene la instancia viva de Quill administrada por DxHtmlEditor y reenlaza eventos si fue recreada.
+	// Cómo lo hace: consulta getQuillInstance o propiedades internas del componente y actualiza listeners cuando detecta nueva instancia o nodo raíz.
+	private obtenerQuillActivo(): any {
+		const quillActual =
+			this.editorInstance?.getQuillInstance?.() ||
+			this.editorInstance?._quillInstance ||
+			this.editorInstance?.getQuill?.() ||
+			this.quillInstance;
 
-		if (quill) {
-			// Monitorear cambios de texto de usuario y eventos de pegado con guardas para prevenir bucles
-			quill.on('text-change', (_delta: any, _oldDelta: any, source: string) => {
-				if (source !== 'user') return;
-				this.programarSincronizacionDiseno(quill, 20);
-			});
-			quill.on('selection-change', (range: any) => {
-				if (range) {
-					this.ultimaSeleccion = range;
-				}
-			});
-			quill.root?.addEventListener('dragover', this.dragOverHandler);
-			quill.root?.addEventListener('drop', this.dropHandler);
-			quill.root?.addEventListener('mousedown', this.mouseDownHandler);
-			quill.root?.addEventListener('paste', this.pasteHandler, true);
-			setTimeout(() => this.sincronizarDisenoInstitucional(quill), 80);
-			if (typeof this.value === 'string' && (this.value.includes('plantilla-uees') || this.value.includes('universidad evang') || this.value.includes('data-tipo'))) {
-				setTimeout(() => this.posicionarEnTarjetaCentral(), 150);
-			}
+		if (
+			quillActual &&
+			(quillActual !== this.boundQuillInstance || quillActual.root !== this.boundQuillRoot)
+		) {
+			this.enlazarEventosQuill(quillActual);
 		}
 
-		if (tableModule && typeof tableModule.insertTable === 'function') {
+		return quillActual;
+	}
+
+	// Qué hace: remueve los escuchadores DOM y eventos de Quill de la instancia enlazada actualmente.
+	// Cómo lo hace: retira listeners de captura y burbuja con las mismas referencias y desvincula eventos de Quill.
+	private desenlazarEventosQuill(): void {
+		if (this.boundQuillRoot) {
+			this.boundQuillRoot.removeEventListener('dragover', this.dragOverHandler, true);
+			this.boundQuillRoot.removeEventListener('drop', this.dropHandler, true);
+			this.boundQuillRoot.removeEventListener('mousedown', this.mouseDownHandler);
+			this.boundQuillRoot.removeEventListener('paste', this.pasteHandler, true);
+		}
+		if (this.boundQuillInstance?.off) {
+			this.boundQuillInstance.off('text-change', this.textChangeHandler);
+			this.boundQuillInstance.off('selection-change', this.selectionChangeHandler);
+		}
+		this.boundQuillRoot = null;
+		this.boundQuillInstance = null;
+	}
+
+	// Qué hace: vincula los eventos de edición, arrastre, pegado y redistribución de tablas sobre la instancia viva de Quill.
+	// Cómo lo hace: libera cualquier vínculo anterior, registra eventos en fase de captura y parchea el módulo de tablas sin duplicarlo.
+	private enlazarEventosQuill(quill: any): void {
+		if (!quill) return;
+
+		this.desenlazarEventosQuill();
+		this.quillInstance = quill;
+		this.boundQuillInstance = quill;
+		this.boundQuillRoot = quill.root || null;
+
+		quill.on?.('text-change', this.textChangeHandler);
+		quill.on?.('selection-change', this.selectionChangeHandler);
+
+		if (this.boundQuillRoot) {
+			this.boundQuillRoot.addEventListener('dragover', this.dragOverHandler, true);
+			this.boundQuillRoot.addEventListener('drop', this.dropHandler, true);
+			this.boundQuillRoot.addEventListener('mousedown', this.mouseDownHandler);
+			this.boundQuillRoot.addEventListener('paste', this.pasteHandler, true);
+		}
+
+		this.parchearModuloTablas(quill);
+	}
+
+	// Qué hace: intercepta las operaciones de tabla en Quill para redistribuir anchos de columnas equitativamente.
+	// Cómo lo hace: envuelve insertTable, insertColumn y deleteColumn garantizando con una marca interna que solo se aplique una vez.
+	private parchearModuloTablas(quill: any): void {
+		const tableModule = quill?.getModule?.('table');
+		if (!tableModule || tableModule._sgueesTablePatched) return;
+		tableModule._sgueesTablePatched = true;
+
+		if (typeof tableModule.insertTable === 'function') {
 			const originalInsertTable = tableModule.insertTable.bind(tableModule);
 			tableModule.insertTable = (rows: number, columns: number) => {
 				if (!quill.getSelection()) {
@@ -830,7 +974,7 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 			};
 		}
 
-		if (tableModule && typeof tableModule.insertColumn === 'function') {
+		if (typeof tableModule.insertColumn === 'function') {
 			const originalInsertColumn = tableModule.insertColumn.bind(tableModule);
 			tableModule.insertColumn = (offset: number) => {
 				const result = originalInsertColumn(offset);
@@ -839,7 +983,7 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 			};
 		}
 
-		if (tableModule && typeof tableModule.deleteColumn === 'function') {
+		if (typeof tableModule.deleteColumn === 'function') {
 			const originalDeleteColumn = tableModule.deleteColumn.bind(tableModule);
 			tableModule.deleteColumn = () => {
 				const result = originalDeleteColumn();
@@ -847,64 +991,95 @@ export class TextEditorComponent implements OnInit, OnChanges, OnDestroy {
 				return result;
 			};
 		}
+	}
 
-		// Interceptar el diálogo nativo de añadir enlace para inyectar selector de parámetros URL cuando existan en el módulo
-		const editorInstance = e?.component;
-		if (editorInstance && typeof editorInstance.showFormDialog === 'function') {
-			const originalShowFormDialog = editorInstance.showFormDialog.bind(editorInstance);
-			editorInstance.showFormDialog = (formConfig: any) => {
-				const esDialogoEnlace = formConfig?.formData && Object.prototype.hasOwnProperty.call(formConfig.formData, 'href');
-				if (esDialogoEnlace) {
-					const parametrosUrl = this.obtenerParametrosUrl();
-					if (parametrosUrl.length > 0) {
-						// Si el enlace actual ya coincide con {{CLAVE}}, preseleccionarlo en el selector
-						const matchActual = typeof formConfig.formData.href === 'string'
-							? formConfig.formData.href.match(/^\{\{([A-Za-z0-9_]+)\}\}$/)
-							: null;
-						formConfig.formData.parametroUrl = matchActual ? matchActual[1] : null;
+	// Qué hace: intercepta el diálogo nativo de añadir enlace para inyectar selector de parámetros URL cuando existan en el módulo.
+	// Cómo lo hace: envuelve showFormDialog una sola vez mediante la guarda linkDialogPatched para evitar múltiples envoltorios al rerenderizar.
+	private parchearDialogoEnlace(editorInstance: any): void {
+		if (!editorInstance || this.linkDialogPatched || typeof editorInstance.showFormDialog !== 'function') {
+			return;
+		}
+		this.linkDialogPatched = true;
+		const originalShowFormDialog = editorInstance.showFormDialog.bind(editorInstance);
+		editorInstance.showFormDialog = (formConfig: any) => {
+			const esDialogoEnlace = formConfig?.formData && Object.prototype.hasOwnProperty.call(formConfig.formData, 'href');
+			if (esDialogoEnlace) {
+				const parametrosUrl = this.obtenerParametrosUrl();
+				if (parametrosUrl.length > 0) {
+					// Si el enlace actual ya coincide con {{CLAVE}}, preseleccionarlo en el selector
+					const matchActual = typeof formConfig.formData.href === 'string'
+						? formConfig.formData.href.match(/^\{\{([A-Za-z0-9_]+)\}\}$/)
+						: null;
+					formConfig.formData.parametroUrl = matchActual ? matchActual[1] : null;
 
-						const itemParametroUrl = {
-							dataField: 'parametroUrl',
-							label: { text: 'Parámetro URL' },
-							editorType: 'dxSelectBox',
-							editorOptions: {
-								items: parametrosUrl,
-								displayExpr: 'label',
-								valueExpr: 'key',
-								placeholder: 'Seleccione un parámetro de enlace...',
-								showClearButton: true,
-								value: formConfig.formData.parametroUrl,
-								onValueChanged: (args: any) => {
-									if (args.value) {
-										editorInstance._formDialog?._form?.updateData('href', `{{${args.value}}}`);
-										const currentText = editorInstance._formDialog?._form?.option('formData')?.text;
-										if (!currentText || currentText.trim() === '') {
-											const param = parametrosUrl.find((p) => p.key === args.value);
-											if (param?.label) {
-												editorInstance._formDialog?._form?.updateData('text', param.label);
-											}
+					const itemParametroUrl = {
+						dataField: 'parametroUrl',
+						label: { text: 'Parámetro URL' },
+						editorType: 'dxSelectBox',
+						editorOptions: {
+							items: parametrosUrl,
+							displayExpr: 'label',
+							valueExpr: 'key',
+							placeholder: 'Seleccione un parámetro de enlace...',
+							showClearButton: true,
+							value: formConfig.formData.parametroUrl,
+							onValueChanged: (args: any) => {
+								if (args.value) {
+									editorInstance._formDialog?._form?.updateData('href', `{{${args.value}}}`);
+									const currentText = editorInstance._formDialog?._form?.option('formData')?.text;
+									if (!currentText || currentText.trim() === '') {
+										const param = parametrosUrl.find((p) => p.key === args.value);
+										if (param?.label) {
+											editorInstance._formDialog?._form?.updateData('text', param.label);
 										}
 									}
 								}
 							}
-						};
-
-						// Insertar el selector de parámetro URL justo antes del campo URL
-						const itemsExistentes = formConfig.items || [];
-						const indexHref = itemsExistentes.findIndex((it: any) => it.dataField === 'href');
-						if (indexHref >= 0) {
-							formConfig.items = [
-								...itemsExistentes.slice(0, indexHref),
-								itemParametroUrl,
-								...itemsExistentes.slice(indexHref)
-							];
-						} else {
-							formConfig.items = [itemParametroUrl, ...itemsExistentes];
 						}
+					};
+
+					// Insertar el selector de parámetro URL justo antes del campo URL
+					const itemsExistentes = formConfig.items || [];
+					const indexHref = itemsExistentes.findIndex((it: any) => it.dataField === 'href');
+					if (indexHref >= 0) {
+						formConfig.items = [
+							...itemsExistentes.slice(0, indexHref),
+							itemParametroUrl,
+							...itemsExistentes.slice(indexHref)
+						];
+					} else {
+						formConfig.items = [itemParametroUrl, ...itemsExistentes];
 					}
 				}
-				return originalShowFormDialog(formConfig);
-			};
+			}
+			return originalShowFormDialog(formConfig);
+		};
+	}
+
+	// Qué hace: intercepta la inicialización del editor para enlazar la instancia real de Quill y el selector de parámetros URL.
+	// Cómo lo hace: almacena la referencia de DxHtmlEditor, enlaza eventos sobre la instancia viva de Quill y sincroniza el diseño institucional.
+	onEditorInitialized(e: any): void {
+		this.editorInstance = e?.component ?? null;
+		this.parchearDialogoEnlace(this.editorInstance);
+		const quill = this.obtenerQuillActivo();
+		if (quill) {
+			setTimeout(() => this.sincronizarDisenoInstitucional(quill), 80);
+			if (this.esValorPlantillaInstitucional(this.value)) {
+				setTimeout(() => this.posicionarEnTarjetaCentral(false), 150);
+			}
+		}
+	}
+
+	// Qué hace: mantiene sincronizada la instancia viva de Quill tras invalidaciones o rerenderizados internos de DxHtmlEditor.
+	// Cómo lo hace: reenlaza listeners en cada onContentReady si Quill cambió y reprograma la sincronización institucional si corresponde.
+	onEditorContentReady(e: any): void {
+		if (e?.component) {
+			this.editorInstance = e.component;
+		}
+		this.parchearDialogoEnlace(this.editorInstance);
+		const quill = this.obtenerQuillActivo();
+		if (quill && this.esValorPlantillaInstitucional(this.value)) {
+			this.programarSincronizacionDiseno(quill, 40);
 		}
 	}
 

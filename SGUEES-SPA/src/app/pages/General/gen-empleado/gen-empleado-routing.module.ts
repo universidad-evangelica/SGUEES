@@ -10,9 +10,11 @@ import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
+import { DxHtmlEditorModule } from 'devextreme-angular/ui/html-editor';
 import { DxScrollViewModule } from 'devextreme-angular/ui/scroll-view';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
+import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { DxTooltipModule } from 'devextreme-angular/ui/tooltip';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
@@ -34,9 +36,11 @@ const routes: Routes = [{ path: '', component: GenEmpleadoComponent }];
 		DxNumberBoxModule,
 		DxPopupModule,
 		DxDataGridModule,
+		DxHtmlEditorModule,
 		DxScrollViewModule,
 		DxSelectBoxModule,
 		DxTabPanelModule,
+		DxTextAreaModule,
 		DxTextBoxModule,
 		DxTooltipModule,
 		BarraDataMttoModule,

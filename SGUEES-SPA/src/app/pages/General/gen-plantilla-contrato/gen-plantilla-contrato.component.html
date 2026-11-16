@@ -1,0 +1,378 @@
+<!-- Contenedor principal del mantenimiento de Plantillas de Contratos con ancla para dx-load-panel. -->
+<div id="LoadPanel" class="sguees-mtto-view">
+	<!-- Toolbar superior con acciones de consulta, nuevo, guardar, cancelar y exportar. -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[showRibbon]="true"
+		[showExport]="permitePrint"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="permiteAdd"
+		[showRefresh]="true"
+		(consultar)="consultar()"
+		(nuevo)="nuevo()"
+		(guardar)="guardar()"
+		(cancelar)="cancelar()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Formulario de creación/edición (visible solo fuera del modo browse). -->
+	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+		<dx-form
+			#fData
+			id="fData"
+			[formData]="model"
+			[labelLocation]="'top'"
+			[colCount]="mttoFormColCount"
+			[colCountByScreen]="mttoFormColCountByScreen"
+			[showRequiredMark]="false"
+			[items]="items"
+		>
+			<!-- Selector lookup de Tipo de Contrato consumido desde SC_TIPO_CONTRATACION. -->
+			<div *dxTemplate="let cellInfo of 'CORR_TIPO_CONTRATACIONLookup'">
+				<div
+					class="tipo-contratacion-lookup-field"
+					[class.tipo-contratacion-lookup-field--invalid]="tipoContratacionInvalido"
+				>
+					<app-data-lookup
+						[model]="mCORR_TIPO_CONTRATACION"
+						[value]="model.CORR_TIPO_CONTRATACION"
+						(valueChange)="onTipoContratacionChanged($event)"
+						[valueExpr]="'CORR_TIPO_CONTRATACION'"
+						[displayExpr]="'NOMBRE_TIPO_CONTRATACION'"
+						[selectedRowKeys]="selectedLookUpCORR_TIPO_CONTRATACION"
+						[readOnly]="readOnly"
+					>
+					</app-data-lookup>
+				</div>
+			</div>
+		</dx-form>
+
+		<!-- Pestañas inferiores: ocultas mientras el encabezado es nuevo; al guardar se muestran y habilitan automáticamente. -->
+		<dx-tab-panel
+			class="contrato-tab-panel"
+			*ngIf="(model?.CORR_PLANTILLA_CONTRATO ?? 0) > 0"
+			[(selectedIndex)]="activeTabIndex"
+			[deferRendering]="false"
+			[swipeEnabled]="false"
+		>
+			<!-- Pestaña 1: barra de versiones basada en v1, lista de parámetros y editor de texto enriquecido. -->
+			<dxi-item title="Plantilla de Contrato" [icon]="'doc'">
+				<!-- motivo: barra superior para consultar historial de versiones, estado y crear nuevas versiones a partir de v1 -->
+				<div class="contrato-version-bar">
+					<div class="contrato-version-bar__left">
+						<span class="contrato-version-bar__label">Versión:</span>
+						<dx-select-box
+							class="contrato-version-bar__select"
+							[items]="versiones"
+							displayExpr="NOMBRE_VERSION"
+							valueExpr="CORR_PLANTILLA_CONTRATO_VERSION"
+							[value]="versionSeleccionada?.CORR_PLANTILLA_CONTRATO_VERSION ?? null"
+							[disabled]="versiones.length === 0 || creandoNuevaVersion"
+							placeholder="Sin versiones (Borrador)"
+							width="240"
+							itemTemplate="versionItem"
+							(onValueChanged)="onVersionChanged($event)"
+						>
+							<div *dxTemplate="let item of 'versionItem'" class="contrato-version-option">
+								<span>{{ item.NOMBRE_VERSION }}</span>
+								<span
+									class="version-badge version-badge--sm"
+									[ngClass]="item.ES_VERSION_ACTIVA ? 'estado-badge--activo' : 'estado-badge--historica'"
+								>
+									{{ obtenerEtiquetaEstadoVersion(item) }}
+								</span>
+							</div>
+						</dx-select-box>
+
+						<span class="version-badge" [ngClass]="estadoVersionCss">
+							{{ estadoVersionTexto }}
+						</span>
+
+						<span class="contrato-version-bar__origin" *ngIf="origenVersionTexto">
+							{{ origenVersionTexto }}
+						</span>
+					</div>
+
+					<div class="contrato-version-bar__actions">
+						<dx-button
+							*ngIf="puedeCrearNuevaVersion"
+							text="Nueva Versión"
+							icon="add"
+							type="default"
+							stylingMode="outlined"
+							(onClick)="solicitarNuevaVersion()"
+						>
+						</dx-button>
+						<dx-button
+							*ngIf="puedeActivarVersion"
+							text="Activar Versión"
+							icon="check"
+							type="success"
+							stylingMode="outlined"
+							(onClick)="activarVersionSeleccionada()"
+						>
+						</dx-button>
+						<dx-button
+							*ngIf="creandoNuevaVersion"
+							[text]="'Guardar Versión ' + numeroNuevaVersion"
+							icon="save"
+							type="success"
+							stylingMode="outlined"
+							(onClick)="guardar()"
+						>
+						</dx-button>
+						<dx-button
+							*ngIf="creandoNuevaVersion"
+							text="Cancelar nueva versión"
+							icon="close"
+							type="normal"
+							stylingMode="outlined"
+							(onClick)="cancelarNuevaVersion()"
+						>
+						</dx-button>
+					</div>
+				</div>
+
+				<!-- motivo: aviso informativo cuando la versión seleccionada está consolidada en modo solo lectura -->
+				<div class="contrato-version-readonly-note" *ngIf="mostrarNotaSoloLecturaVersion">
+					<span class="dx-icon-info"></span>
+					<span>{{ notaSoloLecturaVersionTexto }}</span>
+				</div>
+
+				<div class="contrato-editor-layout">
+					<!-- Columna izquierda: lista agrupada de parámetros de BD para insertar en el cursor. -->
+					<aside class="contrato-params-panel">
+						<div class="contrato-params-panel__header">
+							<div class="contrato-params-panel__title">
+								<span class="dx-icon-preferences"></span>
+								<span>Lista de Parámetros</span>
+							</div>
+						</div>
+
+						<p class="contrato-params-panel__hint">
+							Haz clic en un parámetro para insertarlo en la posición activa del cursor como <code>{{ formatToken('parametro') }}</code>.
+						</p>
+
+						<dx-text-box
+							placeholder="nombre_parametro..."
+							[showClearButton]="true"
+							valueChangeEvent="input"
+							[(value)]="filtroParametro"
+							(onValueChanged)="filtrarParametros()"
+						>
+						</dx-text-box>
+
+						<div class="contrato-params-groups">
+							<div class="contrato-params-group" *ngFor="let grupo of gruposParametrosFiltrados">
+								<div class="contrato-params-group__title">{{ grupo.categoria }}</div>
+								<button
+									type="button"
+									class="contrato-param-chip"
+									*ngFor="let param of grupo.items"
+									[disabled]="editorReadOnly"
+									[title]="(param.label || param.key) + (param.descripcion ? ' — ' + param.descripcion : '')"
+									(mousedown)="$event.preventDefault()"
+									(click)="insertarParametroEnCursor(param.key)"
+								>
+									+ {{ formatToken(param.key) }}
+								</button>
+							</div>
+
+							<div class="contrato-params-empty" *ngIf="gruposParametrosFiltrados.length === 0">
+								No se encontraron parámetros coincidentes.
+							</div>
+						</div>
+					</aside>
+
+					<!-- Columna derecha: editor enriquecido DevExtreme (dx-html-editor) sin encabezado ni lógica de correos. -->
+					<section class="contrato-canvas-panel">
+						<dx-html-editor
+							#htmlEditor
+							[height]="'100%'"
+							[readOnly]="editorReadOnly"
+							[value]="model.CUERPO_PLANTILLA || ''"
+							placeholder="Escriba aquí el contenido haga clic en un parámetro..."
+							(valueChange)="onCuerpoChanged($event)"
+							(onInitialized)="onEditorInitialized($event)"
+							(onContentReady)="onEditorContentReady($event)"
+						>
+							<!-- Barra de herramientas enfocada en documentos legales, imágenes, encabezados y bloque de firmas. -->
+							<dxo-toolbar [multiline]="true">
+								<dxi-item name="undo"></dxi-item>
+								<dxi-item name="redo"></dxi-item>
+								<dxi-item name="separator"></dxi-item>
+								<dxi-item
+									name="size"
+									[acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt']"
+									[options]="{ width: 80, dropDownOptions: { minWidth: 100, width: 'auto' }, inputAttr: { 'aria-label': 'Tamaño' } }"
+								></dxi-item>
+								<dxi-item
+									name="font"
+									[acceptedValues]="['Arial', 'Georgia', 'Times New Roman', 'Verdana', 'Tahoma']"
+									[options]="{ width: 100, dropDownOptions: { minWidth: 165, width: 'auto' }, inputAttr: { 'aria-label': 'Fuente' } }"
+								></dxi-item>
+								<dxi-item name="separator"></dxi-item>
+								<dxi-item name="bold"></dxi-item>
+								<dxi-item name="italic"></dxi-item>
+								<dxi-item name="underline"></dxi-item>
+								<dxi-item name="separator"></dxi-item>
+								<dxi-item name="alignLeft"></dxi-item>
+								<dxi-item name="alignCenter"></dxi-item>
+								<dxi-item name="alignRight"></dxi-item>
+								<dxi-item name="alignJustify"></dxi-item>
+								<dxi-item name="separator"></dxi-item>
+								<dxi-item name="orderedList"></dxi-item>
+								<dxi-item name="bulletList"></dxi-item>
+								<dxi-item name="separator"></dxi-item>
+								<!-- motivo: insertar o editar imagen con diálogo nativo manteniendo proporción -->
+								<dxi-item name="image"></dxi-item>
+								<!-- motivo: posicionar o flotar la imagen seleccionada (izquierda, centro, derecha, en línea) -->
+								<dxi-item widget="dxDropDownButton" [options]="opcionesBotonPosicionImagen"></dxi-item>
+								<dxi-item name="separator"></dxi-item>
+								<!-- motivo: insertar encabezado institucional con logo-xx centrado o a la derecha en tabla sin bordes -->
+								<dxi-item widget="dxDropDownButton" [options]="opcionesBotonEncabezado"></dxi-item>
+								<dxi-item widget="dxButton" [options]="opcionesBotonFirmas"></dxi-item>
+								<dxi-item name="separator"></dxi-item>
+								<dxi-item name="insertTable"></dxi-item>
+								<dxi-item name="tableProperties"></dxi-item>
+								<dxi-item name="cellProperties"></dxi-item>
+								<dxi-item name="deleteTable"></dxi-item>
+								<dxi-item name="clear"></dxi-item>
+								<dxi-item name="separator"></dxi-item>
+								<dxi-item widget="dxButton" [options]="opcionesBotonLimpiarTodo"></dxi-item>
+							</dxo-toolbar>
+							<!-- motivo: habilitar redimensionamiento visual de imágenes y carga base64 -->
+							<dxo-media-resizing [enabled]="true"></dxo-media-resizing>
+							<dxo-image-upload fileUploadMode="base64"></dxo-image-upload>
+							<dxo-table-context-menu [enabled]="true"></dxo-table-context-menu>
+							<dxo-table-resizing [enabled]="true"></dxo-table-resizing>
+						</dx-html-editor>
+					</section>
+				</div>
+			</dxi-item>
+
+			<!-- Pestaña 2: tabla paginada de bitácora de plantilla (5 registros iniciales, editable por el usuario). -->
+			<dxi-item title="Bitácora" [icon]="'checklist'">
+				<div class="contrato-bitacora-panel">
+					<dx-data-grid
+						[dataSource]="modelsBitacora"
+						[columns]="columnsBitacora"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[columnAutoWidth]="false"
+						[allowColumnResizing]="true"
+						[wordWrapEnabled]="true"
+						[width]="'100%'"
+						[noDataText]="'Sin movimientos registrados en la bitácora.'"
+					>
+						<dxo-search-panel [visible]="true"></dxo-search-panel>
+						<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+						<dxo-pager
+							[visible]="true"
+							[showPageSizeSelector]="true"
+							[allowedPageSizes]="[5, 10, 25, 50, 100]"
+							[showInfo]="true"
+							[showNavigationButtons]="true"
+						></dxo-pager>
+						<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+					</dx-data-grid>
+				</div>
+			</dxi-item>
+		</dx-tab-panel>
+	</div>
+
+	<!-- Grilla principal de consulta y acciones de edición/eliminación por fila. -->
+	<app-data-grid-mtto
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permitePrint]="permitePrint"
+		[permiteEditar]="getPermiteEditar"
+		[permiteDele]="getPermiteDele"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[exportFileName]="'PlantillasContratos'"
+		(rowDblClick)="rowDblClick($event)"
+		(rowRemoving)="rowRemoving($event)"
+		(focusedRowChanged)="focusedRowChanged($event)"
+		(editClick)="onEditClick($event)"
+	>
+	</app-data-grid-mtto>
+</div>
+
+<!-- Panel de carga durante peticiones asíncronas hacia el API. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>
+
+<!-- motivo: modal para solicitar el motivo/observación de la nueva versión justo al presionar Guardar -->
+<dx-popup
+	[(visible)]="modalMotivoVersionVisible"
+	[title]="tituloModalNuevaVersion"
+	[width]="520"
+	[height]="'auto'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	(onHiding)="cerrarModalMotivoVersion()"
+>
+	<div *dxTemplate="let data of 'content'" class="contrato-motivo-modal">
+		<!-- motivo: indicaciones separadas para evitar saturación visual con el campo de observación -->
+		<div class="contrato-motivo-modal__hint">
+			<p>
+				Esta nueva versión se guardará a partir de la <strong>Versión 1</strong> y pasará a ser la versión activa.
+			</p>
+			<p>
+				El detalle de cambios se registrará automáticamente en Bitácora.
+			</p>
+		</div>
+		<dx-text-area
+			[(value)]="observacionNuevaVersion"
+			label="Motivo / Observación del cambio (opcional)"
+			labelMode="floating"
+			placeholder="Ej. Actualización de parámetro, horario o cláusula..."
+			[height]="110"
+			[maxLength]="500"
+		>
+		</dx-text-area>
+		<div class="contrato-motivo-modal__actions">
+			<dx-button
+				text="Cancelar"
+				stylingMode="outlined"
+				(onClick)="cerrarModalMotivoVersion()"
+			>
+			</dx-button>
+			<dx-button
+				text="Confirmar y Guardar"
+				type="success"
+				stylingMode="contained"
+				icon="save"
+				(onClick)="confirmarGuardarNuevaVersionModal()"
+			>
+			</dx-button>
+		</div>
+	</div>
+</dx-popup>

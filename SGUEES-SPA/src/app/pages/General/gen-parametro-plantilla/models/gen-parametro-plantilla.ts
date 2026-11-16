@@ -16,6 +16,9 @@ export interface GenParametroPlantilla {
 	CODIGO_OPCION?: string | null;
 	NOMBRE_OPCION?: string | null;
 	ACTIVO_PLANTILLA: boolean;
+	CANT_VERSIONES?: number;
+	NUMERO_VERSION_ACTIVA?: number | null;
+	ESTADO_PLANTILLA?: string;
 	CORREO_REMITENTE?: string | null;
 	USUARIO_REMITENTE?: string | null;
 	USUARIO_CREA?: string;

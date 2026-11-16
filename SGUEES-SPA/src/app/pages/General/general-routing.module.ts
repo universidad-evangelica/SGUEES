@@ -26,6 +26,7 @@ import { GenTipoContactoComponent } from './gen-tipo-contacto/gen-tipo-contacto.
 import { GenEmpleadoComponent } from './gen-empleado/gen-empleado.component';
 import { GenParametroSmtpComponent } from './gen-parametro-smtp/gen-parametro-smtp.component';
 import { GenParametroPlantillaComponent } from './gen-parametro-plantilla/gen-parametro-plantilla.component';
+import { GenPlantillaContratoComponent } from './gen-plantilla-contrato/gen-plantilla-contrato.component';
 
 const routes: Routes = [
   {
@@ -211,6 +212,15 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-parametro-plantilla/gen-parametro-plantilla.module').then(m => m.GenParametroPlantillaModule)
+  },
+  // Ruta independiente del mantenimiento de Plantillas de Contratos.
+  {
+    path: 'gen-plantilla-contrato',
+    component: GenPlantillaContratoComponent,
+    data: { titulo: 'Plantillas de Contratos' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-plantilla-contrato/gen-plantilla-contrato.module').then(m => m.GenPlantillaContratoModule)
   }
 ];
 
