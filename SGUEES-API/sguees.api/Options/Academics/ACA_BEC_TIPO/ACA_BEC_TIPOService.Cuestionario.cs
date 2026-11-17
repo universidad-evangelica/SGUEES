@@ -16,8 +16,11 @@ namespace SGUEES.Services {
    if(operacion!="QUITAR"&&data.ELEMENTO==BecaElemento.Seccion) {
     if(!data.PUNTAJE_MAXIMO.HasValue||data.PUNTAJE_MAXIMO<0||decimal.Round(data.PUNTAJE_MAXIMO.Value,2)!=data.PUNTAJE_MAXIMO.Value)
      return Task.FromResult(ValidationError("Indique un puntaje maximo no negativo, con hasta dos decimales."));
-    data.PORCENTAJE_SECCION=0;
+    if(!PorcentajeValido(data.PORCENTAJE_SECCION))
+     return Task.FromResult(ValidationError("Indique un porcentaje de seccion entre 0 y 100, con hasta dos decimales."));
    }
+   if(operacion!="QUITAR"&&data.ELEMENTO==BecaElemento.Pregunta&&!PorcentajeValido(data.PORCENTAJE_PREGUNTA))
+    return Task.FromResult(ValidationError("Indique un porcentaje de pregunta entre 0 y 100, con hasta dos decimales."));
    if(operacion!="QUITAR"&&data.ELEMENTO==BecaElemento.Puntaje) {
     if(!data.PUNTAJE.HasValue||data.PUNTAJE<0||decimal.Round(data.PUNTAJE.Value,2)!=data.PUNTAJE.Value)
      return Task.FromResult(ValidationError("Indique un puntaje de respuesta no negativo, con hasta dos decimales."));
@@ -25,5 +28,6 @@ namespace SGUEES.Services {
    }
    return _repo.GuardarCuestionarioAsync(operacion,data,usuario,estacion);
   }
+  private static bool PorcentajeValido(decimal? valor)=>valor.HasValue&&valor>=0&&valor<=100&&decimal.Round(valor.Value,2)==valor.Value;
  }
 }

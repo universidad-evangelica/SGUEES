@@ -3,6 +3,8 @@
   <h3>{{ contenido.VERSION.NOMBRE_FORMULARIO }} · Versión {{ contenido.VERSION.VERSION_FORMULARIO }}</h3>
   <p class="guia" *ngIf="soloLectura">Versión publicada: puede consultar y probar el cuestionario. {{contenido.VERSION.CANT_SOLICITUDES ? 'Tiene solicitudes asociadas: cree una nueva versión para cambiarlo.' : 'No tiene solicitudes: pulse Modificar cuestionario o vuelva a Versiones para reabrir esta misma versión.'}}</p>
   <p class="guia" *ngIf="!soloLectura">Borrador. Agregue una sección, escriba sus preguntas y defina las opciones cuando corresponda. Revise la vista previa antes de publicar.</p>
+  <p class="guia" *ngIf="!soloLectura || contenido.VERSION.EVALUACION_PORCENTUAL">Porcentaje distribuido entre secciones: {{ porcentajeSecciones | number:'1.0-2' }} % de 100 %.</p>
+  <p class="guia" *ngIf="soloLectura && !contenido.VERSION.EVALUACION_PORCENTUAL">Esta versión conserva la evaluación anterior por puntos. Para distribuir porcentajes entre preguntas, cree una nueva versión.</p>
   <div class="acciones" *ngIf="!edicion">
     <dx-button text="Volver a versiones y asignación" icon="back" [disabled]="loadingVisible" (onClick)="salir()"></dx-button>
     <dx-button text="Publicar cuestionario" type="success" icon="check" *ngIf="!soloLectura && permiteEdit" [disabled]="loadingVisible" (onClick)="publicar()"></dx-button>
@@ -24,13 +26,14 @@
         (onValueChanged)="cambiarPregunta($event.value)"></dx-select-box>
     </div>
   </div>
+  <p class="guia" *ngIf="paso === 1 && (!soloLectura || contenido.VERSION.EVALUACION_PORCENTUAL)">Porcentaje distribuido entre las preguntas de esta sección: {{ porcentajePreguntas | number:'1.0-2' }} %.</p>
 
   <div *ngIf="edicion && datos">
     <h3>{{ tituloEditor }}</h3>
     <app-barra-data-mtto [ocultarEncabezado]="true" [isBrowse]="false" [isForm]="true" [permiteAdd]="false" [showRefresh]="false" (guardar)="guardar()" (cancelar)="cancelar()"></app-barra-data-mtto>
-    <p class="guia" *ngIf="datos.ELEMENTO === 1">Este límite es el máximo que puede aportar la sección. Use 0 para una sección informativa sin puntuación. Las respuestas configuradas no pueden superar este límite.</p>
-    <p class="guia" *ngIf="datos.ELEMENTO === 2">El tipo de respuesta determina lo que verá el aspirante. «Seleccionar una respuesta» y «Seleccionar varias respuestas» permiten agregar alternativas en el paso 3. «Sí / No» crea esas dos alternativas automáticamente.</p>
-    <p class="guia" *ngIf="datos.ELEMENTO === 4">Asigne los puntos de la respuesta y su vigencia. El sistema comprobará el límite de la sección. El porcentaje de evaluación se calcula automáticamente sobre los puntos máximos del formulario.</p>
+    <p class="guia" *ngIf="datos.ELEMENTO === 1">Las secciones se reparten un máximo de 100 %. Las preguntas se reparten el porcentaje de su sección. Use 0 % para una sección informativa.</p>
+    <p class="guia" *ngIf="datos.ELEMENTO === 2">Asigne el porcentaje máximo de esta pregunta: la suma de las preguntas no puede superar el porcentaje de la sección. Use 0 % si no califica. El tipo de respuesta determina lo que verá el aspirante. «Seleccionar una respuesta» y «Seleccionar varias respuestas» permiten agregar alternativas en el paso 3. «Sí / No» crea esas dos alternativas automáticamente.</p>
+    <p class="guia" *ngIf="datos.ELEMENTO === 4">Asigne los puntos de la respuesta y su vigencia. Los puntos determinan cuánto obtiene el aspirante del porcentaje asignado a la pregunta. La respuesta de mayor puntaje obtiene el porcentaje completo; en selección múltiple se considera la suma de las opciones.</p>
     <p class="guia" *ngIf="datos.ELEMENTO === 5">Esta condición muestra la pregunta actual según una respuesta anterior. Si agrega varias condiciones, bastará que se cumpla una.</p>
     <dx-form #fData [formData]="datos" [items]="itemsEditor" labelLocation="top" [colCount]="2"
       [colCountByScreen]="{ xs: 1, sm: 1, md: 2, lg: 2 }" [disabled]="loadingVisible"></dx-form>

@@ -77,6 +77,8 @@ export class BecaCuestionarioComponent extends CBaseComponent implements OnChang
   get preguntaActual():BecaPregunta|undefined { return this.contenido?.PREGUNTAS.find(p=>p.CORR_PREGUNTA_BECA===this.preguntaId); }
   get usaOpciones():boolean { return !!this.preguntaActual && ['OPCION_UNICA','OPCION_MULTIPLE','SI_NO'].includes(this.preguntaActual.TIPO_RESPUESTA); }
   get nombreElemento():string { return ['sección','pregunta','opción','regla de puntaje','condición'][this.paso] ?? ''; }
+  get porcentajeSecciones():number { return this.secciones.reduce((suma,s)=>suma+Number(s.PORCENTAJE_SECCION ?? 0),0); }
+  get porcentajePreguntas():number { return this.preguntas.reduce((suma,p)=>suma+Number(p.PORCENTAJE_PREGUNTA ?? 0),0); }
 
   consultar():void {
     if(this.edicion||this.versionId<=0)return;
@@ -125,8 +127,8 @@ export class BecaCuestionarioComponent extends CBaseComponent implements OnChang
   }
   private refrescarFilas():void {
     this.filaSeleccionada=undefined;
-    if(this.paso===0){this.clave='CORR_SECCION_BECA';this.filas=this.secciones;this.columnas=[{dataField:'ORDEN',caption:'Orden',width:90},{dataField:'NOMBRE_SECCION',caption:'Sección',minWidth:260},{dataField:'PUNTAJE_MAXIMO',caption:'Límite de puntos'}];}
-    if(this.paso===1){this.clave='CORR_PREGUNTA_BECA';this.filas=this.preguntas;this.columnas=[{dataField:'ORDEN',caption:'Orden',width:90},{dataField:'TEXTO_PREGUNTA',caption:'Pregunta',minWidth:340},{dataField:'TIPO_RESPUESTA',caption:'Tipo de respuesta',lookup:{dataSource:this.tipos,valueExpr:'id',displayExpr:'text'}},{dataField:'REQUERIDO',caption:'Obligatoria',dataType:'boolean'}];}
+    if(this.paso===0){this.clave='CORR_SECCION_BECA';this.filas=this.secciones;this.columnas=[{dataField:'ORDEN',caption:'Orden',width:90},{dataField:'NOMBRE_SECCION',caption:'Sección',minWidth:260},{dataField:'PORCENTAJE_SECCION',caption:'Porcentaje de la sección (%)'},{dataField:'PUNTAJE_MAXIMO',caption:'Límite de puntos (evaluación anterior)',visible:!this.contenido?.VERSION.EVALUACION_PORCENTUAL}];}
+    if(this.paso===1){this.clave='CORR_PREGUNTA_BECA';this.filas=this.preguntas;this.columnas=[{dataField:'ORDEN',caption:'Orden',width:90},{dataField:'TEXTO_PREGUNTA',caption:'Pregunta',minWidth:340},{dataField:'TIPO_RESPUESTA',caption:'Tipo de respuesta',lookup:{dataSource:this.tipos,valueExpr:'id',displayExpr:'text'}},{dataField:'PORCENTAJE_PREGUNTA',caption:'Porcentaje de la pregunta (%)'},{dataField:'REQUERIDO',caption:'Obligatoria',dataType:'boolean'}];}
     if(this.paso===2){this.clave='CORR_OPCION_BECA';this.filas=this.opciones;this.columnas=[{dataField:'ORDEN',caption:'Orden',width:90},{dataField:'TEXTO_OPCION',caption:'Opción de respuesta',minWidth:350}];}
     if(this.paso===3){this.clave='CORR_PUNTAJE_BECA';this.filas=(this.contenido?.PUNTAJES ?? []).filter(p=>p.CORR_PREGUNTA_BECA===this.preguntaId);this.columnas=[{dataField:'TEXTO_OPCION',caption:'Respuesta (vacía: puntaje general)',minWidth:250},{dataField:'PUNTAJE',caption:'Puntos de la respuesta'},{dataField:'FECHA_INICIO',caption:'Inicio',dataType:'date',format:'dd/MM/yyyy'},{dataField:'FECHA_FIN',caption:'Fin',dataType:'date',format:'dd/MM/yyyy'}];}
     if(this.paso===4){this.clave='CORR_DEPENDENCIA_BECA';this.filas=(this.contenido?.DEPENDENCIAS ?? []).filter(d=>d.CORR_PREGUNTA_HIJA===this.preguntaId);this.columnas=[{dataField:'PREGUNTA_PADRE',caption:'Pregunta anterior',minWidth:300},{dataField:'OPCION_PADRE',caption:'Respuesta que muestra esta pregunta',minWidth:250}];}
@@ -143,13 +145,13 @@ export class BecaCuestionarioComponent extends CBaseComponent implements OnChang
     const orden=this.filas.reduce((max,row)=>Math.max(max,'ORDEN' in row?row.ORDEN:0),0)+1;
     if(elemento===BecaElemento.Seccion){
       Object.assign(this.datos,nuevo?{NOMBRE_SECCION:'',DESCRIPCION:'',ORDEN:orden,PUNTAJE_MAXIMO:0,PORCENTAJE_SECCION:0}:fila);
-      this.datos.PORCENTAJE_SECCION=0;
-      this.itemsEditor=[this.texto('NOMBRE_SECCION','Nombre de la sección',200),this.numero('ORDEN','Orden',1),this.texto('DESCRIPCION','Descripción (opcional)',1000,false,true),this.numero('PUNTAJE_MAXIMO','Límite de puntos de la sección',0)];
+      this.datos.PORCENTAJE_SECCION ??= 0;
+      this.itemsEditor=[this.texto('NOMBRE_SECCION','Nombre de la sección',200),this.numero('ORDEN','Orden',1),this.texto('DESCRIPCION','Descripción (opcional)',1000,false,true),this.numero('PORCENTAJE_SECCION','Porcentaje de la sección (%)',0,100)];
     } else if(elemento===BecaElemento.Pregunta){
-      Object.assign(this.datos,nuevo?{TEXTO_PREGUNTA:'',AYUDA:'',ORDEN:orden,TIPO_RESPUESTA:'TEXTO',REQUERIDO:true}:fila);
+      Object.assign(this.datos,nuevo?{TEXTO_PREGUNTA:'',AYUDA:'',ORDEN:orden,TIPO_RESPUESTA:'TEXTO',REQUERIDO:true,PORCENTAJE_PREGUNTA:0}:fila);
       this.itemsEditor=[this.texto('TEXTO_PREGUNTA','¿Qué desea preguntar?',20000,true,true),this.texto('AYUDA','Ayuda para el aspirante (opcional)',1000,false,true),
         {dataField:'TIPO_RESPUESTA',label:{text:'¿Cómo responderá el aspirante?'},editorType:'dxSelectBox',editorOptions:{dataSource:this.tipos,valueExpr:'id',displayExpr:'text'},validationRules:[{type:'required'}]},
-        this.numero('ORDEN','Orden',1),{dataField:'REQUERIDO',label:{visible:false},editorType:'dxCheckBox',editorOptions:{text:'Respuesta obligatoria'}}];
+        this.numero('PORCENTAJE_PREGUNTA','Porcentaje de la pregunta (%)',0,this.secciones.find(s=>s.CORR_SECCION_BECA===this.seccionId)?.PORCENTAJE_SECCION ?? 0),this.numero('ORDEN','Orden',1),{dataField:'REQUERIDO',label:{visible:false},editorType:'dxCheckBox',editorOptions:{text:'Respuesta obligatoria'}}];
     } else if(elemento===BecaElemento.Opcion){
       Object.assign(this.datos,nuevo?{TEXTO_OPCION:'',ORDEN:orden}:fila);
       this.itemsEditor=[this.texto('TEXTO_OPCION','Texto de la respuesta que podrá seleccionar',500,true,true),this.numero('ORDEN','Orden',1)];
@@ -172,7 +174,27 @@ export class BecaCuestionarioComponent extends CBaseComponent implements OnChang
   }
   guardar():void {
     if(!this.edicion||!this.datos||this.loadingVisible||!this.dataForm?.instance?.validate().isValid)return;
+    const error=this.validarDistribucion(this.datos);
+    if(error){this.notifyFx(error,NotifyType.Error);return;}
     this.ejecutar(this.edicion,this.datos);
+  }
+  private validarDistribucion(data:BecaCuestionarioCambio):string|null {
+    const unidades=(valor:number|null|undefined)=>Math.round(Number(valor ?? 0)*100);
+    if(data.ELEMENTO===BecaElemento.Seccion){
+      const porcentaje=unidades(data.PORCENTAJE_SECCION);
+      const otras=this.secciones.filter(s=>s.CORR_SECCION_BECA!==data.ID).reduce((suma,s)=>suma+unidades(s.PORCENTAJE_SECCION),0);
+      if(porcentaje<0||porcentaje+otras>10000)return 'Los porcentajes de las secciones no pueden superar el 100 %.';
+      const preguntas=(this.contenido?.PREGUNTAS ?? []).filter(p=>p.CORR_SECCION_BECA===data.ID).reduce((suma,p)=>suma+unidades(p.PORCENTAJE_PREGUNTA),0);
+      if(preguntas>porcentaje)return 'Reduzca primero los porcentajes de las preguntas: superan el porcentaje de la sección.';
+    }
+    if(data.ELEMENTO===BecaElemento.Pregunta){
+      const seccion=this.secciones.find(s=>s.CORR_SECCION_BECA===data.CORR_SECCION_BECA);
+      const otras=(this.contenido?.PREGUNTAS ?? []).filter(p=>p.CORR_SECCION_BECA===data.CORR_SECCION_BECA&&p.CORR_PREGUNTA_BECA!==data.ID)
+        .reduce((suma,p)=>suma+unidades(p.PORCENTAJE_PREGUNTA),0);
+      const porcentaje=unidades(data.PORCENTAJE_PREGUNTA);
+      if(!seccion||porcentaje<0||otras+porcentaje>unidades(seccion.PORCENTAJE_SECCION))return 'Los porcentajes de las preguntas no pueden superar el porcentaje de su sección.';
+    }
+    return null;
   }
   override cancelar():void {if(this.loadingVisible)return;this.edicion=null;this.datos=undefined;this.AsignaStatus(UpdateType.Browse);this.pendiente.emit(false);}
   async quitar():Promise<void> {

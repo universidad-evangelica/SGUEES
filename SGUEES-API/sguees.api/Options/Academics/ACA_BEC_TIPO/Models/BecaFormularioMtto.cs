@@ -15,7 +15,7 @@ namespace SGUEES.Models
  public sealed class BecaVersionFila {
   public int CORR_FORMULARIO_BECA {get;set;} public int CORR_FORMULARIO_VERSION {get;set;} public string NOMBRE_FORMULARIO {get;set;}
   public string VERSION_FORMULARIO {get;set;} public DateTime FECHA_INICIO {get;set;} public DateTime? FECHA_FIN {get;set;}
-  public string ESTADO_VERSION {get;set;} public bool ACTIVO {get;set;} public int CANT_SECCIONES {get;set;} public int CANT_PREGUNTAS {get;set;}
+  public bool EVALUACION_PORCENTUAL {get;set;} public string ESTADO_VERSION {get;set;} public bool ACTIVO {get;set;} public int CANT_SECCIONES {get;set;} public int CANT_PREGUNTAS {get;set;}
   public int CANT_SOLICITUDES {get;set;} public byte[] VERSION_REGISTRO {get;set;}
  }
  public sealed class BecaAsignacionFila {

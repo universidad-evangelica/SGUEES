@@ -42,6 +42,7 @@ namespace SGUEES.Repositories {
      new(){ParameterName="@ORDEN",Value=(object)data.ORDEN??DBNull.Value,DbType=DbType.Int32},
      new(){ParameterName="@PUNTAJE_MAXIMO",Value=(object)data.PUNTAJE_MAXIMO??DBNull.Value,DbType=DbType.Decimal},
      new(){ParameterName="@PORCENTAJE_SECCION",Value=(object)data.PORCENTAJE_SECCION??DBNull.Value,DbType=DbType.Decimal},
+     new(){ParameterName="@PORCENTAJE_PREGUNTA",Value=(object)data.PORCENTAJE_PREGUNTA??DBNull.Value,DbType=DbType.Decimal},
      new(){ParameterName="@CODIGO_PREGUNTA",Value=(object)data.CODIGO_PREGUNTA??DBNull.Value,DbType=DbType.AnsiString,Size=50},
      new(){ParameterName="@TEXTO_PREGUNTA",Value=(object)data.TEXTO_PREGUNTA??DBNull.Value,DbType=DbType.AnsiString,Size=-1},
      new(){ParameterName="@AYUDA",Value=(object)data.AYUDA??DBNull.Value,DbType=DbType.AnsiString,Size=1000},

@@ -41,3 +41,39 @@ export function agruparMenuConfiguracionBecas(items:readonly BecasMenuItem[],pue
   let agregado=false;
   return hijos.flatMap(item=>{if(!candidatos.includes(item))return [item];if(agregado)return [];agregado=true;return grupos;});
 }
+
+export function agruparMenuBecas(items: readonly BecasMenuItem[]): BecasMenuItem[] {
+  return items.map(sistema => {
+    if (sistema['code'] !== 'ACADEMICS' || !sistema.items) return sistema;
+
+    const becas: BecasMenuItem[] = [];
+    const menus: (BecasMenuItem & { items: BecasMenuItem[] })[] = sistema.items.map(menu => ({
+      ...menu,
+      items: (menu.items || []).filter(opcion => {
+        const codigo = String(opcion['code'] || '');
+        const esBeca = !opcion.items?.length && codigo.startsWith('ACA_BEC_');
+        if (esBeca) becas.push(opcion);
+        return !esBeca;
+      }),
+    }));
+    if (!becas.length) return sistema;
+
+    const grupo: BecasMenuItem = {
+      code: 'BECAS', codeSistema: 'ACADEMICS', codeMenu: 'GENERAL',
+      text: 'Becas', icon: 'education', path: '',
+      order: Math.min(...becas.map(opcion => Number(opcion['order']) || 0)),
+      items: becas,
+    };
+    const general = menus.find(menu => menu['code'] === 'GENERAL');
+    if (general) {
+      general.items.push(grupo);
+    } else {
+      menus.push({
+        code: 'GENERAL', codeSistema: 'ACADEMICS', codeMenu: 'GENERAL',
+        text: 'Opciones Generales', icon: 'tableproperties', path: '', order: 1,
+        items: [grupo],
+      });
+    }
+    return { ...sistema, items: menus.filter(menu => menu.items.length > 0) };
+  });
+}
