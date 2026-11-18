@@ -23,12 +23,285 @@ namespace sguees.Repositories
 		private const string _ViewPersonaNatural = "V_GEN_PERSONA_NATURAL";
 		private const string _SpEmpleado = "PRAL_MTTO_GEN_EMPLEADO";
 		private readonly string _connectionString;
+	// Qué hace: define el CTE de organigrama y la consulta de visibilidad de empleados.
+// Cómo lo hace: incluye registros creados por el login, por usuarios de sus unidades jerárquicas o asignados a su ámbito.
+private const string SqlConsultaEmpleadosVisibles = @"
+;WITH EmpleadoSesion AS
+(
+	SELECT E.CORR_EMPRESA, E.CORR_EMPLEADO
+	FROM dbo.GEN_EMPLEADO E
+	INNER JOIN dbo.GEN_PERSONA_USUARIO PU ON PU.CORR_PERSONA = E.CORR_PERSONA
+	WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+	  AND LTRIM(RTRIM(PU.LOGIN_SISTEMA)) = @LOGIN_SISTEMA
+),
+UnidadesComoJefe AS
+(
+	SELECT DISTINCT JU.CORR_EMPRESA, JU.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES JU
+	INNER JOIN EmpleadoSesion ES
+		ON ES.CORR_EMPRESA = JU.CORR_EMPRESA
+	   AND ES.CORR_EMPLEADO = JU.CORR_EMPLEADO
+	WHERE JU.CORR_EMPRESA = @CORR_EMPRESA
+	  AND JU.ACTIVO = CONVERT(BIT, 1)
+),
+UnidadesHijasACargo AS
+(
+	SELECT H.CORR_EMPRESA, H.CORR_UNIDAD, 0 AS NIVEL
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES H
+	INNER JOIN UnidadesComoJefe J
+		ON J.CORR_EMPRESA = H.CORR_EMPRESA
+	   AND J.CORR_UNIDAD = H.CORR_UNIDAD_PADRE
+	WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+
+	UNION ALL
+
+	SELECT H.CORR_EMPRESA, H.CORR_UNIDAD, P.NIVEL + 1
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES H
+	INNER JOIN UnidadesHijasACargo P
+		ON P.CORR_EMPRESA = H.CORR_EMPRESA
+	   AND P.CORR_UNIDAD = H.CORR_UNIDAD_PADRE
+	WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+	  AND P.NIVEL < 20
+),
+UnidadesVisibles AS
+(
+	SELECT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesComoJefe
+	UNION
+	SELECT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesHijasACargo
+),
+UsuariosEnUnidadesVisibles AS
+(
+	SELECT DISTINCT LTRIM(RTRIM(PU.LOGIN_SISTEMA)) AS LOGIN_SISTEMA
+	FROM dbo.GEN_PERSONA_USUARIO PU
+	INNER JOIN dbo.GEN_EMPLEADO E
+		ON E.CORR_PERSONA = PU.CORR_PERSONA
+	INNER JOIN dbo.GEN_EMPLEADO_PUESTO EP
+		ON EP.CORR_EMPRESA = E.CORR_EMPRESA
+	   AND EP.CORR_EMPLEADO = E.CORR_EMPLEADO
+	INNER JOIN UnidadesVisibles U
+		ON U.CORR_EMPRESA = EP.CORR_EMPRESA
+	   AND U.CORR_UNIDAD = EP.CORR_UNIDAD
+	WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+	  AND ISNULL(PU.LOGIN_SISTEMA, '') <> ''
+)
+SELECT V.*
+FROM dbo.V_GEN_EMPLEADO V
+WHERE V.CORR_EMPRESA = @CORR_EMPRESA
+  AND (@CORR_EMPLEADO IS NULL OR @CORR_EMPLEADO <= 0 OR V.CORR_EMPLEADO = @CORR_EMPLEADO)
+  AND (
+		LTRIM(RTRIM(ISNULL(V.USUARIO_CREA, ''))) = @LOGIN_SISTEMA
+		OR LTRIM(RTRIM(ISNULL(V.USUARIO_CREA, ''))) IN (SELECT LOGIN_SISTEMA FROM UsuariosEnUnidadesVisibles)
+		OR EXISTS (
+			SELECT 1
+			FROM dbo.GEN_EMPLEADO_PUESTO EP
+			INNER JOIN UnidadesVisibles U
+				ON U.CORR_EMPRESA = EP.CORR_EMPRESA
+			   AND U.CORR_UNIDAD = EP.CORR_UNIDAD
+			WHERE EP.CORR_EMPRESA = V.CORR_EMPRESA
+			  AND EP.CORR_EMPLEADO = V.CORR_EMPLEADO
+		)
+  )
+ORDER BY V.CORR_EMPLEADO
+OPTION (MAXRECURSION 20);";
 
 		public GEN_EMPLEADORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)
 		{
 			_connectionString = config.GetConnectionString("defaultConnection") ?? string.Empty;
+		}
+
+		public async Task<CResult> GetAllVisibleAsync(int corrEmpresa, string login, int? corrEmpleado = null)
+		{
+			var result = new CResult();
+			if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				result.Data = new List<GEN_EMPLEADOView>();
+				result.Result = true;
+				result.RowsAffected = 0;
+				result.ErrorCode = 0;
+				return result;
+			}
+
+			try
+			{
+				var parameters = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new() { ParameterName = "CORR_EMPLEADO", Value = corrEmpleado ?? 0, DbType = DbType.Int32 },
+					new() { ParameterName = "LOGIN_SISTEMA", Value = login.Trim(), DbType = DbType.String },
+				};
+				var reader = await objData.GetDataReader(CommandType.Text, SqlConsultaEmpleadosVisibles, parameters);
+				var response = new List<GEN_EMPLEADOView>().FromDataReader(reader).ToList();
+				reader.Close();
+				result.Data = response;
+				result.Result = true;
+				result.RowsAffected = response.Count;
+				result.ErrorCode = 0;
+			}
+			catch (Exception e)
+			{
+				result.Result = false;
+				result.ErrorCode = -1;
+				result.ErrorMessage = e.Message;
+				result.ErrorSource = e.Source;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return result;
+		}
+
+		public async Task<CResult> GetVisibleAsync(int corrEmpresa, int corrEmpleado, string login)
+		{
+			var result = await GetAllVisibleAsync(corrEmpresa, login, corrEmpleado);
+			if (!result.Result)
+			{
+				return result;
+			}
+
+			var empleado = (result.Data as IEnumerable<GEN_EMPLEADOView>)?.FirstOrDefault();
+			result.Data = empleado;
+			result.RowsAffected = empleado == null ? 0 : 1;
+			return result;
+		}
+
+		public async Task<bool> PuedeVerEmpleadoAsync(int corrEmpresa, int corrEmpleado, string login)
+		{
+			if (corrEmpresa <= 0 || corrEmpleado <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return false;
+			}
+
+			var result = await GetVisibleAsync(corrEmpresa, corrEmpleado, login);
+			if (!result.Result)
+			{
+				throw new InvalidOperationException(result.ErrorMessage);
+			}
+
+			return result.Data is GEN_EMPLEADOView;
+		}
+
+		public async Task<bool> PuedeVerUnidadAsync(int corrEmpresa, int corrUnidad, string login)
+		{
+			if (corrEmpresa <= 0 || corrUnidad <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return false;
+			}
+
+			const string sql = @"
+;WITH EmpleadoSesion AS
+(
+	SELECT E.CORR_EMPRESA, E.CORR_EMPLEADO
+	FROM dbo.GEN_EMPLEADO E
+	INNER JOIN dbo.GEN_PERSONA_USUARIO PU ON PU.CORR_PERSONA = E.CORR_PERSONA
+	WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+	  AND LTRIM(RTRIM(PU.LOGIN_SISTEMA)) = @LOGIN_SISTEMA
+),
+UnidadesComoJefe AS
+(
+	SELECT DISTINCT JU.CORR_EMPRESA, JU.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES JU
+	INNER JOIN EmpleadoSesion ES
+		ON ES.CORR_EMPRESA = JU.CORR_EMPRESA
+	   AND ES.CORR_EMPLEADO = JU.CORR_EMPLEADO
+	WHERE JU.CORR_EMPRESA = @CORR_EMPRESA
+	  AND JU.ACTIVO = CONVERT(BIT, 1)
+),
+UnidadesDescendientes AS
+(
+	SELECT J.CORR_EMPRESA, J.CORR_UNIDAD, CAST('/' + CONVERT(VARCHAR(11), J.CORR_UNIDAD) + '/' AS VARCHAR(MAX)) AS CAMINO
+	FROM UnidadesComoJefe J
+
+	UNION ALL
+
+	SELECT U.CORR_EMPRESA, U.CORR_UNIDAD,
+		CAST(D.CAMINO + CONVERT(VARCHAR(11), U.CORR_UNIDAD) + '/' AS VARCHAR(MAX))
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES U
+	INNER JOIN UnidadesDescendientes D
+		ON D.CORR_EMPRESA = U.CORR_EMPRESA
+	   AND D.CORR_UNIDAD = U.CORR_UNIDAD_PADRE
+	WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+	  AND CHARINDEX('/' + CONVERT(VARCHAR(11), U.CORR_UNIDAD) + '/', D.CAMINO) = 0
+),
+UnidadesVisibles AS
+(
+	SELECT DISTINCT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesDescendientes
+)
+SELECT CASE WHEN EXISTS
+(
+	SELECT 1
+	FROM UnidadesVisibles
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_UNIDAD = @CORR_UNIDAD
+) THEN 1 ELSE 0 END
+OPTION (MAXRECURSION 32767);";
+
+			try
+			{
+				var parameters = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new() { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = DbType.Int32 },
+					new() { ParameterName = "LOGIN_SISTEMA", Value = login.Trim(), DbType = DbType.String },
+				};
+				var reader = await objData.GetDataReader(CommandType.Text, sql, parameters);
+				var allowed = reader.Read() && Convert.ToInt32(reader[0]) == 1;
+				reader.Close();
+				return allowed;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+		}
+
+		public async Task<bool> PuedeVerPersonaAsync(int corrEmpresa, long? corrPersona, long? corrPersonaNatural, string login)
+		{
+			if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(login) ||
+				(!corrPersona.HasValue || corrPersona.Value <= 0) &&
+				(!corrPersonaNatural.HasValue || corrPersonaNatural.Value <= 0))
+			{
+				return false;
+			}
+
+			const string sql = @"
+SELECT TOP 1 E.CORR_EMPLEADO
+FROM dbo.GEN_EMPLEADO E
+LEFT JOIN dbo.GEN_PERSONA_NATURAL PN ON PN.CORR_PERSONA = E.CORR_PERSONA
+WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+  AND (@CORR_PERSONA <= 0 OR E.CORR_PERSONA = @CORR_PERSONA)
+  AND (@CORR_PERSONA_NATURAL <= 0 OR PN.CORR_PERSONA_NATURAL = @CORR_PERSONA_NATURAL);";
+
+			var parameters = new List<CParameter>
+			{
+				new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+				new() { ParameterName = "CORR_PERSONA", Value = corrPersona ?? 0, DbType = DbType.Int64 },
+				new() { ParameterName = "CORR_PERSONA_NATURAL", Value = corrPersonaNatural ?? 0, DbType = DbType.Int64 },
+				new() { ParameterName = "LOGIN_SISTEMA", Value = login.Trim(), DbType = DbType.String },
+			};
+
+			int corrEmpleado;
+			try
+			{
+				var reader = await objData.GetDataReader(CommandType.Text, sql, parameters);
+				if (!reader.Read())
+				{
+					reader.Close();
+					return false;
+				}
+
+				corrEmpleado = Convert.ToInt32(reader[0]);
+				reader.Close();
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return await PuedeVerEmpleadoAsync(corrEmpresa, corrEmpleado, login);
 		}
 
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
@@ -598,6 +871,13 @@ namespace sguees.Repositories
 					var response = new List<GEN_EMPLEADOView>().FromDataReader(readerGet).FirstOrDefault();
 					readerGet.Close();
 
+					// Qué hace: al desactivar el empleado, anula automáticamente sus contratos vigentes o borradores.
+					// Cómo lo hace: si ACTIVO_EMPLEADO quedó en false, invoca AnularContratosPorInactivacionAsync en la misma transacción/contexto.
+					if (response != null && response.ACTIVO_EMPLEADO == false)
+					{
+						await AnularContratosPorInactivacionAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO, vLOGIN_SISTEMA, vESTACION);
+					}
+
 					objResultado.Data = response;
 					objResultado.Result = true;
 					objResultado.RowsAffected = 1;
@@ -631,6 +911,32 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
+		}
+
+		// Qué hace: anula automáticamente los contratos en estado BORRADOR (1) o VIGENTE (2) al desactivar al empleado.
+		// Cómo lo hace: actualiza ESTADO_CONTRATO = 4 con motivo descriptivo, fecha y usuario de auditoría.
+		private async Task AnularContratosPorInactivacionAsync(int corrEmpresa, int corrEmpleado, string login, string estacion)
+		{
+			const string sql = @"
+UPDATE dbo.GEN_EMPLEADO_CONTRATO
+SET ESTADO_CONTRATO = 4,
+    MOTIVO_ANULACION = 'Anulación automática por desactivación de empleado.',
+    USUARIO_ACTU = @LOGIN,
+    ESTACION_ACTU = @ESTACION,
+    FECHA_ACTU = GETDATE()
+WHERE CORR_EMPRESA = @CORR_EMPRESA
+  AND CORR_EMPLEADO = @CORR_EMPLEADO
+  AND ESTADO_CONTRATO IN (1, 2);";
+
+			var p = new List<CParameter>
+			{
+				new CParameter { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new CParameter { ParameterName = "@CORR_EMPLEADO", Value = corrEmpleado, DbType = System.Data.DbType.Int32 },
+				new CParameter { ParameterName = "@LOGIN", Value = login, DbType = System.Data.DbType.String },
+				new CParameter { ParameterName = "@ESTACION", Value = estacion ?? string.Empty, DbType = System.Data.DbType.String }
+			};
+
+			await objData.ExecCmd(System.Data.CommandType.Text, sql, false, p);
 		}
 
 		private async Task<int> GetNextCorrEmpleadoAsync(int corrEmpresa)

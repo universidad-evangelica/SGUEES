@@ -11,10 +11,10 @@ namespace sguees.Services
 {
 	public interface IGEN_EMPLEADO_CONTRATOService
 	{
-		Task<CResult> GetAllAsync(GEN_EMPLEADO_CONTRATOParam xWhere);
-		Task<CResult> GetAsync(GEN_EMPLEADO_CONTRATOParam xWhere);
-		Task<CResult> GetPlantillasActivasAsync(int corrEmpresa);
-		Task<CResult> PreviewAsync(GEN_EMPLEADO_CONTRATOAccionParam Data);
+		Task<CResult> GetAllAsync(GEN_EMPLEADO_CONTRATOParam xWhere, string login);
+		Task<CResult> GetAsync(GEN_EMPLEADO_CONTRATOParam xWhere, string login);
+		Task<CResult> GetPlantillasActivasAsync(int corrEmpresa, string login);
+		Task<CResult> PreviewAsync(GEN_EMPLEADO_CONTRATOAccionParam Data, string login);
 		Task<CResult> AsignarBorradorAsync(GEN_EMPLEADO_CONTRATOAccionParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> ActualizarBorradorAsync(GEN_EMPLEADO_CONTRATOAccionParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> EmitirAsync(GEN_EMPLEADO_CONTRATOAccionParam Data, string vLOGIN_SISTEMA, string vESTACION);
@@ -29,8 +29,9 @@ namespace sguees.Services
 			string vESTACION);
 		Task<(Stream Stream, string FileName)> GetDocumentoFirmadoAsync(
 			GEN_EMPLEADO_CONTRATOParam xWhere,
-			EmpleadoContratoStorage storage);
-		Task<CResult> DeleteBorradorAsync(GEN_EMPLEADO_CONTRATOParam Data, EmpleadoContratoStorage storage);
+			EmpleadoContratoStorage storage,
+			string login);
+		Task<CResult> DeleteBorradorAsync(GEN_EMPLEADO_CONTRATOParam Data, EmpleadoContratoStorage storage, string login);
 	}
 }
 

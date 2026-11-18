@@ -10,6 +10,7 @@ namespace sguees.Models
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_PLANTILLA_CONTRATO { get; set; }
+		public string LOGIN_SISTEMA { get; set; }
 	}
 }
 

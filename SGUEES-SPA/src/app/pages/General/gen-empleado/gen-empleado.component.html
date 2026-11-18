@@ -876,7 +876,7 @@
 									*ngIf="puedeGestionarContratos && contratoSeleccionadoEsBorrador"
 									class="empleado-descriptor-toolbar-btn"
 									icon="check"
-									text="Emitir"
+									text="Activar contrato"
 									type="success"
 									stylingMode="contained"
 									(onClick)="emitirContratoSeleccionado()"
@@ -988,7 +988,7 @@
 
 								<!-- motivo: ancho suficiente de 110px para que el caption 'Corr.' no se trunque a 'C...' junto a los iconos de ordenamiento y filtro -->
 								<dxi-column dataField="CORR_EMPLEADO_CONTRATO" caption="Corr." [width]="110" [minWidth]="95" dataType="number" alignment="center"></dxi-column>
-								<dxi-column dataField="NOMBRE_PLANTILLA" caption="Plantilla" [width]="240" [minWidth]="180"></dxi-column>
+								<dxi-column dataField="NOMBRE_TIPO_CONTRATACION" caption="Tipo de Contrato" [width]="240" [minWidth]="180"></dxi-column>
 								<dxi-column dataField="NOMBRE_VERSION" caption="Versión" [width]="115" [minWidth]="95"></dxi-column>
 								<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="220" [minWidth]="160"></dxi-column>
 								<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="220" [minWidth]="160"></dxi-column>
@@ -998,8 +998,8 @@
 								<dxi-column
 									dataField="ESTADO_CONTRATO"
 									caption="Estado"
-									[width]="130"
-									[minWidth]="115"
+									[width]="180"
+									[minWidth]="160"
 									alignment="center"
 									cellTemplate="estadoContratoTpl"
 								>
@@ -1007,7 +1007,7 @@
 								</dxi-column>
 								<div *dxTemplate="let cell of 'estadoContratoTpl'">
 									<span class="estado-badge" [ngClass]="cssEstadoContrato(cell.data?.ESTADO_CONTRATO)">
-										{{ cell.data?.NOMBRE_ESTADO_CONTRATO || cell.data?.ESTADO_CONTRATO }}
+										{{ textoEstadoContrato(cell.data?.ESTADO_CONTRATO, cell.data?.NOMBRE_ESTADO_CONTRATO) }}
 									</span>
 								</div>
 								<dxi-column
@@ -1025,7 +1025,7 @@
 										Sin adjunto
 									</span>
 								</div>
-								<dxi-column dataField="MOTIVO_ANULACION" caption="Motivo anulación" [width]="260" [minWidth]="180"></dxi-column>
+								<dxi-column dataField="MOTIVO_ANULACION" caption="Motivo anulación" [width]="420" [minWidth]="320" [allowResizing]="true"></dxi-column>
 
 								<!-- motivo: resumen Cantidad al pie de la tabla -->
 								<dxo-summary>
@@ -3173,20 +3173,20 @@
 
 						<div class="ep-grid">
 							<div class="ep-field ep-field--wide">
-								<label class="ep-label">Plantilla de contrato (versión activa) <span class="req">*</span></label>
+								<label class="ep-label">Tipo de Contrato <span class="req">*</span></label>
 								<dx-select-box
 									[items]="plantillasContratoActivas"
 									valueExpr="CORR_PLANTILLA_CONTRATO_VERSION"
-									displayExpr="NOMBRE_PLANTILLA"
+									displayExpr="NOMBRE_TIPO_CONTRATACION"
 									[(value)]="contratoFormDraft.CORR_PLANTILLA_CONTRATO_VERSION"
 									(onValueChanged)="programarPreviewModalContrato(0)"
 									[searchEnabled]="true"
 									itemTemplate="plantillaActivaTpl"
-									placeholder="Seleccione una plantilla"
+									placeholder="Seleccione el tipo de contrato"
 								>
 									<div *dxTemplate="let item of 'plantillaActivaTpl'">
-										<strong>{{ item.NOMBRE_PLANTILLA }}</strong>
-										<span> — {{ item.NOMBRE_VERSION }} ({{ item.NOMBRE_TIPO_CONTRATACION }})</span>
+										<strong>{{ item.NOMBRE_TIPO_CONTRATACION }}</strong>
+										<span> — {{ item.NOMBRE_VERSION }}</span>
 									</div>
 								</dx-select-box>
 							</div>

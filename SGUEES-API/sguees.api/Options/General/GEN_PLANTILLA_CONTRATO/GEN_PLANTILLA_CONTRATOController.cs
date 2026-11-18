@@ -32,7 +32,8 @@ namespace sguees.Controllers
 		public async Task<CResult> GetAll([FromQuery] GEN_PLANTILLA_CONTRATOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			Data.LOGIN_SISTEMA = GetUsuario();
+			return await _service.GetAllAsync(Data, GetUsuario());
 		}
 
 		// Qué hace: obtiene una plantilla de contrato por su correlativo.
@@ -42,7 +43,8 @@ namespace sguees.Controllers
 		public async Task<CResult> Get([FromQuery] GEN_PLANTILLA_CONTRATOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAsync(Data);
+			Data.LOGIN_SISTEMA = GetUsuario();
+			return await _service.GetAsync(Data, GetUsuario());
 		}
 
 		// Qué hace: registra una nueva plantilla de contrato.
@@ -79,13 +81,13 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
-		// Qué hace: entrega el catálogo agrupado de parámetros disponibles para redactar contratos.
-		// Cómo lo hace: llama a GetParametrosDisponibles del servicio bajo la política de lectura del módulo.
+		// Qué hace: entrega el catálogo agrupado de parámetros disponibles para redactar contratos desde la vista SQL.
+		// Cómo lo hace: llama a GetParametrosDisponiblesAsync del servicio bajo la política de lectura del módulo.
 		[HttpGet("GetParametrosDisponibles")]
 		[Authorize(Policy = "/gen-plantilla-contrato|R")]
-		public CResult GetParametrosDisponibles()
+		public async Task<CResult> GetParametrosDisponibles()
 		{
-			return _service.GetParametrosDisponibles();
+			return await _service.GetParametrosDisponiblesAsync();
 		}
 
 		// Qué hace: obtiene el historial completo de versiones de una plantilla de contrato.
@@ -95,6 +97,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetVersiones([FromQuery] GEN_PLANTILLA_CONTRATOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
+			Data.LOGIN_SISTEMA = GetUsuario();
 			return await _service.GetVersionesAsync(Data);
 		}
 
@@ -140,6 +143,20 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		// Qué hace: inactiva la versión vigente seleccionada y la deja en Borrador.
+		// Cómo lo hace: asigna empresa desde claims y delega en InactivarPlantillaAsync con usuario y estación HTTP.
+		[HttpPost("InactivarPlantilla")]
+		[Authorize(Policy = "/gen-plantilla-contrato|U")]
+		public async Task<IActionResult> InactivarPlantilla([FromBody] GEN_PLANTILLA_CONTRATO_VERSIONParam Data)
+		{
+			if (Data != null)
+			{
+				Data.CORR_EMPRESA = GetCorrEmpresa();
+			}
+			var resultado = await _service.InactivarPlantillaAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
 		// Qué hace: obtiene la bitácora cronológica de cambios de una plantilla de contrato.
 		// Cómo lo hace: inyecta CORR_EMPRESA desde claims y consulta GetBitacoraAsync del servicio.
 		[HttpGet("GetBitacora")]
@@ -147,6 +164,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetBitacora([FromQuery] GEN_PLANTILLA_CONTRATOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
+			Data.LOGIN_SISTEMA = GetUsuario();
 			return await _service.GetBitacoraAsync(Data);
 		}
 

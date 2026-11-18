@@ -105,7 +105,6 @@
 .contrato-param-chip {
 	width: 100%;
 	text-align: left;
-	font-family: 'Consolas', 'Courier New', monospace;
 	font-size: 11.5px;
 	font-weight: 600;
 	padding: 6px 9px;
@@ -507,6 +506,20 @@
 	p {
 		margin: 0;
 	}
+}
+
+p.contrato-motivo-modal__hint {
+	margin: 0;
+}
+
+.contrato-motivo-modal__versiones {
+	margin-top: 4px;
+}
+
+// Qué hace: mantiene el listado del selector por encima del sombreado del modal.
+// Cómo lo hace: el overlay se pinta en el body, así que el z-index no puede depender del host.
+::ng-deep .plantilla-version-dropdown.dx-overlay-wrapper {
+	z-index: 30000 !important;
 }
 
 .contrato-motivo-modal__actions {

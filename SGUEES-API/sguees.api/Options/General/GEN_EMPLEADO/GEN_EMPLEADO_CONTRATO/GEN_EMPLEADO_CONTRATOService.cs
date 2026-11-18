@@ -30,43 +30,58 @@ namespace sguees.Services
 
 		// Qué hace: lista los contratos del empleado seleccionado.
 		// Cómo lo hace: delega a GetAllAsync validando CORR_EMPLEADO > 0.
-		public Task<CResult> GetAllAsync(GEN_EMPLEADO_CONTRATOParam xWhere)
+		public async Task<CResult> GetAllAsync(GEN_EMPLEADO_CONTRATOParam xWhere, string login)
 		{
 			if (xWhere == null || xWhere.CORR_EMPLEADO <= 0)
 			{
-				return Task.FromResult(BuildError(-1, "Debe seleccionar un empleado válido."));
+				return BuildError(-1, "Debe seleccionar un empleado válido.");
 			}
 
-			return _repo.GetAllAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO);
+			if (!await _repo.PuedeVerEmpleadoAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO, login))
+			{
+				return BuildError(-403, "No tiene acceso a los contratos de este empleado.");
+			}
+
+			return await _repo.GetAllAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO, login);
 		}
 
 		// Qué hace: obtiene el detalle completo de un contrato incluyendo su HTML congelado.
 		// Cómo lo hace: valida parámetros y delega en el repositorio.
-		public Task<CResult> GetAsync(GEN_EMPLEADO_CONTRATOParam xWhere)
+		public Task<CResult> GetAsync(GEN_EMPLEADO_CONTRATOParam xWhere, string login)
 		{
 			if (xWhere == null || xWhere.CORR_EMPLEADO_CONTRATO <= 0)
 			{
 				return Task.FromResult(BuildError(-1, "Debe seleccionar un contrato válido."));
 			}
 
-			return _repo.GetAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO_CONTRATO);
+			return _repo.GetAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO_CONTRATO, login);
 		}
 
 		// Qué hace: lista plantillas de contrato que poseen versión activa disponible.
 		// Cómo lo hace: delega a GetPlantillasActivasAsync con CORR_EMPRESA del token.
-		public Task<CResult> GetPlantillasActivasAsync(int corrEmpresa)
+		public Task<CResult> GetPlantillasActivasAsync(int corrEmpresa, string login)
 		{
-			return _repo.GetPlantillasActivasAsync(corrEmpresa);
+			return _repo.GetPlantillasActivasAsync(corrEmpresa, login);
 		}
 
 		// Qué hace: genera la vista previa HTML del contrato sin persistirlo en la base de datos.
 		// Cómo lo hace: consulta el contexto actual del empleado/puesto e interpola la plantilla seleccionada.
-		public async Task<CResult> PreviewAsync(GEN_EMPLEADO_CONTRATOAccionParam Data)
+		public async Task<CResult> PreviewAsync(GEN_EMPLEADO_CONTRATOAccionParam Data, string login)
 		{
 			if (Data == null || Data.CORR_EMPLEADO <= 0 || Data.CORR_PLANTILLA_CONTRATO_VERSION <= 0)
 			{
 				return BuildError(-1, "Debe seleccionar empleado y plantilla con versión activa.");
 			}
+
+			var acceso = await ValidarAccesoGeneracionAsync(Data, login);
+			if (acceso != null)
+			{
+				return acceso;
+			}
+
+			// Qué hace: invoca GetContextoGeneracionAsync pasando FECHA_FIRMA o FECHA_INICIO como referencia para resolver Rectoría.
+			// Cómo lo hace: en PreviewAsync, AsignarBorradorAsync y GuardarEdicionBorradorAsync toma la fecha de firma o inicio.
+			var fechaReferencia = Data.FECHA_FIRMA ?? (Data.FECHA_INICIO != default ? Data.FECHA_INICIO : (DateTime?)null);
 
 			var ctx = await _repo.GetContextoGeneracionAsync(
 				Data.CORR_EMPRESA,
@@ -74,7 +89,8 @@ namespace sguees.Services
 				Data.CORR_PLANTILLA_CONTRATO_VERSION,
 				Data.CORR_UNIDAD,
 				Data.CORR_PUESTO,
-				corrMovimiento: null);
+				corrMovimiento: null,
+				fechaReferencia: fechaReferencia);
 
 			var errorCtx = ValidarContextoGeneracion(ctx);
 			if (errorCtx != null)
@@ -102,14 +118,25 @@ namespace sguees.Services
 				return validacion;
 			}
 
+			var acceso = await ValidarAccesoGeneracionAsync(Data, vLOGIN_SISTEMA);
+			if (acceso != null)
+			{
+				return acceso;
+			}
+
+			// Qué hace: invoca GetContextoGeneracionAsync pasando FECHA_FIRMA o FECHA_INICIO como referencia para resolver Rectoría.
+			// Cómo lo hace: en PreviewAsync, AsignarBorradorAsync y GuardarEdicionBorradorAsync toma la fecha de firma o inicio.
+			var fechaReferencia = Data.FECHA_FIRMA ?? (Data.FECHA_INICIO != default ? Data.FECHA_INICIO : (DateTime?)null);
+
 			var ctx = await _repo.GetContextoGeneracionAsync(
 				Data.CORR_EMPRESA,
 				Data.CORR_EMPLEADO,
 				Data.CORR_PLANTILLA_CONTRATO_VERSION,
 				Data.CORR_UNIDAD,
 				Data.CORR_PUESTO,
-				corrMovimiento: null);
-
+				corrMovimiento: null,
+				fechaReferencia: fechaReferencia);
+				
 			var errorCtx = ValidarContextoGeneracion(ctx);
 			if (errorCtx != null)
 			{
@@ -124,7 +151,7 @@ namespace sguees.Services
 					Data.CORR_EMPRESA, Data.CORR_EMPLEADO, Data.CORR_PUESTO.Value);
 				if (existe)
 				{
-					return BuildError(-4, "Ya existe un contrato BORRADOR o VIGENTE para este empleado en el puesto seleccionado. Finalice o anule el contrato existente antes de crear uno nuevo.");
+					return BuildError(-4, "Ya existe un contrato para este puesto");
 				}
 			}
 
@@ -180,7 +207,7 @@ namespace sguees.Services
 				return validacion;
 			}
 
-			var actualRes = await _repo.GetAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO_CONTRATO);
+			var actualRes = await _repo.GetAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO_CONTRATO, vLOGIN_SISTEMA);
 			if (!actualRes.Result || actualRes.Data is not GEN_EMPLEADO_CONTRATOView actual)
 			{
 				return actualRes;
@@ -191,16 +218,29 @@ namespace sguees.Services
 				return BuildError(-2, "Solo los contratos en estado BORRADOR pueden modificarse.");
 			}
 
+			if (!await _repo.PuedeUsarPlantillaVersionAsync(
+				Data.CORR_EMPRESA,
+				Data.CORR_PLANTILLA_CONTRATO_VERSION,
+				vLOGIN_SISTEMA))
+			{
+				return BuildError(-403, "No tiene acceso a esta plantilla de contrato.");
+			}
+
 			string cuerpoFinal;
 			if (Data.REGENERAR_CONTENIDO || string.IsNullOrWhiteSpace(Data.CUERPO_CONTRATO))
 			{
+				// Qué hace: invoca GetContextoGeneracionAsync pasando FECHA_FIRMA o FECHA_INICIO como referencia para resolver Rectoría.
+				// Cómo lo hace: en PreviewAsync, AsignarBorradorAsync y GuardarEdicionBorradorAsync toma la fecha de firma o inicio.
+				var fechaReferencia = Data.FECHA_FIRMA ?? (Data.FECHA_INICIO != default ? Data.FECHA_INICIO : (DateTime?)null);
+
 				var ctx = await _repo.GetContextoGeneracionAsync(
 					Data.CORR_EMPRESA,
-					actual.CORR_EMPLEADO,
+					Data.CORR_EMPLEADO,
 					Data.CORR_PLANTILLA_CONTRATO_VERSION,
 					Data.CORR_UNIDAD,
 					Data.CORR_PUESTO,
-					corrMovimiento: null);
+					corrMovimiento: null,
+					fechaReferencia: fechaReferencia);
 
 				var errorCtx = ValidarContextoGeneracion(ctx);
 				if (errorCtx != null)
@@ -256,7 +296,7 @@ namespace sguees.Services
 				return BuildError(-1, "Debe seleccionar el contrato a emitir.");
 			}
 
-			var actualRes = await _repo.GetAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO_CONTRATO);
+			var actualRes = await _repo.GetAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO_CONTRATO, vLOGIN_SISTEMA);
 			if (!actualRes.Result || actualRes.Data is not GEN_EMPLEADO_CONTRATOView actual)
 			{
 				return actualRes;
@@ -279,14 +319,20 @@ namespace sguees.Services
 
 		// Qué hace: marca un contrato VIGENTE como FINALIZADO al concluir su período.
 		// Cómo lo hace: delega transición VIGENTE -> FINALIZADO al repositorio transaccional.
-		public Task<CResult> FinalizarAsync(GEN_EMPLEADO_CONTRATOAccionParam Data, string vLOGIN_SISTEMA, string vESTACION)
+		public async Task<CResult> FinalizarAsync(GEN_EMPLEADO_CONTRATOAccionParam Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			if (Data == null || Data.CORR_EMPLEADO_CONTRATO <= 0)
 			{
-				return Task.FromResult(BuildError(-1, "Debe seleccionar el contrato a finalizar."));
+				return BuildError(-1, "Debe seleccionar el contrato a finalizar.");
 			}
 
-			return _repo.CambiarEstadoAsync(
+			var actualRes = await _repo.GetAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO_CONTRATO, vLOGIN_SISTEMA);
+			if (!actualRes.Result || actualRes.Data is not GEN_EMPLEADO_CONTRATOView)
+			{
+				return actualRes;
+			}
+
+			return await _repo.CambiarEstadoAsync(
 				Data.CORR_EMPRESA,
 				Data.CORR_EMPLEADO_CONTRATO,
 				estadoDestino: 3,
@@ -298,25 +344,31 @@ namespace sguees.Services
 
 		// Qué hace: anula un contrato BORRADOR o VIGENTE exigiendo motivo de anulación.
 		// Cómo lo hace: valida MOTIVO_ANULACION obligatorio y delega al repositorio con bloqueo en BD.
-		public Task<CResult> AnularAsync(GEN_EMPLEADO_CONTRATOAccionParam Data, string vLOGIN_SISTEMA, string vESTACION)
+		public async Task<CResult> AnularAsync(GEN_EMPLEADO_CONTRATOAccionParam Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			if (Data == null || Data.CORR_EMPLEADO_CONTRATO <= 0)
 			{
-				return Task.FromResult(BuildError(-1, "Debe seleccionar el contrato a anular."));
+				return BuildError(-1, "Debe seleccionar el contrato a anular.");
 			}
 
 			var motivo = Data.MOTIVO_ANULACION?.Trim();
 			if (string.IsNullOrWhiteSpace(motivo))
 			{
-				return Task.FromResult(BuildError(-2, "Debe ingresar el motivo de anulación del contrato."));
+				return BuildError(-2, "Debe ingresar el motivo de anulación del contrato.");
 			}
 
 			if (motivo.Length > 500)
 			{
-				return Task.FromResult(BuildError(-3, "El motivo de anulación no puede exceder 500 caracteres."));
+				return BuildError(-3, "El motivo de anulación no puede exceder 500 caracteres.");
 			}
 
-			return _repo.CambiarEstadoAsync(
+			var actualRes = await _repo.GetAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO_CONTRATO, vLOGIN_SISTEMA);
+			if (!actualRes.Result || actualRes.Data is not GEN_EMPLEADO_CONTRATOView)
+			{
+				return actualRes;
+			}
+
+			return await _repo.CambiarEstadoAsync(
 				Data.CORR_EMPRESA,
 				Data.CORR_EMPLEADO_CONTRATO,
 				estadoDestino: 4,
@@ -341,7 +393,7 @@ namespace sguees.Services
 				return BuildError(-1, "Debe seleccionar el contrato al que adjuntará el documento firmado.");
 			}
 
-			var actualRes = await _repo.GetAsync(corrEmpresa, corrEmpleadoContrato);
+			var actualRes = await _repo.GetAsync(corrEmpresa, corrEmpleadoContrato, vLOGIN_SISTEMA);
 			if (!actualRes.Result || actualRes.Data is not GEN_EMPLEADO_CONTRATOView actual)
 			{
 				return actualRes;
@@ -386,14 +438,15 @@ namespace sguees.Services
 		// Cómo lo hace: consulta el registro por llave, resuelve la ruta segura en disco y retorna Stream + nombre original.
 		public async Task<(Stream Stream, string FileName)> GetDocumentoFirmadoAsync(
 			GEN_EMPLEADO_CONTRATOParam xWhere,
-			EmpleadoContratoStorage storage)
+			EmpleadoContratoStorage storage,
+			string login)
 		{
 			if (xWhere == null || xWhere.CORR_EMPLEADO_CONTRATO <= 0)
 			{
 				return (null, null);
 			}
 
-			var res = await _repo.GetAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO_CONTRATO);
+			var res = await _repo.GetAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO_CONTRATO, login);
 			if (!res.Result || res.Data is not GEN_EMPLEADO_CONTRATOView contrato)
 			{
 				return (null, null);
@@ -414,19 +467,24 @@ namespace sguees.Services
 
 		// Qué hace: elimina un contrato BORRADOR y limpia cualquier archivo previo asociado en disco.
 		// Cómo lo hace: consulta ruta actual, borra en BD validando estado BORRADOR y elimina archivo físico si aplica.
-		public async Task<CResult> DeleteBorradorAsync(GEN_EMPLEADO_CONTRATOParam Data, EmpleadoContratoStorage storage)
+		public async Task<CResult> DeleteBorradorAsync(
+			GEN_EMPLEADO_CONTRATOParam Data,
+			EmpleadoContratoStorage storage,
+			string login)
 		{
 			if (Data == null || Data.CORR_EMPLEADO_CONTRATO <= 0)
 			{
 				return BuildError(-1, "Debe seleccionar el contrato a eliminar.");
 			}
 
-			var actualRes = await _repo.GetAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO_CONTRATO);
+			var actualRes = await _repo.GetAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO_CONTRATO, login);
 			string rutaAnterior = null;
-			if (actualRes.Result && actualRes.Data is GEN_EMPLEADO_CONTRATOView actual)
+			if (!actualRes.Result || actualRes.Data is not GEN_EMPLEADO_CONTRATOView actual)
 			{
-				rutaAnterior = actual.RUTA_ARCHIVO;
+				return actualRes;
 			}
+
+			rutaAnterior = actual.RUTA_ARCHIVO;
 
 			var delRes = await _repo.DeleteBorradorAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO_CONTRATO);
 			if (delRes.Result && !string.IsNullOrWhiteSpace(rutaAnterior))
@@ -435,6 +493,26 @@ namespace sguees.Services
 			}
 
 			return delRes;
+		}
+
+		private async Task<CResult> ValidarAccesoGeneracionAsync(
+			GEN_EMPLEADO_CONTRATOAccionParam data,
+			string login)
+		{
+			if (!await _repo.PuedeVerEmpleadoAsync(data.CORR_EMPRESA, data.CORR_EMPLEADO, login))
+			{
+				return BuildError(-403, "No tiene acceso a este empleado.");
+			}
+
+			if (!await _repo.PuedeUsarPlantillaVersionAsync(
+				data.CORR_EMPRESA,
+				data.CORR_PLANTILLA_CONTRATO_VERSION,
+				login))
+			{
+				return BuildError(-403, "No tiene acceso a esta plantilla de contrato.");
+			}
+
+			return null;
 		}
 
 		private static CResult ValidarDatosContrato(GEN_EMPLEADO_CONTRATOAccionParam data)
@@ -472,6 +550,11 @@ namespace sguees.Services
 			if (ctx == null || !ctx.PlantillaEncontrada)
 			{
 				return BuildError(-2, "La versión de plantilla seleccionada no existe o no pertenece a la empresa actual.");
+			}
+
+			if (!ctx.VersionActiva)
+			{
+				return BuildError(-2, "La versión seleccionada está en histórico o borrador y no puede usarse.");
 			}
 
 			if (!ctx.EmpleadoEncontrado)
@@ -591,6 +674,19 @@ namespace sguees.Services
 			var tipoContratacion = FirstNonEmpty(ctx.TipoContratacionPuesto, ctx.NombreTipoContratacionPlantilla);
 			var ciudadFirma = FirstNonEmpty(ctx.EmpresaMunicipio, "San Salvador");
 
+			// Qué hace: formatea el nombre del rector o representante patronal en mayúsculas de manera uniforme.
+			// Cómo lo hace: selecciona el primer valor no vacío (Rectoría u Empresa) y lo convierte a ToUpperInvariant().
+			var nombreRector = FirstNonEmpty(ctx.RectorNombre, ctx.EmpresaRepresentante);
+			if (!string.IsNullOrWhiteSpace(nombreRector))
+			{
+				nombreRector = nombreRector.Replace("Dr.", "Dr. ").Replace("Lic.", "Lic. ").Trim();
+				while (nombreRector.Contains("  "))
+				{
+					nombreRector = nombreRector.Replace("  ", " ");
+				}
+				nombreRector = nombreRector.ToUpperInvariant();
+			}
+
 			return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 			{
 				["EMPRESA_NOMBRE_LARGO"] = FirstNonEmpty(ctx.EmpresaNombreLargo, ctx.EmpresaNombre),
@@ -598,7 +694,7 @@ namespace sguees.Services
 				["EMPRESA_DIRECCION"] = FirstNonEmpty(ctx.EmpresaDireccionLargo, ctx.EmpresaDireccion),
 				["SUCURSAL_NOMBRE"] = ctx.SucursalNombre ?? string.Empty,
 
-				["RECTOR_NOMBRE"] = FirstNonEmpty(ctx.RectorNombre, ctx.EmpresaRepresentante),
+				["RECTOR_NOMBRE"] = nombreRector ?? string.Empty,
 				["RECTOR_PUESTO"] = ctx.RectorPuesto ?? string.Empty,
 				["RECTOR_DUI"] = ctx.RectorDui ?? string.Empty,
 				["RECTOR_EDAD"] = ctx.RectorEdad.HasValue ? ctx.RectorEdad.Value.ToString(CultureInfo.InvariantCulture) : string.Empty,

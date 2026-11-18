@@ -8,8 +8,8 @@ namespace sguees.Services
 {
 	public interface IGEN_PARAMETRO_PLANTILLA_VERSIONService
 	{
-		Task<CResult> GetAllAsync(GEN_PARAMETRO_PLANTILLA_VERSIONParam xWhere);
-		Task<CResult> GetAsync(GEN_PARAMETRO_PLANTILLA_VERSIONParam xWhere);
+		Task<CResult> GetAllAsync(GEN_PARAMETRO_PLANTILLA_VERSIONParam xWhere, string login);
+		Task<CResult> GetAsync(GEN_PARAMETRO_PLANTILLA_VERSIONParam xWhere, string login);
 		Task<CResult> CreateAsync(GEN_PARAMETRO_PLANTILLA_VERSIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> ActivarVersionAsync(int corrEmpresa, int corrPlantilla, int numeroVersion, string vLOGIN_SISTEMA, string vESTACION);
 	}

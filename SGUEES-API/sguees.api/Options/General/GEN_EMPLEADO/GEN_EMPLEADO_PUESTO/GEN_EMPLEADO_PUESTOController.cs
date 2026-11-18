@@ -29,7 +29,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/gen-empleado|R")]
 		public async Task<CResult> GetAll([FromQuery] GEN_EMPLEADO_PUESTOParam Data)
 		{
-			return await _service.GetAllAsync(Data, GetCorrEmpresa());
+			return await _service.GetAllAsync(Data, GetCorrEmpresa(), GetUsuario());
 		}
 
 		[HttpPut("SaveAll")]
@@ -61,7 +61,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/sc-requisicion-personal|R")]
 		public async Task<CResult> GetCORR_EMPLEADO_SUSTITUTO_SC_REQUISICION_PERSONAL([FromQuery] GEN_EMPLEADO_PUESTOParam Data)
 		{
-			return await _service.GetEmpleadosSustitutosAsync(Data.CORR_UNIDAD, Data.CORR_PUESTO, GetCorrEmpresa());
+			return await _service.GetEmpleadosSustitutosAsync(Data.CORR_UNIDAD, Data.CORR_PUESTO, GetCorrEmpresa(), GetUsuario());
 		}
 
 		private int GetCorrEmpresa()

@@ -17,6 +17,7 @@ import {
 	GenPlantillaContratoBitacora,
 	GenPlantillaContratoVersion,
 	GrupoParametrosContrato,
+	ParametroContratoItem,
 } from './models/gen-plantilla-contrato';
 import { GenPlantillaContratoService } from './gen-plantilla-contrato.service';
 
@@ -50,6 +51,23 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 	creandoNuevaVersion = false;
 	observacionNuevaVersion = '';
 	modalMotivoVersionVisible = false;
+	modalGestionEstadoVisible = false;
+	modalInactivarVisible = false;
+	accionGestionEstado: 'activar' | 'inactivar' = 'activar';
+	versionActivarId: number | null = null;
+	modoInactivar: 'todas' | 'una' = 'todas';
+	versionInactivarId: number | null = null;
+	versionesParaActivarModal: GenPlantillaContratoVersion[] = [];
+	versionesInactivablesModal: GenPlantillaContratoVersion[] = [];
+	readonly opcionesDropdownVersion = {
+		wrapperAttr: { class: 'plantilla-version-dropdown' },
+		hideOnParentScroll: false,
+		zIndex: 30000,
+	};
+	readonly opcionesInactivar = [
+		{ id: 'todas', text: 'Inactivar todas las elegibles' },
+		{ id: 'una', text: 'Inactivar una versión específica' },
+	];
 	activeTabIndex = 0;
 	filtroParametro = '';
 	readOnly = false;
@@ -258,6 +276,11 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		this.creandoNuevaVersion = false;
 		this.observacionNuevaVersion = '';
 		this.modalMotivoVersionVisible = false;
+		this.modalGestionEstadoVisible = false;
+		this.modalInactivarVisible = false;
+		this.modoInactivar = 'todas';
+		this.versionInactivarId = null;
+		this.versionActivarId = null;
 		this.payloadPendienteNuevaVersion = null;
 		this.ultimoBloqueoToolbar = null;
 		this.desvincularEventosEditor();
@@ -267,20 +290,23 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		this.imagenArrastrada = null;
 	}
 
-	// Qué hace: indica si la versión seleccionada en el selector puede editarse directamente.
-	// Cómo lo hace: habilita edición únicamente cuando es una versión v2+ activa fuera de modo consulta o creación.
-	get puedeEditarVersionSeleccionada(): boolean {
+	// Qué hace: indica si la plantilla no tiene ninguna versión publicada como activa.
+	// Cómo lo hace: combina CORR_VERSION_ACTIVA del modelo con ES_VERSION_ACTIVA de la lista de versiones.
+	get esPlantillaBorrador(): boolean {
 		return (
-			!this.readOnly &&
-			!this.creandoNuevaVersion &&
-			!!this.versionSeleccionada &&
-			this.versionSeleccionada.ES_VERSION_ACTIVA &&
-			Number(this.versionSeleccionada.NUMERO_VERSION) > 1
+			Number(this.model?.CORR_VERSION_ACTIVA ?? 0) <= 0 &&
+			!this.versiones.some((v) => v.ES_VERSION_ACTIVA)
 		);
 	}
 
+	// Qué hace: indica si la versión seleccionada en el selector puede editarse directamente.
+	// Cómo lo hace: habilita cualquier versión guardada, incluida la Versión 1, mientras el formulario esté en edición.
+	get puedeEditarVersionSeleccionada(): boolean {
+		return !this.readOnly && !this.creandoNuevaVersion && !!this.versionSeleccionada;
+	}
+
 	// Qué hace: indica si el área del editor debe mantenerse bloqueada contra edición directa.
-	// Cómo lo hace: bloquea en consulta, Versión 1 e históricas; habilita en Borrador, creación de nueva versión o versión v2+ activa.
+	// Cómo lo hace: bloquea solo en consulta; habilita el borrador sin versiones, la nueva versión y cualquier versión guardada.
 	get editorReadOnly(): boolean {
 		if (this.readOnly) {
 			return true;
@@ -288,7 +314,10 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		if (this.creandoNuevaVersion || this.puedeEditarVersionSeleccionada) {
 			return false;
 		}
-		return this.versiones.length > 0 || Number(this.model?.CORR_VERSION_ACTIVA ?? 0) > 0;
+		if (this.versiones.length === 0) {
+			return false;
+		}
+		return !this.esPlantillaBorrador;
 	}
 
 	// Qué hace: verifica si la plantilla ya cuenta con la versión base v1.
@@ -298,20 +327,152 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 	}
 
 	// Qué hace: determina si puede iniciarse una nueva versión a partir de v1.
-	// Cómo lo hace: exige modo edición activo, no estar ya en redacción de nueva versión y contar con v1.
+	// Cómo lo hace: exige modo edición, plantilla ya publicada (no borrador), no estar redactando otra versión y contar con v1.
 	get puedeCrearNuevaVersion(): boolean {
-		return !this.readOnly && !this.creandoNuevaVersion && this.tieneVersionV1;
+		return !this.readOnly && !this.creandoNuevaVersion && this.tieneVersionV1 && !this.esPlantillaBorrador;
 	}
 
-	// Qué hace: determina si la versión histórica mostrada puede establecerse como vigente.
-	// Cómo lo hace: habilita activación únicamente para versiones v2+ inactivas en modo edición (v1 permanece histórica).
+	// Qué hace: indica si hay una plantilla enfocada en la grilla de browse.
+	// Cómo lo hace: exige modo browse y CORR_PLANTILLA_CONTRATO válido en model o fila enfocada.
+	get hayPlantillaSeleccionada(): boolean {
+		if (!this.isBrowse()) {
+			return false;
+		}
+		const corr = Number(
+			this.model?.CORR_PLANTILLA_CONTRATO ??
+				this.dataGrid?.focusedRowData?.['CORR_PLANTILLA_CONTRATO'] ??
+				0
+		);
+		return corr > 0;
+	}
+
+	// Qué hace: etiqueta dinámica del botón Activar/Inactivar en la barra browse.
+	// Cómo lo hace: vacío sin selección; 1 versión => Activar o Inactivar; varias => Activar/Inactivar.
+	get textoBtnEstadoPlantilla(): string {
+		if (!this.hayPlantillaSeleccionada) {
+			return '';
+		}
+		return Number(this.model?.CORR_VERSION_ACTIVA ?? 0) > 0 ? 'Inactivar' : 'Activar';
+	}
+
+	// Qué hace: icono del botón de estado según Activar o Inactivar.
+	// Cómo lo hace: check para Activar/Activar-Inactivar y close para Inactivar.
+	get iconoBtnEstadoPlantilla(): string {
+		return this.textoBtnEstadoPlantilla === 'Inactivar' ? 'close' : 'check';
+	}
+
+	// Qué hace: tipo visual del botón de estado en la barra.
+	// Cómo lo hace: danger al inactivar y success/default al activar o gestionar varias.
+	get tipoBtnEstadoPlantilla(): string {
+		const texto = this.textoBtnEstadoPlantilla;
+		if (texto === 'Inactivar') {
+			return 'danger';
+		}
+		if (texto === 'Activar') {
+			return 'success';
+		}
+		return 'default';
+	}
+
+	// Qué hace: determina si la versión mostrada, o el borrador sin versiones, puede publicarse.
+	// Cómo lo hace: habilita Activar en modo edición cuando hay versiones no activas o plantilla sin versiones.
 	get puedeActivarVersion(): boolean {
+		if (this.readOnly || this.creandoNuevaVersion) {
+			return false;
+		}
+		if (this.versionSeleccionada) {
+			return !this.versionSeleccionada.ES_VERSION_ACTIVA;
+		}
+		return this.versiones.length === 0 && Number(this.model?.CORR_PLANTILLA_CONTRATO ?? 0) > 0;
+	}
+
+	// Qué hace: muestra Activar en el editor cuando hay versiones no activas (o borrador sin versiones).
+	// Cómo lo hace: verifica que no esté en modo de solo lectura y que existan versiones no activas, incluida la Versión 1.
+	get mostrarBotonActivar(): boolean {
+		if (this.readOnly || this.creandoNuevaVersion) {
+			return false;
+		}
+		if (this.versionSeleccionada) {
+			return !this.versionSeleccionada.ES_VERSION_ACTIVA;
+		}
+		return this.versiones.length === 0 && Number(this.model?.CORR_PLANTILLA_CONTRATO ?? 0) > 0;
+	}
+
+	// Qué hace: muestra Inactivar en el editor cuando hay versiones activas.
+	// Cómo lo hace: verifica que no esté en modo solo lectura ni creando nueva versión y exista al menos una versión activa.
+	get mostrarBotonInactivar(): boolean {
+		if (this.readOnly || this.creandoNuevaVersion) {
+			return false;
+		}
+		return this.versionSeleccionada
+			? this.versionSeleccionada.ES_VERSION_ACTIVA
+			: Number(this.model?.CORR_VERSION_ACTIVA ?? 0) > 0;
+	}
+
+	// Qué hace: mantiene compatibilidad hacia atrás con referencias al botón directo de inactivación.
+	// Cómo lo hace: delega en mostrarBotonInactivar.
+	get mostrarBotonInactivarDirecto(): boolean {
+		return this.mostrarBotonInactivar;
+	}
+
+	// Qué hace: mantiene compatibilidad hacia atrás con referencias al botón modal de inactivación.
+	// Cómo lo hace: delega en mostrarBotonInactivar.
+	get mostrarBotonInactivarModal(): boolean {
+		return this.mostrarBotonInactivar;
+	}
+
+	// Qué hace: devuelve el título para el modal unificado de gestión de estado.
+	// Cómo lo hace: adapta el título según la acción activa en el modal (activar o inactivar).
+	get tituloModalGestionEstado(): string {
+		return this.accionGestionEstado === 'activar'
+			? 'Activar Versión de Plantilla'
+			: 'Inactivar Versión de Plantilla';
+	}
+
+	// Qué hace: lista las versiones no activas que el modal puede ofrecer para activar.
+	// Cómo lo hace: incluye la Versión 1 y cualquier versión posterior que no esté vigente.
+	get versionesParaActivar(): GenPlantillaContratoVersion[] {
+		return this.versiones.filter((v) => !v.ES_VERSION_ACTIVA);
+	}
+
+	// Qué hace: filtra únicamente las versiones activas que NO están asociadas a un empleado.
+	// Cómo lo hace: excluye versiones marcadas con TIENE_EMPLEADOS por el servicio.
+	get versionesInactivables(): GenPlantillaContratoVersion[] {
+		const tieneVersionesActivasRestantes = (version: GenPlantillaContratoVersion): boolean =>
+			this.versiones.some(
+				(item) =>
+					item.ES_VERSION_ACTIVA &&
+					Number(item.CORR_PLANTILLA_CONTRATO_VERSION) !== Number(version.CORR_PLANTILLA_CONTRATO_VERSION)
+			);
+		const algunaTieneEmpleados = this.versiones.some((version) => this.versionTieneEmpleados(version));
+		return this.versiones.filter(
+			(version) =>
+				version.ES_VERSION_ACTIVA &&
+				!this.versionTieneEmpleados(version) &&
+				(tieneVersionesActivasRestantes(version) || !algunaTieneEmpleados)
+		);
+	}
+
+	// Qué hace: valida si una versión específica se encuentra vinculada a contratos de empleados.
+	// Cómo lo hace: consulta la bandera TIENE_EMPLEADOS devuelta junto con el historial.
+	versionTieneEmpleados(version?: Partial<GenPlantillaContratoVersion> | null): boolean {
+		return version?.TIENE_EMPLEADOS === true;
+	}
+
+	// Qué hace: determina si la versión activa puede inactivarse manualmente.
+	// Cómo lo hace: exige modo edición y valida asignaciones propias y las que impedirían dejar todas inactivas.
+	get puedeInactivarVersion(): boolean {
+		const version = this.versionSeleccionada ?? this.versiones.find((item) => item.ES_VERSION_ACTIVA);
 		return (
 			!this.readOnly &&
 			!this.creandoNuevaVersion &&
-			!!this.versionSeleccionada &&
-			!this.versionSeleccionada.ES_VERSION_ACTIVA &&
-			Number(this.versionSeleccionada.NUMERO_VERSION) > 1
+			!!version &&
+			version.ES_VERSION_ACTIVA &&
+			this.versionesInactivables.some(
+				(item) =>
+					Number(item.CORR_PLANTILLA_CONTRATO_VERSION) ===
+					Number(version.CORR_PLANTILLA_CONTRATO_VERSION)
+			)
 		);
 	}
 
@@ -334,7 +495,7 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 			return 'estado-badge--nueva-version';
 		}
 		if (this.versionSeleccionada) {
-			return this.versionSeleccionada.ES_VERSION_ACTIVA ? 'estado-badge--activo' : 'estado-badge--historica';
+			return this.claseEstadoVersion(this.versionSeleccionada);
 		}
 		return Number(this.model?.CORR_VERSION_ACTIVA ?? 0) > 0 ? 'estado-badge--activo' : 'estado-badge--borrador';
 	}
@@ -371,7 +532,7 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 	}
 
 	// Qué hace: construye el texto informativo mostrado bajo la barra de versiones.
-	// Cómo lo hace: indica si la versión v2+ activa está habilitada para edición o si Versión 1 o históricas permanecen en solo lectura.
+	// Cómo lo hace: indica que cualquier versión, incluida la Versión 1, puede editarse y activarse.
 	get notaSoloLecturaVersionTexto(): string {
 		const obs = `${this.versionSeleccionada?.OBSERVACION ?? ''}`.trim();
 		const detalleObs = obs ? ` Observación: ${obs}` : '';
@@ -379,17 +540,17 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		if (this.readOnly) {
 			return `Visualizando ${nombreVersion} (${this.estadoVersionTexto}).${detalleObs}`;
 		}
-		if (this.puedeEditarVersionSeleccionada) {
+		if (this.esPlantillaBorrador && this.puedeEditarVersionSeleccionada) {
+			return `${nombreVersion} está en Borrador y puede editarse. Presione Guardar para conservar cambios y Activar para publicarla.${detalleObs}`;
+		}
+		if (this.versionSeleccionada?.ES_VERSION_ACTIVA) {
 			return `${nombreVersion} está habilitada para edición (versión activa). Puede modificar el formato y presionar Guardar, o crear una Nueva Versión desde la Versión 1.${detalleObs}`;
 		}
-		if (Number(this.versionSeleccionada?.NUMERO_VERSION) === 1) {
-			return `${nombreVersion} es el Formato Padre y permanece en solo lectura (inhabilitada). Para modificar el formato cree una Nueva Versión desde la Versión 1.${detalleObs}`;
-		}
-		return `${nombreVersion} está inactiva (solo lectura). Use "Activar Versión" para volver a habilitarla o cree una Nueva Versión desde la Versión 1.${detalleObs}`;
+		return `${nombreVersion} puede editarse y activarse. Al activarla, la versión activa anterior pasará a histórico.${detalleObs}`;
 	}
 
 	// Qué hace: resuelve la etiqueta de estado visible para una versión guardada.
-	// Cómo lo hace: retorna 'Activa' si está vigente, 'Formato Padre' para la Versión 1 inactiva e 'Inactiva' para versiones v2+ anteriores.
+	// Cómo lo hace: prioriza el estado calculado por el servicio y usa la bandera activa como respaldo.
 	obtenerEtiquetaEstadoVersion(version?: Partial<GenPlantillaContratoVersion> | null): string {
 		if (!version) {
 			return '';
@@ -397,7 +558,41 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		if (version.ES_VERSION_ACTIVA) {
 			return 'Activa';
 		}
-		return Number(version.NUMERO_VERSION) === 1 ? 'Formato Padre' : 'Inactiva';
+		if (version.ESTADO_VERSION) {
+			return version.ESTADO_VERSION;
+		}
+		if (this.esVersionBorrador(version)) {
+			return 'Borrador';
+		}
+		return 'Histórica';
+	}
+
+	// Qué hace: identifica versiones en Borrador cuando el servicio no devuelve el estado calculado.
+	// Cómo lo hace: sin versión activa todas las versiones inactivas son borrador; de lo contrario, aplica respaldo por número.
+	private esVersionBorrador(version: Partial<GenPlantillaContratoVersion>): boolean {
+		if (version.ESTADO_VERSION) {
+			return version.ESTADO_VERSION === 'Borrador';
+		}
+		if (this.esPlantillaBorrador) {
+			return true;
+		}
+		const numeroMasReciente = this.versiones.reduce(
+			(max, item) => Math.max(max, Number(item.NUMERO_VERSION) || 0),
+			0
+		);
+		return !version.ES_VERSION_ACTIVA && Number(version.NUMERO_VERSION ?? 0) === numeroMasReciente;
+	}
+
+	// Qué hace: entrega la clase CSS correspondiente al estado de una versión.
+	// Cómo lo hace: deriva activo, borrador o histórico con la misma regla usada por la etiqueta visible.
+	claseEstadoVersion(version?: Partial<GenPlantillaContratoVersion> | null): string {
+		if (!version) {
+			return 'estado-badge--borrador';
+		}
+		if (version.ES_VERSION_ACTIVA) {
+			return 'estado-badge--activo';
+		}
+		return this.esVersionBorrador(version) ? 'estado-badge--borrador' : 'estado-badge--historica';
 	}
 
 	// Qué hace: sincroniza model.CUERPO_PLANTILLA directamente desde la instancia de dx-html-editor.
@@ -494,6 +689,24 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 	// Cómo lo hace: concatena {{ y }} alrededor de la clave sin interferir con la interpolación de Angular.
 	formatToken(key: string): string {
 		return `{{${key}}}`;
+	}
+
+	// Qué hace: devuelve el texto del tooltip para un parámetro disponible en el panel.
+	// Cómo lo hace: muestra el token insertable {{param.key}} evitando exponer nombres técnicos de vistas o tablas SQL.
+	obtenerTooltipParametro(param: ParametroContratoItem): string {
+		if (!param?.key) {
+			return '';
+		}
+		const desc = `${param.descripcion ?? ''}`.trim();
+		const esNombreTecnico =
+			!desc ||
+			desc.includes('.') ||
+			desc.startsWith('V_') ||
+			desc.startsWith('GEN_') ||
+			desc.startsWith('SC_') ||
+			desc.startsWith('PLA_');
+
+		return esNombreTecnico ? this.formatToken(param.key) : `${desc} — ${this.formatToken(param.key)}`;
 	}
 
 	// Qué hace: arma el filtro por correlativo de plantilla.
@@ -794,52 +1007,483 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		this.actualizarOpcionesBotonFirmas();
 	}
 
-	// Qué hace: activa una versión histórica v2+ previa confirmación del usuario.
-	// Cómo lo hace: invoca activarVersion, parchea versiones y fila del grid en memoria y recarga bitácora sin GetAll.
-	activarVersionSeleccionada(): void {
-		const target = this.versionSeleccionada;
-		if (this.readOnly || this.creandoNuevaVersion || !target || target.ES_VERSION_ACTIVA || Number(target.NUMERO_VERSION) <= 1) {
+	// Qué hace: actualiza la plantilla enfocada y las versiones disponibles para el modal de estado.
+	// Cómo lo hace: delega en focusedRowChanged base y consulta getVersiones de la fila seleccionada.
+	override focusedRowChanged(e: any): void {
+		super.focusedRowChanged(e);
+		const corr = Number(e?.row?.data?.CORR_PLANTILLA_CONTRATO ?? this.model?.CORR_PLANTILLA_CONTRATO ?? 0);
+		if (corr <= 0) {
+			return;
+		}
+		this.cargarVersionesSeleccionada(corr);
+	}
+
+	// Qué hace: consulta versiones y asignaciones de empleados de la plantilla enfocada en browse.
+	// Cómo lo hace: llama getVersiones y actualiza el historial solo si la fila sigue enfocada.
+	private cargarVersionesSeleccionada(corrPlantilla: number): void {
+		this.service
+			.getVersiones(corrPlantilla)
+			.pipe(take(1))
+			.subscribe({
+				next: (res: any) => {
+					if (Number(this.model?.CORR_PLANTILLA_CONTRATO ?? 0) !== corrPlantilla) {
+						return;
+					}
+					if (res?.Result && Array.isArray(res.Data)) {
+						this.versiones = res.Data.map((v: GenPlantillaContratoVersion) =>
+							this.normalizarVersionItem(v)
+						);
+					}
+				},
+				error: (err: any) => this.notifyApiError(err),
+			});
+	}
+
+	// Qué hace: ejecuta Activar, Inactivar o el modal según la cantidad de versiones de la fila seleccionada.
+	// Cómo lo hace: con 1 versión actúa directo; con varias abre el modal Activar/Inactivar.
+	onBtnEstadoPlantillaClick(): void {
+		if (!this.hayPlantillaSeleccionada) {
+			return;
+		}
+		if (Number(this.model?.CORR_VERSION_ACTIVA ?? 0) > 0) {
+			this.abrirModalGestionEstado('inactivar');
+			return;
+		}
+		this.abrirModalGestionEstado('activar');
+	}
+
+	// Qué hace: abre el modal de gestión de estado de versiones (activar/inactivar).
+	// Cómo lo hace: valida la selección de plantilla, carga sus versiones si no están en memoria y despliega el modal.
+	abrirModalGestionEstado(accion?: 'activar' | 'inactivar'): void {
+		let corrPlantilla = Number(this.model?.CORR_PLANTILLA_CONTRATO ?? 0);
+		if (corrPlantilla <= 0) {
+			const selectedRows = this.dataGrid?.gData?.instance?.getSelectedRowsData?.() ?? [];
+			if (selectedRows.length > 0 && selectedRows[0]?.CORR_PLANTILLA_CONTRATO) {
+				this.model = selectedRows[0];
+				corrPlantilla = Number(this.model.CORR_PLANTILLA_CONTRATO);
+			}
+		}
+
+		if (corrPlantilla <= 0) {
+			this.notifyFx(
+				'Debe seleccionar una plantilla para gestionar su estado.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
 			return;
 		}
 
-		this.confirmaAccion(
-			'Activar Versión',
-			`¿Desea establecer ${target.NOMBRE_VERSION} como la versión activa de la plantilla?`,
-			() => {
-				this.loadingVisible = true;
-				this.service
-					.activarVersion({
-						CORR_PLANTILLA_CONTRATO: Number(this.model.CORR_PLANTILLA_CONTRATO),
-						CORR_PLANTILLA_CONTRATO_VERSION: Number(target.CORR_PLANTILLA_CONTRATO_VERSION),
-					})
-					.pipe(take(1))
-					.subscribe({
-						next: (response: any) => {
-							if (response?.Result && response.Data) {
-								const activada = this.normalizarVersionItem(response.Data as GenPlantillaContratoVersion);
-								this.versiones = this.versiones.map((v) =>
-									Number(v.CORR_PLANTILLA_CONTRATO_VERSION) === Number(activada.CORR_PLANTILLA_CONTRATO_VERSION)
-										? activada
-										: { ...v, ES_VERSION_ACTIVA: false }
-								);
-								this.versionSeleccionada = activada;
-								this.aplicarVersionActivaEnModelo(activada);
-								this.aplicarCuerpoEnEditor(activada.CUERPO_PLANTILLA ?? '');
-								this.actualizarOpcionesBotonFirmas();
-								this.cargarBitacora(activada.CORR_PLANTILLA_CONTRATO);
-								this.notifyFx(`${activada.NOMBRE_VERSION} activada con éxito.`, NotifyType.Success, { raw: true });
-							} else {
-								this.notifyApiResponse(response);
-							}
-							this.loadingVisible = false;
-						},
-						error: (error: any) => {
-							this.notifyApiError(error);
-							this.loadingVisible = false;
-						},
-					});
-			}
+		if (
+			this.versiones.length > 0 &&
+			Number(this.versiones[0].CORR_PLANTILLA_CONTRATO) === corrPlantilla
+		) {
+			this.inicializarModalGestionEstado(accion);
+			this.modalGestionEstadoVisible = true;
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.getVersiones(corrPlantilla)
+			.pipe(take(1))
+			.subscribe({
+				next: (res: any) => {
+					this.loadingVisible = false;
+					if (res?.Result && Array.isArray(res.Data)) {
+						this.versiones = res.Data.map((v: GenPlantillaContratoVersion) =>
+							this.normalizarVersionItem(v)
+						);
+					} else {
+						this.versiones = [];
+					}
+					if (accion === 'activar' && this.versiones.length === 0) {
+						this.notifyFx(
+							'La plantilla no tiene versiones. Ábrala en edición, guarde el contenido y actívela.',
+							NotifyType.Warning,
+							{ raw: true }
+						);
+						return;
+					}
+					this.inicializarModalGestionEstado(accion);
+					this.modalGestionEstadoVisible = true;
+				},
+				error: (err: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(err);
+				},
+			});
+	}
+
+	// Qué hace: inicializa los valores y selección por defecto del modal de gestión de estado.
+	// Cómo lo hace: configura acción (activar/inactivar), preselecciona versión elegible y modo de inactivación.
+	private inicializarModalGestionEstado(accion?: 'activar' | 'inactivar'): void {
+		this.refrescarListasModalEstado();
+		if (accion) {
+			this.accionGestionEstado = accion;
+		} else {
+			this.accionGestionEstado =
+				Number(this.model?.CORR_VERSION_ACTIVA ?? 0) > 0 ? 'inactivar' : 'activar';
+		}
+		this.configurarSeleccionModalEstado();
+	}
+
+	// Qué hace: congela las listas del modal para que el selector no se reinicie en cada detección de cambios.
+	// Cómo lo hace: copia las versiones activables e inactivables en arreglos estables mientras el modal está abierto.
+	private refrescarListasModalEstado(): void {
+		this.versionesParaActivarModal = this.versionesParaActivar
+			.slice()
+			.sort((a, b) => Number(a.NUMERO_VERSION) - Number(b.NUMERO_VERSION));
+		this.versionesInactivablesModal = this.versionesInactivables.slice();
+	}
+
+	// Qué hace: ajusta la versión preseleccionada al cambiar o inicializar el tipo de acción en el modal.
+	// Cómo lo hace: conserva la versión consultada si se puede activar, incluida la Versión 1; si no, elige la de mayor número.
+	private configurarSeleccionModalEstado(): void {
+		if (this.accionGestionEstado === 'activar') {
+			const corrPlantilla = Number(this.model?.CORR_PLANTILLA_CONTRATO ?? 0);
+			const vista = this.versionSeleccionada;
+			const vistaAplica =
+				!!vista &&
+				!vista.ES_VERSION_ACTIVA &&
+				Number(vista.CORR_PLANTILLA_CONTRATO) === corrPlantilla &&
+				this.versionesParaActivarModal.some(
+					(v) => Number(v.CORR_PLANTILLA_CONTRATO_VERSION) === Number(vista.CORR_PLANTILLA_CONTRATO_VERSION)
+				);
+			const masReciente = this.versionesParaActivarModal[this.versionesParaActivarModal.length - 1];
+			const target = vistaAplica ? vista : masReciente;
+			this.versionActivarId = target?.CORR_PLANTILLA_CONTRATO_VERSION ?? null;
+		} else {
+			const target =
+				this.versionSeleccionada &&
+				this.versionSeleccionada.ES_VERSION_ACTIVA &&
+				!this.versionTieneEmpleados(this.versionSeleccionada)
+					? this.versionSeleccionada
+					: this.versionesInactivables[0];
+			this.modoInactivar = 'todas';
+			this.versionInactivarId = target?.CORR_PLANTILLA_CONTRATO_VERSION ?? null;
+		}
+	}
+
+	// Qué hace: guarda la versión elegida en el modal de activación.
+	// Cómo lo hace: aplica solo el cambio disparado por el usuario para no revertir la selección.
+	onVersionActivarChanged(e: any): void {
+		if (!e || !Object.prototype.hasOwnProperty.call(e, 'value')) {
+			return;
+		}
+		this.versionActivarId = e.value ?? null;
+	}
+
+	// Qué hace: cierra el modal de gestión de estado sin realizar cambios.
+	// Cómo lo hace: oculta modalGestionEstadoVisible.
+	cerrarModalGestionEstado(): void {
+		this.modalGestionEstadoVisible = false;
+	}
+
+	// Qué hace: confirma la activación de la versión seleccionada en el modal.
+	// Cómo lo hace: localiza la versión objetivo, advierte que la anterior pasará a histórica y ejecuta la activación.
+	confirmarModalActivar(): void {
+		const target = this.versiones.find(
+			(v) => Number(v.CORR_PLANTILLA_CONTRATO_VERSION) === Number(this.versionActivarId)
 		);
+		if (!target) {
+			this.notifyFx(
+				'Debe seleccionar una versión para activar.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		this.modalGestionEstadoVisible = false;
+		const versionActivaActual = this.versiones.find((v) => v.ES_VERSION_ACTIVA);
+		const mensajeConfirmacion = versionActivaActual
+			? `¿Desea activar ${target.NOMBRE_VERSION}? Al activar una nueva versión, la versión activa anterior (${versionActivaActual.NOMBRE_VERSION}) pasará automáticamente a estado "HISTÓRICA".`
+			: `¿Desea establecer ${target.NOMBRE_VERSION} como la versión activa de la plantilla?`;
+
+		this.confirmaAccion('Activar', mensajeConfirmacion, () => this.ejecutarActivarVersion(target));
+	}
+
+	// Qué hace: confirma la inactivación de las versiones seleccionadas en el modal.
+	// Cómo lo hace: valida versiones sin empleados, cierra el modal y ejecuta la inactivación.
+	confirmarModalInactivar(): void {
+		const elegibles = this.versionesInactivables;
+		if (elegibles.length === 0) {
+			this.notifyFx(
+				'No se puede inactivar la versión porque existe una asignación de empleado. Debe crear una nueva versión.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		const objetivos =
+			this.modoInactivar === 'todas'
+				? elegibles
+				: elegibles.filter(
+						(v) => Number(v.CORR_PLANTILLA_CONTRATO_VERSION) === Number(this.versionInactivarId)
+				  );
+
+		if (!objetivos.length) {
+			this.notifyFx(
+				'Debe seleccionar una versión no asociada a empleados para inactivar.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+
+		this.modalGestionEstadoVisible = false;
+		this.ejecutarInactivarVersiones(objetivos);
+	}
+
+	// Qué hace: activa la versión seleccionada o abre el modal de activación.
+	// Cómo lo hace: si no hay versiones activa el borrador; si hay versiones abre el modal de gestión de estado.
+	activarVersionSeleccionada(): void {
+		if (this.versiones.length === 0) {
+			this.activarBorradorSinVersion();
+			return;
+		}
+		this.abrirModalGestionEstado('activar');
+	}
+
+	// Qué hace: abre el modal para inactivar versiones no asociadas a empleados.
+	// Cómo lo hace: delega en abrirModalGestionEstado con acción 'inactivar'.
+	inactivarVersionSeleccionada(): void {
+		this.abrirModalGestionEstado('inactivar');
+	}
+
+	// Qué hace: abre el modal de inactivación manteniendo compatibilidad con llamadas existentes.
+	// Cómo lo hace: invoca abrirModalGestionEstado con acción 'inactivar'.
+	abrirModalInactivar(): void {
+		this.abrirModalGestionEstado('inactivar');
+	}
+
+	// Qué hace: cierra el modal de inactivación/gestión de estado.
+	// Cómo lo hace: invoca cerrarModalGestionEstado.
+	cerrarModalInactivar(): void {
+		this.cerrarModalGestionEstado();
+	}
+
+	// Qué hace: guarda el contenido del borrador sin versiones y lo publica como Versión 1.
+	// Cómo lo hace: exige HTML no vacío, actualiza la plantilla y encadena la activación al terminar el guardado.
+	private activarBorradorSinVersion(): void {
+		const cuerpoActual = this.sincronizarCuerpoDesdeEditor();
+		if (this.esCuerpoVacio(cuerpoActual)) {
+			this.notifyFx('El contenido no puede quedar vacío para activar la plantilla.', NotifyType.Warning, { raw: true });
+			return;
+		}
+
+		this.confirmaAccion('Activar', '¿Desea guardar el contenido y activar la Versión 1?', () => {
+			this.ejecutarGuardado(
+				{
+					...this.model,
+					CUERPO_PLANTILLA: cuerpoActual,
+				},
+				false,
+				true,
+				true
+			);
+		});
+	}
+
+	// Qué hace: publica la versión indicada y deja la anterior en histórico.
+	// Cómo lo hace: llama a activarVersion y parchea versiones, modelo y bitácora sin GetAll.
+	private ejecutarActivarVersion(target: GenPlantillaContratoVersion): void {
+		this.loadingVisible = true;
+		this.service
+			.activarVersion({
+				CORR_PLANTILLA_CONTRATO: Number(this.model.CORR_PLANTILLA_CONTRATO),
+				CORR_PLANTILLA_CONTRATO_VERSION: Number(target.CORR_PLANTILLA_CONTRATO_VERSION),
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && response.Data) {
+						const versionLocal = this.versiones.find(
+							(v) => Number(v.CORR_PLANTILLA_CONTRATO_VERSION) === Number(target.CORR_PLANTILLA_CONTRATO_VERSION)
+						);
+						const activada = {
+							...this.normalizarVersionItem(response.Data as GenPlantillaContratoVersion),
+							ESTADO_VERSION: 'Activa' as const,
+							TIENE_EMPLEADOS: versionLocal?.TIENE_EMPLEADOS ?? target.TIENE_EMPLEADOS,
+						};
+						this.versiones = this.versiones.map((v) => {
+							if (
+								Number(v.CORR_PLANTILLA_CONTRATO_VERSION) ===
+								Number(activada.CORR_PLANTILLA_CONTRATO_VERSION)
+							) {
+								return activada;
+							}
+							return {
+								...v,
+								ES_VERSION_ACTIVA: false,
+								ESTADO_VERSION: v.ES_VERSION_ACTIVA ? 'Histórica' : v.ESTADO_VERSION,
+							};
+						});
+						this.versionSeleccionada = activada;
+						this.aplicarVersionActivaEnModelo(activada);
+						if (this.htmlEditor?.instance) {
+							this.aplicarCuerpoEnEditor(activada.CUERPO_PLANTILLA ?? '');
+						}
+						this.actualizarOpcionesBotonFirmas();
+						this.cargarBitacora(activada.CORR_PLANTILLA_CONTRATO);
+						this.notifyFx(`${activada.NOMBRE_VERSION} activada con éxito.`, NotifyType.Success, { raw: true });
+						this.notificarAvisoEmpleado(response);
+					} else {
+						this.notificarRespuestaEstado(response);
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.notificarErrorEstado(error);
+					this.loadingVisible = false;
+				},
+			});
+	}
+
+	// Qué hace: inactiva las versiones indicadas y refleja Borrador cuando ya no queda ninguna activa.
+	// Cómo lo hace: valida asignaciones localmente y procesa las solicitudes del servicio.
+	private ejecutarInactivarVersiones(objetivos: GenPlantillaContratoVersion[]): void {
+		if (!objetivos.length) {
+			return;
+		}
+		if (objetivos.some((version) => this.versionTieneEmpleados(version))) {
+			this.notifyFx(
+				'No se puede inactivar una versión asignada a un empleado. Debe crear una nueva versión.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+		this.loadingVisible = true;
+		const requests = objetivos.map((target) =>
+			this.service.inactivarPlantilla({
+				CORR_PLANTILLA_CONTRATO: Number(this.model.CORR_PLANTILLA_CONTRATO),
+				CORR_PLANTILLA_CONTRATO_VERSION: Number(target.CORR_PLANTILLA_CONTRATO_VERSION),
+			})
+		);
+		forkJoin(requests)
+			.pipe(take(1))
+			.subscribe({
+				next: (responses: any[]) => {
+					const avisoEmpleado = responses.find((response) =>
+						this.esAvisoAsignacionEmpleado(response?.ErrorMessage ?? response?.message ?? '')
+					);
+
+					if (avisoEmpleado) {
+						this.notifyFx(
+							'No se puede inactivar una versión asignada a un empleado. Debe crear una nueva versión.',
+							NotifyType.Warning,
+							{ raw: true }
+						);
+						this.loadingVisible = false;
+						return;
+					}
+
+					const fallida = responses.find((response) => !response?.Result || !response?.Data);
+					if (fallida) {
+						this.notificarRespuestaEstado(fallida);
+						this.loadingVisible = false;
+						return;
+					}
+
+					const inactivadas = responses.map((response) =>
+						this.normalizarVersionItem(response.Data as GenPlantillaContratoVersion)
+					);
+					const ids = new Set(inactivadas.map((v) => Number(v.CORR_PLANTILLA_CONTRATO_VERSION)));
+					this.versiones = this.versiones.map((v) => {
+						const reemplazo = inactivadas.find(
+							(item) => Number(item.CORR_PLANTILLA_CONTRATO_VERSION) === Number(v.CORR_PLANTILLA_CONTRATO_VERSION)
+						);
+						return reemplazo
+							? {
+									...reemplazo,
+									ES_VERSION_ACTIVA: false,
+									ESTADO_VERSION: 'Borrador',
+									TIENE_EMPLEADOS: v.TIENE_EMPLEADOS,
+							  }
+							: ids.has(Number(v.CORR_PLANTILLA_CONTRATO_VERSION))
+							? { ...v, ES_VERSION_ACTIVA: false }
+							: v;
+					});
+					const quedaActiva = this.versiones.some((v) => v.ES_VERSION_ACTIVA);
+					const visible = inactivadas[inactivadas.length - 1];
+					this.versionSeleccionada =
+						this.versiones.find(
+							(v) => Number(v.CORR_PLANTILLA_CONTRATO_VERSION) === Number(visible?.CORR_PLANTILLA_CONTRATO_VERSION)
+						) ?? visible ?? this.versionSeleccionada;
+					if (!quedaActiva) {
+						this.aplicarPlantillaBorradorEnModelo(this.versionSeleccionada);
+					}
+					if (this.htmlEditor?.instance && this.versionSeleccionada) {
+						this.aplicarCuerpoEnEditor(this.versionSeleccionada.CUERPO_PLANTILLA ?? '');
+					}
+					this.actualizarOpcionesBotonFirmas();
+					if (Number(this.model.CORR_PLANTILLA_CONTRATO) > 0) {
+						this.cargarBitacora(Number(this.model.CORR_PLANTILLA_CONTRATO));
+					}
+					this.notifyFx(
+						objetivos.length > 1
+							? 'Versiones inactivadas. Pasaron a estado Borrador.'
+							: `${visible?.NOMBRE_VERSION ?? 'Versión'} inactivada. Pasó a estado Borrador.`,
+						NotifyType.Success,
+						{ raw: true }
+					);
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.notificarErrorEstado(error);
+					this.loadingVisible = false;
+				},
+			});
+	}
+
+	// Qué hace: muestra como advertencia el aviso de plantilla asignada a un empleado.
+	// Cómo lo hace: detecta el texto de asignación y usa NotifyType.Warning sin tratarlo como error.
+	private notificarAvisoEmpleado(response: any): void {
+		const mensaje = `${response?.ErrorMessage ?? ''}`.trim();
+		if (this.esAvisoAsignacionEmpleado(mensaje)) {
+			this.notifyFx(mensaje, NotifyType.Warning, { raw: true });
+		}
+	}
+
+	// Qué hace: distingue el aviso de asignación a empleado de un error de operación.
+	// Cómo lo hace: si el mensaje indica que un empleado tiene la plantilla, lo muestra como Warning.
+	private notificarRespuestaEstado(response: any): void {
+		const mensaje = `${response?.ErrorMessage ?? ''}`.trim();
+		if (this.esAvisoAsignacionEmpleado(mensaje)) {
+			this.notifyFx(
+				'No se puede inactivar la versión porque existe una asignación de empleado. Debe crear una nueva versión.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+		this.notifyApiResponse(response);
+	}
+
+	// Qué hace: muestra errores de estado y convierte la restricción de empleado en advertencia legible.
+	// Cómo lo hace: intercepta mensajes relacionados a empleados para emitir NotifyType.Warning sin fallar como error no controlado.
+	private notificarErrorEstado(error: any): void {
+		const mensaje = `${
+			error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? ''
+		}`.trim();
+		if (this.esAvisoAsignacionEmpleado(mensaje)) {
+			this.notifyFx(
+				'No se puede inactivar la versión porque existe una asignación de empleado. Debe crear una nueva versión.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+		this.notifyApiError(error);
+	}
+
+	// Qué hace: reconoce el aviso de plantilla usada por un empleado.
+	// Cómo lo hace: compara el texto normalizado con la frase de asignación.
+	private esAvisoAsignacionEmpleado(mensaje: string): boolean {
+		const texto = mensaje.toLowerCase();
+		return texto.includes('asignad') && texto.includes('empleado');
 	}
 
 	// Qué hace: normaliza los nombres de versión y versión padre al formato completo 'Versión N'.
@@ -873,6 +1517,21 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 			NUMERO_VERSION_ACTIVA: version.NUMERO_VERSION,
 			NOMBRE_VERSION_ACTIVA: version.NOMBRE_VERSION,
 			CUERPO_PLANTILLA: version.CUERPO_PLANTILLA ?? '',
+		});
+		this.model = actualizado;
+		this.modelUpdate = this.fillData(actualizado);
+		this.aplicarRegistroEnGrid(actualizado, false);
+	}
+
+	// Qué hace: limpia en memoria los metadatos de versión activa al volver la plantilla a Borrador.
+	// Cómo lo hace: anula CORR/NUMERO/NOMBRE_VERSION_ACTIVA, conserva el cuerpo de la versión de trabajo y parchea la grilla.
+	private aplicarPlantillaBorradorEnModelo(version?: GenPlantillaContratoVersion | null): void {
+		const actualizado = this.fillData({
+			...this.model,
+			CORR_VERSION_ACTIVA: null,
+			NUMERO_VERSION_ACTIVA: null,
+			NOMBRE_VERSION_ACTIVA: null,
+			CUERPO_PLANTILLA: version?.CUERPO_PLANTILLA ?? this.model?.CUERPO_PLANTILLA ?? '',
 		});
 		this.model = actualizado;
 		this.modelUpdate = this.fillData(actualizado);
@@ -1604,7 +2263,7 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 
 		if (!isAdd && this.puedeEditarVersionSeleccionada && this.versionSeleccionada) {
 			if (cuerpoVacio) {
-				this.notifyFx('El contenido de la versión activa no puede quedar vacío.', NotifyType.Warning, { raw: true });
+				this.notifyFx('El contenido de la versión no puede quedar vacío.', NotifyType.Warning, { raw: true });
 				return;
 			}
 			const versionEditable = this.versionSeleccionada;
@@ -1632,11 +2291,7 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		};
 
 		if (!isAdd && !tieneVersionActiva && payload.CUERPO_PLANTILLA !== null) {
-			this.confirmaAccion(
-				'Confirmar Versión 1',
-				'¿Seguro que quieres guardar esta Versión 1? No podrás eliminarla y quedará inhabilitada para edición directa; futuros cambios generarán nuevas versiones a partir de la Versión 1.',
-				() => this.ejecutarGuardado(payload, false, true)
-			);
+			this.ejecutarGuardado(payload, false, true);
 			return;
 		}
 
@@ -1706,14 +2361,30 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 			.subscribe({
 				next: (response: any) => {
 					if (response?.Result && response.Data) {
-						const actualizada = this.normalizarVersionItem(response.Data as GenPlantillaContratoVersion);
+						const versionLocal = this.versiones.find(
+							(v) =>
+								Number(v.CORR_PLANTILLA_CONTRATO_VERSION) ===
+								Number(versionEditable.CORR_PLANTILLA_CONTRATO_VERSION)
+						);
+						const actualizada = {
+							...this.normalizarVersionItem(response.Data as GenPlantillaContratoVersion),
+							ESTADO_VERSION: versionLocal?.ESTADO_VERSION ?? response.Data.ESTADO_VERSION,
+							TIENE_EMPLEADOS: versionLocal?.TIENE_EMPLEADOS ?? response.Data.TIENE_EMPLEADOS,
+						};
 						this.versiones = this.versiones.map((v) =>
 							Number(v.CORR_PLANTILLA_CONTRATO_VERSION) === Number(actualizada.CORR_PLANTILLA_CONTRATO_VERSION)
 								? actualizada
 								: v
 						);
 						this.versionSeleccionada = actualizada;
-						this.aplicarVersionActivaEnModelo(actualizada);
+						if (actualizada.ES_VERSION_ACTIVA) {
+							this.aplicarVersionActivaEnModelo(actualizada);
+						} else {
+							this.model = this.fillData({
+								...this.model,
+								CUERPO_PLANTILLA: actualizada.CUERPO_PLANTILLA ?? '',
+							});
+						}
 						this.aplicarCuerpoEnEditor(actualizada.CUERPO_PLANTILLA ?? '');
 						this.actualizarOpcionesBotonFirmas();
 						this.cargarBitacora(actualizada.CORR_PLANTILLA_CONTRATO);
@@ -1732,8 +2403,8 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 			});
 	}
 
-	// Qué hace: persiste la nueva versión redactada desde v1 (y el encabezado si cambió) sin reconsultar GetAll.
-	// Cómo lo hace: actualiza encabezado si varió, llama a crearVersion, pasa versiones previas a Histórica y habilita la nueva versión activa.
+	// Qué hace: persiste una nueva versión en Borrador sin cambiar la versión activa actual.
+	// Cómo lo hace: actualiza encabezado si varió, llama a crearVersion y selecciona la versión nueva para edición.
 	private ejecutarGuardadoNuevaVersion(payload: GenPlantillaContrato, cuerpoActual: string): void {
 		this.loadingVisible = true;
 		const reqVersion = {
@@ -1745,40 +2416,45 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		this.ejecutarConEncabezadoSiCambio(payload, this.service.crearVersion(reqVersion))
 			.pipe(take(1))
 			.subscribe({
-			next: (response: any) => {
-				if (response?.Result && response.Data) {
-					const nuevaVersion = this.normalizarVersionItem(response.Data as GenPlantillaContratoVersion);
-					this.versiones = [
-						...this.versiones.map((v) => ({ ...v, ES_VERSION_ACTIVA: false })),
-						nuevaVersion,
-					];
-					this.versionSeleccionada = nuevaVersion;
-					this.creandoNuevaVersion = false;
-					this.observacionNuevaVersion = '';
-					this.aplicarVersionActivaEnModelo(nuevaVersion);
-					this.aplicarCuerpoEnEditor(nuevaVersion.CUERPO_PLANTILLA ?? '');
-					this.actualizarOpcionesBotonFirmas();
-					this.cargarBitacora(nuevaVersion.CORR_PLANTILLA_CONTRATO);
-					this.notifyFx(
-						`${nuevaVersion.NOMBRE_VERSION} guardada y activada a partir de la Versión 1.`,
-						NotifyType.Success,
-						{ raw: true }
-					);
-				} else {
-					this.notifyApiResponse(response);
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyApiError(error);
-				this.loadingVisible = false;
-			},
-		});
+				next: (response: any) => {
+					if (response?.Result && response.Data) {
+						const nuevaVersion = {
+							...this.normalizarVersionItem(response.Data as GenPlantillaContratoVersion),
+							ES_VERSION_ACTIVA: false,
+							ESTADO_VERSION: 'Borrador' as const,
+						};
+						this.versiones = [...this.versiones, nuevaVersion];
+						this.versionSeleccionada = nuevaVersion;
+						this.creandoNuevaVersion = false;
+						this.observacionNuevaVersion = '';
+						this.aplicarCuerpoEnEditor(nuevaVersion.CUERPO_PLANTILLA ?? '');
+						this.actualizarOpcionesBotonFirmas();
+						this.cargarBitacora(nuevaVersion.CORR_PLANTILLA_CONTRATO);
+						this.notifyFx(
+							`${nuevaVersion.NOMBRE_VERSION} guardada en Borrador a partir de la Versión 1. La versión activa actual continúa vigente.`,
+							NotifyType.Success,
+							{ raw: true }
+						);
+					} else {
+						this.notifyApiResponse(response);
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.notifyApiError(error);
+					this.loadingVisible = false;
+				},
+			});
 	}
 
 	// Qué hace: ejecuta la petición insert o update contra el API y actualiza el estado local sin GetAll.
 	// Cómo lo hace: parchea model, modelUpdate y la fila en la grilla, refresca versiones/bitácora cuando aplica y notifica el resultado.
-	private ejecutarGuardado(payload: GenPlantillaContrato, isAdd: boolean, esActivacionInicial: boolean): void {
+	private ejecutarGuardado(
+		payload: GenPlantillaContrato,
+		isAdd: boolean,
+		esActivacionInicial: boolean,
+		activarDespues = false
+	): void {
 		this.loadingVisible = true;
 		const request$ = isAdd ? this.service.insert(payload) : this.service.update(payload);
 		request$.pipe(take(1)).subscribe({
@@ -1790,6 +2466,9 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 							(x) => Number(x?.CORR_TIPO_CONTRATACION) === Number(guardado.CORR_TIPO_CONTRATACION)
 						);
 						guardado.NOMBRE_TIPO_CONTRATACION = tipoSeleccionado?.NOMBRE_TIPO_CONTRATACION ?? '';
+					}
+					if (!guardado.CUERPO_PLANTILLA && payload.CUERPO_PLANTILLA) {
+						guardado.CUERPO_PLANTILLA = payload.CUERPO_PLANTILLA;
 					}
 
 					this.model = guardado;
@@ -1816,10 +2495,15 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 						this.habilitar();
 					});
 
+					if (activarDespues) {
+						this.publicarVersionGuardada(guardado.CORR_PLANTILLA_CONTRATO);
+						return;
+					}
+
 					const mensaje = isAdd
-						? 'Plantilla creada en estado Borrador. Ya puede redactar el contenido para guardar la versión 1.'
+						? 'Plantilla creada en estado Borrador. Ya puede redactar el contenido y guardarlo como borrador.'
 						: esActivacionInicial
-							? 'Versión 1 guardada y activada con éxito.'
+							? 'Contenido guardado en estado Borrador. Use Activar para publicarla.'
 							: 'Plantilla guardada con éxito.';
 
 					this.notifyFx(mensaje, NotifyType.Success, { raw: true });
@@ -1833,6 +2517,35 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 				this.loadingVisible = false;
 			},
 		});
+	}
+
+	// Qué hace: activa la versión creada al guardar un borrador que aún no tenía versiones.
+	// Cómo lo hace: consulta getVersiones y publica la última versión devuelta.
+	private publicarVersionGuardada(corrPlantilla: number): void {
+		this.loadingVisible = true;
+		this.service
+			.getVersiones(corrPlantilla)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const lista: GenPlantillaContratoVersion[] = response?.Result && Array.isArray(response.Data)
+						? response.Data.map((v: GenPlantillaContratoVersion) => this.normalizarVersionItem(v))
+						: [];
+					this.versiones = lista;
+					const target = lista[lista.length - 1];
+					if (!target) {
+						this.loadingVisible = false;
+						this.notifyFx('No se encontró la versión para activar.', NotifyType.Warning, { raw: true });
+						return;
+					}
+					this.versionSeleccionada = target;
+					this.ejecutarActivarVersion(target);
+				},
+				error: (error: any) => {
+					this.notificarErrorEstado(error);
+					this.loadingVisible = false;
+				},
+			});
 	}
 
 	// Qué hace: convierte errores de llave foránea al eliminar en una advertencia legible.
@@ -1850,11 +2563,17 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 					'clave externa',
 					'clave foránea',
 					'llave foránea',
-					'hijos',
 					'registros relacionados',
 					'registros asociados',
-					'asociados',
 				].some((texto) => normalizado.includes(texto));
+
+				if (normalizado.includes('asignad') && normalizado.includes('empleado')) {
+					return of({
+						Result: false,
+						ErrorCode: 0,
+						ErrorMessage: mensaje.trim(),
+					} as T);
+				}
 
 				if (tieneRelacion) {
 					return of({

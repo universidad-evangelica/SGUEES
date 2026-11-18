@@ -30,7 +30,7 @@ SELECT
 	A.FECHA_FIRMA,
 	A.ESTADO_CONTRATO,
 	CASE A.ESTADO_CONTRATO
-		WHEN 1 THEN 'Borrador'
+		WHEN 1 THEN 'Pendiente de firma'
 		WHEN 2 THEN 'Vigente'
 		WHEN 3 THEN 'Finalizado'
 		WHEN 4 THEN 'Anulado'

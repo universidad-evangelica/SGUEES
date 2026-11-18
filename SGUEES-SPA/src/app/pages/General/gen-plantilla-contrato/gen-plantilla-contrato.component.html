@@ -9,6 +9,11 @@
 		[isForm]="isForm()"
 		[permiteAdd]="permiteAdd"
 		[showRefresh]="true"
+		[btn1]="textoBtnEstadoPlantilla"
+		[btn1Icon]="iconoBtnEstadoPlantilla"
+		[btn1Type]="tipoBtnEstadoPlantilla"
+		[btn1Location]="'before'"
+		(btn1Click)="onBtnEstadoPlantillaClick()"
 		(consultar)="consultar()"
 		(nuevo)="nuevo()"
 		(guardar)="guardar()"
@@ -78,7 +83,7 @@
 								<span>{{ item.NOMBRE_VERSION }}</span>
 								<span
 									class="version-badge version-badge--sm"
-									[ngClass]="item.ES_VERSION_ACTIVA ? 'estado-badge--activo' : 'estado-badge--historica'"
+									[ngClass]="claseEstadoVersion(item)"
 								>
 									{{ obtenerEtiquetaEstadoVersion(item) }}
 								</span>
@@ -105,12 +110,23 @@
 						>
 						</dx-button>
 						<dx-button
-							*ngIf="puedeActivarVersion"
-							text="Activar Versión"
+							*ngIf="mostrarBotonActivar"
+							text="Activar"
 							icon="check"
 							type="success"
 							stylingMode="outlined"
+							[disabled]="!puedeActivarVersion"
 							(onClick)="activarVersionSeleccionada()"
+						>
+						</dx-button>
+						<dx-button
+							*ngIf="mostrarBotonInactivar"
+							text="Inactivar"
+							icon="close"
+							type="danger"
+							stylingMode="outlined"
+							[disabled]="!puedeInactivarVersion"
+							(onClick)="inactivarVersionSeleccionada()"
 						>
 						</dx-button>
 						<dx-button
@@ -166,16 +182,17 @@
 						<div class="contrato-params-groups">
 							<div class="contrato-params-group" *ngFor="let grupo of gruposParametrosFiltrados">
 								<div class="contrato-params-group__title">{{ grupo.categoria }}</div>
+								<!-- motivo: chip de parámetro con tooltip que oculta nombres técnicos de vistas SQL -->
 								<button
 									type="button"
 									class="contrato-param-chip"
 									*ngFor="let param of grupo.items"
 									[disabled]="editorReadOnly"
-									[title]="(param.label || param.key) + (param.descripcion ? ' — ' + param.descripcion : '')"
+									[title]="obtenerTooltipParametro(param)"
 									(mousedown)="$event.preventDefault()"
 									(click)="insertarParametroEnCursor(param.key)"
 								>
-									+ {{ formatToken(param.key) }}
+									+ {{ param.label || param.key }}
 								</button>
 							</div>
 
@@ -373,6 +390,102 @@
 				(onClick)="confirmarGuardarNuevaVersionModal()"
 			>
 			</dx-button>
+		</div>
+	</div>
+</dx-popup>
+
+<!-- motivo: modal unificado para gestionar el estado de versiones (activar o inactivar) -->
+<dx-popup
+	[(visible)]="modalGestionEstadoVisible"
+	[title]="tituloModalGestionEstado"
+	[width]="520"
+	[height]="'auto'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	(onHiding)="cerrarModalGestionEstado()"
+>
+	<div *dxTemplate="let data of 'content'" class="contrato-motivo-modal">
+		<!-- motivo: formulario y selección para activar versión -->
+		<div *ngIf="accionGestionEstado === 'activar'">
+			<p class="contrato-motivo-modal__hint">
+				Seleccione la versión que desea activar. Al activar una nueva versión, la versión activa anterior pasará automáticamente a estado "HISTÓRICA".
+			</p>
+			<div *ngIf="versionesParaActivarModal.length > 0; else sinVersionesParaActivar">
+				<dx-select-box
+					class="contrato-motivo-modal__versiones"
+					[items]="versionesParaActivarModal"
+					displayExpr="NOMBRE_VERSION"
+					valueExpr="CORR_PLANTILLA_CONTRATO_VERSION"
+					[value]="versionActivarId"
+					placeholder="Seleccione una versión"
+					[searchEnabled]="false"
+					[dropDownOptions]="opcionesDropdownVersion"
+					(onValueChanged)="onVersionActivarChanged($event)"
+				>
+				</dx-select-box>
+			</div>
+			<ng-template #sinVersionesParaActivar>
+				<p class="contrato-motivo-modal__hint" style="color: #e6a23c;">
+					No hay versiones inactivas disponibles para activar en esta plantilla.
+				</p>
+			</ng-template>
+			<div class="contrato-motivo-modal__actions">
+				<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarModalGestionEstado()"></dx-button>
+				<dx-button
+					text="Activar"
+					type="success"
+					stylingMode="contained"
+					icon="check"
+					[disabled]="!versionActivarId || versionesParaActivarModal.length === 0"
+					(onClick)="confirmarModalActivar()"
+				>
+				</dx-button>
+			</div>
+		</div>
+
+		<!-- motivo: formulario y selección para inactivar versión -->
+		<div *ngIf="accionGestionEstado === 'inactivar'">
+			<p class="contrato-motivo-modal__hint">
+				Solo se pueden inactivar versiones sin empleados asignados. Para dejar todas las versiones inactivas, ninguna puede tener empleados asignados.
+			</p>
+			<div *ngIf="versionesInactivablesModal.length > 0; else sinVersionesInactivables">
+				<dx-radio-group
+					[items]="opcionesInactivar"
+					valueExpr="id"
+					displayExpr="text"
+					[(value)]="modoInactivar"
+					layout="vertical"
+				>
+				</dx-radio-group>
+				<dx-select-box
+					*ngIf="modoInactivar === 'una'"
+					[items]="versionesInactivablesModal"
+					displayExpr="NOMBRE_VERSION"
+					valueExpr="CORR_PLANTILLA_CONTRATO_VERSION"
+					[(value)]="versionInactivarId"
+					placeholder="Seleccione una versión"
+					[searchEnabled]="false"
+					[dropDownOptions]="opcionesDropdownVersion"
+				>
+				</dx-select-box>
+			</div>
+			<ng-template #sinVersionesInactivables>
+				<p class="contrato-motivo-modal__hint" style="color: #e6a23c;">
+					No se puede inactivar la versión porque existe una asignación de empleado que impediría esta acción (o no hay versiones activas).
+				</p>
+			</ng-template>
+			<div class="contrato-motivo-modal__actions">
+				<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarModalGestionEstado()"></dx-button>
+				<dx-button
+					text="Inactivar"
+					type="danger"
+					stylingMode="contained"
+					icon="close"
+					[disabled]="versionesInactivablesModal.length === 0 || (modoInactivar === 'una' && !versionInactivarId)"
+					(onClick)="confirmarModalInactivar()"
+				>
+				</dx-button>
+			</div>
 		</div>
 	</div>
 </dx-popup>

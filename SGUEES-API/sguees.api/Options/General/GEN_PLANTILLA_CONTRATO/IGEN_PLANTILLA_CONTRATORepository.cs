@@ -10,6 +10,7 @@ namespace sguees.Repositories
 {
 	public interface IGEN_PLANTILLA_CONTRATORepository : IRepository<GEN_PLANTILLA_CONTRATOTable>
 	{
+		Task<bool> PuedeAdministrarAsync(int corrEmpresa, int corrPlantilla, string login);
 		// Qué hace: verifica si ya existe otra plantilla de contrato con el mismo nombre en la empresa.
 		// Cómo lo hace: consulta V_GEN_PLANTILLA_CONTRATO filtrando por CORR_EMPRESA y excluyendo excludeCorr.
 		Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
@@ -25,8 +26,12 @@ namespace sguees.Repositories
 		Task<CResult> ActualizarVersionAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string detalleBitacora, string vLOGIN_SISTEMA, string vESTACION);
 		// Qué hace: establece una versión histórica v2+ como activa desactivando la versión anterior.
 		Task<CResult> ActivarVersionAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string vLOGIN_SISTEMA, string vESTACION);
+		// Qué hace: inactiva la plantilla y la deja en Borrador si no está asignada a empleados.
+		Task<CResult> InactivarPlantillaAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		// Qué hace: obtiene los registros cronológicos de bitácora de una plantilla de contrato.
 		Task<CResult> GetBitacoraAsync(List<CParameter> xWhere);
+		// Qué hace: obtiene el catálogo plano de parámetros para plantillas de contrato desde la vista SQL.
+		Task<List<GEN_PLANTILLA_CONTRATO_PARAMETROItem>> GetParametrosDisponiblesAsync();
 	}
 }
 

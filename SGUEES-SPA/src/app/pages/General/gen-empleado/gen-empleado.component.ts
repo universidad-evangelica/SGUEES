@@ -930,8 +930,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
-	// Qué hace: al cambiar el estado, refresca también el panel lateral si está abierto.
-	// Cómo: reutiliza el parche del browse y copia la misma fila al preview.
+		// Qué hace: al cambiar el estado, refresca también el panel lateral y anula en memoria los contratos activos si se desactivó.
+	// Cómo lo hace: reutiliza el parche del browse y actualiza el array contratos a estado ANULADO sin llamar a GetAll.
 	protected override sincronizarSeleccionTrasCambioEstado(data: unknown): void {
 		super.sincronizarSeleccionTrasCambioEstado(data);
 		if (!data || typeof data !== 'object' || !this.previewEmpleado) {
@@ -940,9 +940,22 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		const record = data as GenEmpleado;
 		if (Number(record.CORR_EMPLEADO) === Number(this.previewEmpleado.CORR_EMPLEADO)) {
 			this.previewEmpleado = this.fillData(record);
+			// Si el empleado fue desactivado, actualizar en memoria los contratos que estaban en Borrador o Vigente
+			if (record.ACTIVO_EMPLEADO === false && this.contratos?.length) {
+				this.contratos = this.contratos.map((c) =>
+					c.ESTADO_CONTRATO === 1 || c.ESTADO_CONTRATO === 2
+						? {
+								...c,
+								ESTADO_CONTRATO: 4,
+								NOMBRE_ESTADO_CONTRATO: 'ANULADO',
+								MOTIVO_ANULACION: 'Anulación automática por desactivación de empleado.',
+						  }
+						: c
+				);
+			}
 		}
 	}
-
+	
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (!rowData) {
@@ -6117,13 +6130,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	// Qué hace: carga el catálogo de plantillas de contrato con versión activa.
-	// Cómo lo hace: consulta GetPlantillasActivas y ejecuta el callback cuando ya están disponibles.
+	// Cómo lo hace: consulta GetPlantillasActivas y, si el conteo es 0, avisa que no hay ninguna plantilla activa.
 	private asegurarPlantillasContratoActivas(despues?: () => void): void {
-		if (this.plantillasContratoActivas.length > 0) {
-			despues?.();
-			return;
-		}
-
 		this.cargandoContratos = true;
 		this.service
 			.getPlantillasContratoActivas()
@@ -6133,10 +6141,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargandoContratos = false;
 					this.plantillasContratoActivas = response?.Result ? response.Data ?? [] : [];
 					if (!this.plantillasContratoActivas.length) {
-						this.notifyFx(
-							'No hay plantillas de contrato con versión activa configuradas.',
-							NotifyType.Warning
-						);
+						this.notifyFx('No hay ninguna plantilla activa', NotifyType.Warning, { raw: true });
 						return;
 					}
 					despues?.();
@@ -6153,6 +6158,34 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	onContratoSeleccionado(e: { selectedRowKeys?: number[] }): void {
 		const keys = e?.selectedRowKeys ?? [];
 		this.contratoSeleccionadoKeys = keys.length ? [Number(keys[0])] : [];
+	}
+
+	// Qué hace: etiqueta visible del estado de contrato en grilla y badges.
+	// Cómo lo hace: muestra "Pendiente de firma" para estado 1 (antes Borrador) y el nombre original para el resto.
+	textoEstadoContrato(estado: number | string | null | undefined, nombre?: string | null): string {
+		const val = typeof estado === 'number' ? estado : Number(estado);
+		if (val === 1) {
+			return 'Pendiente de firma';
+		}
+		const texto = `${nombre ?? ''}`.trim();
+		if (texto && texto.toUpperCase() !== 'BORRADOR') {
+			return texto;
+		}
+		return `${estado ?? ''}`;
+	}
+
+	// Qué hace: unifica el mensaje de duplicidad de contrato por puesto.
+	// Cómo lo hace: detecta avisos de contrato existente para el mismo puesto y retorna el texto fijo requerido.
+	private textoAlertaContrato(mensaje: string | null | undefined): string {
+		const texto = `${mensaje ?? ''}`.trim();
+		const normalizado = texto.toLowerCase();
+		if (
+			normalizado.includes('ya existe un contrato') ||
+			(normalizado.includes('puesto') && normalizado.includes('contrato') && normalizado.includes('existe'))
+		) {
+			return 'Ya existe un contrato para este puesto';
+		}
+		return texto || 'No se pudo guardar el contrato.';
 	}
 
 	// Qué hace: devuelve la clase CSS para el badge visual de ESTADO_CONTRATO.
@@ -6280,31 +6313,15 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 								? `${detalle.CORR_UNIDAD}_${detalle.CORR_PUESTO}`
 								: '';
 						this.contratoEditandoEsNuevo = false;
-						if (
-							detalle.CORR_PLANTILLA_CONTRATO_VERSION > 0 &&
-							!this.plantillasContratoActivas.some(
-								(p) => Number(p.CORR_PLANTILLA_CONTRATO_VERSION) === Number(detalle.CORR_PLANTILLA_CONTRATO_VERSION)
-							)
-						) {
-							this.plantillasContratoActivas = [
-								{
-									CORR_PLANTILLA_CONTRATO: detalle.CORR_PLANTILLA_CONTRATO ?? 0,
-									NOMBRE_PLANTILLA: detalle.NOMBRE_PLANTILLA || `Plantilla #${detalle.CORR_PLANTILLA_CONTRATO ?? 0}`,
-									CORR_TIPO_CONTRATACION: detalle.CORR_TIPO_CONTRATACION ?? 0,
-									NOMBRE_TIPO_CONTRATACION: detalle.NOMBRE_TIPO_CONTRATACION || '',
-									CORR_PLANTILLA_CONTRATO_VERSION: detalle.CORR_PLANTILLA_CONTRATO_VERSION,
-									NUMERO_VERSION: detalle.NUMERO_VERSION ?? 0,
-									NOMBRE_VERSION: detalle.NOMBRE_VERSION || `Versión ${detalle.CORR_PLANTILLA_CONTRATO_VERSION}`,
-								},
-								...this.plantillasContratoActivas,
-							];
-						}
+						const versionSigueActiva = this.plantillasContratoActivas.some(
+							(p) => Number(p.CORR_PLANTILLA_CONTRATO_VERSION) === Number(detalle.CORR_PLANTILLA_CONTRATO_VERSION)
+						);
 						this.contratoFormDraft = {
 							CORR_EMPLEADO_CONTRATO: detalle.CORR_EMPLEADO_CONTRATO,
 							CORR_EMPLEADO: detalle.CORR_EMPLEADO,
 							CORR_UNIDAD: detalle.CORR_UNIDAD ?? null,
 							CORR_PUESTO: detalle.CORR_PUESTO ?? null,
-							CORR_PLANTILLA_CONTRATO_VERSION: detalle.CORR_PLANTILLA_CONTRATO_VERSION,
+							CORR_PLANTILLA_CONTRATO_VERSION: versionSigueActiva ? detalle.CORR_PLANTILLA_CONTRATO_VERSION : 0,
 							FECHA_INICIO: this.normalizarFechaContrato(detalle.FECHA_INICIO),
 							FECHA_FIN: this.normalizarFechaContrato(detalle.FECHA_FIN),
 							FECHA_FIRMA: this.normalizarFechaContrato(detalle.FECHA_FIRMA),
@@ -6359,8 +6376,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		}, Math.max(0, debounceMs));
 	}
 
-	// Qué hace: solicita al backend el HTML interpolado exacto según los parámetros actuales del modal.
-	// Cómo lo hace: invoca GEN_EMPLEADO_CONTRATO/Preview descartando respuestas obsoletas por número de secuencia.
+	// Qué hace: solicita la vista previa del contrato enviando FECHA_FIRMA o FECHA_INICIO para resolver dinámicamente al Rector.
+	// Cómo lo hace: incluye FECHA_FIRMA y FECHA_INICIO en el payload hacia PreviewAsync sin intervención manual del usuario.
 	cargarPreviewModalContrato(): void {
 		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
 		const corrVersion = Number(this.contratoFormDraft.CORR_PLANTILLA_CONTRATO_VERSION ?? 0);
@@ -6384,7 +6401,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		};
 
 		this.cargandoContratoFormPreview = true;
-		this.contratoFormPreviewError = '';
 		this.service
 			.previewContrato(payload)
 			.pipe(take(1))
@@ -6394,21 +6410,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 						return;
 					}
 					this.cargandoContratoFormPreview = false;
-					if (response?.Result && response.Data) {
-						const rawHtml = `${response.Data?.CUERPO_CONTRATO ?? ''}`;
-						const html = this.normalizarHtmlContrato(rawHtml);
-						const faltantes = Array.isArray(response.Data?.PARAMETROS_FALTANTES)
-							? response.Data.PARAMETROS_FALTANTES.map((x: any) => `${x}`.trim()).filter(Boolean)
-							: [];
-						this.contratoFormPreviewError = '';
-						this.contratoParametrosFaltantes = faltantes;
-						this.contratoFormPreviewHtml = this.sanitization.bypassSecurityTrustHtml(html);
-					} else {
+					if (!response?.Result || !response.Data) {
 						this.contratoFormPreviewHtml = '';
 						this.contratoParametrosFaltantes = [];
-						this.contratoFormPreviewError =
-							response?.ErrorMessage || 'No se pudo generar la vista previa del contrato.';
+						return;
 					}
+					this.contratoFormPreviewHtml = response.Data.CUERPO_CONTRATO || '';
+					this.contratoParametrosFaltantes = response.Data.PARAMETROS_FALTANTES || [];
 				},
 				error: (error) => {
 					if (seq !== this.contratoFormPreviewSeq) {
@@ -6417,10 +6425,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargandoContratoFormPreview = false;
 					this.contratoFormPreviewHtml = '';
 					this.contratoParametrosFaltantes = [];
-					this.contratoFormPreviewError = this.textoErrorDescriptorEmpleado(
-						error,
-						'No se pudo cargar la vista previa del contrato. Verifique que el API esté actualizado y en ejecución.'
-					);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -6508,7 +6513,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			next: (response: any) => {
 				this.guardandoContrato = false;
 				if (!response?.Result || !response.Data) {
-					this.notifyFx(response?.ErrorMessage || 'No se pudo guardar el contrato.', NotifyType.Warning);
+					this.notifyFx(this.textoAlertaContrato(response?.ErrorMessage), NotifyType.Warning, { raw: true });
 					return;
 				}
 				const guardado = this.mapContratoRow(response.Data);
@@ -6523,6 +6528,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			},
 			error: (error) => {
 				this.guardandoContrato = false;
+				const mensaje = `${
+					error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.message ?? ''
+				}`.trim();
+				if (mensaje) {
+					this.notifyFx(this.textoAlertaContrato(mensaje), NotifyType.Warning, { raw: true });
+					return;
+				}
 				this.notifyApiError(error);
 			},
 		});
@@ -6900,7 +6912,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		// Cómo lo hace: evalúa TIENE_ARCHIVO_FIRMADO en la fila seleccionada y notifica advertencia.
 		if (!fila.TIENE_ARCHIVO_FIRMADO) {
 			this.notifyFx(
-				'Debe adjuntar el documento firmado antes de emitir el contrato.',
+				'Debe adjuntar el documento firmado antes de activar el contrato.',
 				NotifyType.Warning,
 				{ raw: true }
 			);
@@ -6908,8 +6920,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		}
 
 		this.confirmaAccion(
-			'Emitir contrato',
-			'Al emitir el contrato pasará a estado VIGENTE y su contenido quedará congelado permanentemente (no podrá editarse). ¿Desea continuar?',
+			'Activar contrato',
+			'Al activar el contrato pasará a estado VIGENTE y su contenido quedará congelado permanentemente (no podrá editarse). ¿Desea continuar?',
 			() => {
 				this.cargandoContratos = true;
 				this.service
@@ -6919,11 +6931,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 						next: (response: any) => {
 							this.cargandoContratos = false;
 							if (!response?.Result || !response.Data) {
-								this.notifyFx(response?.ErrorMessage || 'No se pudo emitir el contrato.', NotifyType.Warning);
+								this.notifyFx(response?.ErrorMessage || 'No se pudo activar el contrato.', NotifyType.Warning);
 								return;
 							}
 							this.aplicarContratoEnMemoria(this.mapContratoRow(response.Data), false);
-							this.notifyFx('Contrato emitido correctamente.', NotifyType.Success, { raw: true });
+							this.notifyFx('Contrato activado correctamente.', NotifyType.Success, { raw: true });
 						},
 						error: (error) => {
 							this.cargandoContratos = false;
@@ -7318,7 +7330,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			FECHA_FIN: item?.FECHA_FIN ?? null,
 			FECHA_FIRMA: item?.FECHA_FIRMA ?? null,
 			ESTADO_CONTRATO: item?.ESTADO_CONTRATO != null ? Number(item.ESTADO_CONTRATO) : 1,
-			NOMBRE_ESTADO_CONTRATO: item?.NOMBRE_ESTADO_CONTRATO ?? '',
+			NOMBRE_ESTADO_CONTRATO: this.textoEstadoContrato(
+				item?.ESTADO_CONTRATO != null ? Number(item.ESTADO_CONTRATO) : 1,
+				item?.NOMBRE_ESTADO_CONTRATO
+			),
 			NOMBRE_ARCHIVO: item?.NOMBRE_ARCHIVO ?? null,
 			RUTA_ARCHIVO: item?.RUTA_ARCHIVO ?? null,
 			TIENE_ARCHIVO_FIRMADO: !!item?.TIENE_ARCHIVO_FIRMADO,

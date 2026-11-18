@@ -32,7 +32,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetAll([FromQuery] GEN_PARAMETRO_PLANTILLA_VERSIONParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetAllAsync(Data, GetUsuario());
 		}
 
 		// Qué hace: obtiene una versión específica de la plantilla de correo.
@@ -42,7 +42,7 @@ namespace sguees.Controllers
 		public async Task<CResult> Get([FromQuery] GEN_PARAMETRO_PLANTILLA_VERSIONParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAsync(Data);
+			return await _service.GetAsync(Data, GetUsuario());
 		}
 
 		// Qué hace: registra una nueva versión para una plantilla de correo existente.

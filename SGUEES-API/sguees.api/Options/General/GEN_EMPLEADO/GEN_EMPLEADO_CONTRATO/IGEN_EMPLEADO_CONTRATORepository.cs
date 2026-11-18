@@ -9,16 +9,22 @@ namespace sguees.Repositories
 {
 	public interface IGEN_EMPLEADO_CONTRATORepository
 	{
-		Task<CResult> GetAllAsync(int corrEmpresa, int corrEmpleado);
-		Task<CResult> GetAsync(int corrEmpresa, int corrEmpleadoContrato);
-		Task<CResult> GetPlantillasActivasAsync(int corrEmpresa);
+		Task<CResult> GetAllAsync(int corrEmpresa, int corrEmpleado, string login);
+		Task<CResult> GetAsync(int corrEmpresa, int corrEmpleadoContrato, string login);
+		Task<CResult> GetPlantillasActivasAsync(int corrEmpresa, string login);
+		Task<bool> PuedeVerEmpleadoAsync(int corrEmpresa, int corrEmpleado, string login);
+		Task<bool> PuedeVerContratoAsync(int corrEmpresa, int corrEmpleadoContrato, string login);
+		Task<bool> PuedeUsarPlantillaVersionAsync(int corrEmpresa, int corrPlantillaVersion, string login);
+		// Qué hace: define el contrato del repositorio de contratos de empleados.
+		// Cómo lo hace: incluye fechaReferencia en GetContextoGeneracionAsync para resolver el firmante de Rectoría según vigencia.
 		Task<ContratoContextoData> GetContextoGeneracionAsync(
 			int corrEmpresa,
 			int corrEmpleado,
 			int corrPlantillaVersion,
 			int? corrUnidad,
 			int? corrPuesto,
-			int? corrMovimiento);
+			int? corrMovimiento,
+	DateTime? fechaReferencia = null);
 		Task<CResult> CreateBorradorAsync(GEN_EMPLEADO_CONTRATOTable Data);
 		Task<CResult> UpdateBorradorAsync(GEN_EMPLEADO_CONTRATOTable Data);
 		Task<CResult> CambiarEstadoAsync(
@@ -47,6 +53,7 @@ namespace sguees.Repositories
 	public class ContratoContextoData
 	{
 		public bool PlantillaEncontrada { get; set; }
+		public bool VersionActiva { get; set; }
 		public bool EmpleadoEncontrado { get; set; }
 		public string CuerpoPlantilla { get; set; }
 		public string NombrePlantilla { get; set; }

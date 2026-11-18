@@ -35,7 +35,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetAll([FromQuery] GEN_EMPLEADO_CONTRATOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetAllAsync(Data, GetUsuario());
 		}
 
 		[HttpGet("Get")]
@@ -43,14 +43,14 @@ namespace sguees.Controllers
 		public async Task<CResult> Get([FromQuery] GEN_EMPLEADO_CONTRATOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAsync(Data);
+			return await _service.GetAsync(Data, GetUsuario());
 		}
 
 		[HttpGet("GetPlantillasActivas")]
 		[Authorize(Policy = "/gen-empleado|R")]
 		public async Task<CResult> GetPlantillasActivas()
 		{
-			return await _service.GetPlantillasActivasAsync(GetCorrEmpresa());
+			return await _service.GetPlantillasActivasAsync(GetCorrEmpresa(), GetUsuario());
 		}
 
 		[HttpPost("Preview")]
@@ -63,7 +63,7 @@ namespace sguees.Controllers
 			}
 
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			var resultado = await _service.PreviewAsync(Data);
+			var resultado = await _service.PreviewAsync(Data, GetUsuario());
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
@@ -174,7 +174,7 @@ namespace sguees.Controllers
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			var storage = new EmpleadoContratoStorage(_environment);
-			var (stream, fileName) = await _service.GetDocumentoFirmadoAsync(Data, storage);
+			var (stream, fileName) = await _service.GetDocumentoFirmadoAsync(Data, storage, GetUsuario());
 			if (stream == null)
 			{
 				return NotFound();
@@ -195,7 +195,7 @@ namespace sguees.Controllers
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			var storage = new EmpleadoContratoStorage(_environment);
-			var resultado = await _service.DeleteBorradorAsync(Data, storage);
+			var resultado = await _service.DeleteBorradorAsync(Data, storage, GetUsuario());
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 

@@ -8,8 +8,8 @@ namespace sguees.Services
 {
 	public interface IGEN_PARAMETRO_PLANTILLAService
 	{
-		Task<CResult> GetAllAsync(GEN_PARAMETRO_PLANTILLAParam xWhere);
-		Task<CResult> GetAsync(GEN_PARAMETRO_PLANTILLAParam xWhere);
+		Task<CResult> GetAllAsync(GEN_PARAMETRO_PLANTILLAParam xWhere, string login);
+		Task<CResult> GetAsync(GEN_PARAMETRO_PLANTILLAParam xWhere, string login);
 		Task<CResult> CreateAsync(GEN_PARAMETRO_PLANTILLATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(GEN_PARAMETRO_PLANTILLATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(GEN_PARAMETRO_PLANTILLATable Data, string vLOGIN_SISTEMA, string vESTACION);
