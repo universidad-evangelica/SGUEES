@@ -103,37 +103,71 @@
 		</div>
 	</div>
 
-	<section class="contrapartida-panel contrapartida-panel--grid">
-		<div class="contrapartida-panel__head contrapartida-panel__head--grid">
-			<span class="contrapartida-panel__title">Partidas aplicadas (elegibles)</span>
-			<span class="contrapartida-panel__count" *ngIf="models?.length">{{ models.length }} registro(s)</span>
-		</div>
+	<section class="contrapartida-panel contrapartida-panel--grids">
+		<div class="contrapartida-grids">
+			<div class="contrapartida-grid-pane contrapartida-grid-pane--master">
+				<div class="contrapartida-panel__head contrapartida-panel__head--grid">
+					<span class="contrapartida-panel__title">Partidas aplicadas (elegibles)</span>
+					<span class="contrapartida-panel__count" *ngIf="models?.length">{{ models.length }} registro(s)</span>
+				</div>
 
-		<dx-data-grid
-			class="contrapartida-grid"
-			[dataSource]="models"
-			[columns]="columns"
-			[showBorders]="true"
-			[showColumnLines]="true"
-			[showRowLines]="true"
-			[rowAlternationEnabled]="true"
-			[hoverStateEnabled]="true"
-			[allowColumnResizing]="true"
-			[columnResizingMode]="'widget'"
-			[focusedRowEnabled]="true"
-			[autoNavigateToFocusedRow]="true"
-			[height]="gridHeight"
-			[columnAutoWidth]="false"
-			[wordWrapEnabled]="true"
-			[noDataText]="noDataText"
-			(onFocusedRowChanged)="onFocusedRowChanged($event)"
-			(onRowDblClick)="onRowDblClick($event)"
-			[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO', 'CORR_CLASE_PARTIDA', 'CORR_PARTIDA']"
-		>
-			<dxo-paging [pageSize]="15"></dxo-paging>
-			<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[15, 30, 50]" [showInfo]="true"></dxo-pager>
-			<dxo-filter-row [visible]="true"></dxo-filter-row>
-		</dx-data-grid>
+				<dx-data-grid
+					class="contrapartida-grid"
+					[dataSource]="models"
+					[columns]="columns"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[focusedRowEnabled]="true"
+					[autoNavigateToFocusedRow]="true"
+					[height]="gridHeight"
+					[columnAutoWidth]="false"
+					[wordWrapEnabled]="true"
+					[noDataText]="noDataText"
+					(onFocusedRowChanged)="onFocusedRowChanged($event)"
+					(onRowDblClick)="onRowDblClick($event)"
+					[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO', 'CORR_CLASE_PARTIDA', 'CORR_PARTIDA']"
+				>
+					<dxo-paging [pageSize]="15"></dxo-paging>
+					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[15, 30, 50]" [showInfo]="true"></dxo-pager>
+					<dxo-filter-row [visible]="true"></dxo-filter-row>
+				</dx-data-grid>
+			</div>
+
+			<div class="contrapartida-grid-pane contrapartida-grid-pane--detail">
+				<div class="contrapartida-panel__head contrapartida-panel__head--grid">
+					<span class="contrapartida-panel__title">Detalle de la partida</span>
+					<span class="contrapartida-panel__count" *ngIf="detalles?.length">{{ detalles.length }} línea(s)</span>
+				</div>
+
+				<dx-data-grid
+					class="contrapartida-grid contrapartida-grid--detalle"
+					[dataSource]="detalles"
+					[columns]="detalleColumns"
+					[summary]="detalleSummary"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[height]="gridHeight"
+					[columnAutoWidth]="false"
+					[wordWrapEnabled]="true"
+					[noDataText]="noDataDetalleText"
+					[keyExpr]="'CORR_PARTIDA_DETA'"
+				>
+					<dxo-paging [enabled]="false"></dxo-paging>
+					<dxo-scrolling mode="virtual"></dxo-scrolling>
+					<dxo-filter-row [visible]="true"></dxo-filter-row>
+				</dx-data-grid>
+			</div>
+		</div>
 	</section>
 </div>
 

@@ -1,0 +1,195 @@
+<div class="sguees-mtto-view">
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[isBrowse]="true"
+		[showRibbon]="true"
+		[permiteAdd]="false"
+		[showRefresh]="true"
+		[showDates]="true"
+		(consultar)="consultar()"
+		[(FECHA_INICIAL)]="vFECHA_INICIAL"
+		[(FECHA_FINAL)]="vFECHA_FINAL"
+		[btn1]="btnAutorizar"
+		[btn1Icon]="'check'"
+		[btn1Type]="'success'"
+		(btn1Click)="autorizar()"
+		[btn1Width]="220"
+		[btn1Mode]="'contained'"
+		[btn2]="btnAnular"
+		[btn2Icon]="'close'"
+		[btn2Type]="'danger'"
+		(btn2Click)="anular()"
+		[btn2Width]="100"
+		[btn2Mode]="'contained'"
+	>
+	</app-barra-data-mtto>
+
+	<dx-data-grid
+		[dataSource]="models"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[focusedRowEnabled]="true"
+		[height]="420"
+		[width]="'100%'"
+		[keyExpr]="['ANIO_PERIODO', 'CORR_ORDEN_COMPRA']"
+		(onExporting)="onExporting($event)"
+		(onFocusedRowChanged)="focusedRowChanged($event)"
+	>
+		<dxo-toolbar>
+			<dxi-item location="before" [visible]="true">
+				<div *dxTemplate>
+					<dx-button
+						icon="add"
+						text="Todos"
+						type="success"
+						(onClick)="selectTodos()"
+						[visible]="!readOnly"
+						width="100"
+					>
+					</dx-button>
+				</div>
+			</dxi-item>
+			<dxi-item location="before" [visible]="true">
+				<div *dxTemplate>
+					<dx-button
+						text="Ninguno"
+						icon="minus"
+						type="danger"
+						(onClick)="selectNinguno()"
+						[visible]="!readOnly"
+						width="105"
+					>
+					</dx-button>
+				</div>
+			</dxi-item>
+			<dxi-item name="exportButton" location="after"></dxi-item>
+			<dxi-item name="searchPanel" location="after"></dxi-item>
+		</dxo-toolbar>
+		<dxo-editing
+			mode="cell"
+			[refreshMode]="'reshape'"
+			[allowAdding]="false"
+			[allowUpdating]="!readOnly"
+			[allowDeleting]="false"
+			[useIcons]="true"
+		>
+		</dxo-editing>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-search-panel [visible]="true"></dxo-search-panel>
+		<dxo-export [enabled]="true" fileName="OrdenesCompraAutorizar"></dxo-export>
+		<dxo-filter-panel [visible]="true"></dxo-filter-panel>
+		<dxo-filter-row [visible]="true"></dxo-filter-row>
+		<dxo-header-filter [visible]="true"></dxo-header-filter>
+		<dxo-scrolling mode="virtual" useNative="true"></dxo-scrolling>
+
+		<dxi-column dataField="SELECCION" caption="" [dataType]="'boolean'" width="70" [allowEditing]="true"></dxi-column>
+		<dxi-column dataField="ANIO_PERIODO" caption="Año" width="80" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="NUMERO_ORDEN_COMPRA" caption="No. Orden" width="110" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="CORR_ORDEN_COMPRA" caption="Corr." width="90" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column
+			dataField="FECHA_ORDEN_COMPRA"
+			caption="Fecha"
+			dataType="date"
+			format="dd/MM/yyyy"
+			width="120"
+			[allowEditing]="allowEditing"
+		></dxi-column>
+		<dxi-column dataField="NOMBRE_ESTADO_ORDEN_COMPRA" caption="Estado" width="120" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="NOMBRE_PROVEEDOR" caption="Proveedor" width="280" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column dataField="OBSERVACIONES" caption="Observaciones" width="240" [allowEditing]="allowEditing"></dxi-column>
+		<dxi-column
+			dataField="MONTO_SUBTOTAL"
+			caption="Subtotal"
+			dataType="number"
+			width="120"
+			[allowEditing]="allowEditing"
+		>
+			<dxo-format type="fixedPoint" [precision]="2"></dxo-format>
+		</dxi-column>
+		<dxi-column
+			dataField="COMPRA_TOTAL"
+			caption="Total"
+			dataType="number"
+			width="120"
+			[allowEditing]="allowEditing"
+		>
+			<dxo-format type="fixedPoint" [precision]="2"></dxo-format>
+		</dxi-column>
+		<dxi-column dataField="USUARIO_CREA" caption="Usuario Crea" width="130" [allowEditing]="allowEditing"></dxi-column>
+
+		<dxo-summary>
+			<dxi-total-item
+				column="CORR_ORDEN_COMPRA"
+				summaryType="count"
+				valueFormat="#,##0"
+				displayFormat="Cant: {0}"
+			>
+			</dxi-total-item>
+			<dxi-total-item
+				column="COMPRA_TOTAL"
+				summaryType="sum"
+				valueFormat="#,##0.00"
+				displayFormat="Total: {0}"
+			>
+			</dxi-total-item>
+		</dxo-summary>
+	</dx-data-grid>
+
+	<div class="dx-grid-deta" *ngIf="mCOM_ORDEN_COMPRA_DETA?.length >= 0">
+		<dx-data-grid
+			[dataSource]="mCOM_ORDEN_COMPRA_DETA"
+			[columnAutoWidth]="false"
+			[showBorders]="true"
+			[showColumnLines]="true"
+			[showRowLines]="true"
+			[rowAlternationEnabled]="true"
+			[hoverStateEnabled]="true"
+			[allowColumnResizing]="true"
+			[columnResizingMode]="'widget'"
+			[height]="220"
+			[width]="'100%'"
+			[keyExpr]="'CORR_ORDEN_COMPRA_DETA'"
+		>
+			<dxo-toolbar>
+				<dxi-item location="before">
+					<div *dxTemplate>
+						<span>Detalle de la orden enfocada</span>
+					</div>
+				</dxi-item>
+				<dxi-item name="searchPanel" location="after"></dxi-item>
+			</dxo-toolbar>
+			<dxo-editing [allowUpdating]="false" [allowAdding]="false" [allowDeleting]="false"></dxo-editing>
+			<dxo-load-panel [enabled]="false"></dxo-load-panel>
+			<dxo-search-panel [visible]="true"></dxo-search-panel>
+			<dxi-column dataField="CODIGO_ITEM" caption="Código" width="120"></dxi-column>
+			<dxi-column dataField="NOMBRE_ITEM" caption="Descripción" width="280"></dxi-column>
+			<dxi-column dataField="NOMBRE_UNIDAD_MEDIDA" caption="Unidad" width="120"></dxi-column>
+			<dxi-column dataField="CANTIDAD" caption="Cantidad" dataType="number" width="100">
+				<dxo-format type="fixedPoint" [precision]="2"></dxo-format>
+			</dxi-column>
+			<dxi-column dataField="PRECIO_UNITARIO" caption="Precio U." dataType="number" width="110">
+				<dxo-format type="fixedPoint" [precision]="4"></dxo-format>
+			</dxi-column>
+			<dxi-column dataField="MONTO_SUBTOTAL" caption="Total" dataType="number" width="110">
+				<dxo-format type="fixedPoint" [precision]="2"></dxo-format>
+			</dxi-column>
+		</dx-data-grid>
+	</div>
+</div>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

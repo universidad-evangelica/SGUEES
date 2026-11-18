@@ -220,9 +220,19 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		public async Task<CResult> SolicitarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await EjecutarProcesoAsync(Data, vLOGIN_SISTEMA, vESTACION, "SOLICITAR");
+		}
+
 		public async Task<CResult> AplicarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			return await EjecutarProcesoAsync(Data, vLOGIN_SISTEMA, vESTACION, "APLICAR");
+		}
+
+		public async Task<CResult> AutorizarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await EjecutarProcesoAsync(Data, vLOGIN_SISTEMA, vESTACION, "AUTORIZAR");
 		}
 
 		public async Task<CResult> AnularAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
@@ -233,6 +243,11 @@ namespace sguees.Repositories
 		public async Task<CResult> DesAplicarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			return await EjecutarProcesoAsync(Data, vLOGIN_SISTEMA, vESTACION, "DESAPLICAR");
+		}
+
+		public async Task<CResult> GetPendientesAutorizarAsync(List<CParameter> xWhere)
+		{
+			return await GetAllAsync(xWhere);
 		}
 
 		private async Task<CResult> EjecutarProcesoAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION, string proceso)

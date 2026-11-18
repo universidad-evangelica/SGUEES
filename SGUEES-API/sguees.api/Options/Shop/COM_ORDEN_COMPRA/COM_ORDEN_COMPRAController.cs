@@ -94,6 +94,30 @@ namespace sguees.Controllers
 			return resultado.Result ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		[HttpGet("GetPendientesAutorizar")]
+		[Authorize(Policy = "/com-orden-compra-autorizar|R")]
+		public async Task<CResult> GetPendientesAutorizar([FromQuery] COM_ORDEN_COMPRAParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetPendientesAutorizarAsync(Data);
+		}
+
+		[HttpPut("Solicitar")]
+		[Authorize(Policy = "/com-orden-compra|U")]
+		public async Task<IActionResult> Solicitar(COM_ORDEN_COMPRATable Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			this.ApplyQueryKeys(
+				Data,
+				nameof(COM_ORDEN_COMPRATable.ANIO_PERIODO),
+				nameof(COM_ORDEN_COMPRATable.CORR_ORDEN_COMPRA));
+
+			var login = GetUsuario();
+			var estacion = ClientInfoHelper.GetClientStation(HttpContext);
+			var resultado = await _service.SolicitarAsync(Data, login, estacion);
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : StatusCode(202, resultado);
+		}
+
 		[HttpPut("Aplicar")]
 		[Authorize(Policy = "/com-orden-compra|U")]
 		public async Task<IActionResult> Aplicar(COM_ORDEN_COMPRATable Data)
@@ -107,6 +131,22 @@ namespace sguees.Controllers
 			var login = GetUsuario();
 			var estacion = ClientInfoHelper.GetClientStation(HttpContext);
 			var resultado = await _service.AplicarAsync(Data, login, estacion);
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : StatusCode(202, resultado);
+		}
+
+		[HttpPut("Autorizar")]
+		[Authorize(Policy = "/com-orden-compra-autorizar|U")]
+		public async Task<IActionResult> Autorizar(COM_ORDEN_COMPRATable Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			this.ApplyQueryKeys(
+				Data,
+				nameof(COM_ORDEN_COMPRATable.ANIO_PERIODO),
+				nameof(COM_ORDEN_COMPRATable.CORR_ORDEN_COMPRA));
+
+			var login = GetUsuario();
+			var estacion = ClientInfoHelper.GetClientStation(HttpContext);
+			var resultado = await _service.AutorizarAsync(Data, login, estacion);
 			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : StatusCode(202, resultado);
 		}
 

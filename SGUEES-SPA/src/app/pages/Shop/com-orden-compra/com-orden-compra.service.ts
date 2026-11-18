@@ -103,6 +103,10 @@ export class ComOrdenCompraService {
 		return this.repo.delete(this.pkWhere(param));
 	}
 
+	Solicitar(model: any): Observable<IResult> {
+		return this.repo.Solicitar(this.toTable(model), this.pkWhere(model));
+	}
+
 	Aplicar(model: any): Observable<IResult> {
 		return this.repo.Aplicar(this.toTable(model), this.pkWhere(model));
 	}

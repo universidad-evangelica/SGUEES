@@ -16,13 +16,14 @@ BEGIN
 	SET NOCOUNT ON
 	SELECT @SYS_NUMERO_ERROR = 0, @SYS_MENSAJE_ERROR = N'', @SYS_FILAS_AFECTADAS = 0
 	BEGIN TRY
+		-- Paridad e-Admin: aplicar/autorizar solo desde Solicitada (DI debe Solicitar antes).
 		IF NOT EXISTS (
 			SELECT 1 FROM dbo.COM_ORDEN_COMPRA
 			WHERE CORR_EMPRESA = @CORR_EMPRESA AND ANIO_PERIODO = @ANIO_PERIODO AND CORR_ORDEN_COMPRA = @CORR_ORDEN_COMPRA
-				AND ESTADO_ORDEN IN (N'DI', N'SO')
+				AND ESTADO_ORDEN = N'SO'
 		)
 		BEGIN
-			RAISERROR(N'Solo se puede aplicar una orden digitada o solicitada.', 16, 1)
+			RAISERROR(N'Solo se puede aplicar/autorizar una orden solicitada. Use Solicitar primero.', 16, 1)
 		END
 		IF NOT EXISTS (
 			SELECT 1 FROM dbo.COM_ORDEN_COMPRA_DETA

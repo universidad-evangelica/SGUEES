@@ -51,11 +51,42 @@ export class ConPartidaContrapartidaService {
 			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 56, alignment: 'center' },
 			{ dataField: 'CORR_PARTIDA', caption: 'No. partida', width: 100, alignment: 'right' },
 			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', format: 'dd/MM/yyyy', width: 108 },
-			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 140 },
+			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 130 },
 			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 95 },
-			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', minWidth: 220 },
-			{ dataField: 'MONTO_CARGO', caption: 'Cargo', format: '#,##0.00', width: 108, alignment: 'right' },
-			{ dataField: 'MONTO_ABONO', caption: 'Abono', format: '#,##0.00', width: 108, alignment: 'right' },
+			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', minWidth: 180 },
 		];
+	}
+
+	getDetalleColumns(): any[] {
+		return [
+			{ dataField: 'CORR_PARTIDA_DETA', caption: 'Línea', width: 64, alignment: 'center' },
+			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
+			{ dataField: 'NOMBRE_CUENTA', caption: 'Nombre cuenta', minWidth: 160 },
+			{ dataField: 'NOMBRE_CENTRO', caption: 'Centro costo', width: 130 },
+			{ dataField: 'NOMBRE_TRAN', caption: 'Concepto', minWidth: 140 },
+			{ dataField: 'MONTO_CARGO', caption: 'Cargo', format: '#,##0.00', width: 110, alignment: 'right' },
+			{ dataField: 'MONTO_ABONO', caption: 'Abono', format: '#,##0.00', width: 110, alignment: 'right' },
+		];
+	}
+
+	getDetalleSummary(): any {
+		return {
+			totalItems: [
+				{
+					column: 'MONTO_CARGO',
+					summaryType: 'sum',
+					valueFormat: '#,##0.00',
+					displayFormat: '{0}',
+					alignByColumn: true,
+				},
+				{
+					column: 'MONTO_ABONO',
+					summaryType: 'sum',
+					valueFormat: '#,##0.00',
+					displayFormat: '{0}',
+					alignByColumn: true,
+				},
+			],
+		};
 	}
 }
