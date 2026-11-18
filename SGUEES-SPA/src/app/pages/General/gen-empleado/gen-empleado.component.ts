@@ -6415,7 +6415,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 						this.contratoParametrosFaltantes = [];
 						return;
 					}
-					this.contratoFormPreviewHtml = response.Data.CUERPO_CONTRATO || '';
+					const html = this.normalizarHtmlContrato(response.Data.CUERPO_CONTRATO || '');
+					this.contratoFormPreviewHtml = this.sanitization.bypassSecurityTrustHtml(html);
 					this.contratoParametrosFaltantes = response.Data.PARAMETROS_FALTANTES || [];
 				},
 				error: (error) => {
@@ -6624,6 +6625,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 						line-height: 1.40;
 						color: #111827;
 						background: #fff;
+						text-align: left;
 					}
 					p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote {
 						margin: 0;
@@ -6643,7 +6645,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 						word-break: break-word;
 					}
 					tr > td:first-child:nth-last-child(3) { width: 18% !important; }
-					tr > td:nth-child(2):nth-last-child(2) { width: 64% !important; text-align: center !important; }
+					tr > td:nth-child(2):nth-last-child(2) { width: 64% !important; }
 					tr > td:nth-child(3):last-child { width: 18% !important; text-align: right !important; }
 					tr > td:nth-child(3):last-child img { max-width: 100% !important; height: auto !important; }
 					tr > td:first-child:nth-last-child(2) { width: 50% !important; }
@@ -6721,6 +6723,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		container.style.fontFamily = "'Times New Roman', Georgia, serif";
 		container.style.fontSize = '12px';
 		container.style.lineHeight = '1.42';
+		container.style.textAlign = 'left';
 
 		container.innerHTML = `
         <style>
@@ -6747,7 +6750,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
             }
             /* Encabezado institucional de 3 columnas (espacio / título centrado / logo a la derecha) */
             tr > td:first-child:nth-last-child(3) { width: 18% !important; }
-            tr > td:nth-child(2):nth-last-child(2) { width: 64% !important; text-align: center !important; }
+            tr > td:nth-child(2):nth-last-child(2) { width: 64% !important; }
             tr > td:nth-child(3):last-child { width: 18% !important; text-align: right !important; }
             tr > td:nth-child(3):last-child img { max-width: 100% !important; height: auto !important; display: inline-block !important; }
 

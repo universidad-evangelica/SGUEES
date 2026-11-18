@@ -1831,6 +1831,7 @@
 	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
 	font-family: 'Times New Roman', Georgia, serif;
 	line-height: 1.40;
+	text-align: left;
 	
 	&::after {
 		content: '';
@@ -1870,7 +1871,7 @@
 		tr {
 			width: 100% !important;
 
-			// Encabezado institucional de 3 columnas (espacio / título centrado / logo a la derecha)
+			// Encabezado institucional de 3 columnas (espacio / título / logo a la derecha)
 			> td:first-child:nth-last-child(3),
 			> td:first-child:nth-last-child(3) ~ td {
 				box-sizing: border-box !important;
@@ -1880,7 +1881,6 @@
 			}
 			> td:nth-child(2):nth-last-child(2) {
 				width: 64% !important;
-				text-align: center !important;
 			}
 			> td:nth-child(3):last-child {
 				width: 18% !important;

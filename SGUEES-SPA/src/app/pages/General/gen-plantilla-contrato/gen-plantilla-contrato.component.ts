@@ -135,6 +135,14 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		return this.permiteDele && !tieneVersionActiva;
 	}
 
+	override getPermiteEditar(e: any): boolean {
+		const rowData = e?.row?.data ?? e?.data;
+		return (
+			super.getPermiteEditar(e) &&
+			Number(rowData?.CORR_VERSION_ACTIVA ?? 0) <= 0
+		);
+	}
+
 	// Qué hace: entrega la instancia de grilla al flujo base de CBaseComponent.
 	// Cómo lo hace: retorna dataGrid enlazado por @ViewChild o null.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -299,14 +307,27 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		);
 	}
 
-	// Qué hace: indica si la versión seleccionada en el selector puede editarse directamente.
-	// Cómo lo hace: habilita cualquier versión guardada, incluida la Versión 1, mientras el formulario esté en edición.
+	// Qué hace: indica si la versión seleccionada puede editarse directamente.
+	// Cómo lo hace: solo permite versiones inactivas o en borrador, nunca activas ni históricas.
 	get puedeEditarVersionSeleccionada(): boolean {
-		return !this.readOnly && !this.creandoNuevaVersion && !!this.versionSeleccionada;
+		const estado = `${this.versionSeleccionada?.ESTADO_VERSION ?? ''}`.trim().toLowerCase();
+		const esInactivaOBorrador =
+			estado === 'inactiva' ||
+			estado === 'inactivo' ||
+			estado === 'borrador' ||
+			(!estado && this.esVersionBorrador(this.versionSeleccionada ?? {}));
+
+		return (
+			!this.readOnly &&
+			!this.creandoNuevaVersion &&
+			!!this.versionSeleccionada &&
+			!this.versionSeleccionada.ES_VERSION_ACTIVA &&
+			esInactivaOBorrador
+		);
 	}
 
 	// Qué hace: indica si el área del editor debe mantenerse bloqueada contra edición directa.
-	// Cómo lo hace: bloquea solo en consulta; habilita el borrador sin versiones, la nueva versión y cualquier versión guardada.
+	// Cómo lo hace: habilita nuevas versiones y borradores; las versiones activas e históricas permanecen en solo lectura.
 	get editorReadOnly(): boolean {
 		if (this.readOnly) {
 			return true;
@@ -314,10 +335,13 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 		if (this.creandoNuevaVersion || this.puedeEditarVersionSeleccionada) {
 			return false;
 		}
+		if (Number(this.model?.CORR_VERSION_ACTIVA ?? 0) > 0) {
+			return true;
+		}
 		if (this.versiones.length === 0) {
 			return false;
 		}
-		return !this.esPlantillaBorrador;
+		return true;
 	}
 
 	// Qué hace: verifica si la plantilla ya cuenta con la versión base v1.
@@ -544,9 +568,11 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 			return `${nombreVersion} está en Borrador y puede editarse. Presione Guardar para conservar cambios y Activar para publicarla.${detalleObs}`;
 		}
 		if (this.versionSeleccionada?.ES_VERSION_ACTIVA) {
-			return `${nombreVersion} está habilitada para edición (versión activa). Puede modificar el formato y presionar Guardar, o crear una Nueva Versión desde la Versión 1.${detalleObs}`;
+			return `${nombreVersion} está activa y no puede editarse. Puede crear una Nueva Versión desde la Versión 1.${detalleObs}`;
 		}
-		return `${nombreVersion} puede editarse y activarse. Al activarla, la versión activa anterior pasará a histórico.${detalleObs}`;
+		return this.puedeEditarVersionSeleccionada
+			? `${nombreVersion} está en ${this.estadoVersionTexto} y puede editarse.${detalleObs}`
+			: `${nombreVersion} está en estado Histórico y es de solo lectura.${detalleObs}`;
 	}
 
 	// Qué hace: resuelve la etiqueta de estado visible para una versión guardada.
@@ -859,7 +885,7 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 	// Cómo lo hace: reinicia estado transitorio del editor, activa modo edición con editarClick, consulta versiones/bitácora y sincroniza formData antes de habilitar y enfocar.
 	onEditClick(e: any): void {
 		const rowData = e?.row?.data ?? e?.data;
-		if (!rowData) {
+		if (!rowData || Number(rowData.CORR_VERSION_ACTIVA ?? 0) > 0) {
 			return;
 		}
 
@@ -910,7 +936,7 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 					}
 
 					if (bitacora?.Result && Array.isArray(bitacora.Data)) {
-						this.modelsBitacora = bitacora.Data;
+						this.modelsBitacora = this.service.filtrarBitacoraRegistroActivo(bitacora.Data, this.model?.FECHA_CREA);
 					} else {
 						this.modelsBitacora = [];
 					}
@@ -935,7 +961,7 @@ export class GenPlantillaContratoComponent extends CBaseComponent implements OnI
 						return;
 					}
 					if (response?.Result && Array.isArray(response.Data)) {
-						this.modelsBitacora = response.Data;
+						this.modelsBitacora = this.service.filtrarBitacoraRegistroActivo(response.Data, this.model?.FECHA_CREA);
 					}
 				},
 				error: (error: any) => {

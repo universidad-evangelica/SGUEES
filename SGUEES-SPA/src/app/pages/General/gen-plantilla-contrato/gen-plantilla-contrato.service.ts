@@ -11,6 +11,7 @@ import {
 	ActualizarVersionPlantillaRequest,
 	CrearVersionPlantillaRequest,
 	GenPlantillaContrato,
+	GenPlantillaContratoBitacora,
 	InactivarPlantillaRequest,
 } from './models/gen-plantilla-contrato';
 import { GenPlantillaContratoRepository } from './gen-plantilla-contrato.repository';
@@ -117,6 +118,35 @@ export class GenPlantillaContratoService {
 		return this.repo.getBitacora([{ Parameter: 'CORR_PLANTILLA_CONTRATO', Value: corrPlantillaContrato }]);
 	}
 
+	// Qué hace: deja solo eventos del registro activo cuando el correlativo fue reutilizado.
+	// Cómo lo hace: conserva filas cuya FECHA_CREA y FECHA_ACCION son iguales o posteriores a la creación del registro, en milisegundos.
+	filtrarBitacoraRegistroActivo(
+		items: GenPlantillaContratoBitacora[] | null | undefined,
+		fechaCreacionRegistro: Date | string | null | undefined,
+	): GenPlantillaContratoBitacora[] {
+		const lista = Array.isArray(items) ? items : [];
+		const limite = this.aMilisegundos(fechaCreacionRegistro);
+		if (limite == null) {
+			return lista;
+		}
+
+		return lista.filter((item) => {
+			const marcas = [this.aMilisegundos(item?.FECHA_CREA), this.aMilisegundos(item?.FECHA_ACCION)].filter(
+				(marca): marca is number => marca != null,
+			);
+			return marcas.length > 0 && marcas.every((marca) => marca >= limite);
+		});
+	}
+
+	private aMilisegundos(valor: Date | string | null | undefined): number | null {
+		if (valor == null || valor === '') {
+			return null;
+		}
+		const fecha = valor instanceof Date ? valor : new Date(valor);
+		const ms = fecha.getTime();
+		return Number.isFinite(ms) ? ms : null;
+	}
+
 	// Qué hace: normaliza nombres cortos legados ('v1') al formato completo ('Versión 1').
 	// Cómo lo hace: reemplaza el prefijo corto vN por 'Versión N' o construye el texto a partir de NUMERO_VERSION.
 	formatearNombreVersion(nombre?: string | null, numero?: number | null): string {
@@ -189,7 +219,7 @@ export class GenPlantillaContratoService {
 				calculateCellValue: (rowData: any) =>
 					rowData?.NOMBRE_VERSION ? this.formatearNombreVersion(rowData.NOMBRE_VERSION) : '',
 			},
-			{ dataField: 'TIPO_EVENTO', caption: 'Acción', width: 195 },
+			{ dataField: 'TIPO_EVENTO', caption: 'Acción', width: 230 },
 			{ dataField: 'DETALLE', caption: 'Detalle', width: 440, minWidth: 280 },
 		];
 	}

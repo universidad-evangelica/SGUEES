@@ -269,6 +269,10 @@ BEGIN TRY
 		@FECHA_ACTU
 	);
 
+	DELETE FROM dbo.GEN_PLANTILLA_CONTRATO_BITACORA
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO;
+
 	DECLARE @CORR_BITACORA INT;
 	SELECT @CORR_BITACORA = ISNULL(MAX(CORR_BITACORA), 0) + 1
 	FROM dbo.GEN_PLANTILLA_CONTRATO_BITACORA WITH (UPDLOCK, HOLDLOCK)
@@ -595,7 +599,7 @@ END CATCH;";
 		}
 
 		// Qué hace: elimina una plantilla de contrato únicamente si continúa en Borrador y no está asignada a empleados.
-		// Cómo lo hace: bloquea si hay versión activa o contratos; borra primero versiones hijas y luego el encabezado.
+		// Cómo lo hace: bloquea si hay versión activa o contratos; borra versiones, encabezado y la bitácora de ese correlativo.
 		public async Task<CResult> DeleteAsync(GEN_PLANTILLA_CONTRATOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -637,12 +641,6 @@ BEGIN TRY
 	END
 	ELSE
 	BEGIN
-		DECLARE @NOMBRE_ELIMINADA VARCHAR(200);
-		SELECT TOP 1 @NOMBRE_ELIMINADA = NOMBRE_PLANTILLA
-		FROM dbo.GEN_PLANTILLA_CONTRATO WITH (UPDLOCK, HOLDLOCK)
-		WHERE CORR_EMPRESA = @CORR_EMPRESA
-		  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO;
-
 		DELETE FROM dbo.GEN_PLANTILLA_CONTRATO_VERSION
 		WHERE CORR_EMPRESA = @CORR_EMPRESA
 		  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
@@ -660,41 +658,9 @@ BEGIN TRY
 
 		IF @ELIMINADOS > 0
 		BEGIN
-			DECLARE @CORR_BITACORA_DEL INT;
-			SELECT @CORR_BITACORA_DEL = ISNULL(MAX(CORR_BITACORA), 0) + 1
-			FROM dbo.GEN_PLANTILLA_CONTRATO_BITACORA WITH (UPDLOCK, HOLDLOCK)
-			WHERE CORR_EMPRESA = @CORR_EMPRESA;
-
-			INSERT INTO dbo.GEN_PLANTILLA_CONTRATO_BITACORA
-			(
-				CORR_EMPRESA,
-				CORR_BITACORA,
-				CORR_PLANTILLA_CONTRATO,
-				NOMBRE_PLANTILLA,
-				CORR_PLANTILLA_CONTRATO_VERSION,
-				NOMBRE_VERSION,
-				TIPO_EVENTO,
-				DETALLE,
-				FECHA_ACCION,
-				USUARIO_CREA,
-				ESTACION_CREA,
-				FECHA_CREA
-			)
-			VALUES
-			(
-				@CORR_EMPRESA,
-				@CORR_BITACORA_DEL,
-				@CORR_PLANTILLA_CONTRATO,
-				@NOMBRE_ELIMINADA,
-				NULL,
-				NULL,
-				'ELIMINACION_BORRADOR',
-				LEFT('Se eliminó la plantilla en borrador ""' + ISNULL(@NOMBRE_ELIMINADA, '') + '"".', 1000),
-				@FECHA_ACCION,
-				@USUARIO_ACCION,
-				@ESTACION_ACCION,
-				@FECHA_ACCION
-			);
+			DELETE FROM dbo.GEN_PLANTILLA_CONTRATO_BITACORA
+			WHERE CORR_EMPRESA = @CORR_EMPRESA
+			  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO;
 		END
 
 		COMMIT TRAN;
@@ -714,9 +680,6 @@ END CATCH;";
 				{
 					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_PLANTILLA_CONTRATO", Value = Data.CORR_PLANTILLA_CONTRATO, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "USUARIO_ACCION", Value = (object)vLOGIN_SISTEMA ?? DBNull.Value, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "ESTACION_ACCION", Value = (object)vESTACION ?? DBNull.Value, DbType = System.Data.DbType.String },
-					new CParameter() { ParameterName = "FECHA_ACCION", Value = DateTime.Now, DbType = System.Data.DbType.DateTime },
 				};
 
 				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, p);
@@ -847,9 +810,20 @@ FROM dbo.V_GEN_PLANTILLA_CONTRATO_VERSION V
 OUTER APPLY (
 	SELECT TOP 1 B.TIPO_EVENTO
 	FROM dbo.GEN_PLANTILLA_CONTRATO_BITACORA B
+	INNER JOIN dbo.GEN_PLANTILLA_CONTRATO PC_BIT
+		ON PC_BIT.CORR_EMPRESA = B.CORR_EMPRESA
+	   AND PC_BIT.CORR_PLANTILLA_CONTRATO = B.CORR_PLANTILLA_CONTRATO
 	WHERE B.CORR_EMPRESA = V.CORR_EMPRESA
+	  AND B.CORR_PLANTILLA_CONTRATO = V.CORR_PLANTILLA_CONTRATO
 	  AND B.CORR_PLANTILLA_CONTRATO_VERSION = V.CORR_PLANTILLA_CONTRATO_VERSION
 	  AND B.TIPO_EVENTO IN ('CREACION_VERSION', 'NUEVA_VERSION', 'ACTIVACION_VERSION', 'INACTIVACION_VERSION')
+	  AND (
+			PC_BIT.FECHA_CREA IS NULL
+			OR (
+				CONVERT(datetime2(3), COALESCE(B.FECHA_CREA, B.FECHA_ACCION)) >= CONVERT(datetime2(3), PC_BIT.FECHA_CREA)
+				AND CONVERT(datetime2(3), COALESCE(B.FECHA_ACCION, B.FECHA_CREA)) >= CONVERT(datetime2(3), PC_BIT.FECHA_CREA)
+			)
+		  )
 	ORDER BY B.FECHA_ACCION DESC, B.CORR_BITACORA DESC
 ) ESTADO
 WHERE V.CORR_EMPRESA = @CORR_EMPRESA
@@ -867,8 +841,8 @@ OPTION (MAXRECURSION 20);";
 			return QueryListAsync<GEN_PLANTILLA_CONTRATO_VERSIONView>(sql, xWhere);
 		}
 
-		// Qué hace: obtiene la bitácora cronológica de una plantilla de contrato.
-		// Cómo lo hace: consulta V_GEN_PLANTILLA_CONTRATO_BITACORA filtrando por empresa y plantilla de más reciente a más antigua.
+		// Qué hace: obtiene la bitácora cronológica de la plantilla vigente.
+		// Cómo lo hace: filtra por empresa, plantilla y fechas de la bitácora iguales o posteriores a FECHA_CREA del registro activo, con precisión de milisegundos.
 		public Task<CResult> GetBitacoraAsync(List<CParameter> xWhere)
 		{
 			string sql = SqlAmbitoOrganigrama + @"
@@ -881,6 +855,13 @@ WHERE B.CORR_EMPRESA = @CORR_EMPRESA
 	FROM dbo.GEN_PLANTILLA_CONTRATO PC
 	WHERE PC.CORR_EMPRESA = B.CORR_EMPRESA
 	  AND PC.CORR_PLANTILLA_CONTRATO = B.CORR_PLANTILLA_CONTRATO
+	  AND (
+			PC.FECHA_CREA IS NULL
+			OR (
+				CONVERT(datetime2(3), COALESCE(B.FECHA_CREA, B.FECHA_ACCION)) >= CONVERT(datetime2(3), PC.FECHA_CREA)
+				AND CONVERT(datetime2(3), COALESCE(B.FECHA_ACCION, B.FECHA_CREA)) >= CONVERT(datetime2(3), PC.FECHA_CREA)
+			)
+		  )
 	  AND " + SqlPlantillaEnAmbito + @"
   )
 ORDER BY B.FECHA_ACCION DESC, B.CORR_BITACORA DESC
