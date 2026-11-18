@@ -45,7 +45,9 @@ export interface GenPlantillaContratoVersion {
 	NOMBRE_VERSION_PADRE?: string | null;
 	CUERPO_PLANTILLA?: string | null;
 	ES_VERSION_ACTIVA: boolean;
+	ESTADO_VERSION?: 'Activa' | 'Borrador' | 'Histórica' | null;
 	OBSERVACION?: string | null;
+	TIENE_EMPLEADOS?: boolean;
 	USUARIO_CREA?: string;
 	ESTACION_CREA?: string;
 	FECHA_CREA?: Date | string | null;
@@ -73,6 +75,13 @@ export interface ActualizarVersionPlantillaRequest {
 // Qué hace: cuerpo enviado al endpoint ActivarVersion para activar una versión histórica v2+.
 // Cómo lo hace: envía la llave compuesta de plantilla y versión a activar.
 export interface ActivarVersionPlantillaRequest {
+	CORR_PLANTILLA_CONTRATO: number;
+	CORR_PLANTILLA_CONTRATO_VERSION: number;
+}
+
+// Qué hace: cuerpo enviado al endpoint InactivarPlantilla para pasar la versión vigente a Borrador.
+// Cómo lo hace: envía la plantilla y la versión activa seleccionada; se permite dejar cero versiones activas.
+export interface InactivarPlantillaRequest {
 	CORR_PLANTILLA_CONTRATO: number;
 	CORR_PLANTILLA_CONTRATO_VERSION: number;
 }

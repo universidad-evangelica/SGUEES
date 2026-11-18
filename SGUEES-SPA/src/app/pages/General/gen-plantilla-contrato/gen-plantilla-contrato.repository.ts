@@ -75,6 +75,12 @@ export class GenPlantillaContratoRepository {
 		return this.objData.Post(model, this.xController, 'ActivarVersion', environment.UrlGENERALAPI);
 	}
 
+	// Qué hace: inactiva la versión vigente seleccionada y la deja en Borrador.
+	// Cómo lo hace: invoca Post sobre InactivarPlantilla en GENERAL API enviando plantilla y versión.
+	inactivarPlantilla(model: any): Observable<IResult> {
+		return this.objData.Post(model, this.xController, 'InactivarPlantilla', environment.UrlGENERALAPI);
+	}
+
 	// Qué hace: consulta la bitácora de movimientos de una plantilla de contrato.
 	// Cómo lo hace: invoca Get sobre GetBitacora en GENERAL API enviando CORR_PLANTILLA_CONTRATO.
 	getBitacora(xWhere: IParam[]): Observable<IResult> {

@@ -16,6 +16,69 @@ namespace sguees.Repositories
 	public class GEN_PLANTILLA_CONTRATORepository : BaseRepository<GEN_PLANTILLA_CONTRATOTable>, IGEN_PLANTILLA_CONTRATORepository
 	{
 		private const string _ViewName = "V_GEN_PLANTILLA_CONTRATO";
+		private const string SqlAmbitoOrganigrama = @"
+;WITH EmpleadoSesion AS
+(
+	SELECT E.CORR_EMPRESA, E.CORR_EMPLEADO
+	FROM dbo.GEN_EMPLEADO E
+	INNER JOIN dbo.GEN_PERSONA_USUARIO PU ON PU.CORR_PERSONA = E.CORR_PERSONA
+	WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+	  AND LTRIM(RTRIM(PU.LOGIN_SISTEMA)) = @USUARIO_CREA
+),
+UnidadesComoJefe AS
+(
+	SELECT DISTINCT JU.CORR_EMPRESA, JU.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES JU
+	INNER JOIN EmpleadoSesion ES
+		ON ES.CORR_EMPRESA = JU.CORR_EMPRESA
+	   AND ES.CORR_EMPLEADO = JU.CORR_EMPLEADO
+	WHERE JU.CORR_EMPRESA = @CORR_EMPRESA
+	  AND JU.ACTIVO = CONVERT(BIT, 1)
+),
+UnidadesDescendientes AS
+(
+	SELECT U.CORR_EMPRESA, U.CORR_UNIDAD, 0 AS NIVEL
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES U
+	INNER JOIN UnidadesComoJefe J
+		ON J.CORR_EMPRESA = U.CORR_EMPRESA
+	   AND J.CORR_UNIDAD = U.CORR_UNIDAD_PADRE
+	WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+
+	UNION ALL
+
+	SELECT U.CORR_EMPRESA, U.CORR_UNIDAD, D.NIVEL + 1
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES U
+	INNER JOIN UnidadesDescendientes D
+		ON D.CORR_EMPRESA = U.CORR_EMPRESA
+	   AND D.CORR_UNIDAD = U.CORR_UNIDAD_PADRE
+	WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+	  AND D.NIVEL < 20
+),
+UnidadesVisibles AS
+(
+	SELECT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesComoJefe
+	UNION
+	SELECT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesDescendientes
+)
+";
+		private const string SqlPlantillaEnAmbito = @"
+(
+	LTRIM(RTRIM(ISNULL(PC.USUARIO_CREA, ''))) = @USUARIO_CREA
+	OR EXISTS (
+		SELECT 1
+		FROM dbo.GEN_PERSONA_USUARIO PU
+		INNER JOIN dbo.GEN_EMPLEADO E
+			ON E.CORR_PERSONA = PU.CORR_PERSONA
+		   AND E.CORR_EMPRESA = PC.CORR_EMPRESA
+		INNER JOIN dbo.GEN_EMPLEADO_PUESTO EP
+			ON EP.CORR_EMPRESA = E.CORR_EMPRESA
+		   AND EP.CORR_EMPLEADO = E.CORR_EMPLEADO
+		INNER JOIN UnidadesVisibles UV
+			ON UV.CORR_EMPRESA = EP.CORR_EMPRESA
+		   AND UV.CORR_UNIDAD = EP.CORR_UNIDAD
+		WHERE LTRIM(RTRIM(PU.LOGIN_SISTEMA)) = LTRIM(RTRIM(ISNULL(PC.USUARIO_CREA, '')))
+	)
+)";
 
 		public GEN_PLANTILLA_CONTRATORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
@@ -23,19 +86,62 @@ namespace sguees.Repositories
 		{
 		}
 
-		// Qué hace: lista las plantillas de contrato de la empresa actual de la más reciente a la más antigua.
-		// Cómo lo hace: consulta V_GEN_PLANTILLA_CONTRATO filtrando por CORR_EMPRESA y ordena descendentemente por CORR_PLANTILLA_CONTRATO.
+		public async Task<bool> PuedeAdministrarAsync(int corrEmpresa, int corrPlantilla, string login)
+		{
+			if (corrEmpresa <= 0 || corrPlantilla <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return false;
+			}
+
+			string sql = SqlAmbitoOrganigrama + @"
+SELECT CASE WHEN EXISTS
+(
+	SELECT 1
+	FROM dbo.GEN_PLANTILLA_CONTRATO PC
+	WHERE PC.CORR_EMPRESA = @CORR_EMPRESA
+	  AND PC.CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+	  AND " + SqlPlantillaEnAmbito + @"
+) THEN 1 ELSE 0 END
+OPTION (MAXRECURSION 20);";
+
+			try
+			{
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_PLANTILLA_CONTRATO", Value = corrPlantilla, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "USUARIO_CREA", Value = login.Trim(), DbType = System.Data.DbType.String },
+				});
+				var allowed = reader.Read() && Convert.ToInt32(reader[0]) == 1;
+				reader.Close();
+				return allowed;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+		}
+
+		// Qué hace: lista las plantillas visibles para el login: las propias y las de unidades bajo su jefatura.
+		// Cómo lo hace: consulta V_GEN_PLANTILLA_CONTRATO con el ámbito del organigrama y ordena por correlativo descendente.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
+			string sql = SqlAmbitoOrganigrama + @"
+SELECT PC.*
+FROM dbo.V_GEN_PLANTILLA_CONTRATO PC
+WHERE PC.CORR_EMPRESA = @CORR_EMPRESA
+  AND " + SqlPlantillaEnAmbito + @"
+ORDER BY PC.CORR_PLANTILLA_CONTRATO DESC
+OPTION (MAXRECURSION 20);";
 
 			try
 			{
 				var dbWhere = xWhere
-					.Where(x => x.ParameterName == "CORR_EMPRESA")
+					.Where(x => x.ParameterName == "CORR_EMPRESA" || x.ParameterName == "USUARIO_CREA")
 					.ToList();
 
-				var reader = await objData.GetDataReader(_ViewName, dbWhere);
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, dbWhere);
 				var response = new List<GEN_PLANTILLA_CONTRATOView>().FromDataReader(reader)
 					.OrderByDescending(x => x.CORR_PLANTILLA_CONTRATO)
 					.ToList();
@@ -68,15 +174,27 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: consulta una plantilla de contrato puntual por su clave.
-		// Cómo lo hace: consulta V_GEN_PLANTILLA_CONTRATO con los filtros recibidos y devuelve el primer registro.
+		// Qué hace: consulta una plantilla de contrato puntual solo si pertenece al ámbito del login.
+		// Cómo lo hace: aplica la misma visibilidad de GetAll y devuelve el primer registro autorizado.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
+			string sql = SqlAmbitoOrganigrama + @"
+SELECT PC.*
+FROM dbo.V_GEN_PLANTILLA_CONTRATO PC
+WHERE PC.CORR_EMPRESA = @CORR_EMPRESA
+  AND PC.CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+  AND " + SqlPlantillaEnAmbito + @"
+OPTION (MAXRECURSION 20);";
 
 			try
 			{
-				var reader = await objData.GetDataReader(_ViewName, xWhere);
+				var dbWhere = xWhere
+					.Where(x => x.ParameterName == "CORR_EMPRESA"
+						|| x.ParameterName == "CORR_PLANTILLA_CONTRATO"
+						|| x.ParameterName == "USUARIO_CREA")
+					.ToList();
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, dbWhere);
 				var response = new List<GEN_PLANTILLA_CONTRATOView>().FromDataReader(reader).FirstOrDefault();
 
 				reader.Close();
@@ -243,8 +361,8 @@ END CATCH;";
 			return objResultado;
 		}
 
-		// Qué hace: actualiza el encabezado de la plantilla y consolida v1 si continúa en Borrador con contenido.
-		// Cómo lo hace: actualiza GEN_PLANTILLA_CONTRATO; nunca sobrescribe versiones ya existentes e inserta v1 (padre NULL) y su bitácora solo cuando no existen versiones previas.
+		// Qué hace: actualiza el encabezado de la plantilla y guarda v1 en Borrador si aún no hay versiones y hay contenido.
+		// Cómo lo hace: actualiza GEN_PLANTILLA_CONTRATO; inserta v1 inactiva (ES_VERSION_ACTIVA = 0) solo cuando no existen versiones previas.
 		public async Task<CResult> UpdateAsync(GEN_PLANTILLA_CONTRATOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -323,7 +441,7 @@ BEGIN TRY
 				'Versión 1',
 				NULL,
 				@CUERPO_PLANTILLA,
-				1,
+				0,
 				'Versión inicial',
 				@USUARIO_ACTU,
 				@ESTACION_ACTU,
@@ -361,7 +479,7 @@ BEGIN TRY
 				@NUEVA_VERSION_CORR,
 				'Versión 1',
 				'CREACION_VERSION',
-				LEFT('Se consolidó la Versión 1 inicial (Activa) para ""' + @NOMBRE_PLANTILLA + '"".', 1000),
+				LEFT('Se guardó la Versión 1 inicial en estado Borrador para ""' + @NOMBRE_PLANTILLA + '"".', 1000),
 				@FECHA_ACTU,
 				@USUARIO_ACTU,
 				@ESTACION_ACTU,
@@ -476,8 +594,8 @@ END CATCH;";
 			return objResultado;
 		}
 
-		// Qué hace: elimina una plantilla de contrato únicamente si continúa en estado Borrador (sin versiones).
-		// Cómo lo hace: verifica dentro de una transacción que no existan filas en GEN_PLANTILLA_CONTRATO_VERSION y luego ejecuta DELETE sobre GEN_PLANTILLA_CONTRATO.
+		// Qué hace: elimina una plantilla de contrato únicamente si continúa en Borrador y no está asignada a empleados.
+		// Cómo lo hace: bloquea si hay versión activa o contratos; borra primero versiones hijas y luego el encabezado.
 		public async Task<CResult> DeleteAsync(GEN_PLANTILLA_CONTRATOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -492,16 +610,45 @@ BEGIN TRY
 		FROM dbo.GEN_PLANTILLA_CONTRATO_VERSION WITH (UPDLOCK, HOLDLOCK)
 		WHERE CORR_EMPRESA = @CORR_EMPRESA
 		  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+		  AND ES_VERSION_ACTIVA = 1
 	)
 	BEGIN
 		ROLLBACK TRAN;
 		SELECT -1 AS RESULTADO_DELETE;
+	END
+	ELSE IF OBJECT_ID('dbo.GEN_EMPLEADO_CONTRATO', 'U') IS NOT NULL
+		AND EXISTS (
+		SELECT 1
+		FROM dbo.GEN_EMPLEADO_CONTRATO EC
+		INNER JOIN dbo.GEN_EMPLEADO EM
+			ON EM.CORR_EMPRESA = EC.CORR_EMPRESA
+		   AND EM.CORR_EMPLEADO = EC.CORR_EMPLEADO
+		INNER JOIN dbo.GEN_PLANTILLA_CONTRATO_VERSION PV
+			ON PV.CORR_EMPRESA = EC.CORR_EMPRESA
+		   AND PV.CORR_PLANTILLA_CONTRATO_VERSION = EC.CORR_PLANTILLA_CONTRATO_VERSION
+		   AND PV.CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+		WHERE EC.CORR_EMPRESA = @CORR_EMPRESA
+		  AND EC.CORR_EMPLEADO > 0
+		  AND EC.ESTADO_CONTRATO IN (1, 2)
+	)
+	BEGIN
+		ROLLBACK TRAN;
+		SELECT -2 AS RESULTADO_DELETE;
 	END
 	ELSE
 	BEGIN
 		DECLARE @NOMBRE_ELIMINADA VARCHAR(200);
 		SELECT TOP 1 @NOMBRE_ELIMINADA = NOMBRE_PLANTILLA
 		FROM dbo.GEN_PLANTILLA_CONTRATO WITH (UPDLOCK, HOLDLOCK)
+		WHERE CORR_EMPRESA = @CORR_EMPRESA
+		  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO;
+
+		DELETE FROM dbo.GEN_PLANTILLA_CONTRATO_VERSION
+		WHERE CORR_EMPRESA = @CORR_EMPRESA
+		  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+		  AND NUMERO_VERSION > 1;
+
+		DELETE FROM dbo.GEN_PLANTILLA_CONTRATO_VERSION
 		WHERE CORR_EMPRESA = @CORR_EMPRESA
 		  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO;
 
@@ -577,14 +724,24 @@ END CATCH;";
 				reader.Close();
 				reader = null;
 
-				if (resultadoDelete < 0)
+				if (resultadoDelete == -2)
 				{
 					objResultado.Data = null;
 					objResultado.Result = false;
 					objResultado.RowsAffected = 0;
 					objResultado.CodeHelper = 0;
 					objResultado.ErrorCode = -1;
-					objResultado.ErrorMessage = "No se puede eliminar la plantilla de contrato porque ya tiene una versión activa o historial de versiones.";
+					objResultado.ErrorMessage = "No se puede inactivar una plantilla asignada a un empleado";
+					objResultado.ErrorSource = "[GEN_PLANTILLA_CONTRATORepository]";
+				}
+				else if (resultadoDelete < 0)
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.RowsAffected = 0;
+					objResultado.CodeHelper = 0;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "No se puede eliminar la plantilla de contrato porque ya tiene una versión activa.";
 					objResultado.ErrorSource = "[GEN_PLANTILLA_CONTRATORepository]";
 				}
 				else if (resultadoDelete == 0)
@@ -663,16 +820,49 @@ END CATCH;";
 			}
 		}
 
-		// Qué hace: obtiene el historial ordenado de versiones de una plantilla de contrato.
-		// Cómo lo hace: consulta V_GEN_PLANTILLA_CONTRATO_VERSION filtrando por empresa y plantilla ordenada por NUMERO_VERSION.
+		// Qué hace: obtiene el historial ordenado de versiones y señala cuáles tienen contratos de empleados asociados.
+		// Cómo lo hace: consulta V_GEN_PLANTILLA_CONTRATO_VERSION y calcula TIENE_EMPLEADOS por versión.
 		public Task<CResult> GetVersionesAsync(List<CParameter> xWhere)
 		{
-			const string sql = @"
-SELECT *
-FROM dbo.V_GEN_PLANTILLA_CONTRATO_VERSION
-WHERE CORR_EMPRESA = @CORR_EMPRESA
-  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
-ORDER BY NUMERO_VERSION ASC;";
+			string sql = SqlAmbitoOrganigrama + @"
+SELECT
+	V.*,
+	CASE
+		WHEN V.ES_VERSION_ACTIVA = 1 THEN 'Activa'
+		WHEN ESTADO.TIPO_EVENTO = 'ACTIVACION_VERSION' THEN 'Histórica'
+		ELSE 'Borrador'
+	END AS ESTADO_VERSION,
+	CAST(CASE WHEN EXISTS (
+		SELECT 1
+		FROM dbo.GEN_EMPLEADO_CONTRATO EC
+		INNER JOIN dbo.GEN_EMPLEADO EM
+			ON EM.CORR_EMPRESA = EC.CORR_EMPRESA
+		   AND EM.CORR_EMPLEADO = EC.CORR_EMPLEADO
+		WHERE EC.CORR_EMPRESA = V.CORR_EMPRESA
+		  AND EC.CORR_PLANTILLA_CONTRATO_VERSION = V.CORR_PLANTILLA_CONTRATO_VERSION
+		  AND EC.CORR_EMPLEADO > 0
+		  AND EC.ESTADO_CONTRATO IN (1, 2)
+	) THEN 1 ELSE 0 END AS BIT) AS TIENE_EMPLEADOS
+FROM dbo.V_GEN_PLANTILLA_CONTRATO_VERSION V
+OUTER APPLY (
+	SELECT TOP 1 B.TIPO_EVENTO
+	FROM dbo.GEN_PLANTILLA_CONTRATO_BITACORA B
+	WHERE B.CORR_EMPRESA = V.CORR_EMPRESA
+	  AND B.CORR_PLANTILLA_CONTRATO_VERSION = V.CORR_PLANTILLA_CONTRATO_VERSION
+	  AND B.TIPO_EVENTO IN ('CREACION_VERSION', 'NUEVA_VERSION', 'ACTIVACION_VERSION', 'INACTIVACION_VERSION')
+	ORDER BY B.FECHA_ACCION DESC, B.CORR_BITACORA DESC
+) ESTADO
+WHERE V.CORR_EMPRESA = @CORR_EMPRESA
+  AND V.CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+  AND EXISTS (
+	SELECT 1
+	FROM dbo.GEN_PLANTILLA_CONTRATO PC
+	WHERE PC.CORR_EMPRESA = V.CORR_EMPRESA
+	  AND PC.CORR_PLANTILLA_CONTRATO = V.CORR_PLANTILLA_CONTRATO
+	  AND " + SqlPlantillaEnAmbito + @"
+  )
+ORDER BY V.NUMERO_VERSION ASC
+OPTION (MAXRECURSION 20);";
 
 			return QueryListAsync<GEN_PLANTILLA_CONTRATO_VERSIONView>(sql, xWhere);
 		}
@@ -681,14 +871,43 @@ ORDER BY NUMERO_VERSION ASC;";
 		// Cómo lo hace: consulta V_GEN_PLANTILLA_CONTRATO_BITACORA filtrando por empresa y plantilla de más reciente a más antigua.
 		public Task<CResult> GetBitacoraAsync(List<CParameter> xWhere)
 		{
-			const string sql = @"
+			string sql = SqlAmbitoOrganigrama + @"
 SELECT *
-FROM dbo.V_GEN_PLANTILLA_CONTRATO_BITACORA
-WHERE CORR_EMPRESA = @CORR_EMPRESA
-  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
-ORDER BY FECHA_ACCION DESC, CORR_BITACORA DESC;";
+FROM dbo.V_GEN_PLANTILLA_CONTRATO_BITACORA B
+WHERE B.CORR_EMPRESA = @CORR_EMPRESA
+  AND B.CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+  AND EXISTS (
+	SELECT 1
+	FROM dbo.GEN_PLANTILLA_CONTRATO PC
+	WHERE PC.CORR_EMPRESA = B.CORR_EMPRESA
+	  AND PC.CORR_PLANTILLA_CONTRATO = B.CORR_PLANTILLA_CONTRATO
+	  AND " + SqlPlantillaEnAmbito + @"
+  )
+ORDER BY B.FECHA_ACCION DESC, B.CORR_BITACORA DESC
+OPTION (MAXRECURSION 20);";
 
 			return QueryListAsync<GEN_PLANTILLA_CONTRATO_BITACORAView>(sql, xWhere);
+		}
+
+		// Qué hace: obtiene la lista plana de parámetros para contratos desde la vista SQL.
+		// Cómo lo hace: ejecuta SELECT sobre V_GEN_PLANTILLA_CONTRATO_PARAMETROS ordenada por categoría y parámetro.
+		public async Task<List<GEN_PLANTILLA_CONTRATO_PARAMETROItem>> GetParametrosDisponiblesAsync()
+		{
+			const string sql = @"
+SELECT
+	CATEGORIA,
+	ORDEN_CATEGORIA,
+	KEY_PARAMETRO,
+	LABEL_PARAMETRO,
+	DESCRIPCION,
+	ORDEN_PARAMETRO
+FROM dbo.V_GEN_PLANTILLA_CONTRATO_PARAMETROS
+ORDER BY ORDEN_CATEGORIA, ORDEN_PARAMETRO;";
+
+			var result = await QueryListAsync<GEN_PLANTILLA_CONTRATO_PARAMETROItem>(sql, new List<CParameter>());
+			return result.Result && result.Data is List<GEN_PLANTILLA_CONTRATO_PARAMETROItem> list
+				? list
+				: new List<GEN_PLANTILLA_CONTRATO_PARAMETROItem>();
 		}
 
 		// Qué hace: obtiene el cuerpo HTML de la Versión 1 registrada para comparar diferencias en bitácora.
@@ -753,8 +972,8 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 			}
 		}
 
-		// Qué hace: crea una nueva versión v2+ vinculada siempre a v1 como padre, la activa y deja v1 y anteriores como históricas.
-		// Cómo lo hace: dentro de transacción busca NUMERO_VERSION = 1, desactiva la versión activa actual, inserta la nueva con CORR_VERSION_PADRE = v1 y registra el detalle completo de cambios en bitácora.
+		// Qué hace: crea una nueva versión v2+ en Borrador, vinculada siempre a v1 como padre.
+		// Cómo lo hace: dentro de transacción busca NUMERO_VERSION = 1, inserta la nueva inactiva y registra el detalle completo de cambios en bitácora.
 		public Task<CResult> CrearVersionAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string detalleBitacora, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			const string sql = @"
@@ -788,15 +1007,6 @@ BEGIN TRY
 		SELECT -2 AS RESULTADO_OP, 'Debe existir primero la Versión 1 antes de crear una nueva versión.' AS MENSAJE_ERROR;
 		RETURN;
 	END;
-
-	UPDATE dbo.GEN_PLANTILLA_CONTRATO_VERSION
-	SET ES_VERSION_ACTIVA = 0,
-		USUARIO_ACTU = @USUARIO_ACTU,
-		ESTACION_ACTU = @ESTACION_ACTU,
-		FECHA_ACTU = @FECHA_ACTU
-	WHERE CORR_EMPRESA = @CORR_EMPRESA
-	  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
-	  AND ES_VERSION_ACTIVA = 1;
 
 	DECLARE @NUMERO_VERSION INT;
 	SELECT @NUMERO_VERSION = ISNULL(MAX(NUMERO_VERSION), 0) + 1
@@ -838,7 +1048,7 @@ BEGIN TRY
 		@NOMBRE_VERSION,
 		@CORR_VERSION_PADRE,
 		@CUERPO_PLANTILLA,
-		1,
+		0,
 		@OBSERVACION,
 		@USUARIO_ACTU,
 		@ESTACION_ACTU,
@@ -853,7 +1063,7 @@ BEGIN TRY
 	FROM dbo.GEN_PLANTILLA_CONTRATO_BITACORA WITH (UPDLOCK, HOLDLOCK)
 	WHERE CORR_EMPRESA = @CORR_EMPRESA;
 
-	DECLARE @DETALLE_FINAL NVARCHAR(MAX) = 'Se creó ' + @NOMBRE_VERSION + ' a partir de la Versión 1.';
+	DECLARE @DETALLE_FINAL NVARCHAR(MAX) = 'Se creó ' + @NOMBRE_VERSION + ' en estado Borrador a partir de la Versión 1.';
 	IF NULLIF(LTRIM(RTRIM(ISNULL(@DETALLE_CAMBIOS, N''))), N'') IS NOT NULL
 	BEGIN
 		SET @DETALLE_FINAL = @DETALLE_FINAL + CHAR(13) + CHAR(10) + @DETALLE_CAMBIOS;
@@ -921,8 +1131,8 @@ END CATCH;";
 			return ExecuteVersionMutationAsync(sql, p);
 		}
 
-		// Qué hace: actualiza el contenido HTML de la versión v2+ activa actual y registra los cambios en bitácora.
-		// Cómo lo hace: verifica dentro de transacción que sea v2+ activa; si el cuerpo cambió, actualiza CUERPO_PLANTILLA e inserta el diff en bitácora.
+		// Qué hace: actualiza el contenido HTML de cualquier versión, incluida la Versión 1, y registra los cambios en bitácora.
+		// Cómo lo hace: si el cuerpo cambió, actualiza CUERPO_PLANTILLA e inserta el diff en bitácora.
 		public Task<CResult> ActualizarVersionAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string detalleBitacora, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			const string sql = @"
@@ -949,20 +1159,6 @@ BEGIN TRY
 	BEGIN
 		ROLLBACK TRAN;
 		SELECT -1 AS RESULTADO_OP, 'No se encontró la versión seleccionada.' AS MENSAJE_ERROR;
-		RETURN;
-	END;
-
-	IF @NUMERO_OBJETIVO = 1
-	BEGIN
-		ROLLBACK TRAN;
-		SELECT -2 AS RESULTADO_OP, 'La Versión 1 permanece inhabilitada y no puede modificarse directamente.' AS MENSAJE_ERROR;
-		RETURN;
-	END;
-
-	IF @ES_ACTIVA = 0
-	BEGIN
-		ROLLBACK TRAN;
-		SELECT -3 AS RESULTADO_OP, 'Solo la versión activa actual (Versión 2+) puede editarse directamente.' AS MENSAJE_ERROR;
 		RETURN;
 	END;
 
@@ -1057,8 +1253,8 @@ END CATCH;";
 			return ExecuteVersionMutationAsync(sql, p);
 		}
 
-		// Qué hace: activa una versión histórica elegible (v2+) desactivando la versión activa anterior.
-		// Cómo lo hace: verifica existencia, bloquea reactivar v1 si existen versiones v2+, actualiza ES_VERSION_ACTIVA y registra bitácora.
+		// Qué hace: activa cualquier versión, incluida la Versión 1, y pasa las demás activas a histórico.
+		// Cómo lo hace: verifica existencia, pone ES_VERSION_ACTIVA = 0 en las vigentes y 1 en la seleccionada, y registra bitácora.
 		public Task<CResult> ActivarVersionAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			const string sql = @"
@@ -1086,19 +1282,6 @@ BEGIN TRY
 		RETURN;
 	END;
 
-	DECLARE @CANT_VERSIONES INT;
-	SELECT @CANT_VERSIONES = COUNT(*)
-	FROM dbo.GEN_PLANTILLA_CONTRATO_VERSION WITH (UPDLOCK, HOLDLOCK)
-	WHERE CORR_EMPRESA = @CORR_EMPRESA
-	  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO;
-
-	IF @NUMERO_OBJETIVO = 1 AND @CANT_VERSIONES > 1
-	BEGIN
-		ROLLBACK TRAN;
-		SELECT -2 AS RESULTADO_OP, 'La Versión 1 permanece como Formato Padre de referencia (inhabilitada) y no puede volver a activarse.' AS MENSAJE_ERROR;
-		RETURN;
-	END;
-
 	IF @YA_ACTIVA = 1
 	BEGIN
 		ROLLBACK TRAN;
@@ -1111,6 +1294,14 @@ BEGIN TRY
 	FROM dbo.GEN_PLANTILLA_CONTRATO WITH (UPDLOCK, HOLDLOCK)
 	WHERE CORR_EMPRESA = @CORR_EMPRESA
 	  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO;
+
+	DECLARE @NOMBRE_ANTERIOR VARCHAR(50);
+	SELECT TOP 1 @NOMBRE_ANTERIOR = NOMBRE_VERSION
+	FROM dbo.GEN_PLANTILLA_CONTRATO_VERSION WITH (UPDLOCK, HOLDLOCK)
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+	  AND ES_VERSION_ACTIVA = 1
+	  AND CORR_PLANTILLA_CONTRATO_VERSION <> @CORR_PLANTILLA_CONTRATO_VERSION;
 
 	UPDATE dbo.GEN_PLANTILLA_CONTRATO_VERSION
 	SET ES_VERSION_ACTIVA = 0,
@@ -1159,7 +1350,13 @@ BEGIN TRY
 		@CORR_PLANTILLA_CONTRATO_VERSION,
 		@NOMBRE_VERSION,
 		'ACTIVACION_VERSION',
-		LEFT('Se estableció ' + @NOMBRE_VERSION + ' como versión activa.', 1000),
+		LEFT(
+			CASE
+				WHEN @NOMBRE_ANTERIOR IS NULL THEN 'Se estableció ' + @NOMBRE_VERSION + ' como versión activa.'
+				ELSE 'Se estableció ' + @NOMBRE_VERSION + ' como versión activa. ' + @NOMBRE_ANTERIOR + ' pasó a histórico.'
+			END,
+			1000
+		),
 		@FECHA_ACTU,
 		@USUARIO_ACTU,
 		@ESTACION_ACTU,
@@ -1174,6 +1371,158 @@ BEGIN TRY
 	FROM dbo.V_GEN_PLANTILLA_CONTRATO_VERSION
 	WHERE CORR_EMPRESA = @CORR_EMPRESA
 	  AND CORR_PLANTILLA_CONTRATO_VERSION = @CORR_PLANTILLA_CONTRATO_VERSION;
+END TRY
+BEGIN CATCH
+	IF @@TRANCOUNT > 0
+		ROLLBACK TRAN;
+	THROW;
+END CATCH;";
+
+			var fechaActu = DateTime.Now;
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_PLANTILLA_CONTRATO", Value = Data.CORR_PLANTILLA_CONTRATO, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_PLANTILLA_CONTRATO_VERSION", Value = Data.CORR_PLANTILLA_CONTRATO_VERSION, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "USUARIO_ACTU", Value = (object)vLOGIN_SISTEMA ?? DBNull.Value, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "ESTACION_ACTU", Value = (object)vESTACION ?? DBNull.Value, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "FECHA_ACTU", Value = fechaActu, DbType = System.Data.DbType.DateTime },
+			};
+
+			return ExecuteVersionMutationAsync(sql, p);
+		}
+
+		// Qué hace: inactiva una versión activa sin contratos de empleados asociados.
+		// Cómo lo hace: valida la asignación dentro de la transacción antes de cambiar el estado y registrar bitácora.
+		public Task<CResult> InactivarPlantillaAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			const string sql = @"
+SET NOCOUNT ON;
+BEGIN TRY
+	BEGIN TRAN;
+
+	DECLARE @CORR_VERSION_OBJETIVO INT;
+	DECLARE @NOMBRE_VERSION VARCHAR(50);
+	DECLARE @ES_ACTIVA BIT;
+
+	SELECT TOP 1
+		@CORR_VERSION_OBJETIVO = CORR_PLANTILLA_CONTRATO_VERSION,
+		@NOMBRE_VERSION = NOMBRE_VERSION,
+		@ES_ACTIVA = ES_VERSION_ACTIVA
+	FROM dbo.GEN_PLANTILLA_CONTRATO_VERSION WITH (UPDLOCK, HOLDLOCK)
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+	  AND (
+			(@CORR_PLANTILLA_CONTRATO_VERSION > 0 AND CORR_PLANTILLA_CONTRATO_VERSION = @CORR_PLANTILLA_CONTRATO_VERSION)
+			OR (@CORR_PLANTILLA_CONTRATO_VERSION <= 0 AND ES_VERSION_ACTIVA = 1)
+		  );
+
+	IF @CORR_VERSION_OBJETIVO IS NULL
+	BEGIN
+		ROLLBACK TRAN;
+		SELECT -1 AS RESULTADO_OP, 'No se encontró la versión seleccionada.' AS MENSAJE_ERROR;
+		RETURN;
+	END;
+
+	IF @ES_ACTIVA = 0
+	BEGIN
+		ROLLBACK TRAN;
+		SELECT -3 AS RESULTADO_OP, 'La versión seleccionada ya está en Borrador o histórico.' AS MENSAJE_ERROR;
+		RETURN;
+	END;
+
+	IF OBJECT_ID('dbo.GEN_EMPLEADO_CONTRATO', 'U') IS NOT NULL
+	   AND EXISTS (
+			SELECT 1
+			FROM dbo.GEN_EMPLEADO_CONTRATO EC WITH (UPDLOCK, HOLDLOCK)
+			INNER JOIN dbo.GEN_EMPLEADO EM
+				ON EM.CORR_EMPRESA = EC.CORR_EMPRESA
+			   AND EM.CORR_EMPLEADO = EC.CORR_EMPLEADO
+			INNER JOIN dbo.GEN_PLANTILLA_CONTRATO_VERSION PV
+				ON PV.CORR_EMPRESA = EC.CORR_EMPRESA
+			   AND PV.CORR_PLANTILLA_CONTRATO_VERSION = EC.CORR_PLANTILLA_CONTRATO_VERSION
+			WHERE EC.CORR_EMPRESA = @CORR_EMPRESA
+			  AND PV.CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+			  AND EC.CORR_EMPLEADO > 0
+			  AND EC.ESTADO_CONTRATO IN (1, 2)
+			  AND (
+					EC.CORR_PLANTILLA_CONTRATO_VERSION = @CORR_VERSION_OBJETIVO
+					OR NOT EXISTS (
+						SELECT 1
+						FROM dbo.GEN_PLANTILLA_CONTRATO_VERSION VA WITH (UPDLOCK, HOLDLOCK)
+						WHERE VA.CORR_EMPRESA = @CORR_EMPRESA
+						  AND VA.CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+						  AND VA.ES_VERSION_ACTIVA = 1
+						  AND VA.CORR_PLANTILLA_CONTRATO_VERSION <> @CORR_VERSION_OBJETIVO
+					)
+			  )
+	   )
+	BEGIN
+		ROLLBACK TRAN;
+		SELECT -2 AS RESULTADO_OP, 'No se puede inactivar la versión porque existe una versión asignada a un empleado.' AS MENSAJE_ERROR;
+		RETURN;
+	END;
+
+	DECLARE @NOMBRE_PLANTILLA VARCHAR(200);
+	SELECT TOP 1 @NOMBRE_PLANTILLA = NOMBRE_PLANTILLA
+	FROM dbo.GEN_PLANTILLA_CONTRATO WITH (UPDLOCK, HOLDLOCK)
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO;
+
+	UPDATE dbo.GEN_PLANTILLA_CONTRATO_VERSION
+	SET ES_VERSION_ACTIVA = 0,
+		USUARIO_ACTU = @USUARIO_ACTU,
+		ESTACION_ACTU = @ESTACION_ACTU,
+		FECHA_ACTU = @FECHA_ACTU
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PLANTILLA_CONTRATO = @CORR_PLANTILLA_CONTRATO
+	  AND CORR_PLANTILLA_CONTRATO_VERSION = @CORR_VERSION_OBJETIVO
+	  AND ES_VERSION_ACTIVA = 1;
+
+	DECLARE @CORR_BITACORA INT;
+	SELECT @CORR_BITACORA = ISNULL(MAX(CORR_BITACORA), 0) + 1
+	FROM dbo.GEN_PLANTILLA_CONTRATO_BITACORA WITH (UPDLOCK, HOLDLOCK)
+	WHERE CORR_EMPRESA = @CORR_EMPRESA;
+
+	INSERT INTO dbo.GEN_PLANTILLA_CONTRATO_BITACORA
+	(
+		CORR_EMPRESA,
+		CORR_BITACORA,
+		CORR_PLANTILLA_CONTRATO,
+		NOMBRE_PLANTILLA,
+		CORR_PLANTILLA_CONTRATO_VERSION,
+		NOMBRE_VERSION,
+		TIPO_EVENTO,
+		DETALLE,
+		FECHA_ACCION,
+		USUARIO_CREA,
+		ESTACION_CREA,
+		FECHA_CREA
+	)
+	VALUES
+	(
+		@CORR_EMPRESA,
+		@CORR_BITACORA,
+		@CORR_PLANTILLA_CONTRATO,
+		@NOMBRE_PLANTILLA,
+		@CORR_VERSION_OBJETIVO,
+		@NOMBRE_VERSION,
+		'INACTIVACION_VERSION',
+		LEFT('Se inactivó ' + @NOMBRE_VERSION + ' y pasó a estado Borrador.', 1000),
+		@FECHA_ACTU,
+		@USUARIO_ACTU,
+		@ESTACION_ACTU,
+		@FECHA_ACTU
+	);
+
+	COMMIT TRAN;
+
+	SELECT 0 AS RESULTADO_OP, '' AS MENSAJE_ERROR;
+
+	SELECT *
+	FROM dbo.V_GEN_PLANTILLA_CONTRATO_VERSION
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PLANTILLA_CONTRATO_VERSION = @CORR_VERSION_OBJETIVO;
 END TRY
 BEGIN CATCH
 	IF @@TRANCOUNT > 0
@@ -1281,7 +1630,7 @@ END CATCH;";
 				objResultado.RowsAffected = response == null ? 0 : 1;
 				objResultado.CodeHelper = response?.CORR_PLANTILLA_CONTRATO_VERSION ?? 0;
 				objResultado.ErrorCode = 0;
-				objResultado.ErrorMessage = "";
+				objResultado.ErrorMessage = string.IsNullOrWhiteSpace(mensajeError) ? "" : mensajeError;
 				objResultado.ErrorSource = "";
 			}
 			catch (Exception e)

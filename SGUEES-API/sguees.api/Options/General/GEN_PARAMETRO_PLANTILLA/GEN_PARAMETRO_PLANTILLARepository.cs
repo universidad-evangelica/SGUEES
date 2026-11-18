@@ -15,11 +15,232 @@ namespace sguees.Repositories
 	public class GEN_PARAMETRO_PLANTILLARepository : BaseRepository<GEN_PARAMETRO_PLANTILLATable>, IGEN_PARAMETRO_PLANTILLARepository
 	{
 		private const string _TableName = "GEN_PARAMETRO_PLANTILLA";
+		private const string SqlAmbitoOrganigrama = @"
+;WITH EmpleadoSesion AS
+(
+	SELECT DISTINCT E.CORR_EMPRESA, E.CORR_EMPLEADO
+	FROM dbo.GEN_EMPLEADO E
+	INNER JOIN dbo.GEN_PERSONA_USUARIO PU ON PU.CORR_PERSONA = E.CORR_PERSONA
+	WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+	  AND LTRIM(RTRIM(PU.LOGIN_SISTEMA)) = @LOGIN_SISTEMA
+),
+UnidadesComoJefe AS
+(
+	SELECT DISTINCT JU.CORR_EMPRESA, JU.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES JU
+	INNER JOIN EmpleadoSesion ES
+		ON ES.CORR_EMPRESA = JU.CORR_EMPRESA
+	   AND ES.CORR_EMPLEADO = JU.CORR_EMPLEADO
+	WHERE JU.CORR_EMPRESA = @CORR_EMPRESA
+	  AND JU.ACTIVO = CONVERT(BIT, 1)
+),
+UnidadesDescendientes AS
+(
+	SELECT U.CORR_EMPRESA, U.CORR_UNIDAD, 0 AS NIVEL
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES U
+	INNER JOIN UnidadesComoJefe J
+		ON J.CORR_EMPRESA = U.CORR_EMPRESA
+	   AND J.CORR_UNIDAD = U.CORR_UNIDAD_PADRE
+	WHERE U.CORR_EMPRESA = @CORR_EMPRESA
 
+	UNION ALL
+
+	SELECT U.CORR_EMPRESA, U.CORR_UNIDAD, D.NIVEL + 1
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES U
+	INNER JOIN UnidadesDescendientes D
+		ON D.CORR_EMPRESA = U.CORR_EMPRESA
+	   AND D.CORR_UNIDAD = U.CORR_UNIDAD_PADRE
+	WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+	  AND D.NIVEL < 20
+),
+UnidadesVisibles AS
+(
+	SELECT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesComoJefe
+	UNION
+	SELECT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesDescendientes
+)
+";
+		private const string SqlPlantillaPropiaOUnidad = @"
+(
+	LTRIM(RTRIM(ISNULL(P.USUARIO_CREA, ''))) = @LOGIN_SISTEMA
+	OR EXISTS
+	(
+		SELECT 1
+		FROM dbo.GEN_PERSONA_USUARIO PU
+		INNER JOIN dbo.GEN_EMPLEADO E
+			ON E.CORR_PERSONA = PU.CORR_PERSONA
+		   AND E.CORR_EMPRESA = P.CORR_EMPRESA
+		INNER JOIN dbo.GEN_EMPLEADO_PUESTO EP
+			ON EP.CORR_EMPRESA = E.CORR_EMPRESA
+		   AND EP.CORR_EMPLEADO = E.CORR_EMPLEADO
+		INNER JOIN UnidadesVisibles UV
+			ON UV.CORR_EMPRESA = EP.CORR_EMPRESA
+		   AND UV.CORR_UNIDAD = EP.CORR_UNIDAD
+		WHERE LTRIM(RTRIM(PU.LOGIN_SISTEMA)) =
+			LTRIM(RTRIM(ISNULL(P.USUARIO_CREA, '')))
+	)
+)";
 		public GEN_PARAMETRO_PLANTILLARepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)
 		{
+		}
+
+		public async Task<CResult> GetAllVisibleAsync(GEN_PARAMETRO_PLANTILLAParam filter, string login)
+		{
+			if (filter == null || filter.CORR_EMPRESA <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return ErrorResult("La empresa y el usuario de sesión son requeridos.");
+			}
+
+			var parametros = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = filter.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = login.Trim(), DbType = System.Data.DbType.String },
+			};
+			var filtros = new List<string>
+			{
+				"P.CORR_EMPRESA = @CORR_EMPRESA",
+				SqlPlantillaPropiaOUnidad,
+			};
+
+			if (filter.CORR_PARAMETRO_PLANTILLA > 0)
+			{
+				filtros.Add("P.CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA");
+				parametros.Add(new CParameter() { ParameterName = "CORR_PARAMETRO_PLANTILLA", Value = filter.CORR_PARAMETRO_PLANTILLA, DbType = System.Data.DbType.Int32 });
+			}
+			if (filter.CORR_PARAMETRO_SMTP > 0)
+			{
+				filtros.Add("P.CORR_PARAMETRO_SMTP = @CORR_PARAMETRO_SMTP");
+				parametros.Add(new CParameter() { ParameterName = "CORR_PARAMETRO_SMTP", Value = filter.CORR_PARAMETRO_SMTP, DbType = System.Data.DbType.Int32 });
+			}
+			if (!string.IsNullOrWhiteSpace(filter.CODIGO_PLANTILLA))
+			{
+				filtros.Add("P.CODIGO_PLANTILLA = @CODIGO_PLANTILLA");
+				parametros.Add(new CParameter() { ParameterName = "CODIGO_PLANTILLA", Value = filter.CODIGO_PLANTILLA, DbType = System.Data.DbType.String });
+			}
+			if (!string.IsNullOrWhiteSpace(filter.CODIGO_SISTEMA))
+			{
+				filtros.Add("P.CODIGO_SISTEMA = @CODIGO_SISTEMA");
+				parametros.Add(new CParameter() { ParameterName = "CODIGO_SISTEMA", Value = filter.CODIGO_SISTEMA, DbType = System.Data.DbType.String });
+			}
+			if (!string.IsNullOrWhiteSpace(filter.CODIGO_OPCION))
+			{
+				filtros.Add("P.CODIGO_OPCION = @CODIGO_OPCION");
+				parametros.Add(new CParameter() { ParameterName = "CODIGO_OPCION", Value = filter.CODIGO_OPCION, DbType = System.Data.DbType.String });
+			}
+
+			return await ExecuteVisibleQueryAsync(
+				SqlAmbitoOrganigrama + @"
+SELECT P.*
+FROM dbo.V_GEN_PARAMETRO_PLANTILLA P
+WHERE " + string.Join(" AND ", filtros) + @"
+ORDER BY P.CORR_PARAMETRO_PLANTILLA DESC
+OPTION (MAXRECURSION 20);",
+				parametros);
+		}
+
+		public async Task<CResult> GetVisibleAsync(GEN_PARAMETRO_PLANTILLAParam filter, string login)
+		{
+			var result = await GetAllVisibleAsync(filter, login);
+			if (!result.Result)
+			{
+				return result;
+			}
+
+			var row = (result.Data as IEnumerable<GEN_PARAMETRO_PLANTILLAView>)?.FirstOrDefault();
+			result.Data = row;
+			result.RowsAffected = row == null ? 0 : 1;
+			return result;
+		}
+
+		public Task<bool> PuedeVerPlantillaAsync(int corrEmpresa, int corrPlantilla, string login)
+		{
+			return ExisteEnAmbitoAsync(corrEmpresa, corrPlantilla, login, SqlPlantillaPropiaOUnidad);
+		}
+
+		public Task<bool> PuedeAdministrarPlantillaAsync(int corrEmpresa, int corrPlantilla, string login)
+		{
+			return ExisteEnAmbitoAsync(corrEmpresa, corrPlantilla, login, SqlPlantillaPropiaOUnidad);
+		}
+
+		private async Task<bool> ExisteEnAmbitoAsync(int corrEmpresa, int corrPlantilla, string login, string ambito)
+		{
+			if (corrEmpresa <= 0 || corrPlantilla <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return false;
+			}
+
+			var sql = SqlAmbitoOrganigrama + @"
+SELECT CASE WHEN EXISTS
+(
+	SELECT 1
+	FROM dbo.GEN_PARAMETRO_PLANTILLA P
+	WHERE P.CORR_EMPRESA = @CORR_EMPRESA
+	  AND P.CORR_PARAMETRO_PLANTILLA = @CORR_PARAMETRO_PLANTILLA
+	  AND " + ambito + @"
+) THEN 1 ELSE 0 END
+OPTION (MAXRECURSION 20);";
+
+			try
+			{
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_PARAMETRO_PLANTILLA", Value = corrPlantilla, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = login.Trim(), DbType = System.Data.DbType.String },
+				});
+				var allowed = reader.Read() && Convert.ToInt32(reader[0]) == 1;
+				reader.Close();
+				return allowed;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+		}
+
+		private async Task<CResult> ExecuteVisibleQueryAsync(string sql, List<CParameter> parametros)
+		{
+			var result = new CResult();
+			try
+			{
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, parametros);
+				var rows = new List<GEN_PARAMETRO_PLANTILLAView>().FromDataReader(reader).ToList();
+				reader.Close();
+
+				result.Data = rows;
+				result.Result = true;
+				result.RowsAffected = rows.Count;
+				result.CodeHelper = 0;
+				result.ErrorCode = 0;
+				result.ErrorMessage = "";
+				result.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				result.Data = null;
+				result.Result = false;
+				result.ErrorCode = -1;
+				result.ErrorMessage = e.Message;
+				result.ErrorSource = e.Source;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return result;
+		}
+
+		private static CResult ErrorResult(string message)
+		{
+			return new CResult
+			{
+				Result = false,
+				ErrorCode = -1,
+				ErrorMessage = message,
+			};
 		}
 
 		// Qué hace: obtiene la lista de plantillas de correo desde la vista.

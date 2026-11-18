@@ -17,6 +17,8 @@ namespace sguees.Models
 		public string NOMBRE_VERSION_PADRE { get; set; }
 		public string CUERPO_PLANTILLA { get; set; }
 		public bool ES_VERSION_ACTIVA { get; set; }
+		public string ESTADO_VERSION { get; set; }
+		public bool TIENE_EMPLEADOS { get; set; }
 		public string OBSERVACION { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }

@@ -11,6 +11,7 @@ import {
 	ActualizarVersionPlantillaRequest,
 	CrearVersionPlantillaRequest,
 	GenPlantillaContrato,
+	InactivarPlantillaRequest,
 } from './models/gen-plantilla-contrato';
 import { GenPlantillaContratoRepository } from './gen-plantilla-contrato.repository';
 
@@ -102,6 +103,12 @@ export class GenPlantillaContratoService {
 	// Cómo lo hace: envía plantilla y versión a activarVersion del repositorio.
 	activarVersion(model: ActivarVersionPlantillaRequest): Observable<IResult> {
 		return this.repo.activarVersion(model);
+	}
+
+	// Qué hace: inactiva la versión vigente seleccionada y la deja en Borrador.
+	// Cómo lo hace: envía plantilla y versión a inactivarPlantilla del repositorio.
+	inactivarPlantilla(model: InactivarPlantillaRequest): Observable<IResult> {
+		return this.repo.inactivarPlantilla(model);
 	}
 
 	// Qué hace: obtiene los eventos registrados en la bitácora de la plantilla.

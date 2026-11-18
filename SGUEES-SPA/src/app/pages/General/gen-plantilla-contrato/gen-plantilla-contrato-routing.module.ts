@@ -10,6 +10,7 @@ import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxHtmlEditorModule } from 'devextreme-angular/ui/html-editor';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
+import { DxRadioGroupModule } from 'devextreme-angular/ui/radio-group';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
 import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
@@ -32,6 +33,7 @@ const routes: Routes = [{ path: '', component: GenPlantillaContratoComponent }];
 		DxHtmlEditorModule,
 		DxLoadPanelModule,
 		DxPopupModule,
+		DxRadioGroupModule,
 		DxSelectBoxModule,
 		DxTabPanelModule,
 		DxTextAreaModule,

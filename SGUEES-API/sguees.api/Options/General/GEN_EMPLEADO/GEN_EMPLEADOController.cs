@@ -34,7 +34,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetAll([FromQuery] GEN_EMPLEADOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetAllAsync(Data, GetUsuario());
 		}
 
 		[HttpGet("Get")]
@@ -42,7 +42,7 @@ namespace sguees.Controllers
 		public async Task<CResult> Get([FromQuery] GEN_EMPLEADOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAsync(Data);
+			return await _service.GetAsync(Data, GetUsuario());
 		}
 
 		// Qué hace: inicia empleado (SP Insert: persona + empresa_persona + natural + empleado).
@@ -65,7 +65,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/gen-empleado|R")]
 		public async Task<CResult> GetPersonaNatural([FromQuery] GEN_PERSONA_NATURALParam Data)
 		{
-			return await _service.GetPersonaNaturalAsync(Data);
+			return await _service.GetPersonaNaturalAsync(Data, GetCorrEmpresa(), GetUsuario());
 		}
 
 		// Qué hace: actualiza personales + datos GEN_EMPLEADO vía SP.
@@ -106,6 +106,11 @@ namespace sguees.Controllers
 				});
 			}
 
+			if (!await _service.PuedeVerPersonaAsync(corrEmpresa, CORR_PERSONA, null, GetUsuario()))
+			{
+				return NotFound();
+			}
+
 			var fotoStorage = new EmpleadoFotoStorage(environment);
 			var guardado = await fotoStorage.SaveFinalAsync(corrEmpresa, CORR_PERSONA, file);
 			if (!guardado.Ok)
@@ -138,7 +143,7 @@ namespace sguees.Controllers
 			[FromQuery] GEN_PERSONA_NATURALParam Data,
 			[FromServices] IWebHostEnvironment environment)
 		{
-			var resultado = await _service.GetPersonaNaturalAsync(Data);
+			var resultado = await _service.GetPersonaNaturalAsync(Data, GetCorrEmpresa(), GetUsuario());
 			if (!resultado.Result || resultado.Data is not GEN_PERSONA_NATURALView persona || string.IsNullOrWhiteSpace(persona.FOTO_URL))
 			{
 				return NotFound();
@@ -174,7 +179,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_EMPLEADO_BAN_SOLI_CHEQUE([FromQuery] GEN_EMPLEADOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetAllAsync(Data, GetUsuario());
 		}
 
 		// Qué hace: activa o desactiva el empleado seleccionado en el browse.
@@ -195,7 +200,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_EMPLEADO_BAN_CHEQUE([FromQuery] GEN_EMPLEADOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetAllAsync(Data, GetUsuario());
 		}
 
 		[HttpGet("GetCORR_EMPLEADO_BAN_DOCUMENTO")]
@@ -203,7 +208,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_EMPLEADO_BAN_DOCUMENTO([FromQuery] GEN_EMPLEADOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetAllAsync(Data, GetUsuario());
 		}
 
 		[HttpGet("GetCORR_EMPLEADO_SC_DESCRIPTOR_PUESTO")]
@@ -211,7 +216,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_EMPLEADO_SC_DESCRIPTOR_PUESTO([FromQuery] GEN_EMPLEADOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetAllAsync(Data);
+			return await _service.GetAllAsync(Data, GetUsuario());
 		}
 
 		private int GetCorrEmpresa()

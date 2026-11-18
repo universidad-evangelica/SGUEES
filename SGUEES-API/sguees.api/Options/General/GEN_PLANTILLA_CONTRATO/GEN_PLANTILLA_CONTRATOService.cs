@@ -25,16 +25,32 @@ namespace sguees.Services
 
 		// Qué hace: obtiene el listado de plantillas de contrato de la empresa.
 		// Cómo lo hace: arma los parámetros con BuildParameters y llama a GetAllAsync del repositorio.
-		public async Task<CResult> GetAllAsync(GEN_PLANTILLA_CONTRATOParam xWhere)
+		public async Task<CResult> GetAllAsync(GEN_PLANTILLA_CONTRATOParam xWhere, string login)
 		{
+			xWhere ??= new GEN_PLANTILLA_CONTRATOParam();
+			xWhere.LOGIN_SISTEMA = login;
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
 		// Qué hace: obtiene una plantilla de contrato puntual por su clave.
 		// Cómo lo hace: arma parámetros de CORR_EMPRESA y CORR_PLANTILLA_CONTRATO y llama a GetAsync.
-		public async Task<CResult> GetAsync(GEN_PLANTILLA_CONTRATOParam xWhere)
+		public async Task<CResult> GetAsync(GEN_PLANTILLA_CONTRATOParam xWhere, string login)
 		{
-			return await _repo.GetAsync(BuildPlantillaParameters(xWhere?.CORR_EMPRESA ?? 0, xWhere?.CORR_PLANTILLA_CONTRATO ?? 0));
+			if (xWhere == null || xWhere.CORR_PLANTILLA_CONTRATO <= 0)
+			{
+				return ValidationError("Debe especificar una plantilla de contrato.");
+			}
+
+			var resultado = await _repo.GetAsync(BuildPlantillaParameters(
+				xWhere.CORR_EMPRESA,
+				xWhere.CORR_PLANTILLA_CONTRATO,
+				login));
+			if (resultado.Result && resultado.Data == null)
+			{
+				return ValidationError("No tiene acceso a esta plantilla de contrato.");
+			}
+
+			return resultado;
 		}
 
 		// Qué hace: crea una nueva plantilla de contrato.
@@ -53,6 +69,7 @@ namespace sguees.Services
 				return validation;
 			}
 
+			Data.USUARIO_CREA = vLOGIN_SISTEMA;
 			NormalizeData(Data);
 
 			if (await _repo.ExistsNombreAsync(Data.CORR_EMPRESA, Data.NOMBRE_PLANTILLA, 0))
@@ -84,6 +101,12 @@ namespace sguees.Services
 				return ValidationError("No se pudo identificar la plantilla de contrato a actualizar.");
 			}
 
+			var acceso = await ValidarPropiedadAsync(Data.CORR_EMPRESA, Data.CORR_PLANTILLA_CONTRATO, vLOGIN_SISTEMA);
+			if (acceso != null)
+			{
+				return acceso;
+			}
+
 			NormalizeData(Data);
 
 			if (await _repo.ExistsNombreAsync(Data.CORR_EMPRESA, Data.NOMBRE_PLANTILLA, Data.CORR_PLANTILLA_CONTRATO))
@@ -109,6 +132,12 @@ namespace sguees.Services
 				return ValidationError("No se pudo identificar la plantilla de contrato a eliminar.");
 			}
 
+			var acceso = await ValidarPropiedadAsync(Data.CORR_EMPRESA, Data.CORR_PLANTILLA_CONTRATO, vLOGIN_SISTEMA);
+			if (acceso != null)
+			{
+				return acceso;
+			}
+
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
@@ -119,6 +148,7 @@ namespace sguees.Services
 			return new List<CParameter>
 			{
 				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "USUARIO_CREA", Value = xWhere.LOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
 			};
 		}
 
@@ -130,80 +160,25 @@ namespace sguees.Services
 			Data.CUERPO_PLANTILLA = string.IsNullOrWhiteSpace(Data.CUERPO_PLANTILLA) ? null : Data.CUERPO_PLANTILLA;
 		}
 
-		// Qué hace: entrega la lista agrupada de parámetros disponibles para plantillas de contratos laborales.
-		// Cómo lo hace: agrupa tokens reales basados en GEN_EMPRESA, Organigrama (Rectoría/Unidades), V_GEN_EMPLEADO, V_GEN_PERSONA_*, GEN_EMPLEADO_PUESTO y SC_MOVIMIENTO_PERSONAL.
-		public CResult GetParametrosDisponibles()
+		// Qué hace: entrega los parámetros de contratos agrupados dinámicamente por categoría funcional.
+		// Cómo lo hace: consulta V_GEN_PLANTILLA_CONTRATO_PARAMETROS vía repositorio y agrupa con LINQ en objetos { categoria, items }.
+		public async Task<CResult> GetParametrosDisponiblesAsync()
 		{
-			var grupos = new List<object>
-			{
-				new
+			var filas = await _repo.GetParametrosDisponiblesAsync();
+
+			var grupos = filas
+				.GroupBy(f => f.CATEGORIA)
+				.Select(g => new
 				{
-					categoria = "1. PATRONO Y RECTORÍA",
-					items = new[]
+					categoria = g.Key,
+					items = g.Select(i => new
 					{
-						new { key = "EMPRESA_NOMBRE_LARGO", label = "Nombre Empresa", descripcion = "GEN_EMPRESA.NOMBRE_EMPRESA_LARGO" },
-						new { key = "EMPRESA_NIT", label = "NIT Patrono", descripcion = "GEN_EMPRESA.NUMERO_NIT" },
-						new { key = "EMPRESA_DIRECCION", label = "Dirección Patrono", descripcion = "GEN_EMPRESA.DIRECCION_EMPRESA_LARGO" },
-						new { key = "SUCURSAL_NOMBRE", label = "Sede / Sucursal", descripcion = "V_GEN_SUCURSALES.NOMBRE_SUCURSAL" },
-						new { key = "RECTOR_NOMBRE", label = "Nombre Rector(a)", descripcion = "Jefe activo unidad Rectoría (Organigrama)" },
-						new { key = "RECTOR_PUESTO", label = "Cargo Rector(a)", descripcion = "V_SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES.NOMBRE_PUESTO" },
-						new { key = "RECTOR_DUI", label = "DUI Rector(a)", descripcion = "Documento identidad del titular de Rectoría" },
-						new { key = "RECTOR_EDAD", label = "Edad Rector(a)", descripcion = "V_GEN_PERSONA_NATURAL.EDAD" },
-						new { key = "RECTOR_PROFESION", label = "Profesión Rector(a)", descripcion = "V_GEN_PERSONA_FORMACION_ACADEMICA.TITULO" },
-						new { key = "RECTOR_ESTADO_CIVIL", label = "Estado Civil Rector(a)", descripcion = "V_GEN_PERSONA_NATURAL.ESTADO_CIVIL" },
-						new { key = "RECTOR_DOMICILIO", label = "Domicilio Rector(a)", descripcion = "V_GEN_PERSONA_DOMICILIO" },
-					},
-				},
-				new
-				{
-					categoria = "2. DATOS DEL EMPLEADO",
-					items = new[]
-					{
-						new { key = "CODIGO_EMPLEADO", label = "Código Empleado", descripcion = "V_GEN_EMPLEADO.CODIGO_EMPLEADO" },
-						new { key = "EMPLEADO_NOMBRE_COMPLETO", label = "Nombre Completo", descripcion = "V_GEN_EMPLEADO.NOMBRE_EMPLEADO" },
-						new { key = "EMPLEADO_DUI", label = "DUI Empleado", descripcion = "V_GEN_EMPLEADO.DUI" },
-						new { key = "EMPLEADO_NIT", label = "NIT Empleado", descripcion = "V_GEN_EMPLEADO.NIT" },
-						new { key = "EMPLEADO_EDAD", label = "Edad", descripcion = "V_GEN_PERSONA_NATURAL.EDAD" },
-						new { key = "EMPLEADO_ESTADO_CIVIL", label = "Estado Civil", descripcion = "V_GEN_PERSONA_NATURAL.ESTADO_CIVIL" },
-						new { key = "EMPLEADO_NACIONALIDAD", label = "Nacionalidad", descripcion = "V_GEN_PERSONA_NATURAL.NACIONALIDAD" },
-						new { key = "EMPLEADO_PROFESION", label = "Profesión / Título", descripcion = "V_GEN_PERSONA_FORMACION_ACADEMICA.TITULO" },
-						new { key = "EMPLEADO_DIRECCION", label = "Dirección Residencia", descripcion = "V_GEN_PERSONA_DOMICILIO.DIRECCION" },
-						new { key = "EMPLEADO_MUNICIPIO", label = "Municipio", descripcion = "V_GEN_PERSONA_DOMICILIO.NOMBRE_MUNICIPIO" },
-						new { key = "EMPLEADO_DEPTO", label = "Departamento", descripcion = "V_GEN_PERSONA_DOMICILIO.NOMBRE_DEPTO" },
-						new { key = "EMPLEADO_CORREO", label = "Correo Institucional", descripcion = "V_GEN_EMPLEADO.CORREO_INSTITUCIONAL" },
-						new { key = "EMPLEADO_TELEFONO", label = "Teléfono", descripcion = "V_GEN_EMPLEADO.TELEFONO_1" },
-					},
-				},
-				new
-				{
-					categoria = "3. CARGO, MOVIMIENTO Y SALARIO",
-					items = new[]
-					{
-						new { key = "NOMBRE_PUESTO", label = "Puesto Laboral", descripcion = "PLA_PUESTO.NOMBRE_PUESTO" },
-						new { key = "MISION_PUESTO", label = "Misión del Puesto", descripcion = "PLA_PUESTO.MISION_PUESTO" },
-						new { key = "NOMBRE_UNIDAD", label = "Unidad / Área", descripcion = "V_SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES.NOMBRE_UNIDAD" },
-						new { key = "NOMBRE_UNIDAD_PADRE", label = "Unidad Superior", descripcion = "V_SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES.NOMBRE_UNIDAD_PADRE" },
-						new { key = "TIPO_CONTRATACION", label = "Tipo de Contratación", descripcion = "SC_TIPO_CONTRATACION.NOMBRE_TIPO_CONTRATACION" },
-						new { key = "MODALIDAD_TRABAJO", label = "Modalidad", descripcion = "SC_TIPO_MODALIDAD.MODALIDAD_NOMBRE" },
-						new { key = "SALARIO_MENSUAL", label = "Salario Mensual", descripcion = "GEN_EMPLEADO_PUESTO.SUELDO" },
-						new { key = "SALARIO_EN_LETRAS", label = "Salario en Letras", descripcion = "Monto mensual expresado en texto" },
-						new { key = "HORARIO_LABORAL", label = "Horario Laboral", descripcion = "GEN_EMPLEADO_PUESTO.HORARIO_LABORAL" },
-						new { key = "FECHA_INGRESO", label = "Fecha de Ingreso", descripcion = "GEN_EMPLEADO_PUESTO.FECHA_INGRESO" },
-						new { key = "FECHA_FINALIZACION", label = "Fecha Finalización", descripcion = "SC_MOVIMIENTO_PERSONAL.FECHA_FINALIZACION" },
-					},
-				},
-				new
-				{
-					categoria = "4. DOCUMENTO Y FECHAS",
-					items = new[]
-					{
-						new { key = "CIUDAD_FIRMA", label = "Ciudad de Firma", descripcion = "Municipio de sede o patrono" },
-						new { key = "FECHA_FIRMA", label = "Fecha de Firma", descripcion = "Fecha de emisión del contrato" },
-						new { key = "FECHA_ACTUAL_LETRAS", label = "Fecha Actual en Letras", descripcion = "Fecha redactada para comparecencia" },
-						new { key = "ANIO_ACTUAL", label = "Año Actual", descripcion = "Año calendario vigente" },
-					},
-				},
-			};
+						key = i.KEY_PARAMETRO,
+						label = i.LABEL_PARAMETRO,
+						descripcion = i.DESCRIPCION
+					}).ToList()
+				})
+				.ToList();
 
 			return new CResult
 			{
@@ -232,7 +207,16 @@ namespace sguees.Services
 				return ValidationError("Debe especificar la plantilla de contrato.");
 			}
 
-			return await _repo.GetVersionesAsync(BuildPlantillaParameters(xWhere.CORR_EMPRESA, xWhere.CORR_PLANTILLA_CONTRATO));
+			var acceso = await ValidarPropiedadAsync(xWhere.CORR_EMPRESA, xWhere.CORR_PLANTILLA_CONTRATO, xWhere.LOGIN_SISTEMA);
+			if (acceso != null)
+			{
+				return acceso;
+			}
+
+			return await _repo.GetVersionesAsync(BuildPlantillaParameters(
+				xWhere.CORR_EMPRESA,
+				xWhere.CORR_PLANTILLA_CONTRATO,
+				xWhere.LOGIN_SISTEMA));
 		}
 
 		// Qué hace: valida y crea una nueva versión v2+ siempre vinculada a v1 como versión padre.
@@ -248,6 +232,12 @@ namespace sguees.Services
 			if (Data == null || Data.CORR_PLANTILLA_CONTRATO <= 0)
 			{
 				return ValidationError("Debe especificar una plantilla de contrato válida.");
+			}
+
+			var acceso = await ValidarPropiedadAsync(Data.CORR_EMPRESA, Data.CORR_PLANTILLA_CONTRATO, vLOGIN_SISTEMA);
+			if (acceso != null)
+			{
+				return acceso;
 			}
 
 			if (EsContenidoHtmlVacio(Data.CUERPO_PLANTILLA))
@@ -271,7 +261,7 @@ namespace sguees.Services
 			return await _repo.CrearVersionAsync(Data, detalleBitacora, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Qué hace: valida y actualiza el contenido HTML de una versión v2+ activa.
+		// Qué hace: valida y actualiza el contenido HTML de cualquier versión, incluida la Versión 1.
 		// Cómo lo hace: verifica empresa, correlativos y HTML no vacío, compara contra el cuerpo previo para bitácora y delega en ActualizarVersionAsync.
 		public async Task<CResult> ActualizarVersionAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
@@ -284,6 +274,12 @@ namespace sguees.Services
 			if (Data == null || Data.CORR_PLANTILLA_CONTRATO <= 0 || Data.CORR_PLANTILLA_CONTRATO_VERSION <= 0)
 			{
 				return ValidationError("Debe seleccionar la versión de contrato que desea actualizar.");
+			}
+
+			var acceso = await ValidarPropiedadAsync(Data.CORR_EMPRESA, Data.CORR_PLANTILLA_CONTRATO, vLOGIN_SISTEMA);
+			if (acceso != null)
+			{
+				return acceso;
 			}
 
 			if (EsContenidoHtmlVacio(Data.CUERPO_PLANTILLA))
@@ -305,7 +301,7 @@ namespace sguees.Services
 			return await _repo.ActualizarVersionAsync(Data, detalleBitacora, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Qué hace: valida y activa una versión histórica elegible (v2+) como vigente.
+		// Qué hace: valida y activa cualquier versión, incluida la Versión 1, dejando las demás en histórico.
 		// Cómo lo hace: verifica empresa en sesión y correlativos positivos antes de llamar a ActivarVersionAsync.
 		public async Task<CResult> ActivarVersionAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
@@ -320,7 +316,37 @@ namespace sguees.Services
 				return ValidationError("Debe seleccionar la versión de contrato que desea activar.");
 			}
 
+			var acceso = await ValidarPropiedadAsync(Data.CORR_EMPRESA, Data.CORR_PLANTILLA_CONTRATO, vLOGIN_SISTEMA);
+			if (acceso != null)
+			{
+				return acceso;
+			}
+
 			return await _repo.ActivarVersionAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		// Qué hace: valida e inactiva la versión vigente seleccionada, dejándola en Borrador.
+		// Cómo lo hace: verifica empresa y correlativos de plantilla y versión antes de llamar a InactivarPlantillaAsync.
+		public async Task<CResult> InactivarPlantillaAsync(GEN_PLANTILLA_CONTRATO_VERSIONParam Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			var empresaError = ValidateEmpresaSesion(Data?.CORR_EMPRESA ?? 0);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
+			if (Data == null || Data.CORR_PLANTILLA_CONTRATO <= 0 || Data.CORR_PLANTILLA_CONTRATO_VERSION <= 0)
+			{
+				return ValidationError("Debe seleccionar la versión de contrato que desea inactivar.");
+			}
+
+			var acceso = await ValidarPropiedadAsync(Data.CORR_EMPRESA, Data.CORR_PLANTILLA_CONTRATO, vLOGIN_SISTEMA);
+			if (acceso != null)
+			{
+				return acceso;
+			}
+
+			return await _repo.InactivarPlantillaAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
 		// Qué hace: lista la bitácora cronológica de eventos de una plantilla de contrato.
@@ -338,17 +364,37 @@ namespace sguees.Services
 				return ValidationError("Debe especificar la plantilla de contrato.");
 			}
 
-			return await _repo.GetBitacoraAsync(BuildPlantillaParameters(xWhere.CORR_EMPRESA, xWhere.CORR_PLANTILLA_CONTRATO));
+			var acceso = await ValidarPropiedadAsync(xWhere.CORR_EMPRESA, xWhere.CORR_PLANTILLA_CONTRATO, xWhere.LOGIN_SISTEMA);
+			if (acceso != null)
+			{
+				return acceso;
+			}
+
+			return await _repo.GetBitacoraAsync(BuildPlantillaParameters(
+				xWhere.CORR_EMPRESA,
+				xWhere.CORR_PLANTILLA_CONTRATO,
+				xWhere.LOGIN_SISTEMA));
 		}
 
 		// Qué hace: construye la lista estándar de parámetros CORR_EMPRESA y CORR_PLANTILLA_CONTRATO.
 		// Cómo lo hace: retorna una lista CParameter tipada como Int32 para consultas por llave de plantilla.
-		private static List<CParameter> BuildPlantillaParameters(int corrEmpresa, int corrPlantilla)
+		private async Task<CResult> ValidarPropiedadAsync(int corrEmpresa, int corrPlantilla, string login)
+		{
+			if (!await _repo.PuedeAdministrarAsync(corrEmpresa, corrPlantilla, login))
+			{
+				return ValidationError("No tiene acceso a esta plantilla de contrato.");
+			}
+
+			return null;
+		}
+
+		private static List<CParameter> BuildPlantillaParameters(int corrEmpresa, int corrPlantilla, string login)
 		{
 			return new List<CParameter>
 			{
 				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
 				new CParameter() { ParameterName = "CORR_PLANTILLA_CONTRATO", Value = corrPlantilla, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "USUARIO_CREA", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
 			};
 		}
 
