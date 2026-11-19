@@ -69,9 +69,19 @@ namespace sguees.Services
 			return _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		public Task<CResult> SolicitarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return _repo.SolicitarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
 		public Task<CResult> AplicarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			return _repo.AplicarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		public Task<CResult> AutorizarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return _repo.AutorizarAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
 		public Task<CResult> AnularAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
@@ -82,6 +92,18 @@ namespace sguees.Services
 		public Task<CResult> DesAplicarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			return _repo.DesAplicarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		public async Task<CResult> GetPendientesAutorizarAsync(COM_ORDEN_COMPRAParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "@TIPO_CONSULTA", Value = 3, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "@FECHA_INICIAL", Value = xWhere.FECHA_INICIAL, DbType = System.Data.DbType.Date },
+				new CParameter() { ParameterName = "@FECHA_FINAL", Value = xWhere.FECHA_FINAL, DbType = System.Data.DbType.Date },
+			};
+			return await _repo.GetPendientesAutorizarAsync(p);
 		}
 
 		public async Task<Stream> GetPDFAsync(COM_ORDEN_COMPRAParam xWhere)

@@ -19,6 +19,7 @@ import { ComCuadroComparativoConfigAutorizacionesComponent } from './com-cuadro-
 import { ComCuadroComparativoAutorizaComponent } from './com-cuadro-comparativo-autoriza/com-cuadro-comparativo-autoriza.component';
 import { ComBitacoraComponent } from './com-bitacora/com-bitacora.component';
 import { ComOrdenCompraComponent } from './com-orden-compra/com-orden-compra.component';
+import { ComOrdenCompraAutorizarComponent } from './com-orden-compra-autorizar/com-orden-compra-autorizar.component';
 import { ComTipoSoliCotizaComponent } from './com-tipo-soli-cotiza/com-tipo-soli-cotiza.component';
 import { ComDocumentoComponent } from './com-documento/com-documento.component';
 import { ComDocumentoDesAplicarComponent } from './com-documento-desaplicar/com-documento-desaplicar.component';
@@ -146,6 +147,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./com-orden-compra/com-orden-compra.module').then(m => m.ComOrdenCompraModule)
+  },
+  {
+    path: 'com-orden-compra-autorizar',
+    component: ComOrdenCompraAutorizarComponent,
+    data: { titulo: 'Autorizar Órdenes de Compra' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./com-orden-compra-autorizar/com-orden-compra-autorizar.module').then(m => m.ComOrdenCompraAutorizarModule)
   },
   {
     path: 'com-tipo-soli-cotiza',

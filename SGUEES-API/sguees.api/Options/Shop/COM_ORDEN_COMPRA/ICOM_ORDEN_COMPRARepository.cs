@@ -8,9 +8,12 @@ namespace sguees.Repositories
 {
 	public interface ICOM_ORDEN_COMPRARepository : IRepository<COM_ORDEN_COMPRATable>
 	{
+		Task<CResult> SolicitarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> AplicarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> AutorizarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> AnularAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DesAplicarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetPendientesAutorizarAsync(List<CParameter> xWhere);
 		Task<CResult> GetOrdenCompraImpr(List<CParameter> xWhere);
 	}
 }

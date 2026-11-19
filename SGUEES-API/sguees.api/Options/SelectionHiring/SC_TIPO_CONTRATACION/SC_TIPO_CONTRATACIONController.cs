@@ -168,5 +168,15 @@ namespace SGUEES.Controllers
             return await _service.GetAllActivosAsync(Data);
         }
 
+        // Qué hace: entrega tipos de contratación activos para el lookup de gen-plantilla-contrato.
+        // Cómo lo hace: fija CORR_EMPRESA de sesión y llama GetAllActivosAsync con permiso /gen-plantilla-contrato|R.
+        [HttpGet("GetCORR_TIPO_CONTRATACION_GEN_PLANTILLA_CONTRATO")]
+        [Authorize(Policy = "/gen-plantilla-contrato|R")]
+        public async Task<CResult> GetCORR_TIPO_CONTRATACION_GEN_PLANTILLA_CONTRATO([FromQuery] SC_TIPO_CONTRATACIONParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllActivosAsync(Data);
+        }
+
     }
 }

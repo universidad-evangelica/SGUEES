@@ -12,9 +12,12 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> SolicitarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> AplicarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> AutorizarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> AnularAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DesAplicarAsync(COM_ORDEN_COMPRATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetPendientesAutorizarAsync(COM_ORDEN_COMPRAParam xWhere);
 		Task<Stream> GetPDFAsync(COM_ORDEN_COMPRAParam xWhere);
 	}
 }

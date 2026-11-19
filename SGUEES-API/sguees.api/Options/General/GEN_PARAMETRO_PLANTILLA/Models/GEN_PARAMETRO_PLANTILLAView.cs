@@ -22,6 +22,9 @@ namespace sguees.Models
 		public string CODIGO_OPCION { get; set; }
 		public string NOMBRE_OPCION { get; set; }
 		public bool ACTIVO_PLANTILLA { get; set; }
+		public int CANT_VERSIONES { get; set; }
+		public int? NUMERO_VERSION_ACTIVA { get; set; }
+		public string ESTADO_PLANTILLA { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }

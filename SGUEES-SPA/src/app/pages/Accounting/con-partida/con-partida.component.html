@@ -32,30 +32,23 @@
 	[btn1LocateInMenu]="'never'"
 	(btn1Click)="imprimirPartida()"
 	[btn1Type]="'success'"
-	[btn2]="btnImprimirDx"
-	[btn2Icon]="'print'"
-	[btn2Width]="130"
-	[btn2LocateInMenu]="'never'"
-	(btn2Click)="imprimirPartidaDx()"
-	[btn2Type]="'default'"
-	[btn2Mode]="'outlined'"
-	[btn3]="btnImportarExcel"
-	[btn3Icon]="'exportxlsx'"
+	[btn2]="btnImportarExcel"
+	[btn2Icon]="'exportxlsx'"
+	[btn2Width]="180"
+	(btn2Click)="irImportarExcel()"
+	[btn3]="btnCrearModelo"
+	[btn3Icon]="'copy'"
 	[btn3Width]="180"
-	(btn3Click)="irImportarExcel()"
-	[btn4]="btnCrearModelo"
-	[btn4Icon]="'copy'"
+	(btn3Click)="CrearModelo()"
+	[btn4]="btnGenerarDesdeModelo"
+	[btn4Icon]="'paste'"
 	[btn4Width]="180"
-	(btn4Click)="CrearModelo()"
-	[btn5]="btnGenerarDesdeModelo"
-	[btn5Icon]="'paste'"
-	[btn5Width]="180"
-	(btn5Click)="irGenerarDesdeModelo()"
-	[btn6]="btnContrapartida"
-	[btn6Icon]="'revert'"
-	[btn6Width]="160"
-	(btn6Click)="abrirContrapartida()"
-	[btn6Type]="'default'"
+	(btn4Click)="irGenerarDesdeModelo()"
+	[btn5]="btnContrapartida"
+	[btn5Icon]="'revert'"
+	[btn5Width]="160"
+	(btn5Click)="abrirContrapartida()"
+	[btn5Type]="'default'"
 >
 </app-barra-data-mtto>
 
@@ -94,15 +87,6 @@
 				[valueExpr]="'CORR_CLASE_PARTIDA'"
 				[displayExpr]="'NOMBRE_CLASE_PARTIDA'"
 				(valueChange)="onClasePartidaChanged($event)"
-			>
-			</app-data-lookup>
-		</div>
-		<div *dxTemplate="let cellInfo of 'ESTADO_PARTIDALookup'">
-			<app-data-lookup
-				[model]="mESTADO_PARTIDA"
-				[(value)]="model.ESTADO_PARTIDA"
-				[selectedRowKeys]="selectedLookUpLista"
-				[readOnly]="true"
 			>
 			</app-data-lookup>
 		</div>
@@ -450,10 +434,10 @@
 <dx-popup
 	[(visible)]="contrapartidaModalVisible"
 	title="Contrapartida"
-	[width]="'94%'"
-	[maxWidth]="1280"
+	[width]="'96%'"
+	[maxWidth]="1560"
 	[height]="'90%'"
-	[maxHeight]="800"
+	[maxHeight]="860"
 	[showCloseButton]="true"
 	[dragEnabled]="true"
 	[hideOnOutsideClick]="false"

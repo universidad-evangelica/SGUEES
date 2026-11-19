@@ -9,6 +9,7 @@ export interface ConPartida {
 	NUMERO_DOCUMENTO: string;
 	NOMBRE_PARTIDA: string;
 	ESTADO_PARTIDA: string;
+	NOMBRE_ESTADO_PARTIDA: string;
 	CLASE_PARTIDA: string;
 	CORR_MONEDA: number;
 	FACTOR_CAMBIO: number;

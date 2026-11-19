@@ -134,11 +134,11 @@ export class ConPartidaService {
 			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 80, groupIndex: 0 },
 			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 70, groupIndex: 1 },
 			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 200 },
-			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida', width: 150 },
-			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 150 },
-			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento', width: 180 },
-			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', width: 950 },
-			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 150 },
+			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida', width: 120 },
+			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 120 },
+			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 120 },
+			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento', width: 160 },
+			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', minWidth: 280 },
 		];
 	}
 
@@ -198,10 +198,10 @@ export class ConPartidaService {
 				template: 'CORR_CLASE_PARTIDALookup',
 			},
 			{
-				dataField: 'ESTADO_PARTIDA',
+				dataField: 'NOMBRE_ESTADO_PARTIDA',
 				label: { text: 'Estado' },
 				colSpan: 2,
-				template: 'ESTADO_PARTIDALookup',
+				editorOptions: { readOnly: true },
 			},
 			{
 				dataField: 'CORR_PARTIDA',

@@ -33,6 +33,10 @@ export class ComOrdenCompraRepository {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlCOMPRASAPI);
 	}
 
+	Solicitar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'Solicitar', xWhere, environment.UrlCOMPRASAPI);
+	}
+
 	Aplicar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'Aplicar', xWhere, environment.UrlCOMPRASAPI);
 	}

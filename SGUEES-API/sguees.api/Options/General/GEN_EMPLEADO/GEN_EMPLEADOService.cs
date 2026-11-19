@@ -20,27 +20,22 @@ namespace sguees.Services
 			_repo = repo;
 		}
 
-		public async Task<CResult> GetAllAsync(GEN_EMPLEADOParam xWhere)
+		public async Task<CResult> GetAllAsync(GEN_EMPLEADOParam xWhere, string login)
 		{
-			var p = new List<CParameter>
-			{
-				new() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-			};
-			if (xWhere.CORR_EMPLEADO > 0)
-			{
-				p.Add(new() { ParameterName = "CORR_EMPLEADO", Value = xWhere.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 });
-			}
-			return await _repo.GetAllAsync(p);
+			return await _repo.GetAllVisibleAsync(
+				xWhere?.CORR_EMPRESA ?? 0,
+				login,
+				xWhere?.CORR_EMPLEADO > 0 ? xWhere.CORR_EMPLEADO : null);
 		}
 
-		public async Task<CResult> GetAsync(GEN_EMPLEADOParam xWhere)
+		public async Task<CResult> GetAsync(GEN_EMPLEADOParam xWhere, string login)
 		{
-			var p = new List<CParameter>
+			if (xWhere == null || xWhere.CORR_EMPLEADO <= 0)
 			{
-				new() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-				new() { ParameterName = "CORR_EMPLEADO", Value = xWhere.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
-			};
-			return await _repo.GetAsync(p);
+				return AccesoDenegado("Debe seleccionar un empleado válido.");
+			}
+
+			return await _repo.GetVisibleAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO, login);
 		}
 
 		// Qué hace: inicia empleado nuevo (4 tablas en una transacción SP).
@@ -76,8 +71,18 @@ namespace sguees.Services
 			return await _repo.MttoEmpleadoAsync(data, (int)UpdateType.Add, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		public async Task<CResult> GetPersonaNaturalAsync(GEN_PERSONA_NATURALParam xWhere)
+		public async Task<CResult> GetPersonaNaturalAsync(GEN_PERSONA_NATURALParam xWhere, int corrEmpresa, string login)
 		{
+			if (xWhere == null || (xWhere.CORR_PERSONA <= 0 && xWhere.CORR_PERSONA_NATURAL <= 0))
+			{
+				return AccesoDenegado("Debe especificar una persona válida.");
+			}
+
+			if (!await _repo.PuedeVerPersonaAsync(corrEmpresa, xWhere.CORR_PERSONA, xWhere.CORR_PERSONA_NATURAL, login))
+			{
+				return AccesoDenegado("No tiene acceso a los datos de esta persona.");
+			}
+
 			var p = new List<CParameter>();
 			if (xWhere.CORR_PERSONA_NATURAL > 0)
 			{
@@ -91,21 +96,49 @@ namespace sguees.Services
 			return await _repo.GetPersonaNaturalAsync(p);
 		}
 
+		public Task<bool> PuedeVerPersonaAsync(int corrEmpresa, long? corrPersona, long? corrPersonaNatural, string login)
+		{
+			return _repo.PuedeVerPersonaAsync(corrEmpresa, corrPersona, corrPersonaNatural, login);
+		}
+
 		// Qué hace: actualiza personales + datos GEN_EMPLEADO del form.
 		// Cómo: PRAL_MTTO_GEN_EMPLEADO TIPO 2; relee natural en Data (empleado ya en memoria SPA).
 		public Task<CResult> UpdatePersonalesAsync(GEN_EMPLEADO_MTTOTable Data, int corrEmpresa, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			return UpdatePersonalesConAccesoAsync(Data, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		private async Task<CResult> UpdatePersonalesConAccesoAsync(
+			GEN_EMPLEADO_MTTOTable Data,
+			int corrEmpresa,
+			string vLOGIN_SISTEMA,
+			string vESTACION)
+		{
+			if (Data == null || !await _repo.PuedeVerPersonaAsync(
+				corrEmpresa,
+				Data.CORR_PERSONA,
+				Data.CORR_PERSONA_NATURAL,
+				vLOGIN_SISTEMA))
+			{
+				return AccesoDenegado("No tiene acceso para modificar los datos de esta persona.");
+			}
+
 			var errorFormato = ValidarDatosInstitucionales(Data);
 			if (errorFormato != null)
 			{
-				return Task.FromResult(AvisoInstitucional(errorFormato));
+				return AvisoInstitucional(errorFormato);
 			}
 
-			return _repo.MttoEmpleadoAsync(Data, (int)UpdateType.Update, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
+			return await _repo.MttoEmpleadoAsync(Data, (int)UpdateType.Update, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
 		}
 
 		public Task<CResult> CreateAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			if (Data != null)
+			{
+				Data.USUARIO_CREA = vLOGIN_SISTEMA;
+			}
+
 			var errorFormato = ValidarDatosInstitucionales(Data);
 			if (errorFormato != null)
 			{
@@ -117,17 +150,34 @@ namespace sguees.Services
 
 		public Task<CResult> UpdateAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			return UpdateConAccesoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		private async Task<CResult> UpdateConAccesoAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			if (Data == null || !await _repo.PuedeVerEmpleadoAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO, vLOGIN_SISTEMA))
+			{
+				return AccesoDenegado("No tiene acceso para modificar este empleado.");
+			}
+
 			var errorFormato = ValidarDatosInstitucionales(Data);
 			if (errorFormato != null)
 			{
-				return Task.FromResult(AvisoInstitucional(errorFormato));
+				return AvisoInstitucional(errorFormato);
 			}
 
-			return _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		public Task<CResult> DeleteAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-			=> _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		public async Task<CResult> DeleteAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			if (Data == null || !await _repo.PuedeVerEmpleadoAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO, vLOGIN_SISTEMA))
+			{
+				return AccesoDenegado("No tiene acceso para eliminar este empleado.");
+			}
+
+			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
 
 		// Qué hace: valida correo y teléfono institucional de GEN_EMPLEADO.
 		// Cómo: correo con formato de email; teléfono nacional +503 y 8 dígitos. Vacío se guarda null.
@@ -276,7 +326,24 @@ namespace sguees.Services
 				};
 			}
 
+			if (!await _repo.PuedeVerEmpleadoAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO, vLOGIN_SISTEMA))
+			{
+				return AccesoDenegado("No tiene acceso para modificar este empleado.");
+			}
+
 			return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		private static CResult AccesoDenegado(string mensaje)
+		{
+			return new CResult
+			{
+				Result = false,
+				RowsAffected = 0,
+				ErrorCode = 403,
+				ErrorMessage = mensaje,
+				ErrorSource = "[GEN_EMPLEADOService]",
+			};
 		}
 
 		private static CResult AvisoInstitucional(string message)

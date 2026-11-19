@@ -1,6 +1,12 @@
 // Qué hace: estilos visuales para el mantenimiento de Plantillas de Correo.
 // Cómo lo hace: define badges de estado para la grilla, distribución responsive del formulario, toolbar de versiones y estilos del editor HTML.
 
+:host ::ng-deep .estado-badge--borrador {
+	color: #f59e0b;
+	background: rgba(245, 158, 11, 0.16);
+	border: 1px solid rgba(245, 158, 11, 0.38);
+}
+
 :host ::ng-deep .badge-activo-si {
 	display: inline-flex;
 	align-items: center;

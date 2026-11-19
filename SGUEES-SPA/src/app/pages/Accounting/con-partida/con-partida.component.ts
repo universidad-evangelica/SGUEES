@@ -64,7 +64,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	btnGenerarDesdeModelo = '';
 	btnContrapartida = '';
 	btnImprimir = '';
-	btnImprimirDx = '';
 	contrapartidaModalVisible = false;
 	popupVisiblePdf = false;
 	vPDF: Blob | null = null;
@@ -255,6 +254,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			NUMERO_DOCUMENTO: '',
 			NOMBRE_PARTIDA: '',
 			ESTADO_PARTIDA: 'DI',
+			NOMBRE_ESTADO_PARTIDA: 'Digitada',
 			CLASE_PARTIDA: 'NOR',
 			CORR_MONEDA: 0,
 			FACTOR_CAMBIO: 0,
@@ -531,7 +531,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			this.btnContrapartida = this.permiteEdit ? 'Contrapartida' : '';
 			this.btnCrearModelo = this.permiteEdit ? 'Crear Modelo' : '';
 			this.btnImprimir = this.permitePrint ? 'Imprimir' : '';
-			this.btnImprimirDx = this.permitePrint ? 'Imprimir DX' : '';
 			return;
 		}
 
@@ -541,7 +540,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		const puedeImprimirPartida =
 			this.permitePrint && this.banderaMtto === UpdateType.Update && this.hasPartidaSeleccionada();
 		this.btnImprimir = puedeImprimirPartida ? 'Imprimir' : '';
-		this.btnImprimirDx = puedeImprimirPartida ? 'Imprimir DX' : '';
 		this.btnCrearModelo = this.puedeCrearModelo() ? 'Crear Modelo' : '';
 	}
 
@@ -594,10 +592,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	imprimirPartida(): void {
-		this.abrirPdfPartida((params) => this.service.getPDF(params));
-	}
-
-	imprimirPartidaDx(): void {
 		this.abrirPdfPartida((params) => this.service.getPDFDx(params));
 	}
 

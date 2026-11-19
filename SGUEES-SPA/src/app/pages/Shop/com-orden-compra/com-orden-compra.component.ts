@@ -33,7 +33,7 @@ export class ComOrdenCompraComponent extends CBaseComponent implements OnInit {
 	PDF!: SafeUrl;
 	mCOM_ORDEN_COMPRA_AUTORIZACIONES: any[] = [];
 	FilterValue: any = null;
-	btnAplicar = '';
+	btnSolicitar = '';
 	btnAnular = '';
 	btnDesAplicar = '';
 	btnVistaPrevia = '';
@@ -293,12 +293,12 @@ export class ComOrdenCompraComponent extends CBaseComponent implements OnInit {
 	refrescarBotones() {
 		if (this.banderaMtto !== UpdateType.Browse) {
 			const estado = this.model?.ESTADO_ORDEN_COMPRA;
-			this.btnAplicar = estado === 'DI' || estado === 'SO' ? 'Aplicar' : '';
+			this.btnSolicitar = estado === 'DI' ? 'Solicitar' : '';
 			this.btnAnular = estado === 'DI' || estado === 'SO' || estado === 'AP' ? 'Anular' : '';
 			this.btnDesAplicar = estado === 'AP' || estado === 'SO' ? 'Desaplicar' : '';
 			this.btnVistaPrevia = this.tieneCuadroComparativo() ? 'Vista Previa' : '';
 		} else {
-			this.btnAplicar = '';
+			this.btnSolicitar = '';
 			this.btnAnular = '';
 			this.btnDesAplicar = '';
 			this.btnVistaPrevia = '';
@@ -728,14 +728,18 @@ export class ComOrdenCompraComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	Aplicar(): void {
+	Solicitar(): void {
+		if (!this.hasOrdenKeys()) {
+			this.notifyFx('Debe guardar la orden antes de solicitar.', NotifyType.Warning);
+			return;
+		}
 		this.loadingVisible = true;
 		this.service
-			.Aplicar(this.model)
+			.Solicitar(this.model)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					this.aplicarEstadoRespuesta(response, 'Orden aplicada con éxito!');
+					this.aplicarEstadoRespuesta(response, 'Orden solicitada con éxito!');
 					this.loadingVisible = false;
 				},
 				error: (error: any) => {
