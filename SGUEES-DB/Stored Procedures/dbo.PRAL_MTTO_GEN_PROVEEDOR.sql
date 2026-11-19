@@ -15,6 +15,7 @@ CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_GEN_PROVEEDOR]
 	@CORR_PERSONA BIGINT,
 	@CODIGO_PROVEEDOR VARCHAR(20),
 	@NOMBRE_COMERCIAL VARCHAR(150),
+	@CORR_ACTIVIDAD_ECONOMICA INT = NULL,
 	@CORR_FORMA_PAGO INT,
 	@ESTADO_PROVEEDOR VARCHAR(1),
 	@ESTADO_PROVEEDOR_WEB VARCHAR(1),
@@ -101,6 +102,10 @@ BEGIN
 			SET @SYS_MENSAJE_ERROR = N'La persona debe ser natural o jurídica.';
 			GOTO FINA;
 		END;
+
+		-- La actividad del encabezado manda. Si no viene, se conserva la de la persona.
+		IF ISNULL(@CORR_ACTIVIDAD_ECONOMICA, 0) > 0
+			SET @CORR_ACTIVIDAD = CONVERT(VARCHAR(10), @CORR_ACTIVIDAD_ECONOMICA);
 
 		-- Nombre/Razón social editable: si el form no manda nada, precarga el de persona.
 		IF NULLIF(LTRIM(RTRIM(ISNULL(@NOMBRE_COMERCIAL, N''))), N'') IS NULL

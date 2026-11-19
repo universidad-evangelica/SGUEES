@@ -117,6 +117,27 @@ namespace sguees.Controllers
 			return await GetCuentasDetalleAsync(Data);
 		}
 
+		[HttpGet("GetCUENTA_CONTABLE_GEN_PROVEEDOR")]
+		[Authorize(Policy = "/gen-proveedor|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_GEN_PROVEEDOR([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			return await GetCuentasDetalleAsync(Data);
+		}
+
+		[HttpGet("GetCUENTA_CONTABLE_GEN_RUBRO")]
+		[Authorize(Policy = "/gen-rubro|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_GEN_RUBRO([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			return await GetCuentasDetalleAsync(Data);
+		}
+
+		[HttpGet("GetCUENTA_CONTABLE_GEN_TIPO_GASTO")]
+		[Authorize(Policy = "/gen-tipo-gasto|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_GEN_TIPO_GASTO([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			return await GetCuentasDetalleAsync(Data);
+		}
+
 		[HttpGet("GetCUENTA_CONTABLE_BAN_DOCUMENTO")]
 		[Authorize(Policy = "/ban-documento|R")]
 		public async Task<CResult> GetCUENTA_CONTABLE_BAN_DOCUMENTO([FromQuery] CON_CATALOGO_CUENTAParam Data)

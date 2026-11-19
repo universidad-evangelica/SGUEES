@@ -30,7 +30,6 @@ namespace sguees.Repositories
 		CResult GetSI_NO();
 		CResult GetNIVEL_ACADEMICO();
 		CResult GetESTADO_NIP();
-		// Qué hace: expone estados de contrato del empleado (CHECK de GEN_EMPLEADO_CONTRATO).
-		CResult GetESTADO_CONTRATO();
+		CResult GetTIPO_CUENTA_PROVEEDOR();
 	}
 }

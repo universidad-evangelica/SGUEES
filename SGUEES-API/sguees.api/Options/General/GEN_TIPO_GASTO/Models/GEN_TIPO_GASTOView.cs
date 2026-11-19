@@ -11,5 +11,7 @@ namespace sguees.Models
 		public string NOMBRE_TIPO_GASTO { get; set; }
 		public bool ES_SERVICIO { get; set; }
 		public bool ES_INTANGIBLE { get; set; }
+		public string CUENTA_CONTABLE { get; set; }
+		public string NOMBRE_CUENTA { get; set; }
 	}
 }

@@ -130,7 +130,7 @@ namespace eadmindevprojectmanagement.Controllers
 		}
 
 		[HttpPut("DesAplicar")]
-		[Authorize(Policy = "/com-provision|U")]
+		[Authorize(Policy = "/com-provision-desaplicar|U")]
 		public async Task<IActionResult> DesAplicar(COM_PROVISIONTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

@@ -52,11 +52,16 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
   mCLASE_RUBRO: any;
   mTIPO_APLICACION:any;
   mSUMA_RESTA:any ;
+  mCUENTA_CONTABLE: any[] = [];
   readOnly = false;
   mGEN_RUBRO_IMPUESTO: any;
   mGEN_RUBRO_SUMA: any;
   mCORR_IMPUESTO: any;
   mCORR_RUBRO: any;
+  cuentaLookupColumns: any[] = [
+    { dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
+    { dataField: 'NOMBRE_CUENTA', caption: 'Nombre cuenta', width: 280 },
+  ];
   // #endregion
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -67,6 +72,7 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
+		this.selectedLookUpCUENTA_CONTABLE = this.selectedLookUpCUENTA_CONTABLE.bind(this);
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -90,6 +96,23 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
     this.getSUMA_RESTA();
     this.GetCORR_IMPUESTO();
     this.GetCORR_RUBRO();
+    this.getCUENTA_CONTABLE();
+	}
+
+	getCUENTA_CONTABLE() {
+		this.appInfoService
+			.getLookUp('GEN_RUBRO', 'CON_CATALOGO_CUENTA', 'GetCUENTA_CONTABLE', undefined, environment.UrlCONTAAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCUENTA_CONTABLE = response.Data || [];
+					}
+				},
+				error: (error: any) => {
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
 	}
 
 	getCLASE_RUBRO() {
@@ -205,6 +228,8 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 				NOMBRE_CLASE_RUBRO: xModel.NOMBRE_CLASE_RUBRO,
 				TIPO_APLICACION: xModel.TIPO_APLICACION,
 				NOMBRE_TIPO_APLICACION: xModel.NOMBRE_TIPO_APLICACION,
+				CUENTA_CONTABLE: xModel.CUENTA_CONTABLE || '',
+				NOMBRE_CUENTA: xModel.NOMBRE_CUENTA || '',
 			};
 		} else {
 			return {
@@ -222,6 +247,8 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 				NOMBRE_CLASE_RUBRO: '',
 				TIPO_APLICACION: '',
 				NOMBRE_TIPO_APLICACION: '',
+				CUENTA_CONTABLE: '',
+				NOMBRE_CUENTA: '',
 			};
 		}
 	}
@@ -263,6 +290,7 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 				esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
 				insert: () => this.service.insert(this.model),
 				update: () => this.service.update(this.model),
+				onSuccess: () => this.consultar(false),
 			});
 			return;
 		}
@@ -343,8 +371,6 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 		this.dataForm.instance.getEditor('SUMA_RESTA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CLASE_RUBRO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('TIPO_APLICACION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CUENTA_CONTABLE')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CODIGO_FEL')?.option('readOnly', true);
 		this.readOnly = true;
 	}
 
@@ -367,6 +393,15 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 	}
   selectedLookUpCORR_RUBRO(vRow: any): any {
 		return vRow[0].CORR_RUBRO;
+	}
+	selectedLookUpCUENTA_CONTABLE(vRow: any): any {
+		const row = vRow?.[0];
+		if (!row) {
+			return this.model?.CUENTA_CONTABLE;
+		}
+		this.model.CUENTA_CONTABLE = row.CUENTA_CONTABLE || '';
+		this.model.NOMBRE_CUENTA = row.NOMBRE_CUENTA || '';
+		return row.CUENTA_CONTABLE;
 	}
   // #region <Impuestos>
 	consultarGEN_RUBRO_IMPUESTO() {

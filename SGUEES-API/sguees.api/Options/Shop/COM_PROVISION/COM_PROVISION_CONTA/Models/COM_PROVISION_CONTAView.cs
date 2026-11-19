@@ -16,5 +16,6 @@ namespace sguees.Models
 		public string CORR_AUXILIAR_UNICO { get; set; }
 		public string NOMBRE_AUXILIAR { get; set; }
 		public string NOMBRE_CUENTA { get; set; }
+		public string NOMBRE_CENTRO { get; set; }
 	}
 }

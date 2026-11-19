@@ -20,6 +20,8 @@ namespace sguees.Repositories
 			"NOMBRE_TIPO_GASTO",
 			"ES_SERVICIO",
 			"ES_INTANGIBLE",
+			"CUENTA_CONTABLE",
+			"NOMBRE_CUENTA",
 		};
 		
 		public GEN_TIPO_GASTORepository(IConfiguration config) : 
@@ -113,6 +115,7 @@ namespace sguees.Repositories
 				p.Add(new CParameter() {ParameterName="NOMBRE_TIPO_GASTO",Value=Data.NOMBRE_TIPO_GASTO,DbType=System.Data.DbType.String});
 				p.Add(new CParameter() {ParameterName="ES_SERVICIO",Value=Data.ES_SERVICIO,DbType=System.Data.DbType.Boolean});
 				p.Add(new CParameter() {ParameterName="ES_INTANGIBLE",Value=Data.ES_INTANGIBLE,DbType=System.Data.DbType.Boolean});
+				p.Add(new CParameter() {ParameterName="CUENTA_CONTABLE",Value=string.IsNullOrWhiteSpace(Data.CUENTA_CONTABLE) ? (object)DBNull.Value : Data.CUENTA_CONTABLE,DbType=System.Data.DbType.String});
 				
 				var pWhere = new List<CParameter>();
 				pWhere.Add(new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32});
@@ -155,6 +158,7 @@ namespace sguees.Repositories
 				p.Add(new CParameter() {ParameterName="NOMBRE_TIPO_GASTO",Value=Data.NOMBRE_TIPO_GASTO,DbType=System.Data.DbType.String});
 				p.Add(new CParameter() {ParameterName="ES_SERVICIO",Value=Data.ES_SERVICIO,DbType=System.Data.DbType.Boolean});
 				p.Add(new CParameter() {ParameterName="ES_INTANGIBLE",Value=Data.ES_INTANGIBLE,DbType=System.Data.DbType.Boolean});
+				p.Add(new CParameter() {ParameterName="CUENTA_CONTABLE",Value=string.IsNullOrWhiteSpace(Data.CUENTA_CONTABLE) ? (object)DBNull.Value : Data.CUENTA_CONTABLE,DbType=System.Data.DbType.String});
 				
 				var pWhere = new List<CParameter>();
 				pWhere.Add(new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32});

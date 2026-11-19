@@ -709,20 +709,22 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: opciones de ESTADO_CONTRATO (CHECK de GEN_EMPLEADO_CONTRATO).
-		// Cómo lo hace: retorna Key/Value coincidentes con CK_GEN_EMPLEADO_CONTRATO_ESTADO.
-		public CResult GetESTADO_CONTRATO()
+		public CResult GetTIPO_CUENTA_PROVEEDOR()
 		{
 			CResult objResultado = new();
 			objResultado.Data = new List<GEN_LISTAView>()
 			{
-				new() { Key = "BORRADOR", Value = "Borrador" },
-				new() { Key = "VIGENTE", Value = "Vigente" },
-				new() { Key = "FINALIZADO", Value = "Finalizado" },
-				new() { Key = "ANULADO", Value = "Anulado" },
+				new() { Key = "CXP", Value = "Cuenta por pagar" },
+				new() { Key = "GAS", Value = "Gasto" },
+				new() { Key = "PRO", Value = "Provisión" },
+				new() { Key = "ANT", Value = "Anticipos" },
+				new() { Key = "RET", Value = "Retenciones" },
+				new() { Key = "IVA", Value = "IVA crédito fiscal" },
+				new() { Key = "DES", Value = "Descuentos" },
+				new() { Key = "DEV", Value = "Devoluciones" },
 			};
 			objResultado.Result = true;
-			objResultado.RowsAffected = 4;
+			objResultado.RowsAffected = 8;
 			objResultado.CodeHelper = 0;
 			objResultado.ErrorCode = 0;
 			objResultado.ErrorMessage = "";

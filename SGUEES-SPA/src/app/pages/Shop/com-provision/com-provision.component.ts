@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { take } from 'rxjs/operators';
+import { from, of } from 'rxjs';
+import { catchError, concatMap, map, take, toArray } from 'rxjs/operators';
 import { custom } from 'devextreme/ui/dialog';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { environment } from 'src/environments/environment';
@@ -191,7 +192,19 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 	}
 
 	selectedLookUpCORR_PROVEEDOR(vRow: any): any {
-		return vRow[0].CORR_PROVEEDOR;
+		const row = vRow?.[0];
+		if (!row) {
+			return null;
+		}
+		const corr = Number(row.CORR_PROVEEDOR);
+		const actual = Number(this.model?.CORR_PROVEEDOR ?? 0);
+		if (corr !== actual) {
+			const nombre = row.NOMBRE_PROVEEDOR ?? '';
+			this.model.NOMBRE_PROVEEDOR = nombre;
+			this.model.NOMBRE_BENEFICIARIO = nombre;
+			this.dataForm?.instance?.getEditor('NOMBRE_BENEFICIARIO')?.option('value', nombre);
+		}
+		return row.CORR_PROVEEDOR;
 	}
 
 	selectedLookUpCUENTA_CONTABLE(vRow: any): any {
@@ -293,6 +306,45 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 		return !this.readOnly && this.model?.ESTADO_PROVISION === 'DI';
 	}
 
+	getEstadoProvisionTexto(): string {
+		const nombre = (this.model?.NOMBRE_ESTADO_PROVISION || '').trim();
+		if (nombre) {
+			return nombre;
+		}
+		switch (this.model?.ESTADO_PROVISION) {
+			case 'AP':
+				return 'Aplicado';
+			case 'AN':
+				return 'Anulado';
+			default:
+				return 'Digitado';
+		}
+	}
+
+	getEstadoProvisionClass(): string {
+		switch (this.model?.ESTADO_PROVISION) {
+			case 'AP':
+				return 'estado-provision-chip--ap';
+			case 'AN':
+				return 'estado-provision-chip--an';
+			default:
+				return 'estado-provision-chip--di';
+		}
+	}
+
+	private syncFechaAnulacion(): void {
+		const anulada = this.model?.ESTADO_PROVISION === 'AN';
+		const spacer = (this.items || []).find((item: any) => item.name === 'spacerFilaMontos');
+		const fecha = (this.items || []).find((item: any) => item.dataField === 'FECHA_ANULACION');
+		if (spacer) {
+			spacer.colSpan = anulada ? 4 : 6;
+		}
+		if (fecha) {
+			fecha.visible = anulada;
+		}
+		this.items = [...(this.items || [])];
+	}
+
 	refrescarBotones() {
 		if (this.banderaMtto !== UpdateType.Browse) {
 			this.btnAplicar = this.model?.ESTADO_PROVISION === 'DI' ? 'Aplicar' : '';
@@ -366,6 +418,10 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 	}
 
 	guardar(): void {
+		if (this.banderaMtto === UpdateType.Update && this.model?.ESTADO_PROVISION !== 'DI') {
+			this.notifyFx('Solo se pueden modificar provisiones digitadas', NotifyType.Warning);
+			return;
+		}
 		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
 			return;
 		}
@@ -379,8 +435,9 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result && response.ErrorCode === 0) {
-							this.models.push(response.Data);
-							this.model = response.Data;
+							const data = this.conservarNoContabilizar(response.Data);
+							this.models.push(data);
+							this.model = data;
 							this.AsignaStatus(UpdateType.Browse);
 							this.notifyFx('Registro creado con éxito!', NotifyType.Success);
 							this.refrescarBotones();
@@ -401,15 +458,16 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result && response.ErrorCode === 0) {
-							this.model = response.Data;
+							const data = this.conservarNoContabilizar(response.Data);
+							this.model = data;
 							const vIndex = this.models.findIndex(
 								(item: any) =>
 									item.ANIO_PERIODO === response.Data.ANIO_PERIODO &&
 									item.MES_PERIODO === response.Data.MES_PERIODO &&
-									item.CORR_PROVISION === response.Data.CORR_PROVISION
+									item.CORR_PROVISION === data.CORR_PROVISION
 							);
 							if (vIndex >= 0) {
-								this.models[vIndex] = response.Data;
+								this.models[vIndex] = data;
 							}
 							this.AsignaStatus(UpdateType.Browse);
 							this.notifyFx('Registro modificado con éxito!', NotifyType.Success);
@@ -448,8 +506,9 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 				next: (response: any) => {
 					this.loadingVisible = false;
 					if (response.Result && response.ErrorCode === 0) {
-						this.models.push(response.Data);
-						this.model = response.Data;
+						const data = this.conservarNoContabilizar(response.Data);
+						this.models.push(data);
+						this.model = data;
 						this.modelUpdate = this.fillData(this.model);
 						this.AsignaStatus(UpdateType.Update);
 						this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
@@ -495,24 +554,30 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 	}
 
 	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.ANIO_PERIODO, e.data.MES_PERIODO, e.data.CORR_PROVISION))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con éxito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+		e.cancel = new Promise((resolve) => {
+			this.service
+				.delete(this.fillParam(e.data.ANIO_PERIODO, e.data.MES_PERIODO, e.data.CORR_PROVISION))
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.notifyFx('Registro eliminado con éxito!', NotifyType.Success);
+							resolve(false);
+						} else {
+							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							resolve(true);
+						}
+					},
+					error: (error: any) => {
+						this.notifyFx(error, NotifyType.Error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private conservarNoContabilizar(data: ComProvision): ComProvision {
+		return { ...data, NO_CONTABILIZAR: !!this.model?.NO_CONTABILIZAR };
 	}
 
 	override bloquear(): void {
@@ -531,6 +596,7 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 			'NOMBRE_PARTIDA',
 		];
 		campos.forEach((c) => this.dataForm?.instance?.getEditor(c)?.option('readOnly', true));
+		this.syncFechaAnulacion();
 	}
 
 	override habilitar(): void {
@@ -545,7 +611,8 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 		['FECHA_PROVISION', 'CORR_PROVEEDOR', 'NOMBRE_BENEFICIARIO', 'NO_CONTABILIZAR', 'NOMBRE_PARTIDA'].forEach((c) =>
 			this.dataForm?.instance?.getEditor(c)?.option('readOnly', !editable)
 		);
-		this.dataForm?.instance?.getEditor('FECHA_ANULACION')?.option('readOnly', this.model?.ESTADO_PROVISION !== 'AP');
+		this.dataForm?.instance?.getEditor('FECHA_ANULACION')?.option('readOnly', true);
+		this.syncFechaAnulacion();
 	}
 
 	override setFocus(): void {
@@ -814,58 +881,63 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 		}
 
 		this.loadingVisible = true;
-		let pendientes = seleccionados.length;
-		let huboError = false;
+		from(seleccionados)
+			.pipe(
+				concatMap((doc: any) => {
+					const deta = {
+						CORR_EMPRESA: this.model.CORR_EMPRESA,
+						ANIO_PERIODO: this.model.ANIO_PERIODO,
+						MES_PERIODO: this.model.MES_PERIODO,
+						CORR_PROVISION: this.model.CORR_PROVISION,
+						CORR_DETA: 0,
+						ANIO_PERIODO_COM: doc.ANIO_PERIODO,
+						MES_PERIODO_COM: doc.MES_PERIODO,
+						CORR_DOCUMENTO_COM: doc.CORR_DOCUMENTO,
+						MONTO_DOCUMENTO: doc.TOTAL_DOCUMENTO || 0,
+						MONTO_INICIAL: doc.TOTAL_DOCUMENTO || 0,
+						MONTO_PAGO: doc.TOTAL_DOCUMENTO || 0,
+						MONTO_FINAL: 0,
+						NO_CONTABILIZAR: !!this.model.NO_CONTABILIZAR,
+					};
 
-		seleccionados.forEach((doc: any) => {
-			const deta = {
-				CORR_EMPRESA: this.model.CORR_EMPRESA,
-				ANIO_PERIODO: this.model.ANIO_PERIODO,
-				MES_PERIODO: this.model.MES_PERIODO,
-				CORR_PROVISION: this.model.CORR_PROVISION,
-				CORR_DETA: 0,
-				ANIO_PERIODO_COM: doc.ANIO_PERIODO,
-				MES_PERIODO_COM: doc.MES_PERIODO,
-				CORR_DOCUMENTO_COM: doc.CORR_DOCUMENTO,
-				MONTO_DOCUMENTO: doc.TOTAL_DOCUMENTO || 0,
-				MONTO_INICIAL: doc.TOTAL_DOCUMENTO || 0,
-				MONTO_PAGO: doc.TOTAL_DOCUMENTO || 0,
-				MONTO_FINAL: 0,
-				NO_CONTABILIZAR: !!this.model.NO_CONTABILIZAR,
-			};
+					return this.service.insertCOM_PROVISION_DETA(deta).pipe(
+						take(1),
+						catchError((error: any) =>
+							of({
+								Result: false,
+								ErrorCode: error?.ErrorCode ?? error?.error?.ErrorCode ?? -1,
+								ErrorMessage:
+									(typeof error === 'string' && error.trim()) ||
+									error?.ErrorMessage ||
+									error?.error?.ErrorMessage ||
+									error?.message ||
+									'No se pudo importar el documento.',
+							})
+						),
+						map((response: any) => ({ ...response, documento: doc.NUMERO_DOCUMENTO }))
+					);
+				}),
+				toArray()
+			)
+			.subscribe((responses: any[]) => {
+				this.loadingVisible = false;
+				const fallidos = responses.filter((response) => !(response.Result || response.ErrorCode === 0));
 
-			this.service
-				.insertCOM_PROVISION_DETA(deta)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (!(response.Result || response.ErrorCode === 0)) {
-							huboError = true;
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						pendientes -= 1;
-						if (pendientes === 0) {
-							this.loadingVisible = false;
-							if (!huboError) {
-								this.notifyFx('Documentos importados con éxito!', NotifyType.Success);
-							}
-							this.popupVisibleDocs = false;
-							this.consultarDetalles();
-							this.consultarContabilidades();
-						}
-					},
-					error: (error: any) => {
-						huboError = true;
-						this.notifyFx(error, NotifyType.Error);
-						pendientes -= 1;
-						if (pendientes === 0) {
-							this.loadingVisible = false;
-							this.consultarDetalles();
-							this.consultarContabilidades();
-						}
-					},
-				});
-		});
+				if (fallidos.length) {
+					fallidos.forEach((response) =>
+						this.notifyFx(
+							`Documento ${response.documento}: ${response.ErrorMessage || 'No se pudo importar.'}`,
+							NotifyType.Error
+						)
+					);
+				} else {
+					this.notifyFx('Documentos importados con éxito!', NotifyType.Success);
+					this.popupVisibleDocs = false;
+				}
+
+				this.consultarDetalles();
+				this.consultarContabilidades();
+			});
 	}
 
 	detalleRowRemoving(e: any): void {

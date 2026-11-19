@@ -3,8 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
-
-CREATE VIEW [dbo].[V_GEN_RUBRO]
+CREATE OR ALTER VIEW [dbo].[V_GEN_RUBRO]
 AS
 SELECT A.CORR_EMPRESA
       ,A.CORR_RUBRO
@@ -15,32 +14,39 @@ SELECT A.CORR_EMPRESA
       ,A.MUESTRA_DETALLE
       ,A.MUESTRA_TOTAL
       ,A.SUMA_RESTA
-      ,CASE A.SUMA_RESTA 
-      WHEN 1 THEN 'Suma' 
-      WHEN -1 THEN 'Resta' 
-      ELSE 'N/A' END NOMBRE_SUMA_RESTA
-      ,A.CLASE_RUBRO 
-      ,CASE A.CLASE_RUBRO 
-		WHEN 'NSU' THEN 'No sujeto'
-		WHEN 'EXE' THEN 'Exento'
-		WHEN 'GRA' THEN 'Gravado'
-		WHEN 'IVA' THEN 'IVA'
-		WHEN 'PER' THEN 'IVA Percibido'
-		WHEN 'RET' THEN 'IVA Retenido'
-		WHEN 'ISR' THEN 'Renta'
-		WHEN 'STO' THEN 'Subtotal'
-		WHEN 'VTO' THEN 'Venta total'
-		WHEN 'FOV' THEN 'FOVIAL'
-		WHEN 'OTR' THEN 'Otro'
-		WHEN 'DES' THEN 'Descuento'
-		WHEN 'MUN' THEN 'Municipal'
-		ELSE 'N/A' END AS NOMBRE_CLASE_RUBRO
-	,TIPO_APLICACION
-	,CASE TIPO_APLICACION 
-		WHEN 'PVG' THEN 'Porcentaje al valor gravado'
-		WHEN 'MPC' THEN 'Monto por cantidad'
-		WHEN 'TAB' THEN 'Monto Por Tabla'
-		ELSE ''
-	END NOMBRE_TIPO_APLICACION
+      ,CASE A.SUMA_RESTA
+			WHEN 1 THEN 'Suma'
+			WHEN -1 THEN 'Resta'
+			ELSE 'N/A'
+		END NOMBRE_SUMA_RESTA
+      ,A.CLASE_RUBRO
+      ,CASE A.CLASE_RUBRO
+			WHEN 'NSU' THEN 'No sujeto'
+			WHEN 'EXE' THEN 'Exento'
+			WHEN 'GRA' THEN 'Gravado'
+			WHEN 'IVA' THEN 'IVA'
+			WHEN 'PER' THEN 'IVA Percibido'
+			WHEN 'RET' THEN 'IVA Retenido'
+			WHEN 'ISR' THEN 'Renta'
+			WHEN 'STO' THEN 'Subtotal'
+			WHEN 'VTO' THEN 'Venta total'
+			WHEN 'FOV' THEN 'FOVIAL'
+			WHEN 'OTR' THEN 'Otro'
+			WHEN 'DES' THEN 'Descuento'
+			WHEN 'MUN' THEN 'Municipal'
+			ELSE 'N/A'
+		END AS NOMBRE_CLASE_RUBRO
+      ,A.TIPO_APLICACION
+      ,CASE A.TIPO_APLICACION
+			WHEN 'PVG' THEN 'Porcentaje al valor gravado'
+			WHEN 'MPC' THEN 'Monto por cantidad'
+			WHEN 'TAB' THEN 'Monto Por Tabla'
+			ELSE ''
+		END NOMBRE_TIPO_APLICACION
+      ,A.CUENTA_CONTABLE
+      ,ISNULL(B.NOMBRE_CUENTA,'') NOMBRE_CUENTA
 FROM GEN_RUBRO A
+LEFT OUTER JOIN CON_CATALOGO_CUENTA B
+	ON A.CORR_EMPRESA=B.CORR_EMPRESA
+	AND A.CUENTA_CONTABLE=B.CUENTA_CONTABLE
 GO

@@ -42,6 +42,18 @@
 			>
 			</app-data-lookup>
 		</div>
+		<div *dxTemplate="let cellInfo of 'CUENTA_CONTABLELookup'">
+			<app-data-lookup
+				[model]="mCUENTA_CONTABLE"
+				[(value)]="model.CUENTA_CONTABLE"
+				[selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
+				[valueExpr]="'CUENTA_CONTABLE'"
+				[displayExpr]="'CUENTA_CONTABLE'"
+				[lookupColumns]="cuentaLookupColumns"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
 	</dx-form>
   <table class='border'>
     <tbody>

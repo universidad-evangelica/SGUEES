@@ -23,6 +23,7 @@ import { GenProveedorDoc } from './models/gen-proveedor-doc';
 import { GenPersonaBanco } from './models/gen-persona-banco';
 import { emptyGenProveedorPersona, GenProveedorPersona } from './models/gen-proveedor-persona';
 import { emptyGenProveedorUsuario, GenProveedorUsuario } from './models/gen-proveedor-usuario';
+import { cuentaEstaActiva, emptyGenProveedorCuenta, GenProveedorCuenta } from './models/gen-proveedor-cuenta';
 import { GenProveedorService } from './gen-proveedor.service';
 
 @Component({
@@ -66,6 +67,10 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		{ dataField: 'CODIGO_PERSONA', caption: 'Código', width: 120 },
 		{ dataField: 'NOMBRE_PERSONA', caption: 'Nombre', width: 280 },
 		{ dataField: 'NOMBRE_TIPO_PERSONERIA', caption: 'Personería', width: 110 },
+	];
+	actividadLookupColumns = [
+		{ dataField: 'CODIGO_ACTIVIDAD_ECONOMICA', caption: 'Código', width: 120 },
+		{ dataField: 'NOMBRE_ACTIVIDAD_ECONOMICA', caption: 'Actividad económica', width: 360 },
 	];
 
 	/** Panel lateral: datos de persona (solo consulta desde el grid). */
@@ -118,6 +123,26 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	claveConfirmar = '';
 	claveGuardando = false;
 
+	/** Tab Cuenta contable. Una activa por tipo. */
+	cuentasProveedor: GenProveedorCuenta[] = [];
+	cuentasCargando = false;
+	cuentaColumns: any[] = [];
+	mTIPO_CUENTA: Array<{ Key: string; Value: string }> = [];
+	mCUENTA_CONTABLE: any[] = [];
+	cuentaLookupColumns = [
+		{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
+		{ dataField: 'NOMBRE_CUENTA', caption: 'Nombre', width: 280 },
+	];
+	estadoCuentaOptions = [
+		{ Key: true, Value: 'Activo' },
+		{ Key: false, Value: 'Inactivo' },
+	];
+	cuentaPopupVisible = false;
+	cuentaPopupTitulo = 'Cuenta nueva';
+	cuentaEsNueva = true;
+	cuentaGuardando = false;
+	cuentaModel: GenProveedorCuenta = emptyGenProveedorCuenta();
+
 	/** Tab Doc. Adjuntos */
 	documentos: GenProveedorDoc[] = [];
 	documentoColumns: any[] = [];
@@ -149,7 +174,9 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.items = this.service.getItems();
 		this.documentoColumns = this.service.getDocumentoColumns();
 		this.usuarioColumns = this.service.getUsuarioColumns();
+		this.cuentaColumns = this.service.getCuentaColumns();
 		this.selectedLookUpCORR_PERSONA = this.selectedLookUpCORR_PERSONA.bind(this);
+		this.selectedLookUpCORR_ACTIVIDAD_ECONOMICA = this.selectedLookUpCORR_ACTIVIDAD_ECONOMICA.bind(this);
 	}
 
 	get puedeAdjuntarDocumentos(): boolean {
@@ -221,6 +248,9 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.getCORR_FORMA_PAGO();
 		this.getCORR_CONDICION_PAGO();
 		this.getESTADO_USUARIO();
+		this.getTIPO_CUENTA();
+		this.getCUENTA_CONTABLE();
+		this.cargarLookupsPersona();
 	}
 
 	getCORR_PERSONA(corrPersonaIncluir?: number) {
@@ -521,6 +551,206 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		return item?.Value || '—';
 	}
 
+	getTIPO_CUENTA(): void {
+		this.appInfoService
+			.getLookUp('GEN_PROVEEDOR', 'GEN_LISTA', 'GetTIPO_CUENTA_PROVEEDOR', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result) {
+						this.mTIPO_CUENTA = response.Data ?? [];
+					}
+				},
+			});
+	}
+
+	getCUENTA_CONTABLE(): void {
+		this.appInfoService
+			.getLookUp('GEN_PROVEEDOR', 'CON_CATALOGO_CUENTA', 'GetCUENTA_CONTABLE', undefined, environment.UrlCONTAAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result) {
+						this.mCUENTA_CONTABLE = response.Data ?? [];
+					}
+				},
+			});
+	}
+
+	textoTipoCuenta(codigo: unknown): string {
+		const key = String(codigo ?? '').trim();
+		const item = (this.mTIPO_CUENTA ?? []).find((x) => String(x.Key) === key);
+		return item?.Value || key || '—';
+	}
+
+	textoEstadoCuenta(valor: unknown): string {
+		return cuentaEstaActiva(valor) ? 'Activo' : 'Inactivo';
+	}
+
+	private resetCuentasLocal(): void {
+		this.cuentasProveedor = [];
+		this.cuentasCargando = false;
+		this.cuentaPopupVisible = false;
+		this.cuentaGuardando = false;
+		this.cuentaModel = emptyGenProveedorCuenta();
+	}
+
+	cargarCuentasProveedor(corrProveedor?: number): void {
+		const corr = Number(corrProveedor ?? this.model?.CORR_PROVEEDOR ?? 0);
+		if (!(corr > 0)) {
+			this.cuentasProveedor = [];
+			this.cuentasCargando = false;
+			return;
+		}
+		this.cuentasCargando = true;
+		this.service
+			.getCuentas(corr)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cuentasCargando = false;
+					const filas = response?.Result ? [...(response.Data ?? [])] : [];
+					this.cuentasProveedor = filas.map((row: GenProveedorCuenta) => ({
+						...row,
+						ACTIVO: cuentaEstaActiva(row?.ACTIVO),
+					}));
+					if (!response?.Result) {
+						this.notifyApiError(response);
+					}
+				},
+				error: (error: any) => {
+					this.cuentasCargando = false;
+					this.cuentasProveedor = [];
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	abrirCuentaNueva(): void {
+		if (!(Number(this.model?.CORR_PROVEEDOR ?? 0) > 0)) {
+			this.notifyFx('Guarde el proveedor para poder asignar cuentas.', NotifyType.Warning);
+			return;
+		}
+		this.cuentaEsNueva = true;
+		this.cuentaPopupTitulo = 'Cuenta nueva';
+		this.cuentaModel = emptyGenProveedorCuenta(Number(this.model.CORR_PROVEEDOR));
+		this.cuentaPopupVisible = true;
+	}
+
+	abrirCuentaEditar(row: GenProveedorCuenta): void {
+		if (!row?.CORR_CUENTA) {
+			return;
+		}
+		this.cuentaEsNueva = false;
+		this.cuentaPopupTitulo = 'Editar cuenta';
+		this.cuentaModel = {
+			...row,
+			CORR_PROVEEDOR: Number(this.model?.CORR_PROVEEDOR ?? row.CORR_PROVEEDOR),
+			ACTIVO: cuentaEstaActiva(row.ACTIVO),
+		};
+		this.cuentaPopupVisible = true;
+	}
+
+	cerrarCuentaPopup(): void {
+		this.cuentaPopupVisible = false;
+		this.cuentaGuardando = false;
+	}
+
+	async guardarCuentaPopup(): Promise<void> {
+		const tipo = (this.cuentaModel.TIPO_CUENTA ?? '').trim();
+		const cuenta = (this.cuentaModel.CUENTA_CONTABLE ?? '').trim();
+		if (!tipo) {
+			this.notifyFx('Debe seleccionar el tipo de cuenta.', NotifyType.Warning);
+			return;
+		}
+		if (!cuenta) {
+			this.notifyFx('Debe seleccionar la cuenta contable.', NotifyType.Warning);
+			return;
+		}
+		const payload: GenProveedorCuenta = {
+			...this.cuentaModel,
+			CORR_PROVEEDOR: Number(this.model?.CORR_PROVEEDOR ?? 0),
+			TIPO_CUENTA: tipo,
+			CUENTA_CONTABLE: cuenta,
+			ACTIVO: cuentaEstaActiva(this.cuentaModel.ACTIVO),
+		};
+		if (payload.ACTIVO) {
+			const otra = this.cuentasProveedor.find(
+				(row) =>
+					row.TIPO_CUENTA === payload.TIPO_CUENTA &&
+					cuentaEstaActiva(row.ACTIVO) &&
+					Number(row.CORR_CUENTA) !== Number(payload.CORR_CUENTA),
+			);
+			if (otra) {
+				const nombreTipo = this.textoTipoCuenta(payload.TIPO_CUENTA);
+				const ok = await confirm(
+					`La cuenta ${otra.CUENTA_CONTABLE} ya está activa para ${nombreTipo}. Si confirma, esa cuenta quedará inactiva y esta pasará a ser la activa.`,
+					'Cuenta activa',
+				);
+				if (!ok) {
+					return;
+				}
+			}
+		}
+		if (this.cuentaGuardando) {
+			return;
+		}
+		this.cuentaGuardando = true;
+		const req$ = this.cuentaEsNueva ? this.service.insertCuenta(payload) : this.service.updateCuenta(payload);
+		req$.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				this.cuentaGuardando = false;
+				if (!response?.Result) {
+					this.notifyApiError(response);
+					return;
+				}
+				this.notifyFx(this.cuentaEsNueva ? 'Cuenta asignada al proveedor.' : 'Cuenta actualizada.', NotifyType.Success);
+				this.cerrarCuentaPopup();
+				this.cargarCuentasProveedor(payload.CORR_PROVEEDOR);
+			},
+			error: (error: any) => {
+				this.cuentaGuardando = false;
+				this.notifyApiError(error);
+			},
+		});
+	}
+
+	async eliminarCuenta(row: GenProveedorCuenta): Promise<void> {
+		if (this.readOnly || !this.permiteDele) {
+			return;
+		}
+		const corr = Number(this.model?.CORR_PROVEEDOR ?? 0);
+		const corrCuenta = Number(row?.CORR_CUENTA ?? 0);
+		if (!(corr > 0) || !(corrCuenta > 0)) {
+			return;
+		}
+		if (cuentaEstaActiva(row.ACTIVO)) {
+			this.notifyFx('No se puede eliminar una cuenta activa. Desactívela antes de eliminarla.', NotifyType.Warning);
+			return;
+		}
+		const ok = await confirm(
+			`¿Eliminar la cuenta ${row.CUENTA_CONTABLE} (${this.textoTipoCuenta(row.TIPO_CUENTA)})?`,
+			'Confirmar eliminación',
+		);
+		if (!ok) {
+			return;
+		}
+		this.service
+			.deleteCuenta(corr, corrCuenta)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notifyApiError(response);
+						return;
+					}
+					this.notifyFx('Cuenta eliminada.', NotifyType.Success);
+					this.cargarCuentasProveedor(corr);
+				},
+				error: (error: any) => this.notifyApiError(error),
+			});
+	}
+
 	//#region <Metodos Mtto>
 	fillParam(
 		xCORR_PROVEEDOR?: number,
@@ -551,6 +781,8 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 				NOMBRE_TIPO_PERSONERIA: xModel.NOMBRE_TIPO_PERSONERIA,
 				NOMBRE_PROVEEDOR: xModel.NOMBRE_PROVEEDOR,
 				NOMBRE_COMERCIAL: xModel.NOMBRE_COMERCIAL ?? '',
+				CORR_ACTIVIDAD_ECONOMICA: Number(xModel.CORR_ACTIVIDAD_ECONOMICA) || 0,
+				NOMBRE_ACTIVIDAD_ECONOMICA: xModel.NOMBRE_ACTIVIDAD_ECONOMICA ?? '',
 				CORR_FORMA_PAGO: xModel.CORR_FORMA_PAGO,
 				ESTADO_PROVEEDOR: xModel.ESTADO_PROVEEDOR,
 				ACTIVO_PROVEEDOR: !!xModel.ACTIVO_PROVEEDOR || xModel.ESTADO_PROVEEDOR === 'A',
@@ -568,6 +800,8 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			NOMBRE_TIPO_PERSONERIA: '',
 			NOMBRE_PROVEEDOR: '',
 			NOMBRE_COMERCIAL: '',
+			CORR_ACTIVIDAD_ECONOMICA: 0,
+			NOMBRE_ACTIVIDAD_ECONOMICA: '',
 			CORR_FORMA_PAGO: 0,
 			ESTADO_PROVEEDOR: 'A',
 			ACTIVO_PROVEEDOR: true,
@@ -626,6 +860,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.documentos = [];
 		this.resetPersonaBancosLocal();
 		this.resetUsuariosLocal();
+		this.resetCuentasLocal();
 		this.getCORR_PERSONA(0);
 		super.nuevo();
 	}
@@ -647,6 +882,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		const corrProveedor = Number(row?.CORR_PROVEEDOR ?? 0);
 		this.consultarDocumentos(corrProveedor);
 		this.cargarUsuariosProveedor(corrProveedor);
+		this.cargarCuentasProveedor(corrProveedor);
 	}
 
 	override rowDblClick(e: any): void {
@@ -654,6 +890,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		const row = e?.data ?? e?.row?.data;
 		const corrProveedor = Number(row?.CORR_PROVEEDOR ?? this.model?.CORR_PROVEEDOR ?? 0);
 		this.cargarUsuariosProveedor(corrProveedor);
+		this.cargarCuentasProveedor(corrProveedor);
 	}
 
 	/** Clic en fila del browse → panel lateral con datos de persona (solo lectura). */
@@ -813,6 +1050,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.documentos = [];
 		this.resetPersonaBancosLocal();
 		this.resetUsuariosLocal();
+		this.resetCuentasLocal();
 		this.cerrarPersonaPopup();
 		super.cancelar((item: any) => item.CORR_PROVEEDOR === this.modelUpdate.CORR_PROVEEDOR);
 	}
@@ -880,6 +1118,15 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			}
 		}
 		return row?.CORR_PERSONA;
+	}
+
+	selectedLookUpCORR_ACTIVIDAD_ECONOMICA(vRow: any): any {
+		const row = Array.isArray(vRow) ? vRow[0] : vRow;
+		if (row) {
+			this.model.CORR_ACTIVIDAD_ECONOMICA = row.CORR_ACTIVIDAD_ECONOMICA;
+			this.model.NOMBRE_ACTIVIDAD_ECONOMICA = row.NOMBRE_ACTIVIDAD_ECONOMICA;
+		}
+		return row?.CORR_ACTIVIDAD_ECONOMICA;
 	}
 
 	abrirPersonaNueva(): void {
@@ -1445,7 +1692,10 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			.subscribe({
 				next: (response: any) => {
 					if (response?.Result) {
-						this.mCORR_ACTIVIDAD_ECONOMICA = response.Data ?? [];
+						this.mCORR_ACTIVIDAD_ECONOMICA = (response.Data ?? []).map((row: any) => ({
+							...row,
+							ACTIVIDAD_LOOKUP: `${row?.CODIGO_ACTIVIDAD_ECONOMICA ?? ''} ${row?.NOMBRE_ACTIVIDAD_ECONOMICA ?? ''}`.trim(),
+						}));
 					}
 				},
 			});
