@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
@@ -11,8 +12,8 @@ using sguees.Services;
 namespace sguees.Controllers
 {
     // Qué hace: encabezado de la solicitud de beca.
-    // Cómo lo hace: muestra, inserta, actualiza y elimina ACA_PROSPECTO_BECA.
-    //               Cuestionario y archivos tienen su propio controlador.
+    // Consulta las solicitudes y ejecuta el flujo mediante el servicio de aplicación.
+    // Cuestionario y archivos tienen su propio controlador.
     [Authorize]
     [Route("[controller]")]
     [ApiController]
@@ -71,12 +72,39 @@ namespace sguees.Controllers
             return int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
         }
 
+        [HttpGet("GetFlujo")]
+        [Authorize(Policy = "/aca-prospecto-beca|R")]
+        public Task<CResult> GetFlujo([FromQuery]int CORR_PROSPECTO_BECA) => _service.GetFlujoAsync(Empresa(),CORR_PROSPECTO_BECA,Usuario());
+
+        [HttpGet("GetBitacoraFlujo")]
+        [Authorize(Policy = "/aca-prospecto-beca|R")]
+        public Task<CResult> GetBitacoraFlujo([FromQuery]int CORR_PROSPECTO_BECA) => _service.GetBitacoraFlujoAsync(Empresa(),CORR_PROSPECTO_BECA);
+
+        [HttpGet("GetBitacora")]
+        [Authorize(Policy = "/aca-prospecto-beca|R")]
+        public Task<CResult> GetBitacora([FromQuery]int CORR_PROSPECTO_BECA) => _service.GetBitacoraEdicionAsync(Empresa(),CORR_PROSPECTO_BECA);
+
+        [HttpPost("IniciarRevision")]
+        [Authorize(Policy = "/aca-prospecto-beca|U")]
+        public Task<IActionResult> IniciarRevision(BecaSolicitudResolucion data) => Resolver(data,"INICIAR");
+
+        [HttpPost("Otorgar")]
+        [Authorize(Policy = "/aca-prospecto-beca|U")]
+        public Task<IActionResult> Otorgar(BecaSolicitudResolucion data) => Resolver(data,"OTORGAR");
+
+        [HttpPost("NoOtorgar")]
+        [Authorize(Policy = "/aca-prospecto-beca|U")]
+        public Task<IActionResult> NoOtorgar(BecaSolicitudResolucion data) => Resolver(data,"NO_OTORGAR");
+
+        private async Task<IActionResult> Resolver(BecaSolicitudResolucion data, string operacion)
+        {
+            var result=await _service.AccionFlujoAsync(Empresa(),data,operacion,Usuario(),ClientInfoHelper.GetClientStation(HttpContext));
+            return result.Result ? Ok(result) : BadRequest(result);
+        }
+
         private string Usuario()
         {
-            var nombre = User?.Identity?.Name;
-            if (string.IsNullOrWhiteSpace(nombre))
-                nombre = "SGUEES";
-            return nombre.Length > 30 ? nombre.Substring(0, 30) : nombre;
+            return User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
         }
     }
 }

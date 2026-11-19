@@ -116,6 +116,7 @@ namespace sguees.Services
                     new() { ParameterName = "@NOMBRE", Value = nombre, DbType = DbType.AnsiString, Size = 255 },
                     new() { ParameterName = "@RUTA", Value = destino, DbType = DbType.AnsiString, Size = 500 },
                     new() { ParameterName = "@RUTA_ANTERIOR", Value = (object)row.ARCHIVO_RUTA ?? DBNull.Value, DbType = DbType.AnsiString, Size = 500 },
+                    new() { ParameterName = "@NOMBRE_ANTERIOR", Value = (object)row.ARCHIVO_NOMBRE ?? DBNull.Value, DbType = DbType.AnsiString, Size = 255 },
                     new() { ParameterName = "@USUARIO", Value = usuario.Substring(0, Math.Min(usuario.Length, 30)), DbType = DbType.AnsiString, Size = 30 },
                     new() { ParameterName = "@ESTACION", Value = estacion.Substring(0, Math.Min(estacion.Length, 30)), DbType = DbType.AnsiString, Size = 30 },
                 };

@@ -9,7 +9,7 @@ namespace sguees.Services
     // Qué hace: encabezado de la solicitud de beca.
     // Cómo lo hace: muestra ACA_PROSPECTO_BECA. Insert, update y delete siguen sin escritura
     //               hasta definir qué columnas del encabezado se pueden cambiar desde esta pantalla.
-    public class ACA_PROSPECTO_BECAService : IACA_PROSPECTO_BECAService
+    public partial class ACA_PROSPECTO_BECAService : IACA_PROSPECTO_BECAService
     {
         private readonly IACA_PROSPECTO_BECARepository _repo;
 

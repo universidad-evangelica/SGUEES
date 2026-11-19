@@ -15,10 +15,11 @@ import { AcaProspectoBecaArchivo } from './aca-prospecto-beca-archivo/models/aca
 import { AcaProspectoBecaService } from './aca-prospecto-beca/aca-prospecto-beca.service';
 import { AcaProspectoBecaRespuestaService } from './aca-prospecto-beca-respuesta/aca-prospecto-beca-respuesta.service';
 import { AcaProspectoBecaArchivoService } from './aca-prospecto-beca-archivo/aca-prospecto-beca-archivo.service';
+import { BecaSolicitudFlujo, BecaBitacoraFlujo, BecaBitacoraEdicion } from './aca-prospecto-beca/models/beca-flujo';
 
 // Qué hace: consulta de solicitudes de beca por ciclo (Académico → Consultas → Solicitudes de beca).
 // Cómo lo hace: el listado muestra prospecto, beca, puntaje, resultado y prioridad cuando el
-//               estado es Borrador o Enviada. Un clic abre las respuestas del cuestionario.
+//               estado es Borrador, Enviada, Beca otorgada o No otorgada.
 @Component({
   standalone: false,
     selector: 'app-aca-prospecto-beca',
@@ -35,10 +36,41 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     seccionesCuestionario: SeccionCuestionario[] = [];
     seccionesArchivo: SeccionArchivo[] = [];
     pestanaDetalle = 0;
+    pestanaSolicitudes = 0;
+    readonly pestanasSolicitudes = [
+        { text: 'Enviadas', icon: 'email', estados: ['ENVIADA'] },
+        { text: 'Borradores', icon: 'edit', estados: ['BORRADOR'] },
+        { text: 'Histórico', icon: 'event', estados: ['APROBADA', 'RECHAZADA'] },
+    ];
+    solicitudesVisibles: AcaProspectoBeca[] = [];
     modoEdicion = false;
     guardandoEdicion = false;
     borrador: Record<number, BorradorPregunta> = {};
     opcionesPorPregunta: Record<number, OpcionEdicion[]> = {};
+    flujo?:BecaSolicitudFlujo;
+    bitacoraFlujo:BecaBitacoraFlujo[]=[];
+    bitacoraEdicion:BecaBitacoraEdicion[]=[];
+    resolviendoFlujo=false;
+    popupResolucion=false;
+    accionResolucion:'Otorgar'|'NoOtorgar'='Otorgar';
+    observacionResolucion='';
+    readonly columnasBitacoraFlujo=[
+        {dataField:'FECHA',caption:'Fecha',dataType:'datetime',format:'dd/MM/yyyy HH:mm',width:160},
+        {dataField:'USUARIO',caption:'Usuario',width:150},{dataField:'PASO',caption:'Paso',width:240},
+        {dataField:'ESTADO_ANTERIOR',caption:'Estado anterior',width:150},{dataField:'ESTADO_NUEVO',caption:'Estado nuevo',width:150},
+        {dataField:'COMENTARIO',caption:'Comentario',minWidth:300},
+    ];
+    readonly columnasBitacoraEdicion=[
+        {dataField:'FECHA',caption:'Fecha',dataType:'datetime',format:'dd/MM/yyyy HH:mm',width:160},
+        {dataField:'USUARIO',caption:'Usuario',width:150},{dataField:'DESCRIPCION',caption:'Cambio',minWidth:300},
+        {caption:'Antes',minWidth:220,calculateCellValue:(row:BecaBitacoraEdicion)=>this.valorHistorico(row.VALOR_ANTERIOR)},
+        {caption:'Después',minWidth:220,calculateCellValue:(row:BecaBitacoraEdicion)=>this.valorHistorico(row.VALOR_NUEVO)},
+    ];
+
+    get puedeModificar():boolean { return !this.isBrowse() && this.permiteEdit && !!this.flujo?.PUEDE_MODIFICAR && !this.modoEdicion && !this.loadingVisible && !this.resolviendoFlujo; }
+    get puedeIniciar():boolean { return !this.isBrowse() && this.permiteEdit && !!this.flujo?.PUEDE_INICIAR && !this.modoEdicion && !this.loadingVisible && !this.resolviendoFlujo; }
+    get puedeResolver():boolean { return !this.isBrowse() && this.permiteEdit && !!this.flujo?.PUEDE_RESOLVER && !this.modoEdicion && !this.loadingVisible && !this.guardandoEdicion && !this.resolviendoFlujo; }
+    get resuelta():boolean { return this.flujo?.ESTADO_BECA==='APROBADA' || this.flujo?.ESTADO_BECA==='RECHAZADA'; }
 
     mCICLO: AcaProspectoCiclo[] = [];
     filtroCiclo = '';
@@ -169,6 +201,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         const param = this.fillParam();
         if (!(param.ANIO > 0 && param.NUMERO_PERIODO > 0)) {
             this.models = [];
+            this.filtrarSolicitudes();
             return;
         }
 
@@ -179,7 +212,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             .subscribe({
                 next: (response: any) => {
                     if (response.Result) {
-                        this.models = response.Data;
+                        this.models = response.Data ?? [];
+                        this.filtrarSolicitudes();
                     } else {
                         this.notifyApiResponse(response);
                     }
@@ -190,6 +224,23 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     this.loadingVisible = false;
                 },
             });
+    }
+
+    onPestanaSolicitudesChanged(event: { name?: string; value?: unknown }): void {
+        if (event.name !== 'selectedIndex' || typeof event.value !== 'number'
+            || !Number.isInteger(event.value) || !this.pestanasSolicitudes[event.value]) return;
+        this.pestanaSolicitudes = event.value;
+        this.filtrarSolicitudes();
+    }
+
+    private filtrarSolicitudes(): void {
+        const estados = this.pestanasSolicitudes[this.pestanaSolicitudes].estados;
+        this.solicitudesVisibles = (this.models ?? []).filter((solicitud: AcaProspectoBeca) => estados.includes(solicitud.ESTADO_BECA));
+    }
+
+    override get gridFocusedRowKey(): unknown {
+        const key = super.gridFocusedRowKey;
+        return this.solicitudesVisibles.some((solicitud) => solicitud.CORR_PROSPECTO_BECA === key) ? key : null;
     }
 
     private armarSecciones(): void {
@@ -215,11 +266,11 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 };
                 seccion.preguntas.set(clave, pregunta);
             }
-            if (fila.RESPUESTA) {
-                pregunta.respuestas.push(fila.RESPUESTA);
+            if (fila.CORR_RESPUESTA_BECA > 0) {
+                if (fila.RESPUESTA) pregunta.respuestas.push(fila.RESPUESTA);
+                pregunta.filas.push(fila);
+                pregunta.puntaje += Number(fila.PUNTAJE_OBTENIDO) || 0;
             }
-            pregunta.filas.push(fila);
-            pregunta.puntaje += Number(fila.PUNTAJE_OBTENIDO) || 0;
         }
         this.seccionesCuestionario = [...secciones.values()]
             .sort((a, b) => a.orden - b.orden)
@@ -267,12 +318,14 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     private cargarDetalle(corrProspectoBeca: number): void {
+        this.cargarFlujo(corrProspectoBeca);
         this.respuestas = [];
         this.archivos = [];
         this.armarSecciones();
         this.loadingVisible = true;
         let pendientes = 2;
         const terminar = () => {
+            if(this.model?.CORR_PROSPECTO_BECA!==corrProspectoBeca)return;
             pendientes -= 1;
             if (pendientes <= 0) {
                 this.loadingVisible = false;
@@ -284,6 +337,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             .pipe(take(1))
             .subscribe({
                 next: (response: any) => {
+                    if(this.model?.CORR_PROSPECTO_BECA!==corrProspectoBeca)return;
                     if (response.Result) {
                         this.respuestas = response.Data ?? [];
                         this.armarSecciones();
@@ -303,6 +357,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             .pipe(take(1))
             .subscribe({
                 next: (response: any) => {
+                    if(this.model?.CORR_PROSPECTO_BECA!==corrProspectoBeca)return;
                     if (response.Result) {
                         this.archivos = response.Data ?? [];
                         this.armarSecciones();
@@ -318,13 +373,90 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
             });
     }
 
+    private cargarFlujo(id:number):void {
+        this.flujo=undefined;
+        this.bitacoraFlujo=[];
+        this.bitacoraEdicion=[];
+        forkJoin({flujo:this.service.getFlujo(id),historial:this.service.getBitacoraFlujo(id),ediciones:this.service.getBitacora(id)})
+            .pipe(take(1)).subscribe({next:({flujo,historial,ediciones})=>{
+                if(this.model?.CORR_PROSPECTO_BECA!==id)return;
+                for(const result of [flujo,historial,ediciones])if(!result.Result){this.notifyApiResponse(result);return;}
+                this.flujo=flujo.Data?.[0];
+                this.bitacoraFlujo=historial.Data ?? [];
+                this.bitacoraEdicion=ediciones.Data ?? [];
+                if(this.flujo)this.actualizarEstado(this.flujo);
+            },error:error=>{if(this.model?.CORR_PROSPECTO_BECA===id)this.notifyApiError(error);}});
+    }
+
+    iniciarRevision():void { if(this.puedeIniciar)this.ejecutarResolucion('IniciarRevision',''); }
+
+    abrirResolucion(accion:'Otorgar'|'NoOtorgar'):void {
+        if(!this.puedeResolver)return;
+        this.accionResolucion=accion;
+        this.observacionResolucion='';
+        this.popupResolucion=true;
+    }
+
+    confirmarResolucion():void {
+        if(!this.puedeResolver || !this.popupResolucion)return;
+        const comentario=this.observacionResolucion.trim();
+        if(!comentario || comentario.length>2000){this.notifyFx('Ingrese el motivo de la resolución, con un máximo de 2000 caracteres.',NotifyType.Warning);return;}
+        this.ejecutarResolucion(this.accionResolucion,comentario);
+    }
+
+    cerrarResolucion(event:object):void { if(this.resolviendoFlujo)Object.assign(event,{cancel:true}); }
+
+    private ejecutarResolucion(accion:'IniciarRevision'|'Otorgar'|'NoOtorgar',comentario:string):void {
+        const flujo=this.flujo;
+        if(!flujo || this.resolviendoFlujo || this.guardandoEdicion || this.modoEdicion)return;
+        this.resolviendoFlujo=true;
+        this.service.resolver(accion,{CORR_PROSPECTO_BECA:flujo.CORR_PROSPECTO_BECA,VERSION_REGISTRO:flujo.VERSION_REGISTRO,OBSERVACION:comentario})
+            .pipe(take(1)).subscribe({next:response=>{
+                this.resolviendoFlujo=false;
+                if(!response.Result){this.notifyApiResponse(response);this.cargarFlujo(flujo.CORR_PROSPECTO_BECA);return;}
+                this.popupResolucion=false;
+                if(this.model?.CORR_PROSPECTO_BECA!==flujo.CORR_PROSPECTO_BECA)return;
+                const resultado=response.Data?.[0] as BecaSolicitudFlujo|undefined;
+                if(resultado)this.actualizarEstado(resultado);
+                this.notifyFx(accion==='IniciarRevision'?'Revisión iniciada.':accion==='Otorgar'?'Beca otorgada.':'Solicitud resuelta: No otorgada.',NotifyType.Success);
+                this.cargarFlujo(flujo.CORR_PROSPECTO_BECA);
+            },error:error=>{this.resolviendoFlujo=false;this.notifyApiError(error);this.cargarFlujo(flujo.CORR_PROSPECTO_BECA);}});
+    }
+
+    private actualizarEstado(flujo:BecaSolicitudFlujo):void {
+        this.model.ESTADO_BECA=flujo.ESTADO_BECA;
+        this.model.ESTADO_BECA_TEXTO=flujo.ESTADO_TEXTO;
+        const fila=(this.models ?? []).find((r:AcaProspectoBeca)=>r.CORR_PROSPECTO_BECA===flujo.CORR_PROSPECTO_BECA);
+        if(fila){fila.ESTADO_BECA=flujo.ESTADO_BECA;fila.ESTADO_BECA_TEXTO=flujo.ESTADO_TEXTO;}
+        this.filtrarSolicitudes();
+    }
+
+    private valorHistorico(valor:string|null):string {
+        if(!valor)return '—';
+        try {
+            const filas:unknown=JSON.parse(valor);
+            if(Array.isArray(filas))return filas.map((fila:Record<string,unknown>)=>
+                String(fila['TEXTO_OPCION_HISTORICO'] ?? fila['RESPUESTA_TEXTO'] ?? fila['RESPUESTA_NUMERO'] ?? '—')).join('; ');
+        } catch { /* Los documentos conservan el nombre del archivo. */ }
+        return valor;
+    }
+
+    override cancelar():void {
+        if(this.resolviendoFlujo || this.guardandoEdicion)return;
+        if(this.modoEdicion){this.cancelarEdicion();return;}
+        this.popupResolucion=false;
+        this.flujo=undefined;
+        super.cancelar();
+    }
+
     iniciarEdicion(): void {
+        if (!this.puedeModificar) return;
         if (!this.permiteEdit) {
             this.notifyFx('No tiene permiso para modificar la solicitud. Cierre sesión y vuelva a entrar.', NotifyType.Warning);
             return;
         }
 
-        const preguntas = this.seccionesCuestionario.flatMap((seccion) => seccion.preguntas).filter((pregunta) => pregunta.tipo !== 'DOCUMENTO');
+        const preguntas = this.seccionesCuestionario.flatMap((seccion) => seccion.preguntas).filter((pregunta) => pregunta.tipo !== 'DOCUMENTO' && pregunta.filas.length > 0);
         const borrador: Record<number, BorradorPregunta> = {};
         for (const pregunta of preguntas) {
             borrador[pregunta.corrPregunta] = {
@@ -385,7 +517,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     }
 
     guardarFormulario(): void {
-        if (this.guardandoEdicion) return;
+        if (this.guardandoEdicion || !this.flujo?.PUEDE_MODIFICAR || this.resolviendoFlujo) return;
         const corr = this.model?.CORR_PROSPECTO_BECA;
         if (!corr) return;
 
@@ -438,7 +570,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         const file = input.files?.[0];
         input.value = '';
         const corr = this.model?.CORR_PROSPECTO_BECA;
-        if (!file || !corr || this.guardandoEdicion) return;
+        if (!file || !corr || this.guardandoEdicion || !this.flujo?.PUEDE_MODIFICAR || this.resolviendoFlujo) return;
 
         this.guardandoEdicion = true;
         this.serviceArchivo.reemplazarArchivo(corr, archivo.CORR_RESPUESTA_BECA, file).pipe(take(1)).subscribe({
@@ -450,6 +582,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 }
                 archivo.ARCHIVO_NOMBRE = response.Data || file.name;
                 this.notifyFx(response.ErrorMessage || 'Archivo actualizado', NotifyType.Success);
+                this.cargarFlujo(corr);
             },
             error: (error: any) => {
                 this.guardandoEdicion = false;
@@ -540,7 +673,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                     }
                     setTimeout(() => window.URL.revokeObjectURL(url), 60000);
                 },
-                error: (error: any) => this.notifyApiError(error),
+                error: (error: any) => {
+                    if (error?.status === 404) {
+                        this.notifyFx('No se encontró el documento guardado. Solicite su recuperación al administrador.', NotifyType.Error);
+                        return;
+                    }
+                    this.notifyApiError(error);
+                },
             });
     }
 

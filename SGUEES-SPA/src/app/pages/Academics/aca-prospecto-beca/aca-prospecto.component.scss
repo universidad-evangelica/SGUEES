@@ -132,21 +132,6 @@
     min-width: 0;
 }
 
-.aca-beca-archivo {
-    display: inline-flex;
-    align-items: center;
-    width: fit-content;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    color: var(--accent-color, #337ab7);
-    background: color-mix(in srgb, var(--accent-color, #337ab7) 12%, transparent);
-}
-
-.aca-beca-archivo input {
-    display: none;
-}
-
 .aca-beca-chip-cero {
     font-weight: 600;
     color: var(--sguees-text-secondary, var(--texteditor-label-color));
@@ -162,3 +147,25 @@
     border: 1px dashed var(--border-color);
     border-radius: var(--sguees-radius-md, 10px);
 }
+.aca-beca-cabecera {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.aca-beca-flujo { padding: 18px; }
+.aca-beca-flujo p { font-size: 13px; line-height: 1.5; }
+.aca-beca-estado { display: inline-block; padding: 4px 12px; border-radius: 20px; background: #a85a00; color: #fff; font-weight: 600; }
+.aca-beca-estado.estado-otorgada { background: #287d32; }
+.aca-beca-estado.estado-no-otorgada { background: #b3262d; }
+.aca-beca-pasos { list-style: none; padding: 0; margin: 20px 0; counter-reset: pasos; }
+.aca-beca-pasos li { position: relative; padding: 0 0 22px 38px; color: var(--sguees-text-secondary, #8795a5); counter-increment: pasos; }
+.aca-beca-pasos li::before { content: counter(pasos); position: absolute; left: 0; top: 0; width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; background: #56616c; color: #fff; }
+.aca-beca-pasos li:not(:last-child)::after { content: ''; position: absolute; left: 12px; top: 27px; bottom: 3px; width: 2px; background: var(--border-color, #56616c); }
+.aca-beca-pasos strong, .aca-beca-pasos span { display: block; }
+.aca-beca-pasos span { margin-top: 4px; font-size: 12px; }
+.aca-beca-pasos .paso-actual { color: #64b5f6; }
+.aca-beca-pasos .paso-actual::before { background: #1565c0; }
+.aca-beca-pasos .paso-hecho::before { content: '\2713'; background: #287d32; }
+.aca-beca-comentario { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 1200px) { .aca-beca-cabecera { grid-template-columns: 1fr; } }

@@ -7,10 +7,12 @@ import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
+import { DxTabsModule } from 'devextreme-angular/ui/tabs';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
+import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 
@@ -27,10 +29,12 @@ const routes: Routes = [{ path: '', component: AcaProspectoComponent }];
         DxLoadPanelModule,
         DxButtonModule,
         DxTabPanelModule,
+        DxTabsModule,
         DxTextBoxModule,
         DxTextAreaModule,
         DxNumberBoxModule,
         DxSelectBoxModule,
+        DxPopupModule,
         DataGridMttoModule,
         BarraDataMttoModule,
     ],

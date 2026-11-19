@@ -10,19 +10,25 @@
         [combox1]="barraFiltroCiclo"
         (combox1Change)="onFiltroCicloChanged($event)"
         (consultar)="consultar()"
+        [btn1]="puedeModificar ? 'Modificar' : ''" [btn1Icon]="'edit'" (btn1Click)="iniciarEdicion()"
+        [btn2]="puedeIniciar ? 'Iniciar revisión' : ''" [btn2Icon]="'check'" (btn2Click)="iniciarRevision()"
+        [btn3]="puedeResolver ? 'Otorgar beca' : ''" [btn3Icon]="'check'" [btn3Type]="'success'" (btn3Click)="abrirResolucion('Otorgar')"
+        [btn4]="puedeResolver ? 'No otorgar' : ''" [btn4Icon]="'close'" [btn4Type]="'danger'" (btn4Click)="abrirResolucion('NoOtorgar')"
         (cancelar)="cancelar()"
     >
     </app-barra-data-mtto>
 
     <div *ngIf="!isBrowse()" class="aca-beca-shell">
+      <dx-tab-panel [animationEnabled]="false" [swipeEnabled]="false" [deferRendering]="false">
+       <dxi-item title="Solicitud" icon="user">
+        <div class="aca-beca-cabecera">
         <section class="sguees-section-card">
             <header class="aca-beca-head">
                 <div class="aca-beca-head-texto">
                     <span class="aca-beca-title">Solicitud de beca</span>
                     <span class="aca-beca-subtitle">{{ model.ESTADO_BECA_TEXTO }}<span *ngIf="modoEdicion"> · editando</span></span>
                 </div>
-                <div class="aca-beca-head-acciones" *ngIf="permiteEdit">
-                    <dx-button *ngIf="!modoEdicion" text="Editar" icon="edit" type="default" (onClick)="iniciarEdicion()"></dx-button>
+                <div class="aca-beca-head-acciones" *ngIf="permiteEdit && flujo?.PUEDE_MODIFICAR">
                     <ng-container *ngIf="modoEdicion">
                         <dx-button text="Cancelar" stylingMode="outlined" [disabled]="guardandoEdicion" (onClick)="cancelarEdicion()"></dx-button>
                         <dx-button text="Guardar" type="default" [disabled]="guardandoEdicion" (onClick)="guardarFormulario()"></dx-button>
@@ -39,7 +45,23 @@
             >
             </dx-form>
         </section>
-
+        <aside class="sguees-section-card aca-beca-flujo">
+          <header class="aca-beca-head"><div><span class="aca-beca-title">Flujo de autorización</span><p class="aca-beca-subtitle">Solicitud de beca</p></div></header>
+          <ng-container *ngIf="flujo as f; else flujoCargando">
+            <span class="aca-beca-estado" [class.estado-otorgada]="f.ESTADO_BECA === 'APROBADA'" [class.estado-no-otorgada]="f.ESTADO_BECA === 'RECHAZADA'">{{ f.ESTADO_TEXTO }}</span>
+            <p *ngIf="f.DIAS_EN_PASO !== null">{{ f.DIAS_EN_PASO }} día(s) en revisión.</p>
+            <ol class="aca-beca-pasos">
+              <li [class.paso-hecho]="f.ESTADO_BECA !== 'BORRADOR'"><strong>Ingreso de la solicitud</strong><span>{{ f.ESTADO_BECA === 'BORRADOR' ? 'Pendiente de envío' : 'Solicitud enviada' }}</span></li>
+              <li [class.paso-actual]="f.ESTADO_BECA === 'ENVIADA'" [class.paso-hecho]="resuelta"><strong>Revisión del analista</strong><span>Analista de Becas · {{ f.CORR_INSTANCIA ? f.NOMBRE_PASO : 'Pendiente de revisión' }}</span></li>
+              <li [class.paso-hecho]="resuelta"><strong>{{ resuelta ? f.ESTADO_TEXTO : 'Resolución pendiente' }}</strong><span>Analista de Becas</span></li>
+            </ol>
+            <p *ngIf="f.FECHA_INICIO">Inicio de revisión: {{ f.FECHA_INICIO | date:'dd/MM/yyyy HH:mm' }}</p>
+            <p *ngIf="f.FECHA_RESOLUCION">Resolución: {{ f.FECHA_RESOLUCION | date:'dd/MM/yyyy HH:mm' }}</p>
+            <p class="aca-beca-comentario" *ngIf="f.OBSERVACION_RESOLUCION">{{ f.OBSERVACION_RESOLUCION }}</p>
+          </ng-container>
+          <ng-template #flujoCargando><p>Consultando el flujo de la solicitud...</p></ng-template>
+        </aside>
+        </div>
         <dx-tab-panel
             class="aca-beca-tabs"
             [selectedIndex]="pestanaDetalle"
@@ -88,7 +110,7 @@
                                     </div>
                                 </ng-container>
                                 <ng-template #lectura>
-                                    <p class="aca-beca-respuesta">{{ pregunta.respuestas.join(', ') || '—' }}</p>
+                                    <p class="aca-beca-respuesta">{{ pregunta.respuestas.join(', ') || 'Sin responder' }}</p>
                                 </ng-template>
                                 <span class="aca-beca-acciones">
                                     <span class="aca-beca-chip" [class.aca-beca-chip-cero]="pregunta.puntaje === 0">{{ pregunta.puntaje | number:'1.2-2' }}</span>
@@ -97,12 +119,13 @@
                         </article>
                     </div>
                     <ng-template #sinRespuestas>
-                        <p class="aca-beca-vacio">Esta solicitud aún no tiene respuestas guardadas.</p>
+                        <p class="aca-beca-vacio">No se encontraron preguntas para la versión de formulario vinculada a esta solicitud.</p>
                     </ng-template>
                 </div>
             </dxi-item>
             <dxi-item title="Archivos" icon="attach">
                 <div class="aca-beca-tab">
+                    <p class="aca-beca-subtitle" *ngIf="modoEdicion">Seleccione «Volver a subir archivo» para reemplazar un documento. El archivo se guarda al seleccionarlo.</p>
                     <p class="aca-beca-subtitle" *ngIf="archivos.length; else sinCarpeta">Carpeta {{ archivos[0].CARPETA }}</p>
                     <ng-template #sinCarpeta>
                         <p class="aca-beca-subtitle">Los documentos se leen de la carpeta del ciclo y la solicitud</p>
@@ -118,10 +141,10 @@
                                 <p class="aca-beca-respuesta">{{ archivo.ARCHIVO_NOMBRE }}</p>
                                 <span class="aca-beca-acciones">
                                     <dx-button text="Abrir" icon="export" stylingMode="text" type="default" (onClick)="abrirArchivo(archivo)"></dx-button>
-                                    <label class="aca-beca-archivo" *ngIf="modoEdicion">
-                                        Cambiar
-                                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onArchivoFila($event, archivo)" [disabled]="guardandoEdicion" />
-                                    </label>
+                                    <ng-container *ngIf="modoEdicion && flujo?.PUEDE_MODIFICAR">
+                                        <input #archivoInput type="file" hidden accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onArchivoFila($event, archivo)" [disabled]="guardandoEdicion" />
+                                        <dx-button text="Volver a subir archivo" icon="upload" stylingMode="outlined" [disabled]="guardandoEdicion" (onClick)="archivoInput.click()"></dx-button>
+                                    </ng-container>
                                 </span>
                             </div>
                         </article>
@@ -132,11 +155,45 @@
                 </div>
             </dxi-item>
         </dx-tab-panel>
+       </dxi-item>
+       <dxi-item title="Bitácora flujo" icon="event">
+         <app-data-grid-mtto [isBrowse]="true" [models]="bitacoraFlujo" [columns]="columnasBitacoraFlujo" [keyExpr]="'CORR_BITACORA'"
+           [showAdd]="false" [showRefresh]="false" [showExport]="false" [permiteEditar]="sinEdicion" [permiteDele]="false" [wordWrapEnabled]="true"></app-data-grid-mtto>
+       </dxi-item>
+       <dxi-item title="Bitácora" icon="edit">
+         <app-data-grid-mtto [isBrowse]="true" [models]="bitacoraEdicion" [columns]="columnasBitacoraEdicion" [keyExpr]="'CORR_BITACORA_BECA'"
+           [showAdd]="false" [showRefresh]="false" [showExport]="false" [permiteEditar]="sinEdicion" [permiteDele]="false" [wordWrapEnabled]="true"></app-data-grid-mtto>
+       </dxi-item>
+      </dx-tab-panel>
     </div>
+
+    <dx-popup [(visible)]="popupResolucion" [title]="accionResolucion === 'Otorgar' ? 'Otorgar beca' : 'No otorgar beca'" [width]="560" [maxWidth]="'94vw'" [height]="'auto'"
+      [hideOnOutsideClick]="false" [showCloseButton]="!resolviendoFlujo" (onHiding)="cerrarResolucion($event)">
+      <div *dxTemplate="let data of 'content'">
+        <p>Registre el motivo de la resolución. La solicitud quedará en consulta.</p>
+        <dx-text-area [(value)]="observacionResolucion" [maxLength]="2000" [height]="140" [disabled]="resolviendoFlujo" placeholder="Motivo de la resolución (obligatorio)"></dx-text-area>
+        <div class="aca-beca-head-acciones">
+          <dx-button text="Cancelar" [disabled]="resolviendoFlujo" (onClick)="popupResolucion = false"></dx-button>
+          <dx-button [text]="accionResolucion === 'Otorgar' ? 'Otorgar beca' : 'No otorgar'" [type]="accionResolucion === 'Otorgar' ? 'success' : 'danger'"
+            [disabled]="resolviendoFlujo || !observacionResolucion.trim()" (onClick)="confirmarResolucion()"></dx-button>
+        </div>
+      </div>
+    </dx-popup>
+
+    <dx-tabs *ngIf="isBrowse()"
+        [items]="pestanasSolicitudes"
+        [selectedIndex]="pestanaSolicitudes"
+        iconPosition="top"
+        stylingMode="primary"
+        [showNavButtons]="true"
+        [scrollByContent]="true"
+        width="100%"
+        (onOptionChanged)="onPestanaSolicitudesChanged($event)"
+    ></dx-tabs>
 
     <app-data-grid-mtto
         [isBrowse]="isBrowse()"
-        [models]="models"
+        [models]="solicitudesVisibles"
         [columns]="columns"
         [summary]="summary"
         [keyExpr]="mttoGridKeyExpr"
@@ -150,7 +207,7 @@
         [permiteDele]="false"
         [showEmptyState]="true"
         [emptyTitle]="'Sin solicitudes'"
-        [emptyMessage]="'No hay solicitudes de beca en borrador o enviadas para el ciclo seleccionado.'"
+        [emptyMessage]="'No hay solicitudes de beca en esta pestaña para el ciclo seleccionado.'"
         (refresh)="consultar()"
         (rowClick)="onGridRowClick($event)"
         (focusedRowChanged)="focusedRowChanged($event)"

@@ -1,4 +1,5 @@
 import { agruparMenuBecas, agruparMenuConfiguracionBecas } from 'src/app/pages/Academics/becas-configuracion/becas-configuracion.navigation';
+import { agruparMenuSocioeconomico } from 'src/app/pages/Academics/aca-prospecto-socioeconomico/socioeconomico.navigation';
 import { agruparMenuConvenios } from 'src/app/pages/Academics/becas-convenios/becas-convenios.navigation';
 import {
   Component,
@@ -105,13 +106,13 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
       .pipe(take(1))
       .subscribe((response: any) => {
         const menu = Array.isArray(response?.Data) ? response.Data : [];
-        this._items = this.normalizeMenuItems(agruparMenuBecas(agruparMenuConfiguracionBecas(agruparMenuConvenios(menu, path => {
+        this._items = this.normalizeMenuItems(agruparMenuSocioeconomico(agruparMenuBecas(agruparMenuConfiguracionBecas(agruparMenuConvenios(menu, path => {
           const permisos = this.authService.decodedToken?.[path];
           return typeof permisos === 'string' && permisos.includes('R');
         }), path => {
           const permisos = this.authService.decodedToken?.[path];
           return typeof permisos === 'string' && permisos.includes('R');
-        })));
+        }))));
         setTimeout(() => this.setSelectedItem());
       });
   }

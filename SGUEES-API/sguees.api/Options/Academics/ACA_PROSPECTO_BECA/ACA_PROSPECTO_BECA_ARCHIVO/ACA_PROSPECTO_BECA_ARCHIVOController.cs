@@ -82,7 +82,7 @@ namespace sguees.Controllers
 
         private string Usuario()
         {
-            var nombre = User?.Identity?.Name;
+            var nombre = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User?.Identity?.Name;
             if (string.IsNullOrWhiteSpace(nombre))
                 nombre = "SGUEES";
             return nombre.Length > 30 ? nombre.Substring(0, 30) : nombre;

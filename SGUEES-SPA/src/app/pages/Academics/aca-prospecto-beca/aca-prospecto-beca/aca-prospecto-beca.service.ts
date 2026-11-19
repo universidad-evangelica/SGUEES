@@ -3,12 +3,18 @@ import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { AcaProspectoBecaRepository } from './aca-prospecto-beca.repository';
+import { BecaResolucion } from './models/beca-flujo';
 
 @Injectable({
     providedIn: 'root',
 })
 export class AcaProspectoBecaService {
     constructor(private repo: AcaProspectoBecaRepository) {}
+
+    getFlujo(id:number):Observable<IResult> { return this.repo.getFlujo(id); }
+    getBitacoraFlujo(id:number):Observable<IResult> { return this.repo.getBitacoraFlujo(id); }
+    getBitacora(id:number):Observable<IResult> { return this.repo.getBitacora(id); }
+    resolver(accion:'IniciarRevision'|'Otorgar'|'NoOtorgar',data:BecaResolucion):Observable<IResult> { return this.repo.resolver(accion,data); }
 
     // Qué hace: solicitudes de beca del ciclo elegido en la barra.
     // Cómo lo hace: la API exige año y número de período.
@@ -22,6 +28,7 @@ export class AcaProspectoBecaService {
 
     getColumns(): any {
         return [
+            { name: 'btnAcciones', type: 'buttons', visible: false, showInColumnChooser: false },
             { dataField: 'CODIGO_PROSPECTO', caption: 'CIF', width: 120 },
             { dataField: 'NOMBRE_COMPLETO', caption: 'Nombre completo', width: 260 },
             { dataField: 'DUI', caption: 'DUI', width: 120 },
