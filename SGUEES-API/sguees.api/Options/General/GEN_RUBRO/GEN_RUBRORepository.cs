@@ -26,6 +26,8 @@ namespace sguees.Repositories
 			"NOMBRE_SUMA_RESTA",
 			"NOMBRE_CLASE_RUBRO",
 			"NOMBRE_TIPO_APLICACION",
+			"CUENTA_CONTABLE",
+			"NOMBRE_CUENTA",
 		};
 		
 		public GEN_RUBRORepository(IConfiguration config) : 
@@ -125,6 +127,7 @@ namespace sguees.Repositories
 				p.Add(new CParameter() {ParameterName="SUMA_RESTA",Value=Data.SUMA_RESTA,DbType=System.Data.DbType.Int32});
 				p.Add(new CParameter() {ParameterName="CLASE_RUBRO",Value=Data.CLASE_RUBRO,DbType=System.Data.DbType.String});
 				p.Add(new CParameter() {ParameterName="TIPO_APLICACION",Value=Data.TIPO_APLICACION,DbType=System.Data.DbType.String});
+				p.Add(new CParameter() {ParameterName="CUENTA_CONTABLE",Value=string.IsNullOrWhiteSpace(Data.CUENTA_CONTABLE) ? (object)DBNull.Value : Data.CUENTA_CONTABLE,DbType=System.Data.DbType.String});
 				
 				var pWhere = new List<CParameter>();
 				pWhere.Add(new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32});
@@ -173,6 +176,7 @@ namespace sguees.Repositories
 				p.Add(new CParameter() {ParameterName="SUMA_RESTA",Value=Data.SUMA_RESTA,DbType=System.Data.DbType.Int32});
 				p.Add(new CParameter() {ParameterName="CLASE_RUBRO",Value=Data.CLASE_RUBRO,DbType=System.Data.DbType.String});
 				p.Add(new CParameter() {ParameterName="TIPO_APLICACION",Value=Data.TIPO_APLICACION,DbType=System.Data.DbType.String});
+				p.Add(new CParameter() {ParameterName="CUENTA_CONTABLE",Value=string.IsNullOrWhiteSpace(Data.CUENTA_CONTABLE) ? (object)DBNull.Value : Data.CUENTA_CONTABLE,DbType=System.Data.DbType.String});
 				
 				var pWhere = new List<CParameter>();
 				pWhere.Add(new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32});

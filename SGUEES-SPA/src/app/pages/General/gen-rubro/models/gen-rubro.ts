@@ -13,4 +13,6 @@ export interface GenRubro {
 	NOMBRE_CLASE_RUBRO: string;
 	TIPO_APLICACION: string;
 	NOMBRE_TIPO_APLICACION: string;
+	CUENTA_CONTABLE: string;
+	NOMBRE_CUENTA: string;
 }

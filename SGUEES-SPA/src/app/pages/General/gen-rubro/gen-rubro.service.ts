@@ -83,6 +83,8 @@ export class GenRubroService {
 			{ dataField: 'NOMBRE_SUMA_RESTA', caption: 'Suma Resta', width: 250 },
 			{ dataField: 'NOMBRE_CLASE_RUBRO', caption: 'Clase Rubro', width: 250 },
 			{ dataField: 'NOMBRE_TIPO_APLICACION', caption: 'Tipo Aplicacion', width: 250 },
+			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
+			{ dataField: 'NOMBRE_CUENTA', caption: 'Nombre cuenta', width: 250 },
 		];
 	}
 
@@ -98,7 +100,7 @@ export class GenRubroService {
 			{
 				dataField: 'NOMBRE_RUBRO',
 				label: { text: 'Nombre Rubro' },
-				colSpan: 3,
+				colSpan: 2,
 				editorOptions: { placeholder: 'Nombre Rubro...', showClearButton: true },
 			},
       {
@@ -111,7 +113,7 @@ export class GenRubroService {
 			{
 				dataField: 'CLASE_RUBRO',
 				label: { text: 'Clase Rubro' },
-				colSpan: 1,
+				colSpan: 2,
 				editorOptions: { placeholder: 'Clase Rubro...', showClearButton: false },
 				template: 'CLASE_RUBROLookup',
 			},
@@ -125,8 +127,15 @@ export class GenRubroService {
 			{
 				dataField: 'DESCRIPCION_RUBRO',
 				label: { text: 'Descripcion Rubro' },
-				colSpan: 3,
+				editorType: 'dxTextArea',
+				colSpan: 8,
 				editorOptions: { placeholder: 'Descripcion Rubro...', showClearButton: true },
+			},
+			{
+				dataField: 'CUENTA_CONTABLE',
+				label: { text: 'Cuenta contable' },
+				colSpan: 3,
+				template: 'CUENTA_CONTABLELookup',
 			},
 			{
 				dataField: 'MUESTRA_DETALLE',
@@ -150,7 +159,7 @@ export class GenRubroService {
 				dataField: 'POR_IMPUESTO',
 				label: { text: 'Por Impuesto' },
 				editorType: 'dxNumberBox',
-				colSpan: 1,
+				colSpan: 2,
 				editorOptions: { placeholder: 'Por Impuesto...', format: '#,##0.00' },
 			},
 		];

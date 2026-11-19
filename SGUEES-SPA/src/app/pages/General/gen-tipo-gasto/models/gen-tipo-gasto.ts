@@ -4,4 +4,6 @@ export interface GenTipoGasto {
 	NOMBRE_TIPO_GASTO: string;
 	ES_SERVICIO: boolean;
 	ES_INTANGIBLE: boolean;
+	CUENTA_CONTABLE: string;
+	NOMBRE_CUENTA: string;
 }

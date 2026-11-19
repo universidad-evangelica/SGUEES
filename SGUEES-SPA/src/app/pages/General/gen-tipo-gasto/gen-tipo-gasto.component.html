@@ -15,6 +15,18 @@
 </app-barra-data-mtto>
 <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'CUENTA_CONTABLELookup'">
+			<app-data-lookup
+				[model]="mCUENTA_CONTABLE"
+				[(value)]="model.CUENTA_CONTABLE"
+				[selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
+				[valueExpr]="'CUENTA_CONTABLE'"
+				[displayExpr]="'CUENTA_CONTABLE'"
+				[lookupColumns]="cuentaLookupColumns"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
 	</dx-form>
   <div class="form">
     <div class="dx-fieldset">

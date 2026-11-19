@@ -74,6 +74,8 @@ export class GenTipoGastoService {
 			{ dataField: 'CORR_TIPO_GASTO', caption: 'Corr.', width: 85 },
 			{ dataField: 'NOMBRE_TIPO_GASTO', caption: 'Tipo Gasto', width: 350 },
 			{ dataField: 'ES_SERVICIO', caption: 'Es Servicio', width: 150 },
+			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
+			{ dataField: 'NOMBRE_CUENTA', caption: 'Nombre cuenta', width: 250 },
 		];
 	}
 
@@ -93,11 +95,17 @@ export class GenTipoGastoService {
 				editorOptions: { placeholder: 'Nombre Tipo Gasto...', showClearButton: true },
 			},
 			{
+				dataField: 'CUENTA_CONTABLE',
+				label: { text: 'Cuenta contable' },
+				colSpan: 3,
+				template: 'CUENTA_CONTABLELookup',
+			},
+			{
 				dataField: 'ES_SERVICIO',
 				label: { text: 'Es Servicio' },
 				colSpan: 1,
 				editorOptions: { placeholder: 'Es Servicio...', showClearButton: true },
-			}
+			},
 		];
 	}
   //#region <Impuestos>

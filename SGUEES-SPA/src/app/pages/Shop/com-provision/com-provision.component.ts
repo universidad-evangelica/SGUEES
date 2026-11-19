@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { take } from 'rxjs/operators';
+import { from, of } from 'rxjs';
+import { catchError, concatMap, map, take, toArray } from 'rxjs/operators';
 import { custom } from 'devextreme/ui/dialog';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { environment } from 'src/environments/environment';
@@ -880,58 +881,63 @@ export class ComProvisionComponent extends CBaseComponent implements OnInit {
 		}
 
 		this.loadingVisible = true;
-		let pendientes = seleccionados.length;
-		let huboError = false;
+		from(seleccionados)
+			.pipe(
+				concatMap((doc: any) => {
+					const deta = {
+						CORR_EMPRESA: this.model.CORR_EMPRESA,
+						ANIO_PERIODO: this.model.ANIO_PERIODO,
+						MES_PERIODO: this.model.MES_PERIODO,
+						CORR_PROVISION: this.model.CORR_PROVISION,
+						CORR_DETA: 0,
+						ANIO_PERIODO_COM: doc.ANIO_PERIODO,
+						MES_PERIODO_COM: doc.MES_PERIODO,
+						CORR_DOCUMENTO_COM: doc.CORR_DOCUMENTO,
+						MONTO_DOCUMENTO: doc.TOTAL_DOCUMENTO || 0,
+						MONTO_INICIAL: doc.TOTAL_DOCUMENTO || 0,
+						MONTO_PAGO: doc.TOTAL_DOCUMENTO || 0,
+						MONTO_FINAL: 0,
+						NO_CONTABILIZAR: !!this.model.NO_CONTABILIZAR,
+					};
 
-		seleccionados.forEach((doc: any) => {
-			const deta = {
-				CORR_EMPRESA: this.model.CORR_EMPRESA,
-				ANIO_PERIODO: this.model.ANIO_PERIODO,
-				MES_PERIODO: this.model.MES_PERIODO,
-				CORR_PROVISION: this.model.CORR_PROVISION,
-				CORR_DETA: 0,
-				ANIO_PERIODO_COM: doc.ANIO_PERIODO,
-				MES_PERIODO_COM: doc.MES_PERIODO,
-				CORR_DOCUMENTO_COM: doc.CORR_DOCUMENTO,
-				MONTO_DOCUMENTO: doc.TOTAL_DOCUMENTO || 0,
-				MONTO_INICIAL: doc.TOTAL_DOCUMENTO || 0,
-				MONTO_PAGO: doc.TOTAL_DOCUMENTO || 0,
-				MONTO_FINAL: 0,
-				NO_CONTABILIZAR: !!this.model.NO_CONTABILIZAR,
-			};
+					return this.service.insertCOM_PROVISION_DETA(deta).pipe(
+						take(1),
+						catchError((error: any) =>
+							of({
+								Result: false,
+								ErrorCode: error?.ErrorCode ?? error?.error?.ErrorCode ?? -1,
+								ErrorMessage:
+									(typeof error === 'string' && error.trim()) ||
+									error?.ErrorMessage ||
+									error?.error?.ErrorMessage ||
+									error?.message ||
+									'No se pudo importar el documento.',
+							})
+						),
+						map((response: any) => ({ ...response, documento: doc.NUMERO_DOCUMENTO }))
+					);
+				}),
+				toArray()
+			)
+			.subscribe((responses: any[]) => {
+				this.loadingVisible = false;
+				const fallidos = responses.filter((response) => !(response.Result || response.ErrorCode === 0));
 
-			this.service
-				.insertCOM_PROVISION_DETA(deta)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (!(response.Result || response.ErrorCode === 0)) {
-							huboError = true;
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						pendientes -= 1;
-						if (pendientes === 0) {
-							this.loadingVisible = false;
-							if (!huboError) {
-								this.notifyFx('Documentos importados con éxito!', NotifyType.Success);
-							}
-							this.popupVisibleDocs = false;
-							this.consultarDetalles();
-							this.consultarContabilidades();
-						}
-					},
-					error: (error: any) => {
-						huboError = true;
-						this.notifyFx(error, NotifyType.Error);
-						pendientes -= 1;
-						if (pendientes === 0) {
-							this.loadingVisible = false;
-							this.consultarDetalles();
-							this.consultarContabilidades();
-						}
-					},
-				});
-		});
+				if (fallidos.length) {
+					fallidos.forEach((response) =>
+						this.notifyFx(
+							`Documento ${response.documento}: ${response.ErrorMessage || 'No se pudo importar.'}`,
+							NotifyType.Error
+						)
+					);
+				} else {
+					this.notifyFx('Documentos importados con éxito!', NotifyType.Success);
+					this.popupVisibleDocs = false;
+				}
+
+				this.consultarDetalles();
+				this.consultarContabilidades();
+			});
 	}
 
 	detalleRowRemoving(e: any): void {

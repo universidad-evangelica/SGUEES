@@ -52,6 +52,11 @@ export class GenTipoGastoComponent extends CBaseComponent implements OnInit {
   readOnly = false;
   mGEN_TIPO_GASTO_IMPUESTO: any;
   mCORR_RUBRO: any;
+  mCUENTA_CONTABLE: any[] = [];
+  cuentaLookupColumns: any[] = [
+    { dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
+    { dataField: 'NOMBRE_CUENTA', caption: 'Nombre cuenta', width: 280 },
+  ];
 
   // #endregion
 	constructor(
@@ -63,6 +68,7 @@ export class GenTipoGastoComponent extends CBaseComponent implements OnInit {
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
+		this.selectedLookUpCUENTA_CONTABLE = this.selectedLookUpCUENTA_CONTABLE.bind(this);
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -82,6 +88,23 @@ export class GenTipoGastoComponent extends CBaseComponent implements OnInit {
 	//#region <Manejo de Combos>
 	llenaComboBox() {
     this.getCORR_RUBROLookup();
+    this.getCUENTA_CONTABLE();
+	}
+
+	getCUENTA_CONTABLE() {
+		this.appInfoService
+			.getLookUp('GEN_TIPO_GASTO', 'CON_CATALOGO_CUENTA', 'GetCUENTA_CONTABLE', undefined, environment.UrlCONTAAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCUENTA_CONTABLE = response.Data || [];
+					}
+				},
+				error: (error: any) => {
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
 	}
 
   getCORR_RUBROLookup() {
@@ -128,6 +151,8 @@ export class GenTipoGastoComponent extends CBaseComponent implements OnInit {
 				NOMBRE_TIPO_GASTO: xModel.NOMBRE_TIPO_GASTO,
 				ES_SERVICIO: xModel.ES_SERVICIO,
 				ES_INTANGIBLE: xModel.ES_INTANGIBLE,
+				CUENTA_CONTABLE: xModel.CUENTA_CONTABLE || '',
+				NOMBRE_CUENTA: xModel.NOMBRE_CUENTA || '',
 			};
 		} else {
 			return {
@@ -136,6 +161,8 @@ export class GenTipoGastoComponent extends CBaseComponent implements OnInit {
 				NOMBRE_TIPO_GASTO: '',
 				ES_SERVICIO: false,
 				ES_INTANGIBLE: false,
+				CUENTA_CONTABLE: '',
+				NOMBRE_CUENTA: '',
 			};
 		}
 	}
@@ -173,6 +200,7 @@ export class GenTipoGastoComponent extends CBaseComponent implements OnInit {
 				esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
 				insert: () => this.service.insert(this.model),
 				update: () => this.service.update(this.model),
+				onSuccess: () => this.consultar(false),
 			});
 			return;
 		}
@@ -266,6 +294,15 @@ export class GenTipoGastoComponent extends CBaseComponent implements OnInit {
 	}
   selectedLookUpCORR_RUBRO(vRow: any): any {
 		return vRow[0].CORR_RUBRO;
+	}
+	selectedLookUpCUENTA_CONTABLE(vRow: any): any {
+		const row = vRow?.[0];
+		if (!row) {
+			return this.model?.CUENTA_CONTABLE;
+		}
+		this.model.CUENTA_CONTABLE = row.CUENTA_CONTABLE || '';
+		this.model.NOMBRE_CUENTA = row.NOMBRE_CUENTA || '';
+		return row.CUENTA_CONTABLE;
 	}
 
   //#region <Impuestos>

@@ -708,5 +708,28 @@ namespace sguees.Repositories
 			objResultado.ErrorSource = "";
 			return objResultado;
 		}
+
+		public CResult GetTIPO_CUENTA_PROVEEDOR()
+		{
+			CResult objResultado = new();
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "CXP", Value = "Cuenta por pagar" },
+				new() { Key = "GAS", Value = "Gasto" },
+				new() { Key = "PRO", Value = "Provisión" },
+				new() { Key = "ANT", Value = "Anticipos" },
+				new() { Key = "RET", Value = "Retenciones" },
+				new() { Key = "IVA", Value = "IVA crédito fiscal" },
+				new() { Key = "DES", Value = "Descuentos" },
+				new() { Key = "DEV", Value = "Devoluciones" },
+			};
+			objResultado.Result = true;
+			objResultado.RowsAffected = 8;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+			return objResultado;
+		}
 	}
 }

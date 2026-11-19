@@ -15,6 +15,8 @@ import { GenProveedorDoc } from './models/gen-proveedor-doc';
 import { GenPersonaBanco } from './models/gen-persona-banco';
 import { GenProveedorUsuario } from './models/gen-proveedor-usuario';
 import { GenProveedorUsuarioRepository } from './gen-proveedor-usuario.repository';
+import { GenProveedorCuenta } from './models/gen-proveedor-cuenta';
+import { GenProveedorCuentaRepository } from './gen-proveedor-cuenta.repository';
 
 const ESTADO_FIELD = 'ACTIVO_PROVEEDOR';
 
@@ -30,6 +32,7 @@ export class GenProveedorService {
 		private docRepo: GenProveedorDocRepository,
 		private personaBancoRepo: GenPersonaBancoRepository,
 		private usuarioRepo: GenProveedorUsuarioRepository,
+		private cuentaRepo: GenProveedorCuentaRepository,
 	) {}
 
 	esValido(model: GenProveedor, msg: Function): boolean {
@@ -39,6 +42,10 @@ export class GenProveedorService {
 		}
 		if (!model.CODIGO_PROVEEDOR?.trim()) {
 			msg('Debe digitar el código del proveedor.', NotifyType.Warning);
+			return false;
+		}
+		if (!model.CORR_ACTIVIDAD_ECONOMICA || Number(model.CORR_ACTIVIDAD_ECONOMICA) <= 0) {
+			msg('Debe seleccionar la actividad económica.', NotifyType.Warning);
 			return false;
 		}
 		return true;
@@ -196,6 +203,57 @@ export class GenProveedorService {
 		]);
 	}
 
+	getCuentas(corrProveedor: number): Observable<IResult> {
+		return this.cuentaRepo.getAll([{ Parameter: 'CORR_PROVEEDOR', Value: corrProveedor ?? 0 }]);
+	}
+
+	insertCuenta(model: GenProveedorCuenta): Observable<IResult> {
+		return this.cuentaRepo.create(model);
+	}
+
+	updateCuenta(model: GenProveedorCuenta): Observable<IResult> {
+		return this.cuentaRepo.update(model, [
+			{ Parameter: 'CORR_PROVEEDOR', Value: model.CORR_PROVEEDOR },
+			{ Parameter: 'CORR_CUENTA', Value: model.CORR_CUENTA },
+		]);
+	}
+
+	deleteCuenta(corrProveedor: number, corrCuenta: number): Observable<IResult> {
+		return this.cuentaRepo.delete([
+			{ Parameter: 'CORR_PROVEEDOR', Value: corrProveedor },
+			{ Parameter: 'CORR_CUENTA', Value: corrCuenta },
+		]);
+	}
+
+	getCuentaColumns(): any[] {
+		return [
+			{
+				caption: '',
+				width: 100,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'cuentaActions',
+				alignment: 'center',
+			},
+			{
+				dataField: 'TIPO_CUENTA',
+				caption: 'Tipo de cuenta',
+				width: 180,
+				allowSorting: false,
+				cellTemplate: 'cuentaTipo',
+			},
+			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 140 },
+			{ dataField: 'NOMBRE_CUENTA', caption: 'Nombre de la cuenta', minWidth: 240 },
+			{
+				dataField: 'ACTIVO',
+				caption: 'Estado',
+				width: 120,
+				allowSorting: false,
+				cellTemplate: 'cuentaEstado',
+			},
+		];
+	}
+
 	reasignarClaveUsuario(model: {
 		CORR_PROVEEDOR: number;
 		LOGIN_SISTEMA: string;
@@ -335,6 +393,14 @@ export class GenProveedorService {
 				label: { text: 'Nombre / Razón social' },
 				colSpan: 4,
 				editorOptions: { placeholder: 'Describa el nombre o razón social...', maxLength: 150 },
+			},
+
+			{
+				dataField: 'CORR_ACTIVIDAD_ECONOMICA',
+				label: { text: 'Actividad económica' },
+				colSpan: 8,
+				template: 'CORR_ACTIVIDAD_ECONOMICALookup',
+				validationRules: [{ type: 'required', message: 'La actividad económica es obligatoria' }],
 			},
 
 			{

@@ -94,6 +94,13 @@ namespace sguees.Controllers
             return _service.GetESTADO_USUARIO();
         }
 
+        [HttpGet("GetTIPO_CUENTA_PROVEEDOR_GEN_PROVEEDOR")]
+		[Authorize(Policy = "/gen-proveedor|R")]
+        public CResult GetTIPO_CUENTA_PROVEEDOR_GEN_PROVEEDOR()
+        {
+            return _service.GetTIPO_CUENTA_PROVEEDOR();
+        }
+
         [HttpGet("GetESTADO_USUARIO_COM_PROVEEDOR_ACTU")]
 		[Authorize(Policy = "/com-proveedor-actu|R")]
         public CResult GetESTADO_USUARIO_COM_PROVEEDOR_ACTU()

@@ -21,5 +21,6 @@ namespace sguees.Models
 		public string TIPO_APLICACION { get; set; }
 		public string NOMBRE_TIPO_APLICACION { get; set; }
 		public string CUENTA_CONTABLE { get; set; }
+		public string NOMBRE_CUENTA { get; set; }
 	}
 }

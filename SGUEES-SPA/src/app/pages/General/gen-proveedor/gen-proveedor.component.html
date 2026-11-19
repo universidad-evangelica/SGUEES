@@ -55,6 +55,18 @@
 				</button>
 			</div>
 		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_ACTIVIDAD_ECONOMICALookup'">
+			<app-data-lookup
+				[model]="mCORR_ACTIVIDAD_ECONOMICA"
+				[(value)]="model.CORR_ACTIVIDAD_ECONOMICA"
+				[valueExpr]="'CORR_ACTIVIDAD_ECONOMICA'"
+				[displayExpr]="'ACTIVIDAD_LOOKUP'"
+				[lookupColumns]="actividadLookupColumns"
+				[selectedRowKeys]="selectedLookUpCORR_ACTIVIDAD_ECONOMICA"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
 		<div *dxTemplate="let cellInfo of 'CORR_FORMA_PAGOLookup'">
 			<app-data-lookup
 				[model]="mCORR_FORMA_PAGO"
@@ -452,6 +464,83 @@
 					</ng-container>
 				</div>
 			</dxi-item>
+
+			<dxi-item title="Cuenta contable" icon="money">
+				<div class="proveedor-usuarios">
+					<p class="proveedor-usuarios__warn" *ngIf="!(model?.CORR_PROVEEDOR > 0)">
+						Guarde el proveedor para poder asignar cuentas contables.
+					</p>
+
+					<ng-container *ngIf="model?.CORR_PROVEEDOR > 0">
+						<div class="proveedor-usuarios__toolbar" *ngIf="!readOnly">
+							<button type="button" class="proveedor-usuarios__btn proveedor-usuarios__btn--add" (click)="abrirCuentaNueva()">
+								<i class="dx-icon dx-icon-add"></i>
+								Agregar cuenta
+							</button>
+						</div>
+
+						<div class="proveedor-usuarios__loading" *ngIf="cuentasCargando">
+							<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
+							<span>Cargando cuentas…</span>
+						</div>
+
+						<div
+							class="proveedor-usuarios__empty-state"
+							*ngIf="!cuentasCargando && cuentasProveedor.length === 0"
+						>
+							<div class="proveedor-usuarios__empty-icon" aria-hidden="true">
+								<i class="dx-icon dx-icon-money"></i>
+							</div>
+							<h4>Sin cuentas contables</h4>
+							<p>Aún no hay cuentas asignadas a este proveedor.</p>
+						</div>
+
+						<dx-data-grid
+							*ngIf="!cuentasCargando && cuentasProveedor.length > 0"
+							class="proveedor-usuarios__grid"
+							[dataSource]="cuentasProveedor"
+							[columns]="cuentaColumns"
+							keyExpr="CORR_CUENTA"
+							[showBorders]="true"
+							[columnAutoWidth]="false"
+							[hoverStateEnabled]="true"
+							[paging]="{ enabled: false }"
+						>
+							<div *dxTemplate="let cell of 'cuentaTipo'">
+								{{ textoTipoCuenta(cell.value) }}
+							</div>
+							<div *dxTemplate="let cell of 'cuentaEstado'">
+								{{ textoEstadoCuenta(cell.value) }}
+							</div>
+							<div *dxTemplate="let cell of 'cuentaActions'" class="proveedor-usuarios__actions">
+								<button
+									type="button"
+									class="proveedor-usuarios__action"
+									title="Editar"
+									aria-label="Editar"
+									*ngIf="!readOnly && permiteEdit"
+									(click)="abrirCuentaEditar(cell.data)"
+								>
+									<i class="dx-icon dx-icon-edit"></i>
+								</button>
+								<button
+									type="button"
+									class="proveedor-usuarios__action proveedor-usuarios__action--danger"
+									title="Eliminar"
+									aria-label="Eliminar"
+									*ngIf="!readOnly && permiteDele"
+									(click)="eliminarCuenta(cell.data)"
+								>
+									<i class="dx-icon dx-icon-trash"></i>
+								</button>
+							</div>
+							<dxo-summary>
+								<dxi-total-item column="CUENTA_CONTABLE" summaryType="count" displayFormat="Cant: {0}"></dxi-total-item>
+							</dxo-summary>
+						</dx-data-grid>
+					</ng-container>
+				</div>
+			</dxi-item>
 		</dx-tab-panel>
 	</div>
 </div>
@@ -548,6 +637,72 @@
 			<button type="button" class="proveedor-usuarios-popup__btn proveedor-usuarios-popup__btn--cancel" (click)="cerrarCambioClave()" [disabled]="claveGuardando">Cancelar</button>
 			<button type="button" class="proveedor-usuarios-popup__btn proveedor-usuarios-popup__btn--key" (click)="guardarCambioClave()" [disabled]="claveGuardando">
 				{{ claveGuardando ? 'Guardando…' : 'Cambiar' }}
+			</button>
+		</footer>
+	</div>
+</dx-popup>
+
+<dx-popup
+	[(visible)]="cuentaPopupVisible"
+	[title]="cuentaPopupTitulo"
+	[showTitle]="true"
+	[width]="560"
+	[height]="'auto'"
+	[dragEnabled]="true"
+	[showCloseButton]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'proveedor-usuarios-popup-wrapper' }"
+	(onHiding)="cerrarCuentaPopup()"
+>
+	<div *dxTemplate="let data of 'content'" class="proveedor-usuarios-popup">
+		<div class="proveedor-usuarios-popup__body">
+			<p class="proveedor-usuarios-popup__lead">
+				Puede haber varias cuentas del mismo tipo. Solo una permanece activa.
+			</p>
+			<section class="proveedor-usuarios-popup__card">
+				<div class="proveedor-usuarios-popup__fields">
+					<label class="proveedor-usuarios-popup__field">
+						<span>Tipo de cuenta <em>*</em></span>
+						<dx-select-box
+							[(value)]="cuentaModel.TIPO_CUENTA"
+							[dataSource]="mTIPO_CUENTA"
+							valueExpr="Key"
+							displayExpr="Value"
+							[searchEnabled]="false"
+							placeholder="Seleccionar..."
+							[width]="'100%'"
+						></dx-select-box>
+					</label>
+					<label class="proveedor-usuarios-popup__field">
+						<span>Estado <em>*</em></span>
+						<dx-select-box
+							[(value)]="cuentaModel.ACTIVO"
+							[dataSource]="estadoCuentaOptions"
+							valueExpr="Key"
+							displayExpr="Value"
+							[searchEnabled]="false"
+							placeholder="Seleccionar..."
+							[width]="'100%'"
+						></dx-select-box>
+					</label>
+					<label class="proveedor-usuarios-popup__field proveedor-usuarios-popup__field--full">
+						<span>Cuenta contable <em>*</em></span>
+						<app-data-lookup
+							[model]="mCUENTA_CONTABLE"
+							[(value)]="cuentaModel.CUENTA_CONTABLE"
+							[valueExpr]="'CUENTA_CONTABLE'"
+							[displayExpr]="'CUENTA_CONTABLE'"
+							[lookupColumns]="cuentaLookupColumns"
+						>
+						</app-data-lookup>
+					</label>
+				</div>
+			</section>
+		</div>
+		<footer class="proveedor-usuarios-popup__actions">
+			<button type="button" class="proveedor-usuarios-popup__btn proveedor-usuarios-popup__btn--cancel" (click)="cerrarCuentaPopup()" [disabled]="cuentaGuardando">Cancelar</button>
+			<button type="button" class="proveedor-usuarios-popup__btn proveedor-usuarios-popup__btn--save" (click)="guardarCuentaPopup()" [disabled]="cuentaGuardando">
+				{{ cuentaGuardando ? 'Guardando…' : 'Guardar' }}
 			</button>
 		</footer>
 	</div>
