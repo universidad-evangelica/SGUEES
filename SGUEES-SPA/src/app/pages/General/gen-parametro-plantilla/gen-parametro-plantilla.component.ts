@@ -16,7 +16,7 @@ import { GenParametroPlantillaVersion } from './gen-parametro-plantilla-version/
 import { GenParametroPlantillaVersionService } from './gen-parametro-plantilla-version/gen-parametro-plantilla-version.service';
 
 @Component({
-  standalone: false,
+	standalone: false,
 	selector: 'app-gen-parametro-plantilla',
 	templateUrl: './gen-parametro-plantilla.component.html',
 	styleUrls: ['./gen-parametro-plantilla.component.scss'],
@@ -504,7 +504,7 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 			const esLogoInvalido =
 				!srcOriginal ||
 				srcOriginal.includes('assets/img/logo-xx') ||
-				(srcOriginal.startsWith('data:image/png;base64,') && srcOriginal.length < 6000);
+				(srcOriginal.startsWith('data:image/png;base64,') && srcOriginal.length < 1000);
 			const logoSrc = esLogoInvalido ? this.service.obtenerLogoInstitucionalDataUri() : srcOriginal;
 
 			const headerWrapper = document.createElement('div');
@@ -573,11 +573,13 @@ export class GenParametroPlantillaComponent extends CBaseComponent implements On
 		if (esNuevo) {
 			this.models = [modelo, ...(this.models || [])];
 		} else {
-			const idx = (this.models || []).findIndex(
-				(m) => m.CORR_PARAMETRO_PLANTILLA === modelo.CORR_PARAMETRO_PLANTILLA
+			const idx = ((this.models || []) as GenParametroPlantilla[]).findIndex(
+				(m: GenParametroPlantilla) => m.CORR_PARAMETRO_PLANTILLA === modelo.CORR_PARAMETRO_PLANTILLA
 			);
 			if (idx !== -1) {
-				this.models = this.models.map((item, i) => (i === idx ? modelo : item));
+				this.models = (this.models as GenParametroPlantilla[]).map(
+					(item: GenParametroPlantilla, i: number) => (i === idx ? modelo : item)
+				);
 			}
 		}
 		this.ordenarModelsPorCorr();
