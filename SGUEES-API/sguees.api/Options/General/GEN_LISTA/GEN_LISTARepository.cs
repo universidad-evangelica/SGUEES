@@ -731,5 +731,26 @@ namespace sguees.Repositories
 			objResultado.ErrorSource = "";
 			return objResultado;
 		}
-	}
+
+        // Qué hace: opciones de ESTADO_CONTRATO (CHECK de GEN_EMPLEADO_CONTRATO).
+        // Cómo lo hace: retorna Key/Value coincidentes con CK_GEN_EMPLEADO_CONTRATO_ESTADO.
+        public CResult GetESTADO_CONTRATO()
+        {
+            CResult objResultado = new();
+            objResultado.Data = new List<GEN_LISTAView>()
+            {
+                new() { Key = "BORRADOR", Value = "Borrador" },
+                new() { Key = "VIGENTE", Value = "Vigente" },
+                new() { Key = "FINALIZADO", Value = "Finalizado" },
+                new() { Key = "ANULADO", Value = "Anulado" },
+            };
+            objResultado.Result = true;
+            objResultado.RowsAffected = 4;
+            objResultado.CodeHelper = 0;
+            objResultado.ErrorCode = 0;
+            objResultado.ErrorMessage = "";
+            objResultado.ErrorSource = "";
+            return objResultado;
+        }
+    }
 }

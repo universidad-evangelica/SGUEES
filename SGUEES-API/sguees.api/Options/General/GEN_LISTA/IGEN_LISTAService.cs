@@ -31,5 +31,7 @@ namespace sguees.Services
 		CResult GetNIVEL_ACADEMICO();
 		CResult GetESTADO_NIP();
 		CResult GetTIPO_CUENTA_PROVEEDOR();
-	}
+        // Qué hace: expone estados válidos de GEN_EMPLEADO_CONTRATO para gen-empleado.
+        CResult GetESTADO_CONTRATO();
+    }
 }
