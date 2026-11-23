@@ -896,6 +896,43 @@ namespace sguees.Repositories
 			
 			return objResultado;
 		}
+
+		public async Task<CResult> GetOrigenAsync(List<CParameter> xWhere)
+		{
+			CResult objResultado = new();
+
+			try
+			{
+				var reader = await objData.GetDataReader(System.Data.CommandType.StoredProcedure, "PRAL_DATA_CON_PARTIDA_ORIGEN", xWhere);
+				var response = new List<CON_PARTIDA_ORIGENView>().FromDataReader(reader).ToList();
+
+				reader.Close();
+				reader = null;
+
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
 		
 		public async Task<CResult> GetConPartidaImpr(List<CParameter> xWhere)
 		{

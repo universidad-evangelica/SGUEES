@@ -23,7 +23,9 @@ CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_CON_PARTIDA_BITACORA]
 	@SYS_ESTACION varchar(50),
 	@SYS_FILAS_AFECTADAS int output,
 	@SYS_NUMERO_ERROR numeric(38,0) output,
-	@SYS_MENSAJE_ERROR nvarchar(4000) output
+	@SYS_MENSAJE_ERROR nvarchar(4000) output,
+	@ORIGEN varchar(30) = NULL,
+	@CORR_ORIGEN varchar(30) = NULL
 )
 AS
 BEGIN
@@ -78,6 +80,21 @@ BEGIN
 		AND MES_PERIODO = @MES_PERIODO
 		AND CORR_CLASE_PARTIDA = @CORR_CLASE_PARTIDA
 		AND CORR_PARTIDA = @CORR_PARTIDA
+
+		-- Qué hace: concatena el documento de origen cuando el llamador lo conoce.
+		-- Cómo lo hace: deja la observación actual si @ORIGEN viene vacío.
+		IF NULLIF(LTRIM(RTRIM(@ORIGEN)), '') IS NOT NULL
+		BEGIN
+			SELECT @OBSERVACION = LTRIM(LEFT(
+				RTRIM(ISNULL(@OBSERVACION, ''))
+				+ CASE WHEN RIGHT(RTRIM(ISNULL(@OBSERVACION, '')), 1) IN ('.', '') THEN ' ' ELSE '. ' END
+				+ LTRIM(RTRIM(@ORIGEN))
+				+ CASE
+					WHEN NULLIF(LTRIM(RTRIM(@CORR_ORIGEN)), '') IS NULL THEN ''
+					ELSE ' no. ' + LTRIM(RTRIM(@CORR_ORIGEN))
+				  END,
+				255))
+		END
 
 		INSERT INTO CON_PARTIDA_BITACORA
 		(

@@ -167,6 +167,14 @@ namespace sguees.Controllers
 			return await _service.GetAllDetaDocAsync(Data);
 		}
 
+		[HttpGet("GetOrigen")]
+		[Authorize(Policy = "/con-partida|R")]
+		public async Task<CResult> GetOrigen([FromQuery] CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetOrigenAsync(Data);
+		}
+
 		[HttpPost("getPDFDx")]
 		[Authorize(Policy = "/con-partida|P")]
 		public async Task<IActionResult> GetPDFDx([FromBody] CON_PARTIDAParam Data)

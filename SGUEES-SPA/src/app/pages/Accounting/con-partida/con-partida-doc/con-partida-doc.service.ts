@@ -21,6 +21,24 @@ export class ConPartidaDocService {
 		return this.repo.getAll(xWhere);
 	}
 
+	getOrigen(param: any): Observable<IResult> {
+		const xWhere: IParam[] = [
+			{ Parameter: 'ANIO_PERIODO', Value: param.ANIO_PERIODO },
+			{ Parameter: 'MES_PERIODO', Value: param.MES_PERIODO },
+			{ Parameter: 'CORR_CLASE_PARTIDA', Value: param.CORR_CLASE_PARTIDA },
+			{ Parameter: 'CORR_PARTIDA', Value: param.CORR_PARTIDA },
+		];
+		return this.repo.getOrigen(xWhere);
+	}
+
+	getOrigenColumns(): any[] {
+		return [
+			{ dataField: 'NUMERO_DETALLE', caption: 'No. Detalle', width: 160 },
+			{ dataField: 'TIPO_DOCUMENTO', caption: 'Tipo documento', width: 180 },
+			{ dataField: 'DESCRIPCION', caption: 'Descripción', minWidth: 280 },
+		];
+	}
+
 	getColumns(): any[] {
 		return [
 			{ dataField: 'CORR_PARTIDA_DETA', caption: 'No. Detalle', width: 100 },

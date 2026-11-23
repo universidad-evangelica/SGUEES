@@ -329,9 +329,11 @@
 		<dxi-item title="Documentos Contables" [icon]="'doc'" [visible]="hasPartidaKeys()">
 			<div class="dx-grid-deta">
 				<dx-data-grid
+					class="partida-origen-grid"
 					[dataSource]="documentos"
-					[keyExpr]="['CORR_PARTIDA_DETA', 'ID_DOCUMENTO', 'FORMA']"
+					[keyExpr]="['NUMERO_DETALLE', 'TIPO_DOCUMENTO']"
 					[columns]="docColumns"
+					[noDataText]="mensajeDocumentos"
 					[showBorders]="true"
 					[showColumnLines]="true"
 					[showRowLines]="true"
@@ -345,7 +347,7 @@
 					<dxo-search-panel [visible]="true"></dxo-search-panel>
 					<dxo-paging [enabled]="false"></dxo-paging>
 					<dxo-summary>
-						<dxi-total-item column="CORR_PARTIDA_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+						<dxi-total-item column="NUMERO_DETALLE" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
 					</dxo-summary>
 				</dx-data-grid>
 			</div>

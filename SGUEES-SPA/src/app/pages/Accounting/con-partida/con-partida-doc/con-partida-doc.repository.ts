@@ -16,4 +16,8 @@ export class ConPartidaDocRepository {
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAllDetaDoc', xWhere, environment.UrlCONTAAPI);
 	}
+
+	getOrigen(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetOrigen', xWhere, environment.UrlCONTAAPI);
+	}
 }
