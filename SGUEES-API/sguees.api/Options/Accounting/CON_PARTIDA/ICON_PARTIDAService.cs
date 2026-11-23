@@ -44,6 +44,8 @@ namespace sguees.Services
 
 		Task<CResult> GetAllDetaDocAsync(CON_PARTIDAParam xWhere);
 
+		Task<CResult> GetOrigenAsync(CON_PARTIDAParam xWhere);
+
 		Task<Stream> GetPDFAsync(CON_PARTIDAParam param, string loginSistema);
 
 		Task<Stream> GetPDFDxAsync(CON_PARTIDAParam param, string loginSistema);

@@ -402,4 +402,10 @@
 	font-variant-numeric: tabular-nums;
 }
 
+:host ::ng-deep .partida-origen-grid .dx-datagrid-nodata {
+	color: var(--sguees-text-secondary, #5c5346);
+	font-size: 13px;
+	font-weight: 600;
+}
+
 

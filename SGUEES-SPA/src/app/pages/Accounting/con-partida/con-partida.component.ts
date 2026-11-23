@@ -12,7 +12,7 @@ import { ConPartidaService } from './con-partida.service';
 import { ConPartidaDetaService } from './con-partida-deta/con-partida-deta.service';
 import { ConPartidaDeta } from './con-partida-deta/models/con-partida-deta';
 import { ConPartidaDocService } from './con-partida-doc/con-partida-doc.service';
-import { ConPartidaDoc } from './con-partida-doc/models/con-partida-doc';
+import { ConPartidaOrigen } from './con-partida-doc/models/con-partida-origen';
 import { ConPartidaBitacoraService } from './con-partida-bitacora/con-partida-bitacora.service';
 import { ConPartidaBitacora } from './con-partida-bitacora/models/con-partida-bitacora';
 import { ConCatalogoCuentaCentroCostoService } from '../con-catalogo-cuenta-centro-costo/con-catalogo-cuenta-centro-costo.service';
@@ -32,7 +32,10 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	protected override etiquetaRegistro = 'la partida';
 
 	detalles: ConPartidaDeta[] = [];
-	documentos: ConPartidaDoc[] = [];
+	documentos: ConPartidaOrigen[] = [];
+	/** true cuando la consulta de origen respondió vacía: la partida no viene de un documento. */
+	documentosManual = false;
+	documentosCargando = false;
 	bitacoras: ConPartidaBitacora[] = [];
 	/** Columnas vía service (mismo patrón que FirmasDocumentoService.getColumns). */
 	bitacoraColumns: any[] = [];
@@ -98,7 +101,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 		this.bitacoraColumns = this.bitacoraService.getColumns();
-		this.docColumns = this.docService.getColumns();
+		this.docColumns = this.docService.getOrigenColumns();
 		this.cuentaSetCellValue = this.cuentaSetCellValue.bind(this);
 		this.centroCostoSetCellValue = this.centroCostoSetCellValue.bind(this);
 		this.cuentaContableDisplay = this.cuentaContableDisplay.bind(this);
@@ -310,7 +313,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 
 	private volverAlListado(): void {
 		this.detalles = [];
-		this.documentos = [];
+		this.limpiarDocumentos();
 		this.bitacoras = [];
 		this.detalleEditando = false;
 		this.detalleEdicionExplicita = false;
@@ -323,7 +326,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	override cancelar(): void {
 		const finalizarCancelacion = () => {
 			this.detalles = [];
-			this.documentos = [];
+			this.limpiarDocumentos();
 			this.bitacoras = [];
 			this.readOnly = false;
 			this.detalleEditando = false;
@@ -506,7 +509,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	override nuevo(): void {
 		super.nuevo();
 		this.detalles = [];
-		this.documentos = [];
+		this.limpiarDocumentos();
 		this.bitacoras = [];
 		this.detalleEditando = false;
 		this.detalleEdicionExplicita = false;
@@ -747,12 +750,15 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 
 	consultarDocumentos() {
 		if (!this.hasPartidaKeys()) {
-			this.documentos = [];
+			this.limpiarDocumentos();
 			return;
 		}
 
+		this.documentos = [];
+		this.documentosManual = false;
+		this.documentosCargando = true;
 		this.docService
-			.getAllDetaDoc({
+			.getOrigen({
 				ANIO_PERIODO: this.model.ANIO_PERIODO,
 				MES_PERIODO: this.model.MES_PERIODO,
 				CORR_CLASE_PARTIDA: this.model.CORR_CLASE_PARTIDA,
@@ -761,14 +767,39 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
+					this.documentosCargando = false;
 					if (response.Result) {
-						this.documentos = response.Data;
+						this.documentos = response.Data || [];
+						this.documentosManual = this.documentos.length === 0;
+					} else {
+						this.documentos = [];
+						this.documentosManual = false;
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
 					}
 				},
 				error: (error: any) => {
+					this.documentosCargando = false;
+					this.documentos = [];
+					this.documentosManual = false;
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
+	}
+
+	get mensajeDocumentos(): string {
+		if (this.documentosCargando) {
+			return 'Consultando origen...';
+		}
+		if (this.documentosManual) {
+			return 'Partida manual. No fue generada por un documento.';
+		}
+		return 'Sin documentos de origen';
+	}
+
+	private limpiarDocumentos(): void {
+		this.documentos = [];
+		this.documentosManual = false;
+		this.documentosCargando = false;
 	}
 
 	// Qué hace: carga la bitácora de la partida seleccionada.

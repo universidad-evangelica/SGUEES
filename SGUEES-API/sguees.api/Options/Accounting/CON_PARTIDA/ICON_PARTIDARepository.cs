@@ -16,6 +16,7 @@ namespace sguees.Repositories
 		Task<CResult> CrearModeloAsync(CON_PARTIDATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> ImportarExcelAsync(CON_PARTIDA_IMPORTParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> GetAllDetaDocAsync(List<CParameter> xWhere);
+		Task<CResult> GetOrigenAsync(List<CParameter> xWhere);
 		Task<CResult> GetConPartidaImpr(List<CParameter> xWhere);
 		Task<CResult> ConsultarParaImprAsync(CON_PARTIDAParam param);
 		Task<CResult> GenerarPartidaLiquidacionAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION);
