@@ -7,6 +7,8 @@ export interface AcaCarrera {
     CORR_FACULTAD: number | null;
     CORR_GRADO_ACADEMICO: number | null;
     ACTIVO: boolean;
+    FECHA_VIGENCIA_INICIO: string | null;
+    FECHA_VIGENCIA_FIN: string | null;
     CORR_DECANO?: number | null;
     NOMBRE_DECANO?: string;
     MAX_REPETICIONES?: number;

@@ -10,6 +10,14 @@ export class AcaCiclosRepository {
     ciclos(area: number) { return this.data.Get('ACA_CICLOS', 'GetAll', [{ Parameter: 'CORR_AREA_ACADEMICA', Value: area }], environment.UrlGENERALAPI); }
     detalle(id: number) { return this.data.Get('ACA_CICLOS', 'Detalle', [{ Parameter: 'CORR_CICLO_ACADEMICO', Value: id }], environment.UrlGENERALAPI); }
     catalogos() { return this.data.Get('ACA_CICLOS', 'Catalogos', [], environment.UrlGENERALAPI); }
+    faltantes(id: number, version: string) {
+        return this.data.Get('ACA_CICLOS', 'Faltantes', [{ Parameter: 'CORR_CICLO_ACADEMICO', Value: id },
+            { Parameter: 'VERSION_REGISTRO', Value: version }], environment.UrlGENERALAPI);
+    }
+    candidatas(area: number, inicio: string) {
+        return this.data.Get('ACA_CICLOS', 'Candidatas', [{ Parameter: 'CORR_AREA_ACADEMICA', Value: area },
+            { Parameter: 'FECHA_INICIO', Value: inicio }], environment.UrlGENERALAPI);
+    }
     guardar(model: AcaCicloInput) {
         return model.CORR_CICLO_ACADEMICO ? this.data.Put(model, 'ACA_CICLOS', '', [], environment.UrlGENERALAPI)
             : this.data.Post(model, 'ACA_CICLOS', '', environment.UrlGENERALAPI);

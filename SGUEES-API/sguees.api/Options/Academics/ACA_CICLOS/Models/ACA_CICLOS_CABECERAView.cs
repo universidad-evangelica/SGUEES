@@ -5,6 +5,7 @@ namespace sguees.Models
     public class ACA_CICLOS_CABECERAView
     {
         public int CORR_CICLO_ACADEMICO { get; set; }
+        public byte[] VERSION_REGISTRO { get; set; }
         public int CORR_EMPRESA { get; set; }
         public int CORR_AREA_ACADEMICA { get; set; }
         public short ANIO { get; set; }

@@ -110,9 +110,11 @@ export class AcaCarrerasComponent extends CBaseComponent implements OnInit {
         return this.grid ?? null;
     }
     override fillData(row?: AcaCarrera): AcaCarrera {
-        return row ? { ...row } : {
+        return row ? { ...row, FECHA_VIGENCIA_INICIO: row.FECHA_VIGENCIA_INICIO?.slice(0, 10) ?? null,
+            FECHA_VIGENCIA_FIN: row.FECHA_VIGENCIA_FIN?.slice(0, 10) ?? null } : {
             CORR_CARRERA: 0, CORR_EMPRESA: 0, CODIGO_CARRERA: '', NOMBRE_CARRERA: '',
             CORR_AREA_ACADEMICA: null, CORR_FACULTAD: null, CORR_GRADO_ACADEMICO: null, ACTIVO: true,
+            FECHA_VIGENCIA_INICIO: null, FECHA_VIGENCIA_FIN: null,
             MAX_REPETICIONES:3,CREDITOS_REQUERIDOS:null,NOTA_MINIMA:6,NOMBRE_DECANO:'Sin decano asignado',
         };
     }

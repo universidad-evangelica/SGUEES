@@ -15,6 +15,8 @@ namespace sguees.Models
         public string CODIGO_CARRERA { get; set; }
         public string NOMBRE_CARRERA { get; set; }
         public bool ACTIVO { get; set; }
+        public DateTime? FECHA_VIGENCIA_INICIO { get; set; }
+        public DateTime? FECHA_VIGENCIA_FIN { get; set; }
         public int? CORR_DECANO { get; set; }
         public string NOMBRE_DECANO { get; set; }
         public short MAX_REPETICIONES { get; set; }

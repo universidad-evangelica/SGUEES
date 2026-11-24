@@ -36,6 +36,9 @@ namespace sguees.Services
         private Task<CResult> Save(ACA_CARRERASTable data, string user, string station, bool update)
         {
             if (data == null) return Task.FromResult(Error("No se recibieron datos de la carrera."));
+            if (!data.FECHA_VIGENCIA_INICIO.HasValue) return Task.FromResult(Error("Indique el inicio de vigencia de la carrera."));
+            if (data.FECHA_VIGENCIA_FIN.HasValue && data.FECHA_VIGENCIA_FIN.Value.Date < data.FECHA_VIGENCIA_INICIO.Value.Date)
+                return Task.FromResult(Error("El fin de vigencia no puede ser anterior al inicio de vigencia de la carrera."));
             if (data.MAX_REPETICIONES < 0 || data.MAX_REPETICIONES > 99) return Task.FromResult(Error("Indique entre 0 y 99 repeticiones adicionales."));
             if ((!update && data.CREDITOS_REQUERIDOS == null) || (data.CREDITOS_REQUERIDOS.HasValue && (data.CREDITOS_REQUERIDOS <= 0 || data.CREDITOS_REQUERIDOS > 99999.99m || decimal.Round(data.CREDITOS_REQUERIDOS.Value, 2) != data.CREDITOS_REQUERIDOS.Value))) return Task.FromResult(Error("Indique créditos requeridos positivos, con hasta dos decimales."));
             if ((!update && data.NOTA_MINIMA == null) || (data.NOTA_MINIMA.HasValue && (data.NOTA_MINIMA < 0 || data.NOTA_MINIMA > 10 || decimal.Round(data.NOTA_MINIMA.Value, 2) != data.NOTA_MINIMA.Value))) return Task.FromResult(Error("La nota mínima de materia debe estar entre 0 y 10, con hasta dos decimales."));

@@ -7,6 +7,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { AcaCiclosService } from './aca-ciclos.service';
+import type { AcaCicloCandidata, AcaCicloFaltante } from './aca-ciclo-input';
 
 @Component({ standalone: false, selector: 'app-aca-ciclos', templateUrl: './aca-ciclos.component.html', styleUrls: ['./aca-ciclos.component.scss'] })
 export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDestroy {
@@ -14,6 +15,25 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
     areas: any[] = []; ciclos: any[] = []; areaElegida: any = null;
     catalogos: any[] = []; sedes: any[] = []; facultades: any[] = []; carreras: any[] = []; historial: any[] = []; periodos: any[] = [];
     planes: any[] = [];
+    candidatas: AcaCicloCandidata[] = [];
+    conflictoVersion = false;
+    faltantesVisible = false;
+    faltantes: AcaCicloFaltante[] = [];
+    private versionFaltantes = '';
+    private inicioEvaluado = '';
+    readonly candidataColumns = [
+        { dataField: 'NOMBRE_CARRERA', caption: 'Carrera', minWidth: 240 },
+        { dataField: 'NOMBRE_SEDE', caption: 'Sede', width: 180 },
+        { dataField: 'NOMBRE_FACULTAD', caption: 'Facultad', width: 220 },
+        { dataField: 'FECHA_VIGENCIA_INICIO', caption: 'Carrera vigente desde', dataType: 'date' as const, format: 'dd/MM/yyyy', width: 165 },
+        { dataField: 'FECHA_VIGENCIA_FIN', caption: 'Carrera vigente hasta', dataType: 'date' as const, format: 'dd/MM/yyyy', width: 165 },
+        { dataField: 'ES_ELEGIBLE', caption: 'Asignar por defecto', dataType: 'boolean' as const, width: 140 },
+        { dataField: 'MOTIVO', caption: 'Validación', minWidth: 300 },
+    ];
+    readonly faltantesColumns = [
+        { dataField: 'AGREGAR', caption: 'Se agregará', dataType: 'boolean' as const, width: 120 },
+        ...this.candidataColumns.filter(c => c.dataField !== 'ES_ELEGIBLE'),
+    ];
     sedesDisponibles: any[] = []; facultadesDisponibles: any[] = []; carrerasDisponibles: any[] = [];
     sedeNueva: number | null = null; facultadNueva: number | null = null;
     sedeId = 0; facultadId = 0; sedeKeys: number[] = []; facultadKeys: number[] = [];
@@ -28,7 +48,7 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
     readonly cicloColumns: any[] = [{ dataField: 'ANIO', caption: 'Año', width: 100 }, { dataField: 'NUMERO_PERIODO', caption: 'Ciclo', width: 100 },
         { dataField: 'ESTADO', caption: 'Estado', width: 125 },
         { dataField: 'NOMBRES_SEDES', caption: 'Sedes participantes', width: 220, cellTemplate: 'nombresAsignados' },
-        { dataField: 'NOMBRES_FACULTADES_SEDES', caption: 'Facultades por sede', width: 360, cellTemplate: 'nombresAsignados' },
+        { dataField: 'NOMBRES_FACULTADES_SEDES', caption: 'Facultades por sede', width: 240, cellTemplate: 'facultadesAsignadas' },
         { dataField: 'CARRERAS_SEDES', caption: 'Carreras seleccionadas', width: 140 },
         { caption: 'Para activar', calculateCellValue: (row: any) => this.pasoListado(row), width: 230 },
         { dataField: 'REQUIERE_REVISION', caption: 'Pendiente de revisión', dataType: 'boolean', visible: false },
@@ -37,10 +57,10 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
     readonly facultadColumns: any[] = [{ dataField: 'NOMBRE_FACULTAD', caption: 'Facultad' }, { dataField: 'ACTIVO', caption: 'Participa', dataType: 'boolean', width: 100 }];
     readonly carreraColumns: any[] = [{ dataField: 'Value', caption: 'Carrera', minWidth: 300 },
         { dataField: 'SELECCIONADA', caption: 'Seleccionada', dataType: 'boolean', width: 120 },
-        { caption: 'Plan y validación para este ciclo', cellTemplate: 'planesCarrera', minWidth: 420 }, { caption: 'Acción', cellTemplate: 'seleccionarCarrera', width: 190 }];
+        { caption: 'Vigencia y validación de la carrera', cellTemplate: 'planesCarrera', minWidth: 420 }, { caption: 'Acción', cellTemplate: 'seleccionarCarrera', width: 190 }];
     readonly resumenColumns: any[] = [{ dataField: 'NOMBRE_SEDE', caption: 'Sede', width: 150 }, { dataField: 'NOMBRE_FACULTAD', caption: 'Facultad', width: 180 },
         { dataField: 'NOMBRE_CARRERA', caption: 'Carrera', minWidth: 220 }, { dataField: 'SELECCIONADA', caption: 'Incluida en apertura', dataType: 'boolean', width: 110 },
-        { caption: 'Plan y validación para este ciclo', cellTemplate: 'planesResumen', minWidth: 360 }];
+        { caption: 'Vigencia y validación de la carrera', cellTemplate: 'planesResumen', minWidth: 360 }];
     readonly historialColumns: any[] = [{ dataField: 'OPERACION', caption: 'Operación', width: 160 }, { dataField: 'USUARIO', caption: 'Usuario', width: 150 },
         { dataField: 'ESTACION', caption: 'Estación', minWidth: 180 }, { dataField: 'FECHA', caption: 'Fecha', dataType: 'datetime', format: 'dd/MM/yyyy HH:mm:ss', width: 190 }];
     readonly periodoColumns: any[] = [{ dataField: 'CORR_PERIODO_ACADEMICO', caption: 'Período original', width: 130 },
@@ -73,22 +93,32 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         return !this.model?.CORR_CICLO_ACADEMICO || ['CORR_AREA_ACADEMICA', 'ANIO', 'NUMERO_PERIODO', 'FECHA_INICIO', 'FECHA_FIN', 'FECHA_INICIO_INSCRIPCION', 'FECHA_FIN_INSCRIPCION']
             .some(k => this.model[k] !== this.inicial[k]);
     }
-    get editaCabecera(): boolean { return !this.loadingVisible && this.model.ESTADO === 'BORRADOR' && (this.model.CORR_CICLO_ACADEMICO ? this.permiteEdit : this.permiteAdd); }
+    get editaCabecera(): boolean { return !this.conflictoVersion && !this.loadingVisible && this.model.ESTADO === 'BORRADOR' && (this.model.CORR_CICLO_ACADEMICO ? this.permiteEdit : this.permiteAdd); }
     get puedeAsignar(): boolean { return this.editaCabecera && this.permiteEdit && !!this.model.CORR_CICLO_ACADEMICO && !this.cambiosPendientes; }
     get sedeActual(): any { return this.sedes.find(x => x.CORR_SEDE === this.sedeId); }
     get facultadActual(): any { return this.facultades.find(x => x.CORR_SEDE === this.sedeId && x.CORR_FACULTAD === this.facultadId); }
     get anioDifiere(): boolean { return !!this.model.FECHA_INICIO && Number(this.model.FECHA_INICIO.slice(0, 4)) !== Number(this.model.ANIO); }
     planesCarrera(id: number): any[] { return this.planes.filter(p => p.CORR_CARRERA === id); }
-    planesAplicables(id: number): any[] { return this.planesCarrera(id).filter(p => p.ES_APLICABLE); }
     observacionCarrera(row: any): string {
-        const id = row.CORR_CARRERA ?? row.Key;
-        if (this.cambiosPendientes) return 'Guarda el calendario para recalcular los planes con las nuevas fechas.';
-        const planes = this.planesCarrera(id);
-        if ((!row.DIAGNOSTICO || row.DIAGNOSTICO === 'Sin plan y modalidad elegibles al inicio académico' || row.DIAGNOSTICO === 'Pendiente de seleccionar') && planes.length && !this.planesAplicables(id).length)
-            return planes.map(p => (p.CODIGO_PLAN ? p.CODIGO_PLAN.trim() + ': ' : '') + p.MOTIVO_PLAN).join(' ');
-        return row.DIAGNOSTICO === 'Lista para apertura' ? 'Lista para apertura' : row.DIAGNOSTICO === 'Pendiente de seleccionar' && this.planesAplicables(id).length ? 'Plan compatible. Selecciona la carrera para incluirla.' : row.DIAGNOSTICO;
+        if (this.cambiosPendientes) return 'Guarda el calendario para comprobar la vigencia de la carrera con las nuevas fechas.';
+        return row.DIAGNOSTICO ?? 'Pendiente de validar la carrera';
     }
     get carrerasIncluidas(): number { return this.carreras.filter(c => c.SELECCIONADA).length; }
+    private get claveEvaluacion(): string { return `${this.model.CORR_AREA_ACADEMICA}|${this.model.FECHA_INICIO ?? ''}`; }
+    get vistaPreviaVigente(): boolean { return !!this.model.FECHA_INICIO && this.inicioEvaluado === this.claveEvaluacion; }
+    get candidatasElegibles(): number { return this.candidatas.filter(c => c.ES_ELEGIBLE).length; }
+    revisarCarreras(): void {
+        if (this.loadingVisible || this.model.CORR_CICLO_ACADEMICO || !this.model.CORR_AREA_ACADEMICA || !this.model.FECHA_INICIO) return;
+        const clave = this.claveEvaluacion, seq = this.secuencia;
+        this.loadingVisible = true;
+        this.service.candidatas(this.model.CORR_AREA_ACADEMICA, this.model.FECHA_INICIO).pipe(take(1), finalize(() => this.loadingVisible = false)).subscribe({
+            next: r => {
+                if (seq !== this.secuencia || clave !== this.claveEvaluacion) return;
+                if (!r.Result) { this.notifyApiResponse(r); return; }
+                this.candidatas = r.Data ?? []; this.inicioEvaluado = clave;
+            }, error: e => this.notifyApiError(e),
+        });
+    }
     get carrerasConPendientes(): any[] { return this.carreras.filter(c => c.SELECCIONADA && c.DIAGNOSTICO !== 'Lista para apertura'); }
     irPaso(paso: number): void { if (!this.loadingVisible) this.tab = paso; }
     actualizarValidaciones(): void {
@@ -96,7 +126,7 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         const seq = this.secuencia; this.loadingVisible = true;
         forkJoin([this.service.detalle(this.model.CORR_CICLO_ACADEMICO), this.service.catalogos()]).pipe(take(1), finalize(() => this.loadingVisible = false)).subscribe({
             next: ([r, cat]) => { if (seq !== this.secuencia) return;
-                if (!r.Result || !cat.Result) { this.notifyApiResponse(!r.Result ? r : cat); return; }
+                if (!r.Result || !cat.Result) { this.gestionarErrorCiclo(!r.Result ? r : cat); return; }
                 this.catalogos = cat.Data; this.sedesDisponibles = this.catalogos.filter(x => x.TIPO === 'SEDE' && x.ACTIVO); this.aplicar(r.Data);
             }, error: e => this.notifyApiError(e),
         });
@@ -133,14 +163,17 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         return pendientes;
     }
     get puedeHabilitar(): boolean {
-        return this.permiteEdit && !this.loadingVisible && !!this.model.CORR_CICLO_ACADEMICO
+        return !this.conflictoVersion && this.permiteEdit && !this.loadingVisible && !!this.model.CORR_CICLO_ACADEMICO
             && this.model.ESTADO !== 'HABILITADO' && this.pendientesActivacion.length === 0;
     }
     revisarActivacion(): void {
         this.tab = this.model.REQUIERE_REVISION || this.cambiosPendientes ? 0
             : this.pendientesActivacion.some(p => p.startsWith('Agrega') || p.startsWith('Selecciona')) ? 1 : 2;
     }
-    cambiado(): void { this.permiteSalir = !this.cambiosPendientes; }
+    cambiado(): void {
+        this.permiteSalir = !this.cambiosPendientes;
+        if (this.cambiosPendientes) { this.faltantesVisible = false; this.faltantes = []; }
+    }
     cargarInicio(): void {
         this.loadingVisible = true;
         forkJoin([this.service.areas(), this.service.catalogos()]).pipe(take(1), finalize(() => this.loadingVisible = false)).subscribe({
@@ -162,7 +195,7 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         if (this.loadingVisible) return;
         const seq = ++this.secuencia; this.loadingVisible = true;
         this.service.detalle(ciclo.CORR_CICLO_ACADEMICO).pipe(take(1), finalize(() => this.loadingVisible = false)).subscribe({
-            next: r => { if (seq !== this.secuencia) return; if (!r.Result) { this.notifyApiResponse(r); return; }
+            next: r => { if (seq !== this.secuencia) return; if (!r.Result) { this.gestionarErrorCiclo(r); return; }
                 this.sedeId = 0; this.facultadId = 0; this.aplicar(r.Data); this.tab = 0; this.vista = 'ficha';
                 this.areaElegida=this.areas.find(a=>a.CORR_AREA_ACADEMICA===this.model.CORR_AREA_ACADEMICA)??{CORR_AREA_ACADEMICA:this.model.CORR_AREA_ACADEMICA,NOMBRE_AREA:this.model.NOMBRE_AREA,ACTIVO:true};
                 if (paraActivar) this.revisarActivacion(); }, error: e => this.notifyApiError(e),
@@ -173,6 +206,8 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         this.model = this.fillData(); this.model.CORR_AREA_ACADEMICA = this.areaElegida.CORR_AREA_ACADEMICA;
         this.model.NOMBRE_AREA = this.areaElegida.NOMBRE_AREA; this.inicial = {};
         this.sedes = []; this.facultades = []; this.carreras = []; this.historial = []; this.periodos = []; this.planes = [];
+        this.candidatas = []; this.inicioEvaluado = '';
+        this.conflictoVersion = false; this.faltantesVisible = false; this.faltantes = [];
         this.sedeId = 0; this.facultadId = 0; this.recalcular(); this.tab = 0; this.vista = 'ficha'; this.permiteSalir = false;
     }
     volver(): void {
@@ -183,15 +218,20 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
     guardarCiclo(continuar = false): void {
         if (!this.editaCabecera || !this.dataForm?.instance.validate().isValid) return;
         const m = this.model;
+        if (!m.CORR_CICLO_ACADEMICO && !this.vistaPreviaVigente) {
+            this.notifyFx('Revise las carreras del área con la fecha de inicio académico antes de crear el ciclo.', NotifyType.Warning); return;
+        }
         if (!m.FECHA_INICIO || !m.FECHA_FIN || !m.FECHA_INICIO_INSCRIPCION || !m.FECHA_FIN_INSCRIPCION || m.FECHA_FIN < m.FECHA_INICIO || m.FECHA_FIN_INSCRIPCION < m.FECHA_INICIO_INSCRIPCION || m.FECHA_FIN_INSCRIPCION > m.FECHA_FIN) {
             this.notifyFx('Complete las fechas y revise que la inscripción cierre antes del fin académico.', NotifyType.Warning); return;
         }
         this.ejecutar(this.service.guardar({ ...m }), continuar ? 1 : undefined);
     }
     private aplicar(data: any): void {
+        this.conflictoVersion = false; this.faltantesVisible = false; this.faltantes = [];
         this.model = this.fillData(data.Cabecera); this.inicial = { ...this.model }; this.permiteSalir = true;
         this.sedes = data.Sedes; this.facultades = data.Facultades; this.carreras = data.Carreras; this.historial = data.Historial; this.periodos = data.Periodos;
         this.planes = data.Planes ?? [];
+        this.candidatas = data.Candidatas ?? [];
         if (!this.sedes.some(x => x.CORR_SEDE === this.sedeId)) this.sedeId = this.sedes[0]?.CORR_SEDE ?? 0;
         this.recalcular(); this.oferta = []; this.ofertaConsultada = false;
     }
@@ -205,8 +245,12 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         const rows = disponibles.filter(x => x.CORR_FACULTAD === this.facultadId && x.ACTIVO).map(x => ({ ...x }));
         for (const r of this.carreras.filter(x => x.CORR_SEDE === this.sedeId && x.CORR_FACULTAD === this.facultadId))
             if (!rows.some(x => x.Key === r.CORR_CARRERA)) rows.push({ Key: r.CORR_CARRERA, Value: r.NOMBRE_CARRERA, ACTIVO: false });
-        this.carrerasDisponibles = rows.map(x => { const actual = this.carreras.find(r => r.CORR_SEDE === this.sedeId && r.CORR_CARRERA === x.Key);
-            return { ...x, SELECCIONADA: !!actual?.ACTIVO, DIAGNOSTICO: actual?.DIAGNOSTICO ?? 'Pendiente de seleccionar' }; });
+        this.carrerasDisponibles = rows.map(x => {
+            const actual = this.carreras.find(r => r.CORR_SEDE === this.sedeId && r.CORR_CARRERA === x.Key);
+            const candidata = this.candidatas.find(r => r.CORR_SEDE === this.sedeId && r.CORR_CARRERA === x.Key);
+            return { ...x, SELECCIONADA: !!actual?.ACTIVO, ES_ELEGIBLE: !!candidata?.ES_ELEGIBLE,
+                DIAGNOSTICO: actual?.DIAGNOSTICO ?? candidata?.DIAGNOSTICO ?? 'Pendiente de seleccionar' };
+        });
     }
     seleccionarSede(e: any): void { if (!e.selectedRowsData?.length) return; this.sedeId = e.selectedRowsData[0].CORR_SEDE; this.facultadId = 0; this.recalcular(); }
     seleccionarFacultad(e: any): void { if (!e.selectedRowsData?.length) return; this.facultadId = e.selectedRowsData[0].CORR_FACULTAD; this.recalcular(); }
@@ -214,38 +258,78 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
     agregarFacultad(): void { if (!this.facultadNueva) return; this.asignar('Facultad', { CORR_SEDE: this.sedeId, CORR_FACULTAD: this.facultadNueva, ACTIVO: true }); }
     estadoSede(): void { if (this.sedeActual) this.asignar('Sede', { CORR_SEDE: this.sedeId, ACTIVO: !this.sedeActual.ACTIVO }); }
     estadoFacultad(): void { if (this.facultadActual) this.asignar('Facultad', { CORR_SEDE: this.sedeId, CORR_FACULTAD: this.facultadId, ACTIVO: !this.facultadActual.ACTIVO }); }
-    estadoCarrera(row: any): void { this.asignar('Carrera', { CORR_SEDE: this.sedeId, CORR_FACULTAD: this.facultadId, CORR_CARRERA: row.Key, ACTIVO: !row.SELECCIONADA }); }
+    estadoCarrera(row: any): void {
+        if (!row.SELECCIONADA && !row.ES_ELEGIBLE) return;
+        this.asignar('Carrera', { CORR_SEDE: this.sedeId, CORR_FACULTAD: this.facultadId, CORR_CARRERA: row.Key, ACTIVO: !row.SELECCIONADA });
+    }
     todas(): void {
         if (!this.puedeAsignar || !this.facultadActual?.ACTIVO) return;
-        const cantidad = this.carrerasDisponibles.filter(x => x.ACTIVO).length;
-        this.confirmaAccion('Seleccionar carreras', '¿Desea seleccionar las ' + cantidad + ' carreras institucionalmente disponibles de esta facultad y sede? Revise sus planes en Resumen antes de habilitar.',
+        const cantidad = this.carrerasDisponibles.filter(x => x.ES_ELEGIBLE).length;
+        if (!cantidad) { this.notifyFx('No hay carreras elegibles para esta facultad, sede y fecha de inicio.', NotifyType.Warning); return; }
+        this.confirmaAccion('Seleccionar carreras', '¿Desea seleccionar las ' + cantidad + ' carreras vigentes y autorizadas de esta facultad y sede?',
             () => this.asignar('Todas', { CORR_SEDE: this.sedeId, CORR_FACULTAD: this.facultadId, ACTIVO: true }));
     }
     private asignar(accion: string, data: any): void {
         if (!this.puedeAsignar) return;
-        this.ejecutar(this.service.asignar(accion, { ...data, CORR_CICLO_ACADEMICO: this.model.CORR_CICLO_ACADEMICO }));
+        this.ejecutar(this.service.asignar(accion, { ...data, CORR_CICLO_ACADEMICO: this.model.CORR_CICLO_ACADEMICO, VERSION_REGISTRO: this.model.VERSION_REGISTRO }));
     }
     cambiarEstado(accion: string): void {
-        if (!this.permiteEdit || this.loadingVisible || this.cambiosPendientes) return;
+        if (this.conflictoVersion || !this.permiteEdit || this.loadingVisible || this.cambiosPendientes) return;
         if (accion === 'Habilitar' && !this.puedeHabilitar) { this.revisarActivacion(); return; }
         const id = this.model.CORR_CICLO_ACADEMICO;
         const mensaje = accion === 'Habilitar'
-            ? '¿Desea habilitar el ciclo del área para las sedes, facultades y carreras seleccionadas? Se aplicará el calendario común a sus períodos específicos y se validarán los planes. La inscripción dependerá de sus fechas.'
+            ? '¿Desea habilitar el ciclo del área para las sedes, facultades y carreras seleccionadas? Se aplicará el calendario común a sus períodos específicos y se validará la vigencia de las carreras. La inscripción dependerá de su configuración y fechas.'
             : accion === 'Borrador' ? '¿Desea pasar el ciclo a borrador? Su oferta quedará suspendida mientras modifica la configuración.' : '¿Desea cerrar el ciclo y suspender su oferta en todas sus sedes?';
         this.confirmaAccion('Estado del ciclo', mensaje, () => {
             if (id !== this.model.CORR_CICLO_ACADEMICO || this.loadingVisible) return;
-            this.ejecutar(this.service.asignar(accion, { CORR_CICLO_ACADEMICO: id }));
+            this.ejecutar(this.service.asignar(accion, { CORR_CICLO_ACADEMICO: id, VERSION_REGISTRO: this.model.VERSION_REGISTRO }));
         });
     }
     private ejecutar(request: Observable<IResult>, siguientePaso?: number): void {
         const seq = this.secuencia; this.loadingVisible = true;
         request.pipe(take(1), finalize(() => this.loadingVisible = false)).subscribe({ next: r => {
             if (seq !== this.secuencia) return;
-            if (!r.Result) { this.notifyApiResponse(r); return; }
+            if (!r.Result) { this.gestionarErrorCiclo(r); return; }
             this.aplicar(r.Data); this.sedeNueva = null; this.facultadNueva = null;
             if (siguientePaso !== undefined) this.tab = siguientePaso;
             this.notifyFx('Configuración del ciclo guardada.', NotifyType.Success);
-        }, error: e => this.notifyApiError(e) });
+        }, error: e => this.gestionarErrorCiclo(e) });
+    }
+    private gestionarErrorCiclo(error: any): void {
+        if (error?.status === 409 || error?.ErrorCode === 51009 || error?.error?.ErrorCode === 51009) {
+            this.conflictoVersion = true; this.faltantesVisible = false; this.faltantes = [];
+            this.notifyFx('El ciclo o la lista de carreras cambió. Actualice la pantalla antes de continuar. Sus cambios no fueron aplicados.', NotifyType.Warning);
+            return;
+        }
+        if (error?.ErrorCode !== undefined) this.notifyApiResponse(error);
+        else this.notifyApiError(error);
+    }
+    recargarCiclo(): void {
+        if (this.loadingVisible || !this.model.CORR_CICLO_ACADEMICO) return;
+        const recargar = () => this.abrirCiclo({ CORR_CICLO_ACADEMICO: this.model.CORR_CICLO_ACADEMICO });
+        if (this.cambiosPendientes) this.confirmaAccion('Actualizar ciclo', 'Se descartarán los cambios locales sin guardar y se cargará la versión actual. ¿Desea continuar?', recargar);
+        else recargar();
+    }
+    get cantidadFaltantes(): number { return this.faltantes.filter(c => c.AGREGAR).length; }
+    revisarFaltantes(): void {
+        if (!this.puedeAsignar) return;
+        const id = this.model.CORR_CICLO_ACADEMICO, version = this.model.VERSION_REGISTRO, seq = this.secuencia;
+        this.faltantesVisible = false; this.faltantes = []; this.loadingVisible = true;
+        this.service.faltantes(id, version).pipe(take(1), finalize(() => this.loadingVisible = false)).subscribe({
+            next: r => {
+                if (seq !== this.secuencia || this.model.CORR_CICLO_ACADEMICO !== id || this.model.VERSION_REGISTRO !== version) return;
+                if (!r.Result) { this.gestionarErrorCiclo(r); return; }
+                this.faltantes = r.Data ?? []; this.versionFaltantes = version; this.faltantesVisible = true;
+            }, error: e => this.gestionarErrorCiclo(e),
+        });
+    }
+    confirmarFaltantes(): void {
+        if (!this.puedeAsignar || !this.faltantesVisible || !this.cantidadFaltantes) return;
+        if (this.model.VERSION_REGISTRO !== this.versionFaltantes) { this.gestionarErrorCiclo({ ErrorCode: 51009 }); return; }
+        this.ejecutar(this.service.asignar('AgregarFaltantes', {
+            CORR_CICLO_ACADEMICO: this.model.CORR_CICLO_ACADEMICO, VERSION_REGISTRO: this.versionFaltantes,
+            HUELLA_FALTANTES: this.faltantes[0].HUELLA_FALTANTES,
+        }));
     }
     consultarOferta(): void {
         if (!this.sedeId || !this.fechaConsulta || this.loadingVisible || this.cambiosPendientes) return;
@@ -266,7 +350,7 @@ export class AcaCiclosComponent extends CBaseComponent implements OnInit, OnDest
         if (!this.sedeActual?.ACTIVO) motivos.push('La sede elegida no participa actualmente en este ciclo.');
         const incluidas = this.carreras.filter(c => c.CORR_SEDE === this.sedeId && c.SELECCIONADA);
         if (!incluidas.length) motivos.push('No hay carreras incluidas para esta sede. Selecciónalas en el paso 2.');
-        else if (incluidas.every(c => c.DIAGNOSTICO !== 'Lista para apertura')) motivos.push('Las carreras incluidas tienen observaciones. Revisa sus planes y validaciones en la tabla superior.');
+        else if (incluidas.every(c => c.DIAGNOSTICO !== 'Lista para apertura')) motivos.push('Las carreras incluidas tienen observaciones. Revisa su vigencia y autorizaciones en la tabla superior.');
         return motivos.length ? motivos : ['Actualiza las validaciones y revisa las carreras de esta sede en la tabla superior. Si están listas y el ciclo está habilitado, revisa sus períodos vinculados.'];
     }
     usarAperturaInscripcion(): void {

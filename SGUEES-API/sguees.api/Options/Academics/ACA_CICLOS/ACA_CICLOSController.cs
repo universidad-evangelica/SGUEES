@@ -18,8 +18,14 @@ namespace sguees.Controllers
         [HttpGet("GetAll"), Authorize(Policy = "/aca-periodos-academicos|R")] public Task<CResult> GetAll(int CORR_AREA_ACADEMICA = 0) => repo.Listar(Empresa, CORR_AREA_ACADEMICA);
         [HttpGet("Detalle"), Authorize(Policy = "/aca-periodos-academicos|R")] public Task<CResult> Detalle(int CORR_CICLO_ACADEMICO) => repo.Detalle(Empresa, CORR_CICLO_ACADEMICO);
         [HttpGet("Catalogos"), Authorize(Policy = "/aca-periodos-academicos|R")] public Task<CResult> Catalogos() => repo.Catalogos(Empresa);
+        [HttpGet("Candidatas"), Authorize(Policy = "/aca-periodos-academicos|R")]
+        public Task<CResult> Candidatas(int CORR_AREA_ACADEMICA, DateTime FECHA_INICIO) => repo.Candidatas(Empresa, CORR_AREA_ACADEMICA, FECHA_INICIO);
         [HttpGet("Oferta"), Authorize(Policy = "/aca-periodos-academicos|R")] public Task<CResult> Oferta(int CORR_CICLO_ACADEMICO, int CORR_SEDE, DateTime FECHA_REFERENCIA) => repo.Oferta(Empresa, CORR_CICLO_ACADEMICO, CORR_SEDE, FECHA_REFERENCIA);
-        private async Task<IActionResult> Write(string op, ACA_CICLOInput data) { var r = await repo.Write(op, Empresa, data, User.FindFirstValue(ClaimTypes.NameIdentifier), ClientInfoHelper.GetClientStation(HttpContext)); return r.Result ? Ok(r) : BadRequest(r); }
+        [HttpGet("Faltantes"), Authorize(Policy = "/aca-periodos-academicos|R")]
+        public Task<CResult> Faltantes(int CORR_CICLO_ACADEMICO, [FromQuery] byte[] VERSION_REGISTRO) => repo.Faltantes(Empresa, CORR_CICLO_ACADEMICO, VERSION_REGISTRO);
+        private async Task<IActionResult> Write(string op, ACA_CICLOInput data) { var r = await repo.Write(op, Empresa, data, User.FindFirstValue(ClaimTypes.NameIdentifier), ClientInfoHelper.GetClientStation(HttpContext)); return r.Result ? Ok(r) : r.ErrorCode == 51009 ? Conflict(r) : BadRequest(r); }
+        [HttpPut("AgregarFaltantes"), Authorize(Policy = "/aca-periodos-academicos|U")]
+        public Task<IActionResult> AgregarFaltantes(ACA_CICLOInput data) => Write("FALTANTES", data);
         [HttpPost, Authorize(Policy = "/aca-periodos-academicos|C")] public Task<IActionResult> Post(ACA_CICLOInput data) => Write("CREAR", data);
         [HttpPut, Authorize(Policy = "/aca-periodos-academicos|U")] public Task<IActionResult> Put(ACA_CICLOInput data) => Write("GUARDAR", data);
         [HttpPut("Sede"), Authorize(Policy = "/aca-periodos-academicos|U")] public Task<IActionResult> Sede(ACA_CICLOInput data) => Write("SEDE", data);

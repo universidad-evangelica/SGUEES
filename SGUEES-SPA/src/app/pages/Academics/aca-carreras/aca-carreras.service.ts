@@ -22,6 +22,10 @@ export class AcaCarrerasService {
                 : !model.CORR_AREA_ACADEMICA || !model.CORR_FACULTAD
                     ? 'Seleccione el área académica y la facultad.' : '';
         if (error) { msg(error, NotifyType.Warning); return false; }
+        if (!model.FECHA_VIGENCIA_INICIO) { msg('Indique el inicio de vigencia de la carrera.', NotifyType.Warning); return false; }
+        if (model.FECHA_VIGENCIA_FIN && model.FECHA_VIGENCIA_FIN < model.FECHA_VIGENCIA_INICIO) {
+            msg('El fin de vigencia no puede ser anterior al inicio de vigencia de la carrera.', NotifyType.Warning); return false;
+        }
         if (!Number.isInteger(model.MAX_REPETICIONES) || model.MAX_REPETICIONES < 0 || model.MAX_REPETICIONES > 99) { msg('Indique entre 0 y 99 repeticiones adicionales.',NotifyType.Warning); return false; }
         if ((!model.CORR_CARRERA && model.CREDITOS_REQUERIDOS == null) || (model.CREDITOS_REQUERIDOS != null && model.CREDITOS_REQUERIDOS <= 0)) { msg('Indique los créditos requeridos para completar la carrera.',NotifyType.Warning); return false; }
         if ((!model.CORR_CARRERA && model.NOTA_MINIMA == null) || (model.NOTA_MINIMA != null && (model.NOTA_MINIMA < 0 || model.NOTA_MINIMA > 10))) { msg('La nota mínima de materia debe estar entre 0 y 10.',NotifyType.Warning); return false; }
@@ -37,6 +41,8 @@ export class AcaCarrerasService {
             { dataField: 'NOMBRE_FACULTAD', caption: 'Facultad', width: 280 },
             { dataField: 'NOMBRE_GRADO', caption: 'Grado académico', width: 170 },
             createEstadoColumnConfig('ACTIVO', ESTADO_ACTIVO_INACTIVO_LABELS),
+            { dataField: 'FECHA_VIGENCIA_INICIO', caption: 'Inicio de vigencia', dataType: 'date', format: 'dd/MM/yyyy', width: 150 },
+            { dataField: 'FECHA_VIGENCIA_FIN', caption: 'Fin de vigencia', dataType: 'date', format: 'dd/MM/yyyy', width: 150 },
             ...buildAuditGridColumns(),
         ];
     }
@@ -58,6 +64,14 @@ export class AcaCarrerasService {
                 { dataField: 'CORR_AREA_ACADEMICA', label: { text: 'Área académica' }, colSpan: 2, template: 'areaLookup' },
                 { dataField: 'CORR_FACULTAD', label: { text: 'Facultad' }, colSpan: 2, template: 'facultadLookup' },
                 { dataField: 'CORR_GRADO_ACADEMICO', label: { text: 'Grado académico (opcional)' }, colSpan: 2, template: 'gradoLookup' }
+            ] },
+            { itemType: 'group', caption: 'Vigencia de la carrera', colCount: 2, colCountByScreen: { xs: 1, sm: 2 }, items: [
+                { dataField: 'FECHA_VIGENCIA_INICIO', label: { text: 'Inicio de vigencia' }, editorType: 'dxDateBox',
+                    editorOptions: { type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy' },
+                    validationRules: [{ type: 'required', message: 'El inicio de vigencia es obligatorio.' }] },
+                { dataField: 'FECHA_VIGENCIA_FIN', label: { text: 'Fin de vigencia (opcional)' }, editorType: 'dxDateBox',
+                    editorOptions: { type: 'date', dateSerializationFormat: 'yyyy-MM-dd', displayFormat: 'dd/MM/yyyy', showClearButton: true },
+                    helpText: 'Vacío indica vigencia sin vencimiento. Los ciclos se validan con las fechas de la carrera, independientemente de sus planes.' },
             ] },
             { itemType: 'group', caption: 'Responsable de la carrera', colCount: 2,
                 colCountByScreen: { xs: 1, sm: 2, md: 2, lg: 2 }, items: [

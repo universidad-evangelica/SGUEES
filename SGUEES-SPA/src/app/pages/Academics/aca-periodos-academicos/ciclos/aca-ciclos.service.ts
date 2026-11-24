@@ -8,6 +8,8 @@ export class AcaCiclosService {
     ciclos(area: number) { return this.repo.ciclos(area); }
     detalle(id: number) { return this.repo.detalle(id); }
     catalogos() { return this.repo.catalogos(); }
+    faltantes(id: number, version: string) { return this.repo.faltantes(id, version); }
+    candidatas(area: number, inicio: string) { return this.repo.candidatas(area, inicio); }
     guardar(model: AcaCicloInput) { return this.repo.guardar(model); }
     asignar(accion: string, model: AcaCicloAsignacion) { return this.repo.asignar(accion, model); }
     oferta(id: number, sede: number, fecha: string) { return this.repo.oferta(id, sede, fecha); }

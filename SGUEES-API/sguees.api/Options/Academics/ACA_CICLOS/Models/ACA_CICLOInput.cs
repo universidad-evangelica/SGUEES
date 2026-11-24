@@ -17,5 +17,7 @@ namespace sguees.Models
         public int CORR_FACULTAD { get; set; }
         public int CORR_CARRERA { get; set; }
         public bool ACTIVO { get; set; } = true;
+        public byte[] VERSION_REGISTRO { get; set; }
+        public byte[] HUELLA_FALTANTES { get; set; }
     }
 }
