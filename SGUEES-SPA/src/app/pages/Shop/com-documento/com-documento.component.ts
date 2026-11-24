@@ -93,6 +93,23 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 
   mostrarDetaDoc = false;
   tituloGridDetaDoc = '';
+  provision: any = null;
+  contabilidades: any[] = [];
+  puedeContabilizar = false;
+  puedeEditarConta = false;
+  mensajeProvision = '';
+  nombrePartidaProvision = '';
+  cantidadDocumentosProvision = 0;
+  mCUENTA_CONTABLE: any[] = [];
+  mCORR_CENTRO_COSTO: any[] = [];
+  cuentaLookupColumns = [
+    { dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 140 },
+    { dataField: 'NOMBRE_CUENTA', caption: 'Nombre', width: 280 },
+  ];
+  centroLookupColumns = [
+    { dataField: 'CODIGO_CENTRO_COSTO', caption: 'Código', width: 100 },
+    { dataField: 'NOMBRE_CENTRO', caption: 'Nombre centro', width: 280 },
+  ];
   proveedorLookupColumns = [
     { dataField: 'CODIGO_PROVEEDOR', caption: 'Código', width: 120 },
     { dataField: 'NOMBRE_PROVEEDOR', caption: 'Nombre', width: 360 },
@@ -124,6 +141,9 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     this.selectTodos = this.selectTodos.bind(this);
     this.selectNinguno = this.selectNinguno.bind(this);
     this.consultarCOM_DOCUMENTO_DETA_DOC_DISPONIBLES = this.consultarCOM_DOCUMENTO_DETA_DOC_DISPONIBLES.bind(this);
+    this.selectedLookUpCUENTA_CONTABLE = this.selectedLookUpCUENTA_CONTABLE.bind(this);
+    this.selectedLookUpCORR_CENTRO_COSTO = this.selectedLookUpCORR_CENTRO_COSTO.bind(this);
+    this.contaRowUpdating = this.contaRowUpdating.bind(this);
 	}
 
 
@@ -149,6 +169,8 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 		this.getCORR_TIPO_GASTO();
 		this.getESTADO_ADMINISTRATIVO();
     this.getMES_PERIDO();
+    this.getCUENTA_CONTABLE();
+    this.getCORR_CENTRO_COSTO();
 	}
 
 	getCORR_TIPO_DOC() {
@@ -274,6 +296,42 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
           },
         });
     }
+
+  getCUENTA_CONTABLE() {
+    this.appInfoService
+      .getLookUp('COM_DOCUMENTO', 'CON_CATALOGO_CUENTA', 'GetCUENTA_CONTABLE', undefined, environment.UrlCONTAAPI)
+      .pipe(take(1))
+      .subscribe({
+        next: (response: any) => {
+          if (response.Result) {
+            this.mCUENTA_CONTABLE = response.Data || [];
+          }
+        },
+        error: (error: any) => this.notifyFx(error, NotifyType.Error),
+      });
+  }
+
+  getCORR_CENTRO_COSTO() {
+    this.appInfoService
+      .getLookUp('COM_DOCUMENTO', 'CON_CENTRO_COSTO', 'GetCORR_CENTRO_COSTO', undefined, environment.UrlCONTAAPI)
+      .pipe(take(1))
+      .subscribe({
+        next: (response: any) => {
+          if (response.Result) {
+            this.mCORR_CENTRO_COSTO = response.Data || [];
+          }
+        },
+        error: (error: any) => this.notifyFx(error, NotifyType.Error),
+      });
+  }
+
+  selectedLookUpCUENTA_CONTABLE(vRow: any): any {
+    return vRow[0].CUENTA_CONTABLE;
+  }
+
+  selectedLookUpCORR_CENTRO_COSTO(vRow: any): any {
+    return vRow[0].CORR_CENTRO_COSTO;
+  }
 	//#endregion
 
 	//#region <Metodos Mtto>
@@ -403,6 +461,7 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     this.consultarCOM_DOCUMENTO_TOTAL();
     this.consultarCOM_DOCUMENTO_DETA_DOC();
     this.consultarCOM_DOCUMENTO_CR();
+    this.limpiarProvision();
     this.refrescarBotones();
     this.btnDocumentosElectronicos = 'Doc. Electrónicos';
   }
@@ -413,6 +472,7 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     this.consultarCOM_DOCUMENTO_TOTAL();
     this.consultarCOM_DOCUMENTO_DETA_DOC();
     this.consultarCOM_DOCUMENTO_CR();
+    this.consultarProvision();
     this.refrescarBotones();
     if (this.model.ESTADO_DOCUMENTO != 'DI' && this.model.ESTADO_DOCUMENTO != 'SO') {
 			setTimeout(() => {
@@ -430,6 +490,7 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     this.consultarCOM_DOCUMENTO_TOTAL();
     this.consultarCOM_DOCUMENTO_DETA_DOC();
     this.consultarCOM_DOCUMENTO_CR();
+    this.consultarProvision();
     this.refrescarBotones();
     if (this.model.ESTADO_DOCUMENTO != 'DI' && this.model.ESTADO_DOCUMENTO != 'SO') {
 			setTimeout(() => {
@@ -470,6 +531,26 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 			});
 	}
 
+	private sincronizarFilaGuardada(data: any): void {
+		if (!data) {
+			return;
+		}
+		this.model = data;
+		this.modelUpdate = { ...data };
+		if (!Array.isArray(this.models)) {
+			this.models = [data];
+			return;
+		}
+		const vIndex = this.models.findIndex((item: any) => item?.ANIO_PERIODO === data.ANIO_PERIODO &&
+			item?.MES_PERIODO === data.MES_PERIODO &&
+			item?.CORR_DOCUMENTO === data.CORR_DOCUMENTO);
+		if (vIndex >= 0) {
+			this.models[vIndex] = data;
+		} else {
+			this.models.push(data);
+		}
+	}
+
 	guardar(xTieneDetalle?: Function, data?: any): void {
 		if (!this.service.esValido(this.model, this.notifyFx)) {
 			return;
@@ -482,26 +563,33 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 				.pipe(take(1))
 				.subscribe({
 					next: (response: any) => {
-						if (response.Result && response.ErrorCode === 0) {
-							this.models.push(response.Data);
-							this.model = response.Data;
+						if (response.Result && response.ErrorCode === 0 && response.Data) {
+							this.sincronizarFilaGuardada(response.Data);
               if (xTieneDetalle) {
                 this.AsignaStatus(UpdateType.Update);
 								data.CORR_DOCUMENTO = response.Data.CORR_DOCUMENTO;
 								xTieneDetalle(data);
 							} else {
-                this.AsignaStatus(UpdateType.Browse);
+                this.AsignaStatus(UpdateType.Update);
 								this.notifyFx('Registro creado con exito!', NotifyType.Success);
                 this.refrescarBotones();
+                this.consultarCOM_DOCUMENTO_TOTAL();
+                this.consultarCOM_DOCUMENTO_DETA_DOC();
+                this.consultarCOM_DOCUMENTO_CR();
 							}
+						} else if (response.Result && response.ErrorCode === 0) {
+							this.notifyFx('El documento se guardó, pero no se pudo volver a cargar.', NotifyType.Error);
+							xTieneDetalle?.(null);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							xTieneDetalle?.(null);
 						}
 						this.loadingVisible = false;
 					},
 					error: (error: any) => {
 						this.notifyFx(error, NotifyType.Error);
 						this.loadingVisible = false;
+						xTieneDetalle?.(null);
 					},
 				});
 		} else if (this.banderaMtto === UpdateType.Update) {
@@ -510,16 +598,14 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 				.pipe(take(1))
 				.subscribe({
 					next: (response: any) => {
-						if (response.Result && response.ErrorCode === 0) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.ANIO_PERIODO === response.Data.ANIO_PERIODO &&
-                                                                  item.MES_PERIODO === response.Data.MES_PERIODO &&
-                                                                  item.CORR_DOCUMENTO === response.Data.CORR_DOCUMENTO);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
+						if (response.Result && response.ErrorCode === 0 && response.Data) {
+							this.sincronizarFilaGuardada(response.Data);
+							this.AsignaStatus(UpdateType.Update);
 							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
               this.refrescarBotones();
-              this.consultar();
+              this.consultarCOM_DOCUMENTO_TOTAL();
+              this.consultarCOM_DOCUMENTO_DETA_DOC();
+              this.consultarCOM_DOCUMENTO_CR();
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
 						}
@@ -547,14 +633,9 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 				.pipe(take(1))
 				.subscribe({
 					next: (response: any) => {
-						if (response.Result && response.ErrorCode === 0) {
-              this.models.push(response.Data);
-							this.model = response.Data;
+						if (response.Result && response.ErrorCode === 0 && response.Data) {
+              this.sincronizarFilaGuardada(response.Data);
               this.AsignaStatus(UpdateType.Update);
-              const vIndex = this.models.findIndex((item: any) => item.ANIO_PERIODO === response.Data.ANIO_PERIODO &&
-                                                                  item.MES_PERIODO === response.Data.MES_PERIODO &&
-                                                                  item.CORR_DOCUMENTO === response.Data.CORR_DOCUMENTO);
-							this.models[vIndex] = response.Data;
               this.consultarCOM_DOCUMENTO_TOTAL();
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -580,11 +661,9 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 				.pipe(take(1))
 				.subscribe({
 					next: (response: any) => {
-						if (response.Result && response.ErrorCode === 0) {
-              this.models.push(response.Data);
-							this.model = response.Data;
+						if (response.Result && response.ErrorCode === 0 && response.Data) {
+              this.sincronizarFilaGuardada(response.Data);
               this.AsignaStatus(UpdateType.Update);
-              this.model.CORR_DOCUMENTO = response.Data.CORR_DOCUMENTO;
               this.consultarCOM_DOCUMENTO_DETA_DOC_DISPONIBLES();
 
 						} else {
@@ -603,12 +682,8 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 				.pipe(take(1))
 				.subscribe({
 					next: (response: any) => {
-						if (response.Result && response.ErrorCode === 0) {
-							this.model = response.Data;
-              const vIndex = this.models.findIndex((item: any) => item.ANIO_PERIODO === response.Data.ANIO_PERIODO &&
-                                                                  item.MES_PERIODO === response.Data.MES_PERIODO &&
-                                                                  item.CORR_DOCUMENTO === response.Data.CORR_DOCUMENTO);
-							this.models[vIndex] = response.Data;
+						if (response.Result && response.ErrorCode === 0 && response.Data) {
+              this.sincronizarFilaGuardada(response.Data);
               this.consultarCOM_DOCUMENTO_DETA_DOC_DISPONIBLES();
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -845,7 +920,9 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
                           const vIndex = this.models.findIndex((item: any) => item.ANIO_PERIODO === response.Data.ANIO_PERIODO &&
                                                                               item.MES_PERIODO === response.Data.MES_PERIODO &&
                                                                               item.CORR_DOCUMENTO === response.Data.CORR_DOCUMENTO);
-                          this.models[vIndex] = response.Data;
+                          if (vIndex >= 0) {
+                            this.models[vIndex] = response.Data;
+                          }
                           this.habilitar();
                           this.refrescarBotones();
                           this.banderaMtto = UpdateType.Not_Defined;
@@ -854,10 +931,11 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
                               this.bloquear();
                             });
                           }
+                          this.provisionarDocumento(false);
                         } else {
                           this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                          this.loadingVisible = false;
                         }
-                        this.loadingVisible = false;
                       },
                       error: (error: any) => {
                         this.notifyFx(error, NotifyType.Error);
@@ -881,6 +959,222 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
         ],
       });
       confirpreli.show().then((dialogResult: any) => {});
+  }
+
+  tabContabilidadVisible(): boolean {
+    return this.model?.ESTADO_DOCUMENTO === 'AP';
+  }
+
+  limpiarProvision(): void {
+    if (this.IndexTab > 1) {
+      this.IndexTab = 0;
+    }
+    this.provision = null;
+    this.contabilidades = [];
+    this.puedeContabilizar = false;
+    this.puedeEditarConta = false;
+    this.mensajeProvision = '';
+    this.nombrePartidaProvision = '';
+    this.cantidadDocumentosProvision = 0;
+  }
+
+  aplicarProvision(data: any): void {
+    this.provision = data?.Provision ?? null;
+    this.contabilidades = data?.Conta || [];
+    this.puedeContabilizar = !!data?.PuedeContabilizar;
+    this.puedeEditarConta = !!data?.PuedeEditarConta;
+    this.mensajeProvision = data?.Mensaje || '';
+    this.nombrePartidaProvision = this.provision?.NOMBRE_PARTIDA || '';
+    this.cantidadDocumentosProvision = data?.CantidadDocumentos || 0;
+  }
+
+  consultarProvision(): void {
+    if (!this.tabContabilidadVisible() || !this.model?.CORR_DOCUMENTO) {
+      this.limpiarProvision();
+      return;
+    }
+    this.service
+      .getProvision(this.model)
+      .pipe(take(1))
+      .subscribe({
+        next: (response: any) => {
+          if (response.Result) {
+            this.aplicarProvision(response.Data);
+          } else {
+            this.mensajeProvision = response.ErrorMessage;
+          }
+        },
+        error: (error: any) => this.notifyFx(this.mensajeError(error), NotifyType.Error),
+      });
+  }
+
+  provisionarDocumento(mostrarExito: boolean): void {
+    this.loadingVisible = true;
+    this.service
+      .provisionar(this.model)
+      .pipe(take(1))
+      .subscribe({
+        next: (response: any) => {
+          this.loadingVisible = false;
+          if (response.Result && response.ErrorCode === 0) {
+            this.aplicarProvision(response.Data);
+            this.IndexTab = 2;
+            if (mostrarExito) {
+              this.notifyFx('Provisión lista en Contabilidad.', NotifyType.Success);
+            }
+            if (this.mensajeProvision) {
+              this.notifyFx(this.mensajeProvision, NotifyType.Warning);
+            }
+          } else {
+            this.mensajeProvision = response.ErrorMessage;
+            this.IndexTab = 2;
+            this.notifyFx(response.ErrorMessage, NotifyType.Error);
+          }
+        },
+        error: (error: any) => {
+          this.loadingVisible = false;
+          this.mensajeProvision = this.mensajeError(error);
+          this.IndexTab = 2;
+          this.notifyFx(this.mensajeProvision, NotifyType.Error);
+        },
+      });
+  }
+
+  reintentarProvision(): void {
+    this.provisionarDocumento(true);
+  }
+
+  guardarDescripcionPartida(): void {
+    if (!this.puedeEditarConta) {
+      return;
+    }
+    this.service
+      .actualizarPartidaProvision({
+        ANIO_PERIODO: this.model.ANIO_PERIODO,
+        MES_PERIODO: this.model.MES_PERIODO,
+        CORR_DOCUMENTO: this.model.CORR_DOCUMENTO,
+        NOMBRE_PARTIDA: this.nombrePartidaProvision,
+      })
+      .pipe(take(1))
+      .subscribe({
+        next: (response: any) => {
+          if (response.Result && response.ErrorCode === 0) {
+            this.aplicarProvision(response.Data);
+            this.notifyFx('Descripción de la partida actualizada.', NotifyType.Success);
+          } else {
+            this.notifyFx(response.ErrorMessage, NotifyType.Error);
+          }
+        },
+        error: (error: any) => this.notifyFx(this.mensajeError(error), NotifyType.Error),
+      });
+  }
+
+  contabilizarProvision(): void {
+    const dialogo = custom({
+      title: 'Contabilizar',
+      messageHtml: 'Se generará la partida con la proyección actual. ¿Continuar?',
+      buttons: [
+        {
+          text: 'Si',
+          onClick: () => {
+            this.loadingVisible = true;
+            this.service
+              .contabilizarProvision(this.model)
+              .pipe(take(1))
+              .subscribe({
+                next: (response: any) => {
+                  this.loadingVisible = false;
+                  if (response.Result && response.ErrorCode === 0) {
+                    this.aplicarProvision(response.Data);
+                    this.notifyFx('Partida contabilizada.', NotifyType.Success);
+                  } else {
+                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                  }
+                },
+                error: (error: any) => {
+                  this.loadingVisible = false;
+                  this.notifyFx(this.mensajeError(error), NotifyType.Error);
+                },
+              });
+          },
+        },
+        { text: 'No', onClick: () => false },
+      ],
+    });
+    dialogo.show();
+  }
+
+  regenerarProvisionConta(): void {
+    const dialogo = custom({
+      title: 'Regenerar contabilidad',
+      messageHtml: 'Se borrará la proyección actual, incluidos los cambios manuales, y se volverá a armar. ¿Continuar?',
+      buttons: [
+        {
+          text: 'Si',
+          onClick: () => {
+            this.loadingVisible = true;
+            this.service
+              .regenerarProvisionConta(this.model)
+              .pipe(take(1))
+              .subscribe({
+                next: (response: any) => {
+                  this.loadingVisible = false;
+                  if (response.Result && response.ErrorCode === 0) {
+                    this.aplicarProvision(response.Data);
+                    this.notifyFx('Contabilidad regenerada.', NotifyType.Success);
+                  } else {
+                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                  }
+                },
+                error: (error: any) => {
+                  this.loadingVisible = false;
+                  this.notifyFx(this.mensajeError(error), NotifyType.Error);
+                },
+              });
+          },
+        },
+        { text: 'No', onClick: () => false },
+      ],
+    });
+    dialogo.show();
+  }
+
+  contaRowUpdating(e: any): void {
+    if (!this.puedeEditarConta) {
+      e.cancel = true;
+      return;
+    }
+    const data = { ...e.oldData, ...e.newData };
+    e.cancel = new Promise((resolve) => {
+      this.service
+        .actualizarProvisionConta(data, this.model)
+        .pipe(take(1))
+        .subscribe({
+          next: (response: any) => {
+            if (response.Result || response.ErrorCode === 0) {
+              this.consultarProvision();
+              resolve(false);
+            } else {
+              this.notifyFx(response.ErrorMessage, NotifyType.Error);
+              resolve(true);
+            }
+          },
+          error: (error: any) => {
+            this.notifyFx(this.mensajeError(error), NotifyType.Error);
+            resolve(true);
+          },
+        });
+    });
+  }
+
+  getDiferenciaConta(): number {
+    const cargo = this.contabilidades.reduce((s, d) => s + (Number(d.MONTO_CARGO) || 0), 0);
+    const abono = this.contabilidades.reduce((s, d) => s + (Number(d.MONTO_ABONO) || 0), 0);
+    return Math.round((cargo - abono) * 100) / 100;
+  }
+
+  mensajeError(error: any): string {
+    return error?.error?.ErrorMessage || error?.message || 'No se pudo completar la operación.';
   }
 
  //#region <Totales>
@@ -942,6 +1236,11 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
       const isCanceled = new Promise((resolve, reject) => {
       this.loadingVisible = true;
       let insertDeta = (data: any) => {
+        if (!data) {
+          this.loadingVisible = false;
+          resolve(true);
+          return;
+        }
         this.service
           .updateCOM_DOCUMENTO_TOTAL(data)
           .pipe(take(1))
@@ -949,15 +1248,16 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
             next: (response: any) => {
               if (!response.Result) {
                 this.notifyFx(response.ErrorMessage, NotifyType.Error);
-                resolve(false);
+              } else {
+                this.consultarCOM_DOCUMENTO_TOTAL();
               }
-              this.consultarCOM_DOCUMENTO_TOTAL();
               this.loadingVisible = false;
+              resolve(false);
             },
             error: (error: any) => {
               this.notifyFx(error, NotifyType.Error);
               this.loadingVisible = false;
-              reject(error);
+              resolve(true);
             },
         });
       }

@@ -220,5 +220,64 @@ namespace eadmindevprojectmanagement.Controllers
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAnularAsync(Data);
 		}
+
+		[HttpGet("GetProvision")]
+		[Authorize(Policy = "/com-documento|R")]
+		public async Task<CResult> GetProvision([FromQuery] COM_DOCUMENTOParam Data)
+		{
+			Data.CORR_EMPRESA = Empresa();
+			return await _service.GetProvisionAsync(Data);
+		}
+
+		[HttpPut("Provisionar")]
+		[Authorize(Policy = "/com-documento|U")]
+		public async Task<IActionResult> Provisionar(COM_DOCUMENTOTable Data)
+		{
+			Data.CORR_EMPRESA = Empresa();
+			var resultado = await _service.ProvisionarAsync(Data, "Admin", "e-coffee");
+			return resultado.Result && resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("ContabilizarProvision")]
+		[Authorize(Policy = "/com-documento|U")]
+		public async Task<IActionResult> ContabilizarProvision(COM_DOCUMENTOTable Data)
+		{
+			Data.CORR_EMPRESA = Empresa();
+			Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value.ToLower();
+			var resultado = await _service.ContabilizarProvisionAsync(Data);
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : StatusCode(202, resultado);
+		}
+
+		[HttpPut("RegenerarProvisionConta")]
+		[Authorize(Policy = "/com-documento|U")]
+		public async Task<IActionResult> RegenerarProvisionConta(COM_DOCUMENTOTable Data)
+		{
+			Data.CORR_EMPRESA = Empresa();
+			var resultado = await _service.RegenerarProvisionContaAsync(Data, "Admin", "e-coffee");
+			return resultado.Result && resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("ActualizarPartidaProvision")]
+		[Authorize(Policy = "/com-documento|U")]
+		public async Task<IActionResult> ActualizarPartidaProvision(COM_DOCUMENTO_PROVISION_PARTIDA Data)
+		{
+			Data.CORR_EMPRESA = Empresa();
+			var resultado = await _service.ActualizarPartidaProvisionAsync(Data, "Admin", "e-coffee");
+			return resultado.Result && resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("ActualizarProvisionConta")]
+		[Authorize(Policy = "/com-documento|U")]
+		public async Task<IActionResult> ActualizarProvisionConta([FromQuery] COM_DOCUMENTOParam documento, sguees.Models.COM_PROVISION_CONTATable Data)
+		{
+			documento.CORR_EMPRESA = Empresa();
+			var resultado = await _service.ActualizarProvisionContaAsync(documento, Data, "Admin", "e-coffee");
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+		}
+
+		private int Empresa()
+		{
+			return int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+		}
 	}
 }

@@ -393,6 +393,86 @@
                 </div>
               </div>
 					</dxi-item>
+          <dxi-item title="Contabilidad" [name]="'tpContabilidad'" [visible]="tabContabilidadVisible()" icon="detailslayout">
+            <div class="form">
+              <div class="dx-fieldset">
+                <div class="dx-field" *ngIf="mensajeProvision">
+                  <span>{{ mensajeProvision }}</span>
+                </div>
+                <div class="dx-field" *ngIf="provision">
+                  <span>Provisión {{ provision.CORR_PROVISION }} · {{ provision.NOMBRE_ESTADO_PROVISION || provision.ESTADO_PROVISION }} · {{ provision.FECHA_PROVISION | date:'dd/MM/yyyy' }} · {{ provision.NOMBRE_PROVEEDOR }}</span>
+                  <span *ngIf="provision.CORR_PARTIDA"> · Partida {{ provision.CORR_PARTIDA }}</span>
+                </div>
+                <div class="dx-field" *ngIf="provision">
+                  <dx-text-box [(value)]="nombrePartidaProvision" [readOnly]="!puedeEditarConta" [width]="420" placeholder="Descripción de la partida"></dx-text-box>
+                  <dx-button class="myButtonSpace" text="Guardar descripción" [visible]="puedeEditarConta" (onClick)="guardarDescripcionPartida()"></dx-button>
+                </div>
+                <div class="dx-field">
+                  <dx-button text="Contabilizar" type="default" [disabled]="!puedeContabilizar" (onClick)="contabilizarProvision()"></dx-button>
+                  <dx-button class="myButtonSpace" text="Regenerar" [visible]="puedeEditarConta" (onClick)="regenerarProvisionConta()"></dx-button>
+                  <dx-button class="myButtonSpace" text="Reintentar provisión" [visible]="cantidadDocumentosProvision <= 1 && (!provision || contabilidades.length === 0)" (onClick)="reintentarProvision()"></dx-button>
+                  <span class="myButtonSpace" *ngIf="contabilidades?.length">Diferencia cargo/abono: {{ getDiferenciaConta() | number:'1.2-2' }}</span>
+                </div>
+                <div class="dx-field">
+                  <dx-data-grid
+                    [dataSource]="contabilidades"
+                    [columnAutoWidth]="false"
+                    [showBorders]="true"
+                    [showColumnLines]="true"
+                    [showRowLines]="true"
+                    [rowAlternationEnabled]="true"
+                    [hoverStateEnabled]="true"
+                    [allowColumnResizing]="true"
+                    [columnResizingMode]="'widget'"
+                    [focusedRowEnabled]="true"
+                    [height]="360"
+                    [width]="'100%'"
+                    keyExpr="CORR_DETA"
+                    (onRowUpdating)="contaRowUpdating($event)"
+                  >
+                    <dxo-editing mode="row" [allowAdding]="false" [allowUpdating]="puedeEditarConta" [allowDeleting]="false" [useIcons]="true"></dxo-editing>
+                    <dxo-load-panel [enabled]="false"></dxo-load-panel>
+                    <dxo-search-panel [visible]="true"></dxo-search-panel>
+                    <dxi-column dataField="CUENTA_CONTABLE" caption="Cuenta" width="140" [editCellTemplate]="'CUENTA_CONTABLELookup'">
+                      <div *dxTemplate="let cellInfo of 'CUENTA_CONTABLELookup'">
+                        <app-data-lookup
+                          [model]="mCUENTA_CONTABLE"
+                          [(value)]="cellInfo.data.CUENTA_CONTABLE"
+                          [selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
+                          [valueExpr]="'CUENTA_CONTABLE'"
+                          [displayExpr]="'CUENTA_CONTABLE'"
+                          [lookupColumns]="cuentaLookupColumns"
+                          [readOnly]="!puedeEditarConta"
+                        ></app-data-lookup>
+                      </div>
+                    </dxi-column>
+                    <dxi-column dataField="NOMBRE_CUENTA" caption="Nombre cuenta" width="220" [allowEditing]="false"></dxi-column>
+                    <dxi-column dataField="CORR_CENTRO_COSTO" caption="Centro costo" width="120" [editCellTemplate]="'CORR_CENTRO_COSTOLookup'">
+                      <div *dxTemplate="let cellInfo of 'CORR_CENTRO_COSTOLookup'">
+                        <app-data-lookup
+                          [model]="mCORR_CENTRO_COSTO"
+                          [(value)]="cellInfo.data.CORR_CENTRO_COSTO"
+                          [selectedRowKeys]="selectedLookUpCORR_CENTRO_COSTO"
+                          [valueExpr]="'CORR_CENTRO_COSTO'"
+                          [displayExpr]="'NOMBRE_CENTRO'"
+                          [lookupColumns]="centroLookupColumns"
+                          [readOnly]="!puedeEditarConta"
+                        ></app-data-lookup>
+                      </div>
+                    </dxi-column>
+                    <dxi-column dataField="NOMBRE_CENTRO" caption="Nombre centro" width="220" [allowEditing]="false"></dxi-column>
+                    <dxi-column dataField="NOMBRE_TRAN" caption="Concepto" width="260"></dxi-column>
+                    <dxi-column dataField="MONTO_CARGO" caption="Cargo" dataType="number" format="#,##0.00" width="120"></dxi-column>
+                    <dxi-column dataField="MONTO_ABONO" caption="Abono" dataType="number" format="#,##0.00" width="120"></dxi-column>
+                    <dxo-summary>
+                      <dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+                      <dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+                    </dxo-summary>
+                  </dx-data-grid>
+                </div>
+              </div>
+            </div>
+          </dxi-item>
 				</dx-tab-panel>
 			</div>
 		</div>

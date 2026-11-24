@@ -13,6 +13,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
+import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 
 
 import { ComDocumentoComponent } from './com-documento.component';
@@ -34,6 +35,7 @@ const routes: Routes = [{ path: '', component: ComDocumentoComponent }];
 		BarraDataMttoModule,
 		DataLookupModule,
     DxPopupModule,
+		DxTextBoxModule,
 
 	],
 	exports: [RouterModule],

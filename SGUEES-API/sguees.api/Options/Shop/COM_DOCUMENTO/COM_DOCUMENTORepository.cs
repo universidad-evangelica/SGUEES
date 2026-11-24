@@ -936,5 +936,54 @@ namespace eadmindevprojectmanagement.Repositories
 
 			return objResultado;
 		}
+
+		public async Task<CResult> GetProvisionPorDocumentoAsync(List<CParameter> xWhere)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var vQry = @"
+					SELECT TOP 1
+						D.ANIO_PERIODO,
+						D.MES_PERIODO,
+						D.CORR_PROVISION,
+						(
+							SELECT COUNT(1)
+							FROM COM_PROVISION_DETA X
+							WHERE X.CORR_EMPRESA = D.CORR_EMPRESA
+							AND X.ANIO_PERIODO = D.ANIO_PERIODO
+							AND X.MES_PERIODO = D.MES_PERIODO
+							AND X.CORR_PROVISION = D.CORR_PROVISION
+						) AS CANTIDAD_DOCUMENTOS
+					FROM COM_PROVISION_DETA D
+					WHERE D.CORR_EMPRESA = @CORR_EMPRESA
+					AND D.ANIO_PERIODO_COM = @ANIO_PERIODO
+					AND D.MES_PERIODO_COM = @MES_PERIODO
+					AND D.CORR_DOCUMENTO_COM = @CORR_DOCUMENTO
+					ORDER BY D.ANIO_PERIODO DESC, D.MES_PERIODO DESC, D.CORR_PROVISION DESC";
+
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, vQry, xWhere);
+				var response = new List<COM_DOCUMENTO_PROVISION_LINK>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response == null ? 0 : 1;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
 	}
 }
