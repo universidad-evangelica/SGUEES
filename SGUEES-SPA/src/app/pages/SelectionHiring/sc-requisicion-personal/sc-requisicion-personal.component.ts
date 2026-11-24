@@ -94,7 +94,6 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 
 	unidadLookupColumns: any[] = [
 		{ dataField: 'NOMBRE_UNIDAD_CATALOGO', caption: 'Unidad', width: 280 },
-		{ dataField: 'ORIGEN_UNIDAD', caption: 'Origen', width: 140 },
 	];
 
 	/** Filtro de unidad en el listado (0 = Todas). */
@@ -171,6 +170,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	/** Fila enfocada en el grid Candidatos (para botón Entrevistas del toolbar). */
 	candidatoFocusedKey: number | string | null = null;
 	candidatoSeleccionado: ScRequisicionPersonalCandidato | null = null;
+	puedeDecidirCandidatoEnSesion = false;
 
 	/** Popup decisión jefatura (Aplica / No aplica). */
 	popupDecisionVisible = false;
@@ -652,6 +652,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 					}
 					this.candidatoFocusedKey = null;
 					this.candidatoSeleccionado = null;
+					this.actualizarPermisoDecidirCandidato();
 				},
 				error: (error: any) => {
 					this.modelsCandidatos = [];
@@ -667,6 +668,27 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		const row = e?.row?.data as ScRequisicionPersonalCandidato | undefined;
 		this.candidatoFocusedKey = e?.row?.key ?? null;
 		this.candidatoSeleccionado = row ?? null;
+	}
+
+	private actualizarPermisoDecidirCandidato(): void {
+		const corrRequisicion = Number(this.model?.CORR_REQUISICION_PERSONAL ?? 0);
+		this.puedeDecidirCandidatoEnSesion = false;
+		if (corrRequisicion <= 0) {
+			return;
+		}
+
+		this.service
+			.puedeDecidirCandidato(corrRequisicion)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.puedeDecidirCandidatoEnSesion =
+						response?.Result === true && response?.Data === true;
+				},
+				error: () => {
+					this.puedeDecidirCandidatoEnSesion = false;
+				},
+			});
 	}
 
 	/** Toolbar Entrevistas: requiere fila seleccionada antes de abrir el workspace. */
@@ -693,7 +715,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	get puedeDecidirCandidato(): boolean {
-		if (!this.esSolicitanteRequisicion || !this.permiteEdit) {
+		if (!this.puedeDecidirCandidatoEnSesion || !this.permiteEdit) {
 			return false;
 		}
 		const estado = `${this.candidatoSeleccionado?.ESTADO_DECISION ?? 'PENDIENTE'}`.trim().toUpperCase();
@@ -1410,22 +1432,12 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			.map((item: any) => {
 				const nombre = (item.NOMBRE_UNIDAD ?? '').trim();
 				const esHijaACargo = item.ES_HIJA_A_CARGO === true || item.ES_HIJA_A_CARGO === 1;
-				const esJefe = item.ES_JEFE_UNIDAD === true || item.ES_JEFE_UNIDAD === 1;
 				const esPuesto = item.ES_POR_PUESTO === true || item.ES_POR_PUESTO === 1;
-				let origen = 'Configurada';
-				if (esHijaACargo) {
-					origen = 'A cargo (hija)';
-				} else if (esJefe) {
-					origen = 'Jefe de unidad';
-				} else if (esPuesto) {
-					origen = 'Por puesto';
-				}
 				return {
 					CORR_UNIDAD: Number(item.CORR_UNIDAD),
 					CODIGO_UNIDAD: (item.CODIGO_UNIDAD ?? '').trim(),
 					NOMBRE_UNIDAD: nombre,
 					NOMBRE_UNIDAD_CATALOGO: nombre,
-					ORIGEN_UNIDAD: origen,
 					ES_POR_PUESTO: esPuesto,
 					CORR_PUESTO: item.CORR_PUESTO,
 				};
@@ -1450,7 +1462,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			lookupColumns: this.unidadLookupColumns,
 			selectedRowKeys: this.selectedLookUpUnidadFiltro,
 			showClearButton: true,
-			dropDownWidth: 420,
+			dropDownWidth: 300,
 			width: 350,
 			todosOption: { CORR_UNIDAD: 0, NOMBRE_UNIDAD: 'Todos', NOMBRE_UNIDAD_CATALOGO: 'Todos' },
 			clearResetsTo: 0,

@@ -327,6 +327,17 @@
 
 				<!-- Botón para confirmar movimiento personal en contrataciones -->
 				<dx-button
+					*ngIf="puedeProcesarMovimiento"
+					text="Procesar"
+					type="default"
+					icon="event"
+					[width]="'100%'"
+					[height]="36"
+					[disabled]="accionEnCurso"
+					(onClick)="abrirPopupProcesarMov()"
+				></dx-button>
+
+				<dx-button
 					*ngIf="puedeConfirmarMovimiento"
 					text="Confirmar movimiento personal"
 					type="success"
@@ -394,7 +405,40 @@
 	</div>
 </dx-popup>
 
-<!-- Modal para confirmar movimiento personal con fecha efectiva -->
+<!-- Modal para procesar el movimiento personal -->
+<dx-popup
+	[(visible)]="popupProcesarMovVisible"
+	title="Procesar movimiento personal"
+	[width]="480"
+	[maxWidth]="'calc(100vw - 32px)'"
+	[height]="'auto'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'bandeja-obs-popup' }"
+	(onHiding)="cancelarPopupProcesarMov()"
+>
+	<div *dxTemplate="let data of 'content'" class="bandeja-obs-popup__body">
+		<p class="bandeja-obs-popup__hint">
+			Indique la fecha efectiva para procesar el movimiento de personal y habilitar la confirmación.
+		</p>
+		<label class="bandeja-obs-popup__label">Fecha efectiva <span style="color: #ef4444">*</span></label>
+		<dx-date-box
+			[(value)]="popupFechaProcesarEfectiva"
+			displayFormat="dd/MM/yyyy"
+			[width]="'100%'"
+			[openOnFieldClick]="true"
+			[showClearButton]="true"
+			placeholder="Seleccione fecha efectiva…"
+		></dx-date-box>
+		<div class="bandeja-obs-popup__actions">
+			<dx-button text="Cancelar" type="danger" stylingMode="contained" icon="close" [height]="36" (onClick)="cancelarPopupProcesarMov()"></dx-button>
+			<dx-button text="Procesar" type="success" stylingMode="contained" icon="event" [height]="36" [disabled]="accionEnCurso" (onClick)="confirmarPopupProcesarMov()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
+
+<!-- Modal para confirmar movimiento personal -->
 <dx-popup
 	[(visible)]="popupConfirmarMovVisible"
 	[title]="'Confirmar movimiento personal'"
@@ -409,32 +453,19 @@
 >
 	<div *dxTemplate="let data of 'content'" class="bandeja-obs-popup__body">
 		<p class="bandeja-obs-popup__hint">
-			Indique la fecha efectiva para oficializar el movimiento de personal de
+			Indique la fecha de ingreso propuesta para confirmar el movimiento de personal de
 			<strong>{{ selectedItem?.NOMBRE_CANDIDATO || selectedItem?.DESCRIPCION }}</strong>.
 		</p>
-		<!-- Campo de fecha de ingreso propuesta condicional solo para contratación eventual -->
-		<ng-container *ngIf="esEventualConfirmacion">
-			<label class="bandeja-obs-popup__label">
-				Fecha de ingreso propuesta <span style="color: #ef4444">*</span>
-			</label>
-			<dx-date-box
-				[(value)]="popupFechaIngresoPropuesta"
-				displayFormat="dd/MM/yyyy"
-				[width]="'100%'"
-				[openOnFieldClick]="true"
-				[showClearButton]="true"
-				placeholder="Seleccione fecha de ingreso propuesta…"
-			></dx-date-box>
-		</ng-container>
-
-		<label class="bandeja-obs-popup__label" [style.margin-top.px]="esEventualConfirmacion ? 12 : 0">Fecha efectiva <span style="color: #ef4444">*</span></label>
+		<label class="bandeja-obs-popup__label">
+			Fecha de ingreso propuesta <span style="color: #ef4444">*</span>
+		</label>
 		<dx-date-box
-			[(value)]="popupFechaEfectiva"
+			[(value)]="popupFechaIngresoPropuesta"
 			displayFormat="dd/MM/yyyy"
 			[width]="'100%'"
 			[openOnFieldClick]="true"
 			[showClearButton]="true"
-			placeholder="Seleccione fecha efectiva…"
+			placeholder="Seleccione fecha de ingreso propuesta…"
 		></dx-date-box>
 		<div class="bandeja-obs-popup__actions">
 			<dx-button

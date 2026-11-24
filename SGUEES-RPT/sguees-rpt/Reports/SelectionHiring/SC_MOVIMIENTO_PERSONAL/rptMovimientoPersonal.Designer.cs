@@ -739,6 +739,8 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.lblJefeFirma.Name = "lblJefeFirma";
             this.lblJefeFirma.SizeF = new System.Drawing.SizeF(230F, 18F);
             this.lblJefeFirma.Text = "Firma";
+            this.lblJefeFirma.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_JEFE_INMEDIATO]")});
             // 
             // lblJefeFecha
             // 
@@ -747,6 +749,9 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.lblJefeFecha.Name = "lblJefeFecha";
             this.lblJefeFecha.SizeF = new System.Drawing.SizeF(318.1974F, 18F);
             this.lblJefeFecha.Text = "Fecha";
+            this.lblJefeFecha.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_JEFE_INMEDIATO]")});
+            this.lblJefeFecha.TextFormatString = "{0:dd/MM/yyyy}";
             // 
             // lblDecanoPref
             // 
@@ -763,6 +768,8 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.lblDecanoFirma.Name = "lblDecanoFirma";
             this.lblDecanoFirma.SizeF = new System.Drawing.SizeF(200F, 18F);
             this.lblDecanoFirma.Text = "Firma";
+            this.lblDecanoFirma.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_DECANO_GERENTE]")});
             // 
             // lblDecanoFecha
             // 
@@ -771,6 +778,9 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.lblDecanoFecha.Name = "lblDecanoFecha";
             this.lblDecanoFecha.SizeF = new System.Drawing.SizeF(308.1973F, 18F);
             this.lblDecanoFecha.Text = "Fecha";
+            this.lblDecanoFecha.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_DECANO_GERENTE]")});
+            this.lblDecanoFecha.TextFormatString = "{0:dd/MM/yyyy}";
             // 
             // lblVraPref
             // 
@@ -787,6 +797,8 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.lblVraFirma.Name = "lblVraFirma";
             this.lblVraFirma.SizeF = new System.Drawing.SizeF(200F, 17.99997F);
             this.lblVraFirma.Text = "Firma";
+            this.lblVraFirma.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_VRA]")});
             // 
             // lblVraFecha
             // 
@@ -795,6 +807,9 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.lblVraFecha.Name = "lblVraFecha";
             this.lblVraFecha.SizeF = new System.Drawing.SizeF(308.1973F, 17.99997F);
             this.lblVraFecha.Text = "Fecha";
+            this.lblVraFecha.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_VRA]")});
+            this.lblVraFecha.TextFormatString = "{0:dd/MM/yyyy}";
             // 
             // lblFechaEfectivaPref
             // 

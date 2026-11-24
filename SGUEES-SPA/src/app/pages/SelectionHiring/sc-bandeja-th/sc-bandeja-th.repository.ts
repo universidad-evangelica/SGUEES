@@ -73,6 +73,19 @@ export class ScBandejaThRepository {
 
 	// Qué hace: Envía la petición HTTP para confirmar el movimiento de personal de una contratación.
 	// Cómo lo hace: Realiza un PUT hacia ConfirmarMovimientoPersonal en SC_BANDEJA_TH con el correlativo y la fecha efectiva.
+	procesarMovimientoPersonal(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_EFECTIVA: Date | string;
+	}): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'Procesar',
+			[{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: model.CORR_MOVIMIENTO_PERSONAL }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	confirmarMovimientoPersonal(model: {
 		CORR_MOVIMIENTO_PERSONAL: number;
 		FECHA_EFECTIVA?: Date | string | null;
@@ -83,6 +96,15 @@ export class ScBandejaThRepository {
 			this.xController,
 			'ConfirmarMovimientoPersonal',
 			[{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: model.CORR_MOVIMIENTO_PERSONAL }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	getAccionesMovimientoPersonal(corrMovimiento: number): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetAccionesMovimientoPersonal',
+			[{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: corrMovimiento }],
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}

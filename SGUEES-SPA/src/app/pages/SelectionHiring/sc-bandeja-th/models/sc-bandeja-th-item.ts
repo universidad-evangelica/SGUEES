@@ -17,6 +17,7 @@ export type ScBandejaEstadoCandidato =
 	| 'EN_SELECCION'
 	| 'APLICA'
 	| 'NO_APLICA'
+	| 'PENDIENTE_FECHA_INGRESO'
 	| 'LISTO_CREAR_USUARIO'
 	| 'CONTRATADO';
 
@@ -77,7 +78,7 @@ export interface ScBandejaItem {
 	CORR_REQUISICION_CANDIDATO?: number;
 	CORR_MOVIMIENTO_PERSONAL?: number;
 	ESTADO_MOVIMIENTO?: string;
-	CONFIRMADO?: number | boolean;
+	CONFIRMADO?: number;
 	CORR_EMPLEADO?: number;
 	FECHA_EFECTIVA?: Date | string | null;
 	FECHA_INGRESO_PROPUESTA?: Date | string | null;

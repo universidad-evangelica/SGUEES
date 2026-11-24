@@ -59,6 +59,96 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		public async Task<CResult> PuedeDecidirCandidatoAsync(int corrEmpresa, int corrRequisicion, string login)
+		{
+			if (corrEmpresa <= 0 || corrRequisicion <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return ValidationResult(1010, "No se pudo validar el usuario autorizado.");
+			}
+
+			var requisicion = await GetRequisicionAsync(corrEmpresa, corrRequisicion);
+			if (requisicion == null)
+			{
+				return ValidationResult(1009, "No se encontró la requisición de personal.");
+			}
+
+			var puede = await PuedeDecidirCandidatoInternoAsync(
+				corrEmpresa,
+				corrRequisicion,
+				requisicion,
+				login.Trim());
+
+			return puede
+				? new CResult { Result = true, Data = true, ErrorCode = 0, RowsAffected = 1 }
+				: new CResult { Result = false, Data = false, ErrorCode = 1010, RowsAffected = 0 };
+		}
+
+		private async Task<bool> PuedeDecidirCandidatoInternoAsync(
+			int corrEmpresa,
+			int corrRequisicion,
+			SC_REQUISICION_PERSONALView requisicion,
+			string login)
+		{
+			if (requisicion == null || string.IsNullOrWhiteSpace(login))
+			{
+				return false;
+			}
+
+			if (string.Equals(
+				requisicion.USUARIO_CREA?.Trim(),
+				login.Trim(),
+				StringComparison.OrdinalIgnoreCase))
+			{
+				return true;
+			}
+
+			if (await EsJefeActivoDeUnidadAsync(corrEmpresa, requisicion.CORR_UNIDAD, login))
+			{
+				return true;
+			}
+
+			return await EsJefeActivoDeUnidadPadreAsync(corrEmpresa, requisicion.CORR_UNIDAD, login);
+		}
+
+		private async Task<bool> EsJefeActivoDeUnidadPadreAsync(int corrEmpresa, int corrUnidad, string login)
+		{
+			if (corrUnidad <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return false;
+			}
+
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "LOGIN_SISTEMA", Value = login.Trim(), DbType = System.Data.DbType.String },
+			};
+
+			var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
+SELECT TOP (1) 1 AS OK
+FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS J
+	ON J.CORR_EMPRESA = U.CORR_EMPRESA
+   AND J.CORR_UNIDAD = U.CORR_UNIDAD_PADRE
+   AND J.ACTIVO = 1
+   AND (J.FECHA_FIN IS NULL OR J.FECHA_FIN >= CAST(GETDATE() AS DATE))
+INNER JOIN dbo.GEN_EMPLEADO AS GE
+	ON GE.CORR_EMPRESA = J.CORR_EMPRESA
+   AND GE.CORR_EMPLEADO = J.CORR_EMPLEADO
+   AND ISNULL(GE.ACTIVO_EMPLEADO, 0) = 1
+INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+	ON PU.CORR_PERSONA = GE.CORR_PERSONA
+WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+  AND U.CORR_UNIDAD = @CORR_UNIDAD
+  AND U.ACTIVO = 1
+  AND LTRIM(RTRIM(PU.LOGIN_SISTEMA)) = @LOGIN_SISTEMA;", p);
+
+			var ok = reader.Read();
+			reader?.Close();
+			objData.objConnection.Close();
+			return ok;
+		}
+
 		public Task<CResult> CreateAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION) =>
 			DecideAsync(Data, vLOGIN_SISTEMA, vESTACION);
 
@@ -161,11 +251,15 @@ namespace SGUEES.Repositories
 			}
 
 			var login = (vLOGIN_SISTEMA ?? string.Empty).Trim();
-			if (validarJefatura && !await EsJefeActivoDeUnidadAsync(Data.CORR_EMPRESA, requisicion.CORR_UNIDAD, login))
+			if (validarJefatura && !await PuedeDecidirCandidatoInternoAsync(
+				Data.CORR_EMPRESA,
+				Data.CORR_REQUISICION_PERSONAL,
+				requisicion,
+				login))
 			{
 				return ValidationResult(
 					1010,
-					"Solo el jefe activo de la unidad solicitante puede decidir Aplica / No aplica.");
+					"Solo el creador, el jefe inmediato o el jefe de unidad puede decidir Aplica / No aplica.");
 			}
 
 			if (EstadosRequisicionPermitidosDecision.Length > 0

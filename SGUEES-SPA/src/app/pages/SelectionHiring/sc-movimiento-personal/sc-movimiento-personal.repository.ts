@@ -43,9 +43,23 @@ export class ScMovimientoPersonalRepository {
 		);
 	}
 
+	procesar(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_EFECTIVA: Date | string;
+	}): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'Procesar',
+			[{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: model.CORR_MOVIMIENTO_PERSONAL }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	confirmar(model: {
 		CORR_MOVIMIENTO_PERSONAL: number;
 		FECHA_EFECTIVA?: Date | string | null;
+		FECHA_INGRESO_PROPUESTA?: Date | string | null;
 	}): Observable<IResult> {
 		return this.objData.Put(
 			model,

@@ -745,7 +745,8 @@
 								<div class="wizard-field">
 									<label class="wizard-label">Firma electrónica (opcional)</label>
 									<dx-text-box stylingMode="outlined"
-										[(value)]="formData.FIRMA_ELECTRONICA"
+										[value]="nombreCompletoPersona"
+										[readOnly]="true"
 									></dx-text-box>
 								</div>
 							</div>
@@ -775,7 +776,7 @@
 
 				<!-- motivo: Boton guardar disponible en cada pestana; validacion de declaraciones aplica solo en el paso final -->
 				<dx-button
-					text="Guardar solicitud"
+					[text]="pasoActual === 6 ? 'Enviar solicitud' : 'Guardar solicitud'"
 					type="success"
 					icon="save"
 					[disabled]="enviando || fotoSubiendo || (pasoActual === 6 && (!formData.DECLARA_VERDAD || !formData.AUTORIZA_VERIFICACION))"

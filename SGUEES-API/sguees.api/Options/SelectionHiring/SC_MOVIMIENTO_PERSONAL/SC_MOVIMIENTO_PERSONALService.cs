@@ -99,6 +99,15 @@ namespace SGUEES.Services
 						vESTACION,
 						"Borrador",
 						"Se registró el movimiento de personal.");
+
+					try
+					{
+						await NotificarCreacionMovimientoAsync(Data.CORR_EMPRESA, corr, vLOGIN_SISTEMA);
+					}
+					catch
+					{
+						// Creación persistida: la notificación no debe revertir ni bloquear el alta.
+					}
 				}
 			}
 
@@ -250,15 +259,68 @@ namespace SGUEES.Services
 		}
 
 		/// <summary>
-		/// Confirmación TH: marca CONFIRMADO=1, guarda FECHA_EFECTIVA,
-		/// USUARIO_CONFIRMA (LOGIN_SISTEMA) + FECHA_CONFIRMA.
-		/// REQUISICION: disponible desde que existe el movimiento.
+		/// Procesar requiere pertenecer a Talento Humano según el organigrama.
+		/// Confirmar permite TH y actores autorizados de la requisición.
 		/// DIRECTO: solo si ESTADO_MOVIMIENTO = AP.
 		/// </summary>
-		public async Task<CResult> ConfirmarAsync(
-			SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data,
+		public async Task<CResult> ProcesarAsync(
+			SC_MOVIMIENTO_PERSONAL_PROCESAParam Data,
 			string vLOGIN_SISTEMA,
 			string vESTACION)
+		{
+			if (Data == null)
+				return ValidationError("No se recibieron datos para procesar el movimiento.");
+			if (Data.CORR_EMPRESA <= 0)
+				return ValidationError("No se pudo identificar la empresa de la sesión.");
+			if (Data.CORR_MOVIMIENTO_PERSONAL <= 0)
+				return ValidationError("Debe indicar el movimiento de personal.");
+			if (!Data.FECHA_EFECTIVA.HasValue || Data.FECHA_EFECTIVA.Value.Year < 1753)
+				return ValidationError("Debe indicar la fecha efectiva antes de procesar.");
+
+			var actual = await GetAsync(new SC_MOVIMIENTO_PERSONALParam
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+			});
+			if (actual.Data is not SC_MOVIMIENTO_PERSONALView row)
+				return ValidationError("No se encontró el movimiento a procesar.");
+			if (!await PuedeProcesarAsync(Data.CORR_EMPRESA, Data.CORR_MOVIMIENTO_PERSONAL, vLOGIN_SISTEMA))
+				return ValidationError("Solo Talento Humano puede procesar o confirmar movimientos de personal.");
+			if (row.CONFIRMADO == 1)
+				return ValidationError("El movimiento ya está procesado.");
+			if (row.CONFIRMADO == 2)
+				return ValidationError("El movimiento ya está confirmado.");
+
+			var resultado = await _repo.ProcesarAsync(new SC_MOVIMIENTO_PERSONALTable
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+				FECHA_EFECTIVA = Data.FECHA_EFECTIVA.Value.Date,
+				CONFIRMADO = 1,
+				USUARIO_ACTU = vLOGIN_SISTEMA,
+				ESTACION_ACTU = vESTACION,
+				FECHA_ACTU = DateTime.Now,
+			}, vLOGIN_SISTEMA, vESTACION);
+			return resultado;
+		}
+
+		public Task<CResult> ConfirmarAsync(
+			SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION) =>
+			ConfirmarInternoAsync(Data, vLOGIN_SISTEMA, vESTACION, desdeBandejaTH: false);
+
+		public Task<CResult> ConfirmarDesdeBandejaTHAsync(
+			SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION) =>
+			ConfirmarInternoAsync(Data, vLOGIN_SISTEMA, vESTACION, desdeBandejaTH: true);
+
+		private async Task<CResult> ConfirmarInternoAsync(
+			SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION,
+			bool desdeBandejaTH)
 		{
 			if (Data == null)
 			{
@@ -279,6 +341,10 @@ namespace SGUEES.Services
 			{
 				return ValidationError("Debe indicar la fecha efectiva para confirmar el movimiento.");
 			}
+			if (!Data.FECHA_INGRESO_PROPUESTA.HasValue || Data.FECHA_INGRESO_PROPUESTA.Value.Year < 1753)
+			{
+				return ValidationError("Debe indicar la fecha de ingreso propuesta.");
+			}
 
 			if (string.IsNullOrWhiteSpace(vLOGIN_SISTEMA))
 			{
@@ -295,10 +361,23 @@ namespace SGUEES.Services
 			{
 				return ValidationError("No se encontró el movimiento a confirmar.");
 			}
+			var puedeConfirmar = desdeBandejaTH
+				? await PuedeProcesarAsync(Data.CORR_EMPRESA, Data.CORR_MOVIMIENTO_PERSONAL, vLOGIN_SISTEMA)
+				: await PuedeConfirmarAsync(
+					Data.CORR_EMPRESA,
+					Data.CORR_MOVIMIENTO_PERSONAL,
+					vLOGIN_SISTEMA,
+					row.ORIGEN_MOVIMIENTO);
+			if (!puedeConfirmar)
+				return ValidationError("No tiene permisos para confirmar este movimiento.");
 
-			if (row.CONFIRMADO)
+			if (row.CONFIRMADO == 2)
 			{
 				return ValidationError("El movimiento ya está confirmado.");
+			}
+			if (row.CONFIRMADO != 1)
+			{
+				return ValidationError("Primero debe procesar el movimiento personal.");
 			}
 
 			var origen = (row.ORIGEN_MOVIMIENTO ?? string.Empty).Trim().ToUpperInvariant();
@@ -309,6 +388,10 @@ namespace SGUEES.Services
 				return ValidationError(
 					"Los movimientos creados desde cero solo se pueden confirmar cuando están en estado Aprobado.");
 			}
+			if (desdeBandejaTH && estado != "AP")
+			{
+				return ValidationError("Solo se pueden confirmar movimientos de personal aprobados.");
+			}
 
 			if (origen != "DIRECTO" && origen != "REQUISICION")
 			{
@@ -317,6 +400,19 @@ namespace SGUEES.Services
 
 			if (origen == "REQUISICION")
 			{
+				if (!desdeBandejaTH)
+				{
+					var autorizado = await _repo.PuedeEjecutarConfirmacionRequisicionAsync(
+						Data.CORR_EMPRESA,
+						Data.CORR_MOVIMIENTO_PERSONAL,
+						vLOGIN_SISTEMA);
+					if (!autorizado)
+					{
+						return ValidationError(
+							"Solo el creador de la requisición, su jefe inmediato o un usuario de Gerencia General puede ejecutar este movimiento.");
+					}
+				}
+
 				var ligada = await GetRequisicionAsociadaAsync(new SC_MOVIMIENTO_PERSONALParam
 				{
 					CORR_EMPRESA = Data.CORR_EMPRESA,
@@ -356,7 +452,8 @@ namespace SGUEES.Services
 				CORR_EMPRESA = Data.CORR_EMPRESA,
 				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
 				FECHA_EFECTIVA = Data.FECHA_EFECTIVA.Value.Date,
-				CONFIRMADO = true,
+				FECHA_INGRESO_PROPUESTA = Data.FECHA_INGRESO_PROPUESTA.Value.Date,
+				CONFIRMADO = 2,
 				USUARIO_CONFIRMA = vLOGIN_SISTEMA.Trim(),
 				FECHA_CONFIRMA = ahora,
 				USUARIO_ACTU = vLOGIN_SISTEMA.Trim(),
@@ -480,7 +577,7 @@ namespace SGUEES.Services
 				return ValidationError("No se encontró el movimiento.");
 			}
 
-			if (row.CONFIRMADO)
+			if (row.CONFIRMADO == 2)
 			{
 				return ValidationError("El movimiento ya está confirmado.");
 			}
@@ -553,7 +650,7 @@ namespace SGUEES.Services
 				Data.ESTADO_MOVIMIENTO = "DI";
 			}
 
-			Data.CONFIRMADO = false;
+			Data.CONFIRMADO = 0;
 			Data.USUARIO_CONFIRMA = null;
 			Data.FECHA_CONFIRMA = null;
 			/* FECHA_EFECTIVA se asigna al Confirmar (TH), no en el alta. */
@@ -649,6 +746,44 @@ namespace SGUEES.Services
 			return _repo.GetAccionesFlujoAsync(corrEmpresa, corrMovimiento, login);
 		}
 
+		public Task<CResult> GetAccionesBandejaTHAsync(int corrEmpresa, int corrMovimiento, string login)
+		{
+			return _repo.GetAccionesBandejaTHAsync(corrEmpresa, corrMovimiento, login);
+		}
+
+		private async Task<SC_MOVIMIENTO_PERSONAL_ACCIONESView> ObtenerPermisosMovimientoAsync(
+			int corrEmpresa,
+			int corrMovimiento,
+			string login)
+		{
+			var acciones = await _repo.GetAccionesFlujoAsync(corrEmpresa, corrMovimiento, login);
+			return acciones?.Data as SC_MOVIMIENTO_PERSONAL_ACCIONESView;
+		}
+
+		private async Task<bool> PuedeProcesarAsync(int corrEmpresa, int corrMovimiento, string login)
+		{
+			var acciones = await _repo.GetAccionesBandejaTHAsync(corrEmpresa, corrMovimiento, login);
+			var permisos = acciones?.Data as SC_MOVIMIENTO_PERSONAL_ACCIONESView;
+			return permisos?.PUEDE_PROCESAR == true;
+		}
+
+		private async Task<bool> PuedeConfirmarAsync(
+			int corrEmpresa,
+			int corrMovimiento,
+			string login,
+			string origenMovimiento)
+		{
+			var permisos = await ObtenerPermisosMovimientoAsync(corrEmpresa, corrMovimiento, login);
+			if (permisos == null) return false;
+			if (permisos.PUEDE_PROCESAR) return true;
+
+			return string.Equals(
+					origenMovimiento?.Trim(),
+					"REQUISICION",
+					System.StringComparison.OrdinalIgnoreCase)
+				&& permisos.PUEDE_CONFIRMAR;
+		}
+
 		public Task<CResult> GetPendientesActorAsync(List<CParameter> xWhere)
 		{
 			return _repo.GetPendientesActorAsync(xWhere);
@@ -675,6 +810,20 @@ namespace SGUEES.Services
 				previo = actual.Data as SC_MOVIMIENTO_PERSONALView;
 			}
 
+			if (previo != null
+				&& string.Equals(previo.ORIGEN_MOVIMIENTO?.Trim(), "REQUISICION", StringComparison.OrdinalIgnoreCase))
+			{
+				var autorizado = await _repo.PuedeEjecutarConfirmacionRequisicionAsync(
+					Data.CORR_EMPRESA,
+					Data.CORR_MOVIMIENTO_PERSONAL,
+					login);
+				if (!autorizado)
+				{
+					return ValidationError(
+						"Solo el creador de la requisición, su jefe inmediato o un usuario de Gerencia General puede ejecutar este movimiento.");
+				}
+			}
+
 			var resultado = await _repo.ContratarEmpleadoAsync(Data, vLOGIN_SISTEMA, vESTACION);
 			if (!resultado.Result || previo == null)
 			{
@@ -689,8 +838,69 @@ namespace SGUEES.Services
 			{
 				// Contratación ya persistida.
 			}
-
 			return resultado;
+		}
+
+		private async Task NotificarCreacionMovimientoAsync(
+			int corrEmpresa,
+			int corrMovimiento,
+			string loginActor)
+		{
+			var actual = await GetAsync(new SC_MOVIMIENTO_PERSONALParam
+			{
+				CORR_EMPRESA = corrEmpresa,
+				CORR_MOVIMIENTO_PERSONAL = corrMovimiento,
+			});
+			if (actual.Data is not SC_MOVIMIENTO_PERSONALView row)
+			{
+				return;
+			}
+
+			var logins = await _repo.GetLoginsJefesUnidadMovimientoAsync(corrEmpresa, corrMovimiento);
+			var destinatarios = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+			foreach (var login in logins ?? Enumerable.Empty<string>())
+			{
+				if (!string.IsNullOrWhiteSpace(login))
+				{
+					destinatarios.Add(login.Trim());
+				}
+			}
+
+			if (!string.IsNullOrWhiteSpace(row.USUARIO_CREA))
+			{
+				destinatarios.Add(row.USUARIO_CREA.Trim());
+			}
+
+			if (destinatarios.Count == 0)
+			{
+				return;
+			}
+
+			var nombre = string.IsNullOrWhiteSpace(row.NOMBRE_COMPLETO) ? "la persona" : row.NOMBRE_COMPLETO.Trim();
+			var unidad = string.IsNullOrWhiteSpace(row.NOMBRE_UNIDAD_ACTUAL)
+				? (string.IsNullOrWhiteSpace(row.NOMBRE_UNIDAD_PROPUESTA) ? "la unidad" : row.NOMBRE_UNIDAD_PROPUESTA.Trim())
+				: row.NOMBRE_UNIDAD_ACTUAL.Trim();
+			var titulo = $"Movimiento de personal #{corrMovimiento} - Creado";
+			var mensaje = $"Se creó el movimiento de personal para {nombre}. Unidad: {unidad}.";
+
+			foreach (var loginDestino in destinatarios)
+			{
+				var urlDestino = await _notificacion.ResolverUrlBandejaTareaAsync(
+					corrEmpresa,
+					loginDestino,
+					corrMovimiento,
+					"MOVIMIENTO");
+
+				await _notificacion.NotificarUsuarioAsync(
+					corrEmpresa: corrEmpresa,
+					loginDestino: loginDestino,
+					titulo: titulo,
+					mensaje: mensaje,
+					urlDestino: urlDestino,
+					usuarioCrea: loginActor,
+					estacionCrea: "API");
+			}
 		}
 
 		/// <summary>
@@ -794,11 +1004,7 @@ namespace SGUEES.Services
 			var titulo = $"Movimiento personal #{corr} - Confirmado";
 			var mensaje = $"TH confirmó el movimiento de {nombre} (fecha efectiva {fechaEfectiva:dd/MM/yyyy}).";
 
-			var urlDestino = await _notificacion.ResolverUrlDestinoAsync(CodigoOpcionMenuMovimiento, corr);
-			if (string.IsNullOrWhiteSpace(urlDestino))
-			{
-				urlDestino = $"/sc-movimiento-personal?corr={corr}";
-			}
+			var urlDestino = await ResolverUrlDestinoMovimientoAsync(row.CORR_EMPRESA, creador, corr);
 
 			await _notificacion.NotificarUsuarioAsync(
 				corrEmpresa: row.CORR_EMPRESA,
@@ -827,11 +1033,7 @@ namespace SGUEES.Services
 			var titulo = $"Movimiento personal #{corr} - Empleado creado";
 			var mensaje = $"Se creó el empleado a partir del movimiento de {nombre}.";
 
-			var urlDestino = await _notificacion.ResolverUrlDestinoAsync(CodigoOpcionMenuMovimiento, corr);
-			if (string.IsNullOrWhiteSpace(urlDestino))
-			{
-				urlDestino = $"/sc-movimiento-personal?corr={corr}";
-			}
+			var urlDestino = await ResolverUrlDestinoMovimientoAsync(row.CORR_EMPRESA, creador, corr);
 
 			await _notificacion.NotificarUsuarioAsync(
 				corrEmpresa: row.CORR_EMPRESA,
@@ -841,6 +1043,21 @@ namespace SGUEES.Services
 				urlDestino: urlDestino,
 				usuarioCrea: loginActor,
 				estacionCrea: "API");
+		}
+
+		// Qué hace: Resuelve la pantalla de destino para una notificación de movimiento personal.
+		// Cómo lo hace: Si el destinatario pertenece a TH o a una unidad descendiente, usa la bandeja TH con el correlativo; para otros usuarios conserva el formulario del movimiento.
+		private async Task<string> ResolverUrlDestinoMovimientoAsync(int corrEmpresa, string loginDestino, int corrMovimiento)
+		{
+			if (await _notificacion.EsUsuarioThAsync(corrEmpresa, loginDestino))
+			{
+				return await _notificacion.ResolverUrlBandejaThAsync(corrMovimiento, "MOVIMIENTO");
+			}
+
+			var urlDestino = await _notificacion.ResolverUrlDestinoAsync(CodigoOpcionMenuMovimiento, corrMovimiento);
+			return string.IsNullOrWhiteSpace(urlDestino)
+				? $"/sc-movimiento-personal?corr={corrMovimiento}"
+				: urlDestino;
 		}
 
 		private static CResult ValidationError(string message)

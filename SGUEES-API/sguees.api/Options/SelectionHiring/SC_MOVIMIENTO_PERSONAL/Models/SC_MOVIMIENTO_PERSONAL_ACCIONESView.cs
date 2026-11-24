@@ -8,6 +8,8 @@ namespace SGUEES.Models
 		public bool PUEDE_APROBAR { get; set; }
 		public bool PUEDE_DEVOLVER { get; set; }
 		public bool PUEDE_RECHAZAR { get; set; }
+		public bool PUEDE_CONFIRMAR { get; set; }
+		public bool PUEDE_PROCESAR { get; set; }
 		public int CORR_UNIDAD_DOCUMENTO { get; set; }
 	}
 }

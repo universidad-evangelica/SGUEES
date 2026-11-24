@@ -10,6 +10,7 @@ namespace SGUEES.Repositories
 		// Qué hace: Firma para el registro de la decisión del candidato (Aplica / No aplica).
 		// Cómo lo hace: Declara los parámetros requeridos y la bandera opcional para validar jefatura de unidad.
 		Task<CResult> DecideAsync(SC_REQUISICION_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION, bool validarJefatura = true);
+		Task<CResult> PuedeDecidirCandidatoAsync(int corrEmpresa, int corrRequisicion, string login);
 		Task<CResult> GetPostulacionesExpedienteAsync(SC_REQUISICION_CANDIDATOParam xWhere);
 
 		/// <summary>Contexto post-dictamen para GEN_NOTIFICACION (datos + logins SC_BANDEJA_TH).</summary>

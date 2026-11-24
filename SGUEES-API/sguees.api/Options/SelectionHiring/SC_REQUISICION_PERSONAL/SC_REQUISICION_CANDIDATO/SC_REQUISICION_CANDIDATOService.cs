@@ -50,6 +50,11 @@ namespace SGUEES.Services
 			return resultado;
 		}
 
+		public Task<CResult> PuedeDecidirCandidatoAsync(int corrEmpresa, int corrRequisicion, string login)
+		{
+			return _repo.PuedeDecidirCandidatoAsync(corrEmpresa, corrRequisicion, login);
+		}
+
 		public Task<CResult> GetPostulacionesExpedienteAsync(SC_REQUISICION_CANDIDATOParam xWhere)
 		{
 			return _repo.GetPostulacionesExpedienteAsync(xWhere);

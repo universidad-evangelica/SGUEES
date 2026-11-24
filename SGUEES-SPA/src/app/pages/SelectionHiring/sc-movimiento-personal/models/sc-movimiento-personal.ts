@@ -40,8 +40,8 @@ export interface ScMovimientoPersonal {
 	HORARIO_PROPUESTO: string;
 	JUSTIFICACION: string;
 	FECHA_EFECTIVA?: Date | null;
-	/** Confirmación TH (0 = En Evaluación, 1 = Confirmado). */
-	CONFIRMADO?: boolean | number;
+	/** Estado TH: 0 = En evaluación, 1 = Procesado, 2 = Confirmado. */
+	CONFIRMADO?: number;
 	NOMBRE_CONFIRMACION?: string;
 	/** LOGIN_SISTEMA de quien confirmó. */
 	USUARIO_CONFIRMA?: string | null;

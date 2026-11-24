@@ -12,7 +12,9 @@ namespace SGUEES.Repositories
 		Task<CResult> GetAllVisibleAsync(List<CParameter> xWhere);
 
 		Task<CResult> AutorizaAsync(SC_MOVIMIENTO_PERSONAL_AUTORIZAParam Data, string vLOGIN_SISTEMA);
+		Task<CResult> ProcesarAsync(SC_MOVIMIENTO_PERSONALTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> ConfirmarAsync(SC_MOVIMIENTO_PERSONALTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<bool> PuedeEjecutarConfirmacionRequisicionAsync(int corrEmpresa, int corrMovimiento, string login);
 		Task<CResult> GetAllAsyncBitacora(List<CParameter> xWhere);
 		Task RegistrarBitacoraDocumentoAsync(
 			int corrEmpresa,
@@ -28,9 +30,11 @@ namespace SGUEES.Repositories
 		Task<CResult> GetRequisicionAsociadaAsync(List<CParameter> xWhere);
 		Task<CResult> RegistrarFechaIngresoAsync(SC_MOVIMIENTO_PERSONALTable Data);
 		Task<CResult> GetAccionesFlujoAsync(int corrEmpresa, int corrMovimiento, string login);
+		Task<CResult> GetAccionesBandejaTHAsync(int corrEmpresa, int corrMovimiento, string login);
 		Task<int> ResolverUnidadDocumentoAsync(int corrEmpresa, int corrMovimiento, string login);
 		Task<CResult> GetPendientesActorAsync(List<CParameter> xWhere);
 		Task<int> CountPendientesActorAsync(int corrEmpresa, string login);
+		Task<List<string>> GetLoginsJefesUnidadMovimientoAsync(int corrEmpresa, int corrMovimiento);
 		// Qué hace: define el contrato para ejecutar el SP de contratación a empleado.
 		// Cómo lo hace: recibe parámetros de empresa y movimiento para invocar PRAL_MTTO_SC_CONTRATAR_CANDIDATO_A_EMPLEADO.
 		Task<CResult> ContratarEmpleadoAsync(SC_MOVIMIENTO_PERSONALParam Data, string vLOGIN_SISTEMA, string vESTACION);

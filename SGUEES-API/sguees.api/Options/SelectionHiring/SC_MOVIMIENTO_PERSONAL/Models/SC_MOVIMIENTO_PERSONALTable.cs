@@ -91,8 +91,8 @@ namespace SGUEES.Models
 
 		public DateTime? FECHA_EFECTIVA { get; set; }
 
-		/// <summary>Confirmación TH (independiente del flujo).</summary>
-		public bool CONFIRMADO { get; set; }
+		/// <summary>Estado TH: 0=En evaluación, 1=Procesado, 2=Confirmado.</summary>
+		public int CONFIRMADO { get; set; }
 
 		/// <summary>LOGIN_SISTEMA de quien confirmó.</summary>
 		[MaxLength(50)]

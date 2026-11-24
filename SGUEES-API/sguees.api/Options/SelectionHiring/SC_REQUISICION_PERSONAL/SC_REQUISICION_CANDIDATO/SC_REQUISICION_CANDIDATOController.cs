@@ -43,6 +43,16 @@ namespace SGUEES.Controllers
 			return Ok(resultado);
 		}
 
+		[HttpGet("PuedeDecidir")]
+		[Authorize(Policy = "/sc-requisicion-personal|U")]
+		public async Task<CResult> PuedeDecidir([FromQuery] int CORR_REQUISICION_PERSONAL)
+		{
+			return await _service.PuedeDecidirCandidatoAsync(
+				Empresa(),
+				CORR_REQUISICION_PERSONAL,
+				Usuario());
+		}
+
 		/// <summary>Postulaciones / decisiones del expediente (consulta TH).</summary>
 		[HttpGet("GetAll_SC_EXPEDIENTE_CANDIDATO")]
 		[Authorize(Policy = "/sc-expediente-candidato|R")]

@@ -14,7 +14,9 @@ namespace SGUEES.Services
 		Task<CResult> UpdateAsync(SC_MOVIMIENTO_PERSONALTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(SC_MOVIMIENTO_PERSONALTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> AutorizaAsync(SC_MOVIMIENTO_PERSONAL_AUTORIZAParam Data, string vLOGIN_SISTEMA);
+		Task<CResult> ProcesarAsync(SC_MOVIMIENTO_PERSONAL_PROCESAParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> ConfirmarAsync(SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ConfirmarDesdeBandejaTHAsync(SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> GetBitacoraAsync(SC_MOVIMIENTO_PERSONAL_BITACORAParam xWhere);
 		Task<CResult> GetUnidadesUsuarioAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
 		Task<CResult> GetPuestosByUnidadAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
@@ -23,6 +25,7 @@ namespace SGUEES.Services
 		Task<CResult> GetRequisicionAsociadaAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
 		Task<CResult> RegistrarFechaIngresoAsync(SC_MOVIMIENTO_FECHA_INGRESOParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> GetAccionesFlujoAsync(int corrEmpresa, int corrMovimiento, string login);
+		Task<CResult> GetAccionesBandejaTHAsync(int corrEmpresa, int corrMovimiento, string login);
 		Task<CResult> GetPendientesActorAsync(List<CParameter> xWhere);
 		Task<int> CountPendientesActorAsync(int corrEmpresa, string login);
 		// Qué hace: contrato de servicio para contratar al candidato.

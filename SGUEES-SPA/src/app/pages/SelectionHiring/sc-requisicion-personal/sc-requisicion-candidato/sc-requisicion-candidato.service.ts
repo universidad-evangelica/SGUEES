@@ -18,6 +18,10 @@ export class ScRequisicionCandidatoService {
 		return this.repo.decide(model);
 	}
 
+	puedeDecidir(corrRequisicionPersonal: number): Observable<IResult> {
+		return this.repo.puedeDecidir(corrRequisicionPersonal);
+	}
+
 	getPostulacionesExpediente(param: {
 		CORR_EXPEDIENTE_CANDIDATO: number;
 		CORR_SOLICITUD_EMPLEO?: number;

@@ -39,6 +39,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	popupObservacionTitulo = 'Observación';
 	popupObservacionHint = 'Indique el motivo. La observación es obligatoria.';
 	popupObservacionTexto = '';
+	popupDetalleVisible = false;
 	private observacionResolver: ((value: string | null) => void) | null = null;
 
 	activeTab: ScBandejaActoresTab = 'REQUISICIONES';
@@ -207,6 +208,11 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 			return;
 		}
 
+		if (this.selectedItem.TIPO === 'CANDIDATO') {
+			this.popupDetalleVisible = true;
+			return;
+		}
+
 		if (this.selectedItem.TIPO === 'REQUISICION' && this.selectedItem.CORR_REQUISICION_PERSONAL) {
 			if (!this.tienePermisoLectura('/sc-requisicion-personal')) {
 				this.notifyFx(
@@ -321,22 +327,22 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 
 		if (!aplica) {
 			observacion = await this.pedirObservacion(
-				'No aplica',
-				'Indique el motivo. La observación es obligatoria para No aplica.'
+				'Rechazado',
+				'Indique el motivo. La observación es obligatoria para rechazar al candidato.'
 			);
 			if (observacion == null) {
 				return;
 			}
 			if (!observacion.trim()) {
-				this.notifyFx('La observación es obligatoria para No aplica.', NotifyType.Warning, {
+				this.notifyFx('La observación es obligatoria para rechazar al candidato.', NotifyType.Warning, {
 					raw: true,
 				});
 				return;
 			}
 		} else {
 			const ok = await confirm(
-				`¿Confirma dictamen APLICA para ${item.NOMBRE_CANDIDATO || item.CODIGO}?`,
-				'Dictamen de candidato'
+				`¿Confirma seleccionar a ${item.NOMBRE_CANDIDATO || item.CODIGO} para ejecutar movimiento de personal?`,
+				'Ejecutar movimiento de personal'
 			);
 			if (!ok) {
 				return;
@@ -365,7 +371,9 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 			}
 
 			this.notifyFx(
-				aplica ? 'Dictamen APLICA registrado.' : 'Dictamen NO APLICA registrado.',
+				aplica
+					? 'Candidato seleccionado para movimiento de personal.'
+					: 'Candidato registrado como rechazado.',
 				NotifyType.Success,
 				{ raw: true }
 			);

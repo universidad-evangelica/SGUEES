@@ -72,10 +72,10 @@ namespace sguees.Services
 			Data.USUARIO_CREA = vLOGIN_SISTEMA;
 			NormalizeData(Data);
 
-			if (await _repo.ExistsNombreAsync(Data.CORR_EMPRESA, Data.NOMBRE_PLANTILLA, 0))
+			/*if (await _repo.ExistsNombreAsync(Data.CORR_EMPRESA, Data.NOMBRE_PLANTILLA, 0))
 			{
 				return ValidationError("Ya existe una plantilla de contrato con ese nombre.");
-			}
+			}*/
 
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}

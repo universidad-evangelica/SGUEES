@@ -207,6 +207,18 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		return this.tokenValido && this.pasoActual >= 1;
 	}
 
+	get nombreCompletoPersona(): string {
+		return [
+			this.formData.NOMBRE1,
+			this.formData.NOMBRE2,
+			this.formData.APELLIDO1,
+			this.formData.APELLIDO2,
+		]
+			.map((valor) => `${valor ?? ''}`.trim())
+			.filter((valor) => !!valor)
+			.join(' ');
+	}
+
 	get pasoMeta(): PortalStepMeta | undefined {
 		return this.steps.find((s) => s.id === this.pasoActual);
 	}
@@ -804,6 +816,8 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			this.pasoActual = errorCampos.paso;
 			return;
 		}
+
+		this.formData.FIRMA_ELECTRONICA = this.nombreCompletoPersona;
 
 		// Qué hace: Valida declaraciones de veracidad y autorización sólo al finalizar en el Paso 6
 		// Cómo lo hace: En pasos 1 a 5 permite guardar el avance parcial; en el Paso 6 exige ambas declaraciones

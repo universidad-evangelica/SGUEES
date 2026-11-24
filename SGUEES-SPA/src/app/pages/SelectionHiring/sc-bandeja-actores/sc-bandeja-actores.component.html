@@ -313,7 +313,7 @@
 						<p class="bandeja-section__text">{{ selectedItem.OBSERVACION_DECISION }}</p>
 					</div>
 
-					<div class="bandeja-fields">
+					<div class="bandeja-fields" *ngIf="selectedItem.TIPO !== 'CANDIDATO'">
 						<div class="bandeja-field" *ngIf="selectedItem.NOMBRE_PUESTO">
 							<span class="bandeja-field__label">Puesto</span>
 							<span class="bandeja-field__value">{{ selectedItem.NOMBRE_PUESTO }}</span>
@@ -475,19 +475,21 @@
 				<ng-container *ngIf="puedeDictaminar">
 					<div class="bandeja-panel__actions-split">
 						<dx-button
-							text="Aplica"
+							text="Ejecutar movimiento de personal"
 							type="success"
-							icon="check"
-							[width]="'48%'"
+							icon="user"
+							[width]="'100%'"
 							[height]="36"
 							[disabled]="accionEnCurso"
 							(onClick)="accionDictamen(true)"
 						></dx-button>
+					</div>
+					<div class="bandeja-panel__actions-split">
 						<dx-button
-							text="No aplica"
+							text="Rechazado"
 							type="danger"
 							icon="close"
-							[width]="'48%'"
+							[width]="'100%'"
 							[height]="36"
 							[disabled]="accionEnCurso"
 							(onClick)="accionDictamen(false)"
@@ -498,6 +500,170 @@
 		</aside>
 	</div>
 </div>
+
+<dx-popup
+	[(visible)]="popupDetalleVisible"
+	[width]="720"
+	[maxWidth]="'calc(100vw - 32px)'"
+	[height]="'auto'"
+	[maxHeight]="'90vh'"
+	[showCloseButton]="false"
+	[showTitle]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="true"
+	[wrapperAttr]="{ class: 'bandeja-actores-detalle-popup' }"
+>
+	<div *dxTemplate="let data of 'title'" class="modal-custom-header">
+		<div class="modal-custom-header__left">
+			<div class="modal-custom-header__icon">
+				<i class="dx-icon dx-icon-user"></i>
+			</div>
+			<span class="modal-custom-header__title">Detalle del candidato:</span>
+			<span class="modal-custom-header__code">{{ selectedItem?.CODIGO }}</span>
+		</div>
+		<button
+			type="button"
+			class="modal-custom-header__close"
+			(click)="popupDetalleVisible = false"
+			title="Cerrar"
+		>
+			✕
+		</button>
+	</div>
+
+	<div *dxTemplate="let data of 'content'" class="bandeja-detalle-popup__body">
+		<dx-scroll-view [height]="'auto'" [showScrollbar]="'onHover'">
+			<div class="bandeja-detalle-popup__content">
+				<div class="modal-hero-card">
+					<div class="modal-hero-card__icon">
+						<i class="dx-icon dx-icon-user"></i>
+					</div>
+					<div class="modal-hero-card__main">
+						<div class="modal-hero-card__sub">
+							{{ selectedItem?.CODIGO }} · Creada el {{ formatFecha(selectedItem?.FECHA) }}
+						</div>
+						<div class="modal-hero-card__title">
+							{{ selectedItem?.NOMBRE_CANDIDATO || selectedItem?.DESCRIPCION }}
+						</div>
+					</div>
+					<div class="modal-hero-card__badge">
+						<span [class]="selectedItem ? estadoChipClass(selectedItem) : ''">
+							<span class="chip-dot">●</span> {{ selectedItem?.ESTADO }}
+						</span>
+					</div>
+				</div>
+
+				<div class="modal-section-header">
+					<span class="modal-section-header__title">CONDICIONES DEL PUESTO</span>
+					<div class="modal-section-header__line"></div>
+				</div>
+				<div class="modal-condiciones-grid">
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">PUESTO</div>
+						<div class="modal-mini-card__value">{{ selectedItem?.NOMBRE_PUESTO || '—' }}</div>
+					</div>
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">TIPO DE CONTRATACIÓN</div>
+						<div class="modal-mini-card__value">
+							{{ selectedItem?.NOMBRE_TIPO_CONTRATACION || '—' }}
+						</div>
+					</div>
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">MODALIDAD</div>
+						<div class="modal-mini-card__value">{{ selectedItem?.NOMBRE_TIPO_MODALIDAD || '—' }}</div>
+					</div>
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">TIPO DE VACANTE</div>
+						<div class="modal-mini-card__value">
+							{{
+								selectedItem?.NOMBRE_TIPO_VACANTE ||
+									(selectedItem?.TIEMPO_CONTRATO
+										? selectedItem?.TIEMPO_CONTRATO + ' meses'
+										: '—')
+							}}
+						</div>
+					</div>
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">SALARIO OFRECIDO</div>
+						<div class="modal-mini-card__value">
+							<span class="modal-salario-num">{{ formatSalario(selectedItem?.SALARIO) }}</span>
+							<span class="modal-salario-currency" *ngIf="selectedItem?.SALARIO != null">USD</span>
+						</div>
+					</div>
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">HORARIO</div>
+						<div class="modal-mini-card__value modal-mini-card__value--horario">
+							<i class="dx-icon dx-icon-clock" *ngIf="selectedItem?.HORARIO"></i>
+							<span>{{ selectedItem?.HORARIO || '—' }}</span>
+						</div>
+					</div>
+					<div class="modal-mini-card">
+						<div class="modal-mini-card__label">ENTREVISTAS</div>
+						<div class="modal-mini-card__value">
+							{{ selectedItem?.CANTIDAD_ENTREVISTAS || 0 }}
+							<span *ngIf="selectedItem?.ULTIMA_ENTREVISTA"> · {{ selectedItem?.ULTIMA_ENTREVISTA }}</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="modal-section-header">
+					<span class="modal-section-header__title">ORIGEN DE LA SOLICITUD</span>
+					<div class="modal-section-header__line"></div>
+				</div>
+				<div class="modal-origen-card">
+					<div class="modal-origen-col">
+						<div class="modal-origen-icon"><i class="dx-icon dx-icon-home"></i></div>
+						<div class="modal-origen-info">
+							<span class="modal-origen-label">ÁREA SOLICITANTE</span>
+							<span class="modal-origen-value">{{ selectedItem?.NOMBRE_UNIDAD || '—' }}</span>
+						</div>
+					</div>
+					<div class="modal-origen-col">
+						<div class="modal-origen-icon"><i class="dx-icon dx-icon-user"></i></div>
+						<div class="modal-origen-info">
+							<span class="modal-origen-label">SOLICITADO POR</span>
+							<span class="modal-origen-value">{{ selectedItem?.SOLICITANTE || '—' }}</span>
+						</div>
+					</div>
+					<div class="modal-origen-col">
+						<div class="modal-origen-icon"><i class="dx-icon dx-icon-card"></i></div>
+						<div class="modal-origen-info">
+							<span class="modal-origen-label">CANDIDATO</span>
+							<span class="modal-origen-value">
+								{{ selectedItem?.NOMBRE_CANDIDATO || '—' }}
+								<small *ngIf="selectedItem?.DUI_CANDIDATO"> · DUI {{ selectedItem?.DUI_CANDIDATO }}</small>
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<ng-container *ngIf="selectedItem?.JUSTIFICACION">
+					<div class="modal-section-header">
+						<span class="modal-section-header__title">DESCRIPCIÓN / JUSTIFICACIÓN</span>
+						<div class="modal-section-header__line"></div>
+					</div>
+					<div class="modal-info-box"><p>{{ selectedItem?.JUSTIFICACION }}</p></div>
+				</ng-container>
+
+				<ng-container *ngIf="selectedItem?.OBSERVACION_DECISION">
+					<div class="modal-section-header">
+						<span class="modal-section-header__title">OBSERVACIÓN DEL DICTAMEN</span>
+						<div class="modal-section-header__line"></div>
+					</div>
+					<div class="modal-info-box"><p>{{ selectedItem?.OBSERVACION_DECISION }}</p></div>
+				</ng-container>
+			</div>
+		</dx-scroll-view>
+		<div class="bandeja-detalle-popup__footer">
+			<dx-button
+				text="Cerrar"
+				stylingMode="outlined"
+				[height]="36"
+				(onClick)="popupDetalleVisible = false"
+			></dx-button>
+		</div>
+	</div>
+</dx-popup>
 
 <dx-popup
 	[(visible)]="popupObservacionVisible"
