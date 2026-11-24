@@ -601,7 +601,7 @@
 
 	&__add {
 		display: grid;
-		grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+		grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto auto;
 		gap: 12px;
 		align-items: end;
 
@@ -622,6 +622,13 @@
 			font-weight: 600;
 			color: var(--sguees-text-secondary, var(--base-text-color-alpha));
 		}
+	}
+
+	&__default {
+		display: flex;
+		align-items: center;
+		min-height: 38px;
+		white-space: nowrap;
 	}
 
 	&__add-btn {
@@ -706,6 +713,30 @@
 	&__grid {
 		width: 100%;
 		min-height: 96px;
+	}
+
+	&__actions {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	&__action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		border-radius: 6px;
+		border: 1px solid #ef5350;
+		background: transparent;
+		color: #ef5350;
+		cursor: pointer;
+
+		&:disabled {
+			opacity: 0.55;
+			cursor: default;
+		}
 	}
 }
 
