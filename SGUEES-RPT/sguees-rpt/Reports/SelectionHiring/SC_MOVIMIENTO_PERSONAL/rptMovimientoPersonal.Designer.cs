@@ -97,6 +97,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.topMarginBand1 = new DevExpress.XtraReports.UI.TopMarginBand();
             this.bottomMarginBand1 = new DevExpress.XtraReports.UI.BottomMarginBand();
             this.detailBand1 = new DevExpress.XtraReports.UI.DetailBand();
+            this.lblFechaElabPref = new DevExpress.XtraReports.UI.XRLabel();
             this.lblFechaElaboracion = new DevExpress.XtraReports.UI.XRLabel();
             this.lblBoxPermanente = new DevExpress.XtraReports.UI.XRLabel();
             this.lblChkPermanente = new DevExpress.XtraReports.UI.XRLabel();
@@ -164,7 +165,6 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.xrPictureBox1 = new DevExpress.XtraReports.UI.XRPictureBox();
             this.lineHdr = new DevExpress.XtraReports.UI.XRLine();
             this.PageFooter = new DevExpress.XtraReports.UI.PageFooterBand();
-            this.lblFechaElabPref = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabel2 = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabel3 = new DevExpress.XtraReports.UI.XRLabel();
             ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
@@ -244,8 +244,17 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.lblVraFecha,
             this.lblFechaEfectivaPref,
             this.lblFechaEfectiva});
-            this.detailBand1.HeightF = 566.8751F;
+            this.detailBand1.HeightF = 581.4585F;
             this.detailBand1.Name = "detailBand1";
+            // 
+            // lblFechaElabPref
+            // 
+            this.lblFechaElabPref.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.lblFechaElabPref.LocationFloat = new DevExpress.Utils.PointFloat(480F, 0F);
+            this.lblFechaElabPref.Name = "lblFechaElabPref";
+            this.lblFechaElabPref.SizeF = new System.Drawing.SizeF(160F, 18F);
+            this.lblFechaElabPref.Text = "FECHA DE ELABORACIÓN:";
+            this.lblFechaElabPref.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
             // 
             // lblFechaElaboracion
             // 
@@ -735,22 +744,22 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             // lblJefeFirma
             // 
             this.lblJefeFirma.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
-            this.lblJefeFirma.LocationFloat = new DevExpress.Utils.PointFloat(171.0002F, 446F);
-            this.lblJefeFirma.Name = "lblJefeFirma";
-            this.lblJefeFirma.SizeF = new System.Drawing.SizeF(230F, 18F);
-            this.lblJefeFirma.Text = "Firma";
             this.lblJefeFirma.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_JEFE_INMEDIATO]")});
+            this.lblJefeFirma.LocationFloat = new DevExpress.Utils.PointFloat(211.0002F, 446F);
+            this.lblJefeFirma.Name = "lblJefeFirma";
+            this.lblJefeFirma.SizeF = new System.Drawing.SizeF(278.5416F, 18F);
+            this.lblJefeFirma.Text = "Firma";
             // 
             // lblJefeFecha
             // 
             this.lblJefeFecha.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
-            this.lblJefeFecha.LocationFloat = new DevExpress.Utils.PointFloat(441.8027F, 446F);
-            this.lblJefeFecha.Name = "lblJefeFecha";
-            this.lblJefeFecha.SizeF = new System.Drawing.SizeF(318.1974F, 18F);
-            this.lblJefeFecha.Text = "Fecha";
             this.lblJefeFecha.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_JEFE_INMEDIATO]")});
+            this.lblJefeFecha.LocationFloat = new DevExpress.Utils.PointFloat(540F, 446F);
+            this.lblJefeFecha.Name = "lblJefeFecha";
+            this.lblJefeFecha.SizeF = new System.Drawing.SizeF(220F, 18F);
+            this.lblJefeFecha.Text = "Fecha";
             this.lblJefeFecha.TextFormatString = "{0:dd/MM/yyyy}";
             // 
             // lblDecanoPref
@@ -764,22 +773,22 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             // lblDecanoFirma
             // 
             this.lblDecanoFirma.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
-            this.lblDecanoFirma.LocationFloat = new DevExpress.Utils.PointFloat(211.0001F, 472F);
-            this.lblDecanoFirma.Name = "lblDecanoFirma";
-            this.lblDecanoFirma.SizeF = new System.Drawing.SizeF(200F, 18F);
-            this.lblDecanoFirma.Text = "Firma";
             this.lblDecanoFirma.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_DECANO_GERENTE]")});
+            this.lblDecanoFirma.LocationFloat = new DevExpress.Utils.PointFloat(211.0002F, 472F);
+            this.lblDecanoFirma.Name = "lblDecanoFirma";
+            this.lblDecanoFirma.SizeF = new System.Drawing.SizeF(278.5416F, 18F);
+            this.lblDecanoFirma.Text = "Firma";
             // 
             // lblDecanoFecha
             // 
             this.lblDecanoFecha.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
-            this.lblDecanoFecha.LocationFloat = new DevExpress.Utils.PointFloat(451.8028F, 472F);
-            this.lblDecanoFecha.Name = "lblDecanoFecha";
-            this.lblDecanoFecha.SizeF = new System.Drawing.SizeF(308.1973F, 18F);
-            this.lblDecanoFecha.Text = "Fecha";
             this.lblDecanoFecha.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_DECANO_GERENTE]")});
+            this.lblDecanoFecha.LocationFloat = new DevExpress.Utils.PointFloat(540F, 472F);
+            this.lblDecanoFecha.Name = "lblDecanoFecha";
+            this.lblDecanoFecha.SizeF = new System.Drawing.SizeF(220F, 18F);
+            this.lblDecanoFecha.Text = "Fecha";
             this.lblDecanoFecha.TextFormatString = "{0:dd/MM/yyyy}";
             // 
             // lblVraPref
@@ -793,30 +802,30 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             // lblVraFirma
             // 
             this.lblVraFirma.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
-            this.lblVraFirma.LocationFloat = new DevExpress.Utils.PointFloat(211.0001F, 498F);
-            this.lblVraFirma.Name = "lblVraFirma";
-            this.lblVraFirma.SizeF = new System.Drawing.SizeF(200F, 17.99997F);
-            this.lblVraFirma.Text = "Firma";
             this.lblVraFirma.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_VRA]")});
+            this.lblVraFirma.LocationFloat = new DevExpress.Utils.PointFloat(211.0002F, 498F);
+            this.lblVraFirma.Name = "lblVraFirma";
+            this.lblVraFirma.SizeF = new System.Drawing.SizeF(278.5416F, 17.99997F);
+            this.lblVraFirma.Text = "Firma";
             // 
             // lblVraFecha
             // 
             this.lblVraFecha.Borders = DevExpress.XtraPrinting.BorderSide.Bottom;
-            this.lblVraFecha.LocationFloat = new DevExpress.Utils.PointFloat(451.8028F, 498F);
-            this.lblVraFecha.Name = "lblVraFecha";
-            this.lblVraFecha.SizeF = new System.Drawing.SizeF(308.1973F, 17.99997F);
-            this.lblVraFecha.Text = "Fecha";
             this.lblVraFecha.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_VRA]")});
+            this.lblVraFecha.LocationFloat = new DevExpress.Utils.PointFloat(540F, 498F);
+            this.lblVraFecha.Name = "lblVraFecha";
+            this.lblVraFecha.SizeF = new System.Drawing.SizeF(220F, 17.99997F);
+            this.lblVraFecha.Text = "Fecha";
             this.lblVraFecha.TextFormatString = "{0:dd/MM/yyyy}";
             // 
             // lblFechaEfectivaPref
             // 
             this.lblFechaEfectivaPref.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.lblFechaEfectivaPref.LocationFloat = new DevExpress.Utils.PointFloat(11F, 532F);
+            this.lblFechaEfectivaPref.LocationFloat = new DevExpress.Utils.PointFloat(9.999974F, 548.8753F);
             this.lblFechaEfectivaPref.Name = "lblFechaEfectivaPref";
-            this.lblFechaEfectivaPref.SizeF = new System.Drawing.SizeF(240F, 18F);
+            this.lblFechaEfectivaPref.SizeF = new System.Drawing.SizeF(183.2916F, 32.58319F);
             this.lblFechaEfectivaPref.Text = "FECHA EFECTIVA DE MOVIMIENTO:";
             // 
             // lblFechaEfectiva
@@ -825,9 +834,9 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.lblFechaEfectiva.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[FECHA_EFECTIVA]")});
             this.lblFechaEfectiva.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.lblFechaEfectiva.LocationFloat = new DevExpress.Utils.PointFloat(251F, 532F);
+            this.lblFechaEfectiva.LocationFloat = new DevExpress.Utils.PointFloat(211.0002F, 548.8753F);
             this.lblFechaEfectiva.Name = "lblFechaEfectiva";
-            this.lblFechaEfectiva.SizeF = new System.Drawing.SizeF(160F, 18F);
+            this.lblFechaEfectiva.SizeF = new System.Drawing.SizeF(203.5416F, 18F);
             this.lblFechaEfectiva.TextFormatString = "{0:dd/MM/yyyy}";
             // 
             // PageHeader
@@ -896,15 +905,6 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_MOVIMIENTO_PERSONAL
             this.xrLabel3});
             this.PageFooter.HeightF = 38.95829F;
             this.PageFooter.Name = "PageFooter";
-            // 
-            // lblFechaElabPref
-            // 
-            this.lblFechaElabPref.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.lblFechaElabPref.LocationFloat = new DevExpress.Utils.PointFloat(480F, 0F);
-            this.lblFechaElabPref.Name = "lblFechaElabPref";
-            this.lblFechaElabPref.SizeF = new System.Drawing.SizeF(160F, 18F);
-            this.lblFechaElabPref.Text = "FECHA DE ELABORACIÓN:";
-            this.lblFechaElabPref.TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft;
             // 
             // xrLabel2
             // 
