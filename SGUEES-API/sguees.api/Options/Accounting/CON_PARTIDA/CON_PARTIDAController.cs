@@ -221,6 +221,14 @@ namespace sguees.Controllers
 			}
 		}
 
+		[HttpGet("GetPeriodosOrigenContrapartida")]
+		[Authorize(Policy = "/con-partida|R")]
+		public async Task<CResult> GetPeriodosOrigenContrapartida([FromQuery] CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetPeriodosOrigenContrapartidaAsync(Data);
+		}
+
 		[HttpGet("GetPeriodosDestinoContrapartida")]
 		[Authorize(Policy = "/con-partida|R")]
 		public async Task<CResult> GetPeriodosDestinoContrapartida([FromQuery] CON_PARTIDAParam Data)

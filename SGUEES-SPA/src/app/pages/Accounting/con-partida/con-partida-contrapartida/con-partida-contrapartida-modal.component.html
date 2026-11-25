@@ -13,31 +13,19 @@
 		<div class="contrapartida-filtros">
 			<div class="contrapartida-filtro contrapartida-filtro--origen">
 				<span class="contrapartida-filtro__group-label">Período cerrado (origen)</span>
-				<div class="contrapartida-filtro__fields">
-					<div class="contrapartida-filtro__item">
-						<label class="contrapartida-filtro__label">Año</label>
-						<dx-number-box
-							class="contrapartida-control"
-							[(value)]="filtroAnio"
-							[min]="2000"
-							[max]="2100"
-							[showSpinButtons]="true"
-							[width]="120"
-							[height]="44"
-						></dx-number-box>
-					</div>
-					<div class="contrapartida-filtro__item">
-						<label class="contrapartida-filtro__label">Mes</label>
-						<dx-select-box
-							class="contrapartida-control"
-							[items]="mesesPeriodo"
-							displayExpr="NOMBRE_MES_PERIODO"
-							valueExpr="MES_PERIODO"
-							[(value)]="filtroMes"
-							[width]="160"
-							[height]="44"
-						></dx-select-box>
-					</div>
+				<div class="contrapartida-filtro__item">
+					<label class="contrapartida-filtro__label">Consultar partidas de</label>
+					<dx-select-box
+						class="contrapartida-control"
+						[items]="periodosCerrados"
+						displayExpr="label"
+						valueExpr="key"
+						[(value)]="periodoOrigenKey"
+						[width]="240"
+						[height]="44"
+						placeholder="Seleccione período cerrado"
+						[noDataText]="'No hay períodos cerrados'"
+					></dx-select-box>
 				</div>
 			</div>
 
@@ -54,6 +42,7 @@
 						[width]="240"
 						[height]="44"
 						placeholder="Seleccione período abierto"
+						[noDataText]="'No hay períodos abiertos'"
 					></dx-select-box>
 				</div>
 			</div>
@@ -126,7 +115,7 @@
 					[autoNavigateToFocusedRow]="true"
 					[height]="gridHeight"
 					[columnAutoWidth]="false"
-					[wordWrapEnabled]="true"
+					[wordWrapEnabled]="false"
 					[noDataText]="noDataText"
 					(onFocusedRowChanged)="onFocusedRowChanged($event)"
 					(onRowDblClick)="onRowDblClick($event)"
@@ -135,6 +124,7 @@
 					<dxo-paging [pageSize]="15"></dxo-paging>
 					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[15, 30, 50]" [showInfo]="true"></dxo-pager>
 					<dxo-filter-row [visible]="true"></dxo-filter-row>
+					<dxo-scrolling columnRenderingMode="standard" [showScrollbar]="'onHover'"></dxo-scrolling>
 				</dx-data-grid>
 			</div>
 
@@ -158,12 +148,12 @@
 					[columnResizingMode]="'widget'"
 					[height]="gridHeight"
 					[columnAutoWidth]="false"
-					[wordWrapEnabled]="true"
+					[wordWrapEnabled]="false"
 					[noDataText]="noDataDetalleText"
 					[keyExpr]="'CORR_PARTIDA_DETA'"
 				>
 					<dxo-paging [enabled]="false"></dxo-paging>
-					<dxo-scrolling mode="virtual"></dxo-scrolling>
+					<dxo-scrolling mode="virtual" [showScrollbar]="'onHover'"></dxo-scrolling>
 					<dxo-filter-row [visible]="true"></dxo-filter-row>
 				</dx-data-grid>
 			</div>

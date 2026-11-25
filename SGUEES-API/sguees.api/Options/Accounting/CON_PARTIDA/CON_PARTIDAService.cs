@@ -293,6 +293,15 @@ namespace sguees.Services
 		public Task<CResult> GenerarContrapartidaAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION)
 			=> _repo.GenerarContrapartidaAsync(param, vLOGIN_SISTEMA, vESTACION);
 
+		public async Task<CResult> GetPeriodosOrigenContrapartidaAsync(CON_PARTIDAParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+			};
+			return await _repo.GetPeriodosOrigenContrapartidaAsync(p);
+		}
+
 		public async Task<CResult> GetPeriodosDestinoContrapartidaAsync(CON_PARTIDAParam xWhere)
 		{
 			var p = new List<CParameter>

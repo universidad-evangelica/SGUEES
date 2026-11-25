@@ -133,12 +133,12 @@ export class ConPartidaService {
 		return [
 			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 80, groupIndex: 0 },
 			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 70, groupIndex: 1 },
-			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 200 },
-			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida', width: 120 },
-			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 120 },
-			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 120 },
-			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento', width: 160 },
-			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', minWidth: 280 },
+			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 150 },
+			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida', width: 110 },
+			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 115 },
+			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 115 },
+			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento', width: 150 },
+			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', width: 320 },
 		];
 	}
 

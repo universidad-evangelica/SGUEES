@@ -16,7 +16,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { ConPartidaImportarExcelUiModule } from '../con-partida-importar-excel/con-partida-importar-excel-ui.module';
-import { ConPartidaContrapartidaUiModule } from '../con-partida-contrapartida/con-partida-contrapartida-ui.module';
+import { ConPartidaContrapartidaUiModule } from './con-partida-contrapartida/con-partida-contrapartida-ui.module';
 import { PartidaIaAsistenteModule } from 'src/app/shared/partida-ia-asistente/partida-ia-asistente.module';
 import { PageHeaderModule } from 'src/app/shared/components/library/page-header/page-header.component';
 

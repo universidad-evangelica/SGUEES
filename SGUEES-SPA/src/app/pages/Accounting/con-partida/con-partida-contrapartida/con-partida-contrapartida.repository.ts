@@ -15,6 +15,10 @@ export class ConPartidaContrapartidaRepository {
 		return this.objData.Get(this.xController, 'GetAllContrapartidaElegible', xWhere, environment.UrlCONTAAPI);
 	}
 
+	getPeriodosOrigen(): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetPeriodosOrigenContrapartida', [], environment.UrlCONTAAPI);
+	}
+
 	getPeriodosDestino(): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetPeriodosDestinoContrapartida', [], environment.UrlCONTAAPI);
 	}

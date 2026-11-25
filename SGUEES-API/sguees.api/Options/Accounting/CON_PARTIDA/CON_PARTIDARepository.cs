@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -1140,7 +1141,17 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		public async Task<CResult> GetPeriodosOrigenContrapartidaAsync(List<CParameter> xWhere)
+		{
+			return await GetPeriodosContrapartidaByEstadoAsync(xWhere, soloCerrados: true);
+		}
+
 		public async Task<CResult> GetPeriodosDestinoContrapartidaAsync(List<CParameter> xWhere)
+		{
+			return await GetPeriodosContrapartidaByEstadoAsync(xWhere, soloCerrados: false);
+		}
+
+		private async Task<CResult> GetPeriodosContrapartidaByEstadoAsync(List<CParameter> xWhere, bool soloCerrados)
 		{
 			CResult objResultado = new();
 			try
@@ -1148,7 +1159,9 @@ namespace sguees.Repositories
 				var reader = await objData.GetDataReader("V_CON_PERIODO_CONTABLE", xWhere);
 				var response = new List<CON_PERIODO_CONTABLEView>()
 					.FromDataReader(reader)
-					.Where(p => string.IsNullOrEmpty(p.ESTADO_PERIODO_CON) || p.ESTADO_PERIODO_CON == "AB")
+					.Where(p => soloCerrados
+						? string.Equals(p.ESTADO_PERIODO_CON, "CE", StringComparison.OrdinalIgnoreCase)
+						: string.IsNullOrEmpty(p.ESTADO_PERIODO_CON) || string.Equals(p.ESTADO_PERIODO_CON, "AB", StringComparison.OrdinalIgnoreCase))
 					.OrderByDescending(p => p.ANIO_PERIODO)
 					.ThenByDescending(p => p.MES_PERIODO)
 					.ToList();

@@ -60,6 +60,8 @@ namespace sguees.Services
 
 		Task<CResult> GenerarContrapartidaAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION);
 
+		Task<CResult> GetPeriodosOrigenContrapartidaAsync(CON_PARTIDAParam param);
+
 		Task<CResult> GetPeriodosDestinoContrapartidaAsync(CON_PARTIDAParam param);
 
 	}

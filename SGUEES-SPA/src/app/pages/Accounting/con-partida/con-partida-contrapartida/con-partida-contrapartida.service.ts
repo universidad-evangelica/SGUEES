@@ -47,25 +47,23 @@ export class ConPartidaContrapartidaService {
 
 	getColumns(): any[] {
 		return [
-			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 72, alignment: 'center' },
-			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 56, alignment: 'center' },
-			{ dataField: 'CORR_PARTIDA', caption: 'No. partida', width: 100, alignment: 'right' },
-			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', format: 'dd/MM/yyyy', width: 108 },
-			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 130 },
+			{ dataField: 'CORR_PARTIDA', caption: 'No.', width: 70, alignment: 'right' },
+			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', format: 'dd/MM/yyyy', width: 100 },
+			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 120 },
 			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 95 },
-			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', minWidth: 180 },
+			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', width: 220 },
 		];
 	}
 
 	getDetalleColumns(): any[] {
 		return [
-			{ dataField: 'CORR_PARTIDA_DETA', caption: 'Línea', width: 64, alignment: 'center' },
-			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
-			{ dataField: 'NOMBRE_CUENTA', caption: 'Nombre cuenta', minWidth: 160 },
-			{ dataField: 'NOMBRE_CENTRO', caption: 'Centro costo', width: 130 },
-			{ dataField: 'NOMBRE_TRAN', caption: 'Concepto', minWidth: 140 },
-			{ dataField: 'MONTO_CARGO', caption: 'Cargo', format: '#,##0.00', width: 110, alignment: 'right' },
-			{ dataField: 'MONTO_ABONO', caption: 'Abono', format: '#,##0.00', width: 110, alignment: 'right' },
+			{ dataField: 'CORR_PARTIDA_DETA', caption: 'Lín.', width: 55, alignment: 'center' },
+			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 115 },
+			{ dataField: 'NOMBRE_CUENTA', caption: 'Nombre cuenta', width: 160 },
+			{ dataField: 'NOMBRE_CENTRO', caption: 'Centro', width: 110 },
+			{ dataField: 'NOMBRE_TRAN', caption: 'Concepto', width: 150 },
+			{ dataField: 'MONTO_CARGO', caption: 'Cargo', format: '#,##0.00', width: 100, alignment: 'right' },
+			{ dataField: 'MONTO_ABONO', caption: 'Abono', format: '#,##0.00', width: 100, alignment: 'right' },
 		];
 	}
 

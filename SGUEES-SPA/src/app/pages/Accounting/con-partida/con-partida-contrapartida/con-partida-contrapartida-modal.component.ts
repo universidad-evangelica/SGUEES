@@ -6,10 +6,12 @@ import { custom } from 'devextreme/ui/dialog';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { ConPartidaDetaService } from '../con-partida/con-partida-deta/con-partida-deta.service';
+import { ConPartidaDetaService } from '../con-partida-deta/con-partida-deta.service';
 import { ConPartidaContrapartidaRepository } from './con-partida-contrapartida.repository';
 import { ConPartidaContrapartidaService } from './con-partida-contrapartida.service';
-import { MESES_PERIODO } from '../con-periodo-contable/con-periodo-contable.service';
+import { MESES_PERIODO } from '../../con-periodo-contable/con-periodo-contable.service';
+
+type PeriodoOpcion = { key: string; label: string; ANIO_PERIODO: number; MES_PERIODO: number };
 
 @Component({
 	standalone: false,
@@ -27,17 +29,16 @@ export class ConPartidaContrapartidaModalComponent extends CBaseComponent implem
 	detalles: any[] = [];
 	detalleColumns: any[] = [];
 	detalleSummary: any;
-	filtroAnio = new Date().getFullYear();
-	filtroMes = new Date().getMonth() + 1;
-	periodosAbiertos: { key: string; label: string; ANIO_PERIODO: number; MES_PERIODO: number }[] = [];
+	periodosCerrados: PeriodoOpcion[] = [];
+	periodosAbiertos: PeriodoOpcion[] = [];
+	periodoOrigenKey = '';
 	periodoDestinoKey = '';
 	partidaSeleccionada: any = null;
 	loadingVisible = false;
 	private detalleRequestSeq = 0;
-	readonly mesesPeriodo = MESES_PERIODO;
 	readonly gridHeight = 400;
 	readonly noDataText =
-		'Indique año y mes del período cerrado y pulse Consultar. Solo se listan partidas aplicadas sin contrapartida previa.';
+		'Seleccione un período cerrado y pulse Consultar. Solo se listan partidas aplicadas sin contrapartida previa.';
 	readonly noDataDetalleText = 'Seleccione una partida a la izquierda para ver su detalle.';
 
 	constructor(
@@ -54,25 +55,29 @@ export class ConPartidaContrapartidaModalComponent extends CBaseComponent implem
 	}
 
 	ngOnInit(): void {
-		this.cargarPeriodosAbiertos();
+		this.cargarPeriodos();
 	}
 
-	cargarPeriodosAbiertos(): void {
+	cargarPeriodos(): void {
+		this.repo
+			.getPeriodosOrigen()
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.periodosCerrados = this.mapPeriodos(response?.Data || []);
+					if (this.periodosCerrados.length && !this.periodoOrigenKey) {
+						this.periodoOrigenKey = this.periodosCerrados[0].key;
+					}
+				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
+			});
+
 		this.repo
 			.getPeriodosDestino()
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					const rows = response?.Data || [];
-					this.periodosAbiertos = rows.map((r: any) => {
-						const mes = MESES_PERIODO.find((m) => m.MES_PERIODO === r.MES_PERIODO);
-						return {
-							key: `${r.ANIO_PERIODO}-${r.MES_PERIODO}`,
-							label: `${mes?.NOMBRE_MES_PERIODO || r.MES_PERIODO} / ${r.ANIO_PERIODO}`,
-							ANIO_PERIODO: r.ANIO_PERIODO,
-							MES_PERIODO: r.MES_PERIODO,
-						};
-					});
+					this.periodosAbiertos = this.mapPeriodos(response?.Data || []);
 					if (this.periodosAbiertos.length && !this.periodoDestinoKey) {
 						this.periodoDestinoKey = this.periodosAbiertos[0].key;
 					}
@@ -82,19 +87,20 @@ export class ConPartidaContrapartidaModalComponent extends CBaseComponent implem
 	}
 
 	consultar(): void {
-		if (!this.filtroAnio || !this.filtroMes) {
-			this.notifyFx('Indique año y mes del período cerrado', NotifyType.Warning);
+		const origen = this.getPeriodoOrigen();
+		if (!origen) {
+			this.notifyFx('Seleccione un período contable cerrado', NotifyType.Warning);
 			return;
 		}
-		const fechaInicial = new Date(this.filtroAnio, this.filtroMes - 1, 1);
-		const fechaFinal = new Date(this.filtroAnio, this.filtroMes, 0);
+		const fechaInicial = new Date(origen.ANIO_PERIODO, origen.MES_PERIODO - 1, 1);
+		const fechaFinal = new Date(origen.ANIO_PERIODO, origen.MES_PERIODO, 0);
 		this.loadingVisible = true;
 		this.service
 			.getElegibles({
 				FECHA_INICIAL: fechaInicial,
 				FECHA_FINAL: fechaFinal,
-				FILTRO_ANIO_PERIODO: this.filtroAnio,
-				FILTRO_MES_PERIODO: this.filtroMes,
+				FILTRO_ANIO_PERIODO: origen.ANIO_PERIODO,
+				FILTRO_MES_PERIODO: origen.MES_PERIODO,
 			})
 			.pipe(take(1))
 			.subscribe({
@@ -137,6 +143,10 @@ export class ConPartidaContrapartidaModalComponent extends CBaseComponent implem
 			this.cargarDetalle(e.data);
 			this.generarContrapartida();
 		}
+	}
+
+	getPeriodoOrigen(): PeriodoOpcion | null {
+		return this.periodosCerrados.find((x) => x.key === this.periodoOrigenKey) ?? null;
 	}
 
 	getPeriodoDestino(): { ANIO_PERIODO_DESTINO: number; MES_PERIODO_DESTINO: number } | null {
@@ -197,6 +207,18 @@ export class ConPartidaContrapartidaModalComponent extends CBaseComponent implem
 
 	cerrar(): void {
 		this.cancelled.emit();
+	}
+
+	private mapPeriodos(rows: any[]): PeriodoOpcion[] {
+		return rows.map((r: any) => {
+			const mes = MESES_PERIODO.find((m) => m.MES_PERIODO === r.MES_PERIODO);
+			return {
+				key: `${r.ANIO_PERIODO}-${r.MES_PERIODO}`,
+				label: `${mes?.NOMBRE_MES_PERIODO || r.MES_PERIODO} / ${r.ANIO_PERIODO}`,
+				ANIO_PERIODO: r.ANIO_PERIODO,
+				MES_PERIODO: r.MES_PERIODO,
+			};
+		});
 	}
 
 	private limpiarSeleccionDetalle(): void {
