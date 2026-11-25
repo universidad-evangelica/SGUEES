@@ -42,6 +42,8 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	private observacionResolver: ((val: string | null) => void) | null = null;
 
 	popupConfirmarMovVisible = false;
+	popupProcesarMovVisible = false;
+	popupFechaProcesarEfectiva: any = null;
 	// Qué hace: Variable de fecha para el popup de confirmación de movimiento.
 	// Cómo lo hace: Se define como any para ser compatible con [(value)] de dx-date-box bajo strictTemplates.
 	popupFechaEfectiva: any = null;
@@ -49,6 +51,10 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	// Cómo lo hace: Se define como any para ser compatible con [(value)] de dx-date-box bajo strictTemplates.
 	popupFechaIngresoPropuesta: any = null;
 	popupDetalleVisible = false;
+	accionesMovimiento = {
+		PUEDE_CONFIRMAR: false,
+		PUEDE_PROCESAR: false,
+	};
 
 	activeTab: ScBandejaTab = 'REQUISICIONES';
 
@@ -100,6 +106,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	readonly estadosFiltroContratacion: Array<{ VALUE: string; TEXT: string }> = [
 		{ VALUE: 'TODOS', TEXT: 'Todos' },
 		{ VALUE: 'APLICA', TEXT: 'Seleccionado' },
+		{ VALUE: 'PENDIENTE_FECHA_INGRESO', TEXT: 'Pendiente de fecha inicio' },
 		{ VALUE: 'LISTO_CREAR_USUARIO', TEXT: 'Listo para crear empleado' },
 		{ VALUE: 'CONTRATADO', TEXT: 'Contratado' },
 	];
@@ -110,6 +117,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 	readonly pageSize = 15;
 	readonly allowedPageSizes: (number | 'all')[] = [10, 15, 25, 50, 'all'];
+	private autoSelectMovimientoCorr: number | null = null;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -121,8 +129,22 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	}
 
 	ngOnInit(): void {
+		this.procesarParametrosRuta();
 		this.prefetchTotales();
 		this.configurarDataSource();
+	}
+
+	// Qué hace: Interpreta el correlativo enviado por una notificación de movimiento.
+	// Cómo lo hace: Lee corr y tipo de la URL y prepara la pestaña Contrataciones para localizar la fila tras cargarla.
+	private procesarParametrosRuta(): void {
+		const corr = Number(this.router.snapshot.queryParamMap.get('corr') ?? 0);
+		const tipo = (this.router.snapshot.queryParamMap.get('tipo') ?? '').trim().toUpperCase();
+		if (corr > 0 && (tipo === 'MOVIMIENTO' || tipo === 'MOVIMIENTOS')) {
+			this.autoSelectMovimientoCorr = corr;
+			this.activeTab = 'CONTRATACIONES';
+			this.filtroTipo = 'CONTRATACION';
+			this.estadosFiltro = this.estadosFiltroContratacion;
+		}
 	}
 
 	/** Totales para tabs/KPIs aunque el stage activo no sea Candidatos. */
@@ -202,25 +224,25 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
-	// Qué hace: Determina si se puede confirmar el movimiento de personal en contrataciones.
-	// Cómo lo hace: Valida que pertenezca a contrataciones y que aún no esté confirmado ni tenga empleado.
-	// Qué hace: Identifica si la contratación seleccionada para confirmación es de tipo eventual.
-	// Cómo lo hace: Evalúa el tipo de contratación por correlativo (2) o nombre ('EVENTUAL').
-	get esEventualConfirmacion(): boolean {
-		const item = this.selectedItem;
-		if (!item) return false;
-		if (item.CORR_TIPO_CONTRATACION === 2) return true;
-		const nombre = `${item.NOMBRE_TIPO_CONTRATACION || ''}`.trim().toUpperCase();
-		return nombre.includes('EVENTUAL');
-	}
-
 	get puedeConfirmarMovimiento(): boolean {
 		const item = this.selectedItem;
 		if (!item) return false;
 		if (item.TIPO !== 'CONTRATACION' && !item.LISTO_CONTRATACION) return false;
-		const esConfirmado = item.CONFIRMADO === true || Number(item.CONFIRMADO) === 1;
 		const tieneEmpleado = Number(item.CORR_EMPLEADO) > 0;
-		return !esConfirmado && !tieneEmpleado;
+		return item.ESTADO_CICLO_CANDIDATO === 'PENDIENTE_FECHA_INGRESO'
+			&& Number(item.CONFIRMADO) === 1
+			&& item.ESTADO_MOVIMIENTO === 'AP'
+			&& !tieneEmpleado
+			&& this.accionesMovimiento.PUEDE_PROCESAR;
+	}
+
+	get puedeProcesarMovimiento(): boolean {
+		const item = this.selectedItem;
+		if (!item || item.TIPO !== 'CONTRATACION') return false;
+		return Number(item.CONFIRMADO) === 0
+			&& item.ESTADO_MOVIMIENTO === 'AP'
+			&& !(Number(item.CORR_EMPLEADO) > 0)
+			&& this.accionesMovimiento.PUEDE_PROCESAR;
 	}
 
 	// Qué hace: Determina si el candidato seleccionado está listo para crear su usuario/empleado institucional.
@@ -229,7 +251,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		const item = this.selectedItem;
 		if (!item || item.TIPO !== 'CONTRATACION') return false;
 		const esAprobado = item.ESTADO_MOVIMIENTO === 'AP';
-		const esConfirmado = item.CONFIRMADO === true || Number(item.CONFIRMADO) === 1;
+		const esConfirmado = Number(item.CONFIRMADO) === 2;
 		const tieneEmpleado = Number(item.CORR_EMPLEADO) > 0;
 		return (
 			(item.ESTADO_CICLO_CANDIDATO === 'LISTO_CREAR_USUARIO' || (esAprobado && esConfirmado)) &&
@@ -279,6 +301,15 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		this.selectedItem = { ...item, HISTORIAL: item.HISTORIAL ? [...item.HISTORIAL] : [] };
 		this.panelOpen = true;
 		this.panelTab = 'RESUMEN';
+		this.accionesMovimiento = {
+			PUEDE_CONFIRMAR: false,
+			PUEDE_PROCESAR: false,
+		};
+
+		const corrMovimiento = Number(item.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (corrMovimiento > 0) {
+			this.cargarAccionesMovimiento(corrMovimiento);
+		}
 
 		if (item.TIPO === 'REQUISICION' && item.CORR_REQUISICION_PERSONAL) {
 			this.cargarBitacoraRequisicion(item.CORR_REQUISICION_PERSONAL);
@@ -289,6 +320,58 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		this.panelOpen = false;
 		this.selectedItem = null;
 		this.bitacoraLoading = false;
+		this.accionesMovimiento = {
+			PUEDE_CONFIRMAR: false,
+			PUEDE_PROCESAR: false,
+		};
+	}
+
+	private cargarAccionesMovimiento(corrMovimiento: number): void {
+		lastValueFrom(this.service.getAccionesMovimientoPersonal(corrMovimiento))
+			.then((response: IResult) => {
+				if (
+					!this.selectedItem
+					|| Number(this.selectedItem.CORR_MOVIMIENTO_PERSONAL) !== corrMovimiento
+				) {
+					return;
+				}
+				if (!response.Result) {
+					this.accionesMovimiento = {
+						PUEDE_CONFIRMAR: false,
+						PUEDE_PROCESAR: false,
+					};
+					this.notifyFx(
+						response.ErrorMessage || 'No se pudieron consultar los permisos del movimiento.',
+						NotifyType.Error,
+						{ raw: true }
+					);
+					return;
+				}
+				const data = response.Data;
+				this.accionesMovimiento = {
+					PUEDE_CONFIRMAR: !!data?.PUEDE_CONFIRMAR,
+					PUEDE_PROCESAR: !!data?.PUEDE_PROCESAR,
+				};
+			})
+			.catch((error: any) => {
+				if (
+					!this.selectedItem
+					|| Number(this.selectedItem.CORR_MOVIMIENTO_PERSONAL) !== corrMovimiento
+				) {
+					return;
+				}
+				this.accionesMovimiento = {
+					PUEDE_CONFIRMAR: false,
+					PUEDE_PROCESAR: false,
+				};
+				this.notifyFx(
+					error?.error?.ErrorMessage
+						|| error?.message
+						|| 'No se pudieron consultar los permisos del movimiento.',
+					NotifyType.Error,
+					{ raw: true }
+				);
+			});
 	}
 
 	setPanelTab(tab: 'RESUMEN' | 'HISTORIAL'): void {
@@ -489,6 +572,110 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 	// Qué hace: Abre el modal para capturar o validar la fecha efectiva antes de confirmar.
 	// Cómo lo hace: Precarga la fecha si ya venía registrada en BD y despliega el popup.
+	abrirPopupProcesarMov(): void {
+		const item = this.selectedItem;
+		if (!item || this.accionEnCurso || !this.puedeProcesarMovimiento) return;
+		this.popupFechaProcesarEfectiva = item.FECHA_EFECTIVA ?? null;
+		this.popupProcesarMovVisible = true;
+	}
+
+	cancelarPopupProcesarMov(): void {
+		this.popupProcesarMovVisible = false;
+		this.popupFechaProcesarEfectiva = null;
+	}
+
+	async confirmarPopupProcesarMov(): Promise<void> {
+		const item = this.selectedItem;
+		const corrMov = Number(item?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (!item || corrMov <= 0) return;
+		if (!this.popupFechaProcesarEfectiva) {
+			this.notifyFx('Debe indicar la fecha efectiva antes de procesar.', NotifyType.Warning);
+			return;
+		}
+		this.accionEnCurso = true;
+		try {
+			const response = await lastValueFrom(this.service.procesarMovimientoPersonal({
+				CORR_MOVIMIENTO_PERSONAL: corrMov,
+				FECHA_EFECTIVA: this.popupFechaProcesarEfectiva,
+			}));
+			if (!response.Result) {
+				const message = response.ErrorMessage || 'No se pudo procesar el movimiento.';
+				if (this.sincronizarEstadoMovimientoExistente(item, message)) {
+					this.cancelarPopupProcesarMov();
+					this.notifyFx('El estado del movimiento ya estaba actualizado.', NotifyType.Warning, { raw: true });
+				} else {
+					this.notifyFx(message, NotifyType.Error, { raw: true });
+				}
+				return;
+			}
+			this.actualizarEstadoMovimiento(item, 1, this.popupFechaProcesarEfectiva);
+			if (this.filtroEstado === 'APLICA') {
+				this.filtroEstado = 'TODOS';
+			}
+			this.popupProcesarMovVisible = false;
+			this.popupFechaProcesarEfectiva = null;
+			this.cargarAccionesMovimiento(corrMov);
+			this.notifyFx('El movimiento fue procesado correctamente.', NotifyType.Success);
+		} catch (error: any) {
+			const message = error?.error?.ErrorMessage || error?.message || 'No se pudo procesar el movimiento.';
+			if (this.sincronizarEstadoMovimientoExistente(item, message)) {
+				this.cancelarPopupProcesarMov();
+				this.notifyFx('El estado del movimiento ya estaba actualizado.', NotifyType.Warning, { raw: true });
+			} else {
+				this.notifyFx(message, NotifyType.Error, { raw: true });
+			}
+		} finally {
+			this.accionEnCurso = false;
+		}
+	}
+
+	private sincronizarEstadoMovimientoExistente(item: ScBandejaItem, message: string): boolean {
+		const normalized = `${message || ''}`.toLowerCase();
+		if (normalized.includes('ya está procesado') || normalized.includes('ya esta procesado')) {
+			this.actualizarEstadoMovimiento(item, 1, this.popupFechaProcesarEfectiva);
+			return true;
+		}
+		if (normalized.includes('ya está confirmado') || normalized.includes('ya esta confirmado')) {
+			this.actualizarEstadoMovimiento(item, 2, this.popupFechaProcesarEfectiva);
+			return true;
+		}
+		return false;
+	}
+
+	private actualizarEstadoMovimiento(
+		item: ScBandejaItem,
+		estado: 1 | 2,
+		fechaEfectiva?: Date | string | null
+	): void {
+		item.CONFIRMADO = estado;
+		item.FECHA_EFECTIVA = fechaEfectiva ?? item.FECHA_EFECTIVA;
+		item.LISTO_CONTRATACION = false;
+		if (estado === 1) {
+			item.ESTADO = 'Pendiente de fecha inicio';
+			item.ESTADO_TONE = 'pendiente-fecha';
+			item.ESTADO_CICLO_CANDIDATO = 'PENDIENTE_FECHA_INGRESO';
+		} else if (Number(item.CORR_EMPLEADO) > 0) {
+			item.ESTADO = 'Contratado';
+			item.ESTADO_TONE = 'cerrada';
+			item.ESTADO_CICLO_CANDIDATO = 'CONTRATADO';
+		} else {
+			item.ESTADO = 'Listo para crear empleado';
+			item.ESTADO_TONE = 'listo-usuario';
+			item.ESTADO_CICLO_CANDIDATO = 'LISTO_CREAR_USUARIO';
+		}
+		item.REQUIERE_ATENCION = item.ESTADO_CICLO_CANDIDATO !== 'CONTRATADO';
+		const corrMov = Number(item.CORR_MOVIMIENTO_PERSONAL) || 0;
+		const idx = this.models.findIndex((row: ScBandejaItem) => Number(row.CORR_MOVIMIENTO_PERSONAL) === corrMov);
+		if (idx !== -1) {
+			this.models[idx] = { ...this.models[idx], ...item };
+			this.models = [...this.models];
+		}
+		if (this.filtroEstado === 'APLICA') {
+			this.filtroEstado = 'TODOS';
+		}
+		this.gridBandeja?.instance?.repaint();
+	}
+
 	abrirPopupConfirmarMov(): void {
 		const item = this.selectedItem;
 		if (!item || this.accionEnCurso) {
@@ -505,9 +692,9 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		if (item.CONFIRMADO === true || Number(item.CONFIRMADO) === 1) {
+		if (Number(item.CONFIRMADO) !== 1) {
 			this.notifyFx(
-				'El movimiento de personal ya está confirmado.',
+				'Primero debe procesar el movimiento personal.',
 				NotifyType.Warning,
 				{ raw: true }
 			);
@@ -516,7 +703,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 		// Precargar fecha si ya existe en base de datos
 		this.popupFechaEfectiva = item.FECHA_EFECTIVA ?? null;
-		this.popupFechaIngresoPropuesta = item.FECHA_INGRESO_PROPUESTA ?? item.FECHA_EFECTIVA ?? null;
+		this.popupFechaIngresoPropuesta = item.FECHA_INGRESO_PROPUESTA ?? null;
 		this.popupConfirmarMovVisible = true;
 	}
 
@@ -536,10 +723,9 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		// Alerta obligatoria si es eventual y no tiene fecha de ingreso propuesta
-		if (this.esEventualConfirmacion && !this.popupFechaIngresoPropuesta) {
+		if (!this.popupFechaIngresoPropuesta) {
 			this.notifyFx(
-				'Debe indicar la fecha de ingreso propuesta para la contratación eventual.',
+				'Debe indicar la fecha de ingreso propuesta.',
 				NotifyType.Warning,
 				{ raw: true }
 			);
@@ -547,7 +733,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		}
 
 		// Alerta obligatoria si no tiene fecha efectiva
-		if (!this.popupFechaEfectiva) {
+		if (!item.FECHA_EFECTIVA) {
 			this.notifyFx(
 				'Debe indicar la fecha efectiva antes de confirmar el movimiento.',
 				NotifyType.Warning,
@@ -563,9 +749,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				this.service.confirmarMovimientoPersonal({
 					CORR_MOVIMIENTO_PERSONAL: corrMov,
 					FECHA_EFECTIVA: this.popupFechaEfectiva,
-					FECHA_INGRESO_PROPUESTA: this.esEventualConfirmacion
-						? this.popupFechaIngresoPropuesta
-						: undefined,
+					FECHA_INGRESO_PROPUESTA: this.popupFechaIngresoPropuesta,
 				})
 			);
 
@@ -593,10 +777,8 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				this.models[idx] = {
 					...this.models[idx],
 					FECHA_EFECTIVA: this.popupFechaEfectiva,
-					FECHA_INGRESO_PROPUESTA: this.esEventualConfirmacion
-						? this.popupFechaIngresoPropuesta
-						: this.models[idx].FECHA_INGRESO_PROPUESTA,
-					CONFIRMADO: true,
+					FECHA_INGRESO_PROPUESTA: this.popupFechaIngresoPropuesta,
+					CONFIRMADO: 2,
 					ESTADO: 'Listo para crear empleado',
 					ESTADO_TONE: 'listo-usuario',
 					ESTADO_CICLO_CANDIDATO: 'LISTO_CREAR_USUARIO',
@@ -607,10 +789,8 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			}
 
 			item.FECHA_EFECTIVA = this.popupFechaEfectiva;
-			if (this.esEventualConfirmacion) {
-				item.FECHA_INGRESO_PROPUESTA = this.popupFechaIngresoPropuesta;
-			}
-			item.CONFIRMADO = true;
+			item.FECHA_INGRESO_PROPUESTA = this.popupFechaIngresoPropuesta;
+			item.CONFIRMADO = 2;
 			item.ESTADO = 'Listo para crear empleado';
 			item.ESTADO_TONE = 'listo-usuario';
 			item.ESTADO_CICLO_CANDIDATO = 'LISTO_CREAR_USUARIO';
@@ -620,6 +800,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			this.popupConfirmarMovVisible = false;
 			this.popupFechaEfectiva = null;
 			this.popupFechaIngresoPropuesta = null;
+			this.cargarAccionesMovimiento(corrMov);
 
 			// Si el filtro de estado estaba en 'APLICA', cambiarlo a 'TODOS' para que el registro se mantenga visible
 			if (this.filtroEstado === 'APLICA') {
@@ -849,6 +1030,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 					this.totalContratacionesApi = res.RowsAffected || this.models.length;
 				}
 				this.recalcularKpis();
+				this.procesarAutoSeleccionMovimiento();
 			},
 			error: (err) => {
 				this.gridBandeja?.instance?.endCustomLoading();
@@ -858,6 +1040,26 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				});
 			},
 		});
+	}
+
+	// Qué hace: Selecciona el movimiento solicitado por la notificación y abre su panel lateral.
+	// Cómo lo hace: Busca el correlativo en las filas cargadas de Contrataciones, abre el panel y enfoca la fila encontrada.
+	private procesarAutoSeleccionMovimiento(): void {
+		const corr = this.autoSelectMovimientoCorr;
+		if (!corr || this.activeTab !== 'CONTRATACIONES') {
+			return;
+		}
+
+		const item = (this.models as ScBandejaItem[]).find(
+			(row) => Number(row.CORR_MOVIMIENTO_PERSONAL) === corr
+		);
+		this.autoSelectMovimientoCorr = null;
+		if (!item) {
+			return;
+		}
+
+		this.abrirPanel(item);
+		setTimeout(() => this.gridBandeja?.instance?.option('focusedRowKey', item.ID), 0);
 	}
 
 	private cargarBitacoraRequisicion(corr: number): void {

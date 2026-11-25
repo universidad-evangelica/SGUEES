@@ -23,8 +23,8 @@ export class ScMovimientoPersonalService {
 	];
 
 	readonly tiposMovimiento: { CODIGO: string; NOMBRE: string }[] = [
-		//{ CODIGO: 'PERMANENTE', NOMBRE: 'Contratación permanente' },
-		//{ CODIGO: 'EVENTUAL', NOMBRE: 'Contratación eventual' },
+		{ CODIGO: 'PERMANENTE', NOMBRE: 'Contratación permanente' },
+		{ CODIGO: 'EVENTUAL', NOMBRE: 'Contratación eventual' },
 		{ CODIGO: 'ASCENSO', NOMBRE: 'Ascenso' },
 		{ CODIGO: 'TRASLADO', NOMBRE: 'Traslado' },
 	];
@@ -118,16 +118,14 @@ export class ScMovimientoPersonalService {
 	}
 
 	/**
-	 * Confirmable: CONFIRMADO=0 y
+	 * Confirmable: CONFIRMADO=1 y
 	 * (REQUISICION desde que existe) o (DIRECTO solo si ESTADO=AP).
 	 */
 	esConfirmable(model?: Partial<ScMovimientoPersonal> | null): boolean {
 		if (!model || (Number(model.CORR_MOVIMIENTO_PERSONAL) || 0) <= 0) {
 			return false;
 		}
-		if (this.esConfirmado(model.CONFIRMADO)) {
-			return false;
-		}
+		if (Number(model.CONFIRMADO) !== 1) return false;
 
 		const origen = `${model.ORIGEN_MOVIMIENTO || ''}`.trim().toUpperCase();
 		const estado = `${model.ESTADO_MOVIMIENTO || ''}`.trim().toUpperCase();
@@ -142,14 +140,18 @@ export class ScMovimientoPersonalService {
 	}
 
 	esConfirmado(valor?: boolean | number | null): boolean {
-		return valor === true || valor === 1;
+		return Number(valor) === 2;
+	}
+
+	esProcesado(valor?: boolean | number | null): boolean {
+		return Number(valor) === 1 || this.esConfirmado(valor);
 	}
 
 	getConfirmacionLabel(model?: Partial<ScMovimientoPersonal> | null): string {
-		if (model?.NOMBRE_CONFIRMACION) {
-			return model.NOMBRE_CONFIRMACION;
-		}
-		return this.esConfirmado(model?.CONFIRMADO) ? 'Confirmado' : 'En Evaluación';
+		const estado = Number(model?.CONFIRMADO);
+		if (estado === 2) return 'Confirmado';
+		if (estado === 1) return 'Procesado';
+		return 'En evaluación';
 	}
 
 	getEstadoLabel(estado?: string): string {
@@ -207,9 +209,17 @@ export class ScMovimientoPersonalService {
 		return this.repo.autoriza(model);
 	}
 
+	procesar(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_EFECTIVA: Date | string;
+	}): Observable<IResult> {
+		return this.repo.procesar(model);
+	}
+
 	confirmar(model: {
 		CORR_MOVIMIENTO_PERSONAL: number;
 		FECHA_EFECTIVA?: Date | string | null;
+		FECHA_INGRESO_PROPUESTA?: Date | string | null;
 	}): Observable<IResult> {
 		return this.repo.confirmar(model);
 	}
@@ -280,9 +290,13 @@ export class ScMovimientoPersonalService {
 				calculateCellValue: (row: any) => this.getConfirmacionLabel(row),
 				cellTemplate: (container: HTMLElement, options: any) => {
 					const row = options?.data;
-					const confirmado = this.esConfirmado(row?.CONFIRMADO);
+					const estado = Number(row?.CONFIRMADO) || 0;
 					const chip = document.createElement('span');
-					chip.className = `estado-mov-chip ${confirmado ? 'estado-mov--confirmado' : 'estado-mov--evaluacion'}`;
+					chip.className = `estado-mov-chip ${estado === 2
+						? 'estado-mov--confirmado'
+						: estado === 1
+							? 'estado-mov--procesado'
+							: 'estado-mov--evaluacion'}`;
 					chip.textContent = this.getConfirmacionLabel(row);
 					chip.title = chip.textContent;
 					container.appendChild(chip);
@@ -322,8 +336,15 @@ export class ScMovimientoPersonalService {
 		];
 	}
 
-	getItems(origenMovimiento: string = 'DIRECTO', corrTipoContratacion?: number | null): any[] {
+	getItems(
+		origenMovimiento: string = 'DIRECTO',
+		corrTipoContratacion?: number | null,
+		tipoMovimiento: string = 'ASCENSO'
+	): any[] {
 		const esDirecto = `${origenMovimiento || 'DIRECTO'}`.trim().toUpperCase() === 'DIRECTO';
+		const muestraPosicionActual = ['ASCENSO', 'TRASLADO'].includes(
+			`${tipoMovimiento || ''}`.trim().toUpperCase()
+		);
 		const muestraFechaFinalizacion = this.muestraFechaFinalizacion({
 			ORIGEN_MOVIMIENTO: origenMovimiento,
 			CORR_TIPO_CONTRATACION: corrTipoContratacion,
@@ -427,12 +448,13 @@ export class ScMovimientoPersonalService {
 					...(campoFechaFinalizacion ? [campoFechaFinalizacion] : []),
 				],
 			},
-			{
-				itemType: 'group',
-				caption: 'Posición actual',
-				colCount: 8,
-				colSpan: 8,
-				items: [
+			...(muestraPosicionActual
+				? [{
+					itemType: 'group',
+					caption: 'Posición actual',
+					colCount: 8,
+					colSpan: 8,
+					items: [
 					{
 						dataField: 'GERENCIA_ACTUAL',
 						label: { text: 'Gerencia / Vicerrectoría / Facultad' },
@@ -470,8 +492,9 @@ export class ScMovimientoPersonalService {
 						colSpan: 8,
 						editorOptions: { maxLength: 250, showClearButton: true },
 					},
-				],
-			},
+					],
+				  }]
+				: []),
 			{
 				itemType: 'group',
 				caption: 'Posición propuesta',

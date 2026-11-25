@@ -332,7 +332,7 @@ export class ScBandejaThService {
 	}
 
 	// Qué hace: Mapea registros de contrataciones determinando si está Seleccionado, Listo para crear empleado o Contratado.
-	// Cómo lo hace: Evalúa si el movimiento de personal está aprobado ('AP') y confirmado (1), asignando 'CAN-{corr}' en etapas previas o 'CON-{corr}' al estar contratado.
+	// Cómo lo hace: Evalúa si el movimiento está aprobado ('AP') y confirmado (2), asignando 'CAN-{corr}' en etapas previas o 'CON-{corr}' al estar contratado.
 	mapContratacionToBandejaItem(row: any): ScBandejaItem {
 		const base = this.mapCandidatoToBandejaItem({
 			...row,
@@ -346,23 +346,31 @@ export class ScBandejaThService {
 		const codigoCandidato = corrExp > 0 ? `CAN-${corrExp}` : `SOL-${corrSol}`;
 
 		const esAprobado = row?.ESTADO_MOVIMIENTO === 'AP';
-		const esConfirmado = Number(row?.CONFIRMADO) === 1 || row?.CONFIRMADO === true;
+		const estadoCicloApi = `${row?.ESTADO_CICLO_CANDIDATO || ''}`.trim().toUpperCase();
+		let estadoConfirmacion = Number(row?.CONFIRMADO) || 0;
+		if (estadoCicloApi === 'LISTO_CREAR_USUARIO' || estadoCicloApi === 'CONTRATADO') {
+			estadoConfirmacion = 2;
+		} else if (estadoCicloApi === 'PENDIENTE_FECHA_INGRESO') {
+			estadoConfirmacion = 1;
+		}
 		const corrEmpleado = Number(row?.CORR_EMPLEADO) || 0;
 
 		let estado = 'Seleccionado';
 		let estadoTone = 'seleccionado';
 		let estadoCiclo: ScBandejaEstadoCandidato = 'APLICA';
 
-		if (esAprobado && esConfirmado) {
-			if (corrEmpleado > 0) {
-				estado = 'Contratado';
-				estadoTone = 'cerrada';
-				estadoCiclo = 'CONTRATADO';
-			} else {
-				estado = 'Listo para crear empleado';
-				estadoTone = 'listo-usuario';
-				estadoCiclo = 'LISTO_CREAR_USUARIO';
-			}
+		if (corrEmpleado > 0 || estadoCicloApi === 'CONTRATADO') {
+			estado = 'Contratado';
+			estadoTone = 'cerrada';
+			estadoCiclo = 'CONTRATADO';
+		} else if (estadoConfirmacion === 1) {
+			estado = 'Pendiente de fecha inicio';
+			estadoTone = 'pendiente-fecha';
+			estadoCiclo = 'PENDIENTE_FECHA_INGRESO';
+		} else if (esAprobado && estadoConfirmacion === 2) {
+			estado = 'Listo para crear empleado';
+			estadoTone = 'listo-usuario';
+			estadoCiclo = 'LISTO_CREAR_USUARIO';
 		}
 
 		// Qué hace: Asigna el código visible según la etapa de contratación.
@@ -382,7 +390,7 @@ export class ScBandejaThService {
 			CORR_REQUISICION_CANDIDATO: Number(row?.CORR_REQUISICION_CANDIDATO) || undefined,
 			CORR_MOVIMIENTO_PERSONAL: Number(row?.CORR_MOVIMIENTO_PERSONAL) || undefined,
 			ESTADO_MOVIMIENTO: row?.ESTADO_MOVIMIENTO,
-			CONFIRMADO: row?.CONFIRMADO,
+			CONFIRMADO: estadoConfirmacion,
 			CORR_EMPLEADO: corrEmpleado > 0 ? corrEmpleado : undefined,
 			FECHA_EFECTIVA: row?.FECHA_EFECTIVA,
 			FECHA_INGRESO_PROPUESTA: row?.FECHA_INGRESO_PROPUESTA,
@@ -418,6 +426,8 @@ export class ScBandejaThService {
 				return 'Seleccionado';
 			case 'NO_APLICA':
 				return 'Rechazado';
+			case 'PENDIENTE_FECHA_INGRESO':
+				return 'Pendiente de fecha inicio';
 			case 'LISTO_CREAR_USUARIO':
 				return 'Listo para crear empleado';
 			case 'CONTRATADO':
@@ -439,6 +449,8 @@ export class ScBandejaThService {
 				return 'seleccionado';
 			case 'NO_APLICA':
 				return 'rechazada';
+			case 'PENDIENTE_FECHA_INGRESO':
+				return 'pendiente-fecha';
 			case 'LISTO_CREAR_USUARIO':
 				return 'listo-usuario';
 			case 'CONTRATADO':
@@ -485,6 +497,14 @@ export class ScBandejaThService {
 	}
 
 	// Qué hace: Invoca el repositorio para confirmar el movimiento de personal.
+	procesarMovimientoPersonal(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_EFECTIVA: Date | string;
+	}): Observable<IResult> {
+		return this.repo.procesarMovimientoPersonal(model);
+	}
+
+	// Qué hace: Invoca el repositorio para confirmar el movimiento de personal.
 	// Cómo lo hace: Llama a confirmarMovimientoPersonal del repositorio con el payload de confirmación.
 	confirmarMovimientoPersonal(model: {
 		CORR_MOVIMIENTO_PERSONAL: number;
@@ -492,6 +512,10 @@ export class ScBandejaThService {
 		FECHA_INGRESO_PROPUESTA?: Date | string | null;
 	}): Observable<IResult> {
 		return this.repo.confirmarMovimientoPersonal(model);
+	}
+
+	getAccionesMovimientoPersonal(corrMovimiento: number): Observable<IResult> {
+		return this.repo.getAccionesMovimientoPersonal(corrMovimiento);
 	}
 
 	// Qué hace: Invoca la contratación y creación de usuario/empleado del candidato.

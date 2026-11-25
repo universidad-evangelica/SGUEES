@@ -76,7 +76,55 @@ namespace sguees.Services
 				p.Add(new CParameter { ParameterName = "LEIDA", Value = false, DbType = System.Data.DbType.Boolean });
 			}
 
-			return await _repo.GetAllAsync(p);
+			var resultado = await _repo.GetAllAsync(p);
+			if (resultado.Result
+				&& resultado.Data is IEnumerable<GEN_NOTIFICACIONView> notificaciones
+				&& await EsUsuarioThAsync(xWhere.CORR_EMPRESA, xWhere.LOGIN_SISTEMA))
+			{
+				foreach (var notificacion in notificaciones)
+				{
+					if (TryGetCorrMovimientoDestinoAnterior(notificacion.URL_DESTINO, out var corrMovimiento))
+					{
+						notificacion.URL_DESTINO = await ResolverUrlBandejaThAsync(corrMovimiento, "MOVIMIENTO");
+					}
+				}
+			}
+
+			return resultado;
+		}
+
+		// Qué hace: Reconoce enlaces antiguos de movimientos que todavía apuntan al formulario individual.
+		// Cómo lo hace: Comprueba la ruta heredada y extrae el correlativo de su query string para actualizar el destino al consultar la bandeja.
+		private static bool TryGetCorrMovimientoDestinoAnterior(string urlDestino, out int corrMovimiento)
+		{
+			corrMovimiento = 0;
+			if (string.IsNullOrWhiteSpace(urlDestino))
+			{
+				return false;
+			}
+
+			var separador = urlDestino.IndexOf('?');
+			var path = (separador >= 0 ? urlDestino[..separador] : urlDestino).TrimEnd('/');
+			if (!string.Equals(path, "/sc-movimiento-personal", StringComparison.OrdinalIgnoreCase)
+				|| separador < 0)
+			{
+				return false;
+			}
+
+			foreach (var parametro in urlDestino[(separador + 1)..].Split('&', StringSplitOptions.RemoveEmptyEntries))
+			{
+				var partes = parametro.Split('=', 2);
+				if (partes.Length == 2
+					&& string.Equals(partes[0], "corr", StringComparison.OrdinalIgnoreCase)
+					&& int.TryParse(Uri.UnescapeDataString(partes[1]), out corrMovimiento)
+					&& corrMovimiento > 0)
+				{
+					return true;
+				}
+			}
+
+			corrMovimiento = 0;
+			return false;
 		}
 
 		public Task<CResult> CountPendientesAsync(int corrEmpresa, string loginSistema)
@@ -287,8 +335,8 @@ namespace sguees.Services
 			return $"{path}?corr={corr}";
 		}
 
-		// Qué hace: Construye la URL amigable de la bandeja para notificaciones en formato REST (/sc-bandeja-actores/REQ-29).
-		// Cómo lo hace: Evalúa el tipo de documento para determinar el prefijo (REQ, MOV, CAN) y lo anexa como segmento limpio de ruta.
+		// Qué hace: Construye el destino de bandeja con el correlativo y tipo de documento para una notificación.
+		// Cómo lo hace: En TH utiliza query params que la bandeja puede consumir; para actores conserva el segmento amigable (REQ-29, MOV-29 o CAN-29).
 		private static string AppendBandejaQuery(string urlOpcion, int? corrDocumento, string tipoDocumento)
 		{
 			var path = NormalizePath(urlOpcion);
@@ -306,6 +354,12 @@ namespace sguees.Services
 					"CANDIDATO" or "CANDIDATOS" => "CAN",
 					_ => "REQ"
 				};
+				if (string.Equals(path.TrimEnd('/'), "/sc-bandeja-th", StringComparison.OrdinalIgnoreCase)
+					&& (tipo == "MOVIMIENTO" || tipo == "MOVIMIENTOS"))
+				{
+					return $"{path}?corr={corrDocumento.Value}&tipo={Uri.EscapeDataString(tipo)}";
+				}
+
 				return $"{path.TrimEnd('/')}/{prefijo}-{corrDocumento.Value}";
 			}
 

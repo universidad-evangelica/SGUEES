@@ -107,6 +107,19 @@ namespace SGUEES.Controllers
 		/// <summary>
 		/// Confirmación TH: CONFIRMADO=1 + USUARIO_CONFIRMA (LOGIN_SISTEMA) + FECHA_CONFIRMA.
 		/// </summary>
+		[HttpPut("Procesar")]
+		[Authorize(Policy = "/sc-movimiento-personal|U")]
+		public async Task<IActionResult> Procesar(SC_MOVIMIENTO_PERSONAL_PROCESAParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			var resultado = await _service.ProcesarAsync(
+				Data,
+				GetUsuario(),
+				ClientInfoHelper.GetClientStation(HttpContext));
+
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : Ok(resultado);
+		}
+
 		[HttpPut("Confirmar")]
 		[Authorize(Policy = "/sc-movimiento-personal|U")]
 		public async Task<IActionResult> Confirmar(SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data)

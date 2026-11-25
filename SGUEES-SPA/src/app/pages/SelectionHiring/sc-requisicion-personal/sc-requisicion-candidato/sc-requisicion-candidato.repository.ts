@@ -15,6 +15,15 @@ export class ScRequisicionCandidatoRepository {
 		return this.objData.Post(model, this.xController, 'Decide', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	puedeDecidir(corrRequisicionPersonal: number): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'PuedeDecidir',
+			[{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: corrRequisicionPersonal }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	getPostulacionesExpediente(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(
 			this.xController,

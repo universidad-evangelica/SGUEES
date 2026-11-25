@@ -112,6 +112,104 @@ ORDER BY CASE WHEN UN.ACTIVO = 1 THEN 0 ELSE 1 END, UN.CORR_NIVEL DESC, EP.CORR_
 		}
 
 		/// <summary>
+		/// Valida que solo el creador de la requisición, su jefe inmediato o
+		/// un jefe activo de Gerencia General pueda ejecutar el movimiento.
+		/// </summary>
+		public async Task<bool> PuedeEjecutarConfirmacionRequisicionAsync(
+			int corrEmpresa,
+			int corrMovimiento,
+			string login)
+		{
+			if (corrEmpresa <= 0 || corrMovimiento <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return false;
+			}
+
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+				new() { ParameterName = "CORR_MOVIMIENTO_PERSONAL", Value = corrMovimiento, DbType = DbType.Int32 },
+				new() { ParameterName = "LOGIN_SISTEMA", Value = login.Trim(), DbType = DbType.String },
+			};
+
+			var reader = await objData.GetDataReader(CommandType.Text, @"
+SELECT TOP (1) 1 AS OK
+FROM dbo.SC_MOVIMIENTO_REQUISICION AS MR
+INNER JOIN dbo.SC_REQUISICION_PERSONAL AS R
+	ON R.CORR_EMPRESA = MR.CORR_EMPRESA
+   AND R.CORR_REQUISICION_PERSONAL = MR.CORR_REQUISICION_PERSONAL
+INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+	ON U.CORR_EMPRESA = R.CORR_EMPRESA
+   AND U.CORR_UNIDAD = R.CORR_UNIDAD
+WHERE MR.CORR_EMPRESA = @CORR_EMPRESA
+  AND MR.CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL
+  AND (
+		UPPER(LTRIM(RTRIM(ISNULL(R.USUARIO_CREA, N'')))) =
+		UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	 OR EXISTS (
+		SELECT 1
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS J
+		INNER JOIN dbo.GEN_EMPLEADO AS E
+			ON E.CORR_EMPRESA = J.CORR_EMPRESA
+		   AND E.CORR_EMPLEADO = J.CORR_EMPLEADO
+		INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+			ON PU.CORR_PERSONA = E.CORR_PERSONA
+		WHERE J.CORR_EMPRESA = R.CORR_EMPRESA
+		  AND J.CORR_UNIDAD = R.CORR_UNIDAD
+		  AND J.ACTIVO = 1
+		  AND (J.FECHA_FIN IS NULL OR J.FECHA_FIN >= CAST(GETDATE() AS DATE))
+		  AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+		  AND UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) =
+			  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	 )
+	 OR EXISTS (
+		SELECT 1
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS J
+		INNER JOIN dbo.GEN_EMPLEADO AS E
+			ON E.CORR_EMPRESA = J.CORR_EMPRESA
+		   AND E.CORR_EMPLEADO = J.CORR_EMPLEADO
+		INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+			ON PU.CORR_PERSONA = E.CORR_PERSONA
+		WHERE J.CORR_EMPRESA = R.CORR_EMPRESA
+		  AND J.CORR_UNIDAD = U.CORR_UNIDAD_PADRE
+		  AND J.ACTIVO = 1
+		  AND (J.FECHA_FIN IS NULL OR J.FECHA_FIN >= CAST(GETDATE() AS DATE))
+		  AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+		  AND UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) =
+			  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	 )
+	 OR EXISTS (
+		SELECT 1
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS GG
+		INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS J
+			ON J.CORR_EMPRESA = GG.CORR_EMPRESA
+		   AND J.CORR_UNIDAD = GG.CORR_UNIDAD
+		INNER JOIN dbo.GEN_EMPLEADO AS E
+			ON E.CORR_EMPRESA = J.CORR_EMPRESA
+		   AND E.CORR_EMPLEADO = J.CORR_EMPLEADO
+		INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+			ON PU.CORR_PERSONA = E.CORR_PERSONA
+		WHERE GG.CORR_EMPRESA = R.CORR_EMPRESA
+		  AND GG.ACTIVO = 1
+		  AND (
+				UPPER(LTRIM(RTRIM(ISNULL(GG.NOMBRE_UNIDAD, N'')))) LIKE N'%GERENCIA GENERAL%'
+			 OR UPPER(LTRIM(RTRIM(ISNULL(GG.CODIGO_UNIDAD, N'')))) LIKE N'%GERENCIA GENERAL%'
+		  )
+		  AND J.ACTIVO = 1
+		  AND (J.FECHA_FIN IS NULL OR J.FECHA_FIN >= CAST(GETDATE() AS DATE))
+		  AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+		  AND UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) =
+			  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	 )
+  );", p);
+
+			var autorizado = reader.Read();
+			reader.Close();
+			objData.objConnection.Close();
+			return autorizado;
+		}
+
+		/// <summary>
 		/// Listado filtrado: creador / jefe TH / jefe no-TH (req o unidad actual si DIRECTO).
 		/// Cómo: PRAL_DATA_SC_MOVIMIENTO_PERSONAL (@CORR_EMPRESA, @LOGIN_SISTEMA).
 		/// </summary>
@@ -363,6 +461,49 @@ ORDER BY CASE WHEN UN.ACTIVO = 1 THEN 0 ELSE 1 END, UN.CORR_NIVEL DESC, EP.CORR_
 		/// <summary>
 		/// Marca CONFIRMADO=1 y guarda auditoría de confirmación; relee la vista.
 		/// </summary>
+		public async Task<CResult> ProcesarAsync(
+			SC_MOVIMIENTO_PERSONALTable Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION)
+		{
+			var objResultado = new CResult();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "FECHA_EFECTIVA", Value = ToSqlDate(Data.FECHA_EFECTIVA), DbType = DbType.Date },
+					new() { ParameterName = "CONFIRMADO", Value = 1, DbType = DbType.Int32 },
+					new() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = DbType.String },
+					new() { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = DbType.String },
+					new() { ParameterName = "FECHA_ACTU", Value = ToSqlDateTime(DateTime.Now), DbType = DbType.DateTime },
+				};
+				var pWhere = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = DbType.Int32 },
+					new() { ParameterName = "CORR_MOVIMIENTO_PERSONAL", Value = Data.CORR_MOVIMIENTO_PERSONAL, DbType = DbType.Int32 },
+				};
+				var reader = await objData.Update(_TableName, p, pWhere);
+				var response = new List<SC_MOVIMIENTO_PERSONALView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = response != null;
+				objResultado.RowsAffected = response == null ? 0 : 1;
+				objResultado.CodeHelper = Data.CORR_MOVIMIENTO_PERSONAL;
+				objResultado.ErrorCode = response == null ? -1 : 0;
+				objResultado.ErrorMessage = response == null
+					? "El procesamiento se ejecutó pero no se pudo releer el movimiento."
+					: string.Empty;
+			}
+			catch (Exception ex)
+			{
+				objResultado.ErrorCode = 1;
+				objResultado.ErrorMessage = ex.Message;
+				objResultado.Result = false;
+			}
+			return objResultado;
+		}
+
 		public async Task<CResult> ConfirmarAsync(
 			SC_MOVIMIENTO_PERSONALTable Data,
 			string vLOGIN_SISTEMA,
@@ -380,7 +521,13 @@ ORDER BY CASE WHEN UN.ACTIVO = 1 THEN 0 ELSE 1 END, UN.CORR_NIVEL DESC, EP.CORR_
 						Value = ToSqlDate(Data.FECHA_EFECTIVA),
 						DbType = DbType.Date,
 					},
-					new() { ParameterName = "CONFIRMADO", Value = true, DbType = DbType.Boolean },
+					new()
+					{
+						ParameterName = "FECHA_INGRESO_PROPUESTA",
+						Value = ToSqlDate(Data.FECHA_INGRESO_PROPUESTA),
+						DbType = DbType.Date,
+					},
+					new() { ParameterName = "CONFIRMADO", Value = 2, DbType = DbType.Int32 },
 					new()
 					{
 						ParameterName = "USUARIO_CONFIRMA",
@@ -587,12 +734,46 @@ ORDER BY FECHA_ACCION, CORR_MOVIMIENTO_PERSONAL", xWhere);
 
 			try
 			{
-				var reader = await objData.GetDataReader(CommandType.StoredProcedure, _SpUnidadesUsuario, xWhere);
-				var response = new List<SC_MOVIMIENTO_LOOKUP_UNIDADView>()
-					.FromDataReader(reader)
-					.OrderBy(x => x.NOMBRE_UNIDAD)
-					.ToList();
-				reader.Close();
+				var corrEmpresa = xWhere?
+					.FirstOrDefault(p => string.Equals(p.ParameterName, "CORR_EMPRESA", StringComparison.OrdinalIgnoreCase))
+					?.Value;
+				var login = xWhere?
+					.FirstOrDefault(p => string.Equals(p.ParameterName, "LOGIN_SISTEMA", StringComparison.OrdinalIgnoreCase))
+					?.Value?.ToString() ?? string.Empty;
+
+				var esJefeTh = await EsJefeTalentoHumanoAsync(Convert.ToInt32(corrEmpresa ?? 0), login);
+				var response = new List<SC_MOVIMIENTO_LOOKUP_UNIDADView>();
+
+				if (esJefeTh)
+				{
+					var pTodas = new List<CParameter>
+					{
+						new() { ParameterName = "CORR_EMPRESA", Value = Convert.ToInt32(corrEmpresa ?? 0), DbType = DbType.Int32 },
+					};
+					var readerTodas = await objData.GetDataReader(CommandType.Text, @"
+SELECT
+	U.CORR_EMPRESA,
+	U.CORR_UNIDAD,
+	U.CODIGO_UNIDAD,
+	U.NOMBRE_UNIDAD
+FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+  AND U.ACTIVO = CONVERT(BIT, 1)
+ORDER BY U.CODIGO_UNIDAD, U.NOMBRE_UNIDAD", pTodas);
+					response = new List<SC_MOVIMIENTO_LOOKUP_UNIDADView>()
+						.FromDataReader(readerTodas)
+						.ToList();
+					readerTodas.Close();
+				}
+				else
+				{
+					var reader = await objData.GetDataReader(CommandType.StoredProcedure, _SpUnidadesUsuario, xWhere);
+					response = new List<SC_MOVIMIENTO_LOOKUP_UNIDADView>()
+						.FromDataReader(reader)
+						.OrderBy(x => x.NOMBRE_UNIDAD)
+						.ToList();
+					reader.Close();
+				}
 
 				/* Enriquece DISPLAY_UNIDAD + GERENCIA_DISPLAY desde organigrama. */
 				await EnrichUnidadesDisplayAsync(response, xWhere);
@@ -612,6 +793,67 @@ ORDER BY FECHA_ACCION, CORR_MOVIMIENTO_PERSONAL", xWhere);
 			}
 
 			return objResultado;
+		}
+
+		private async Task<bool> EsJefeTalentoHumanoAsync(int corrEmpresa, string login)
+		{
+			if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return false;
+			}
+
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+				new() { ParameterName = "LOGIN_SISTEMA", Value = login.Trim(), DbType = DbType.String },
+			};
+
+			var reader = await objData.GetDataReader(CommandType.Text, @"
+;WITH THRaices AS (
+	SELECT U.CORR_EMPRESA, U.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+	WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+	  AND U.ACTIVO = CONVERT(BIT, 1)
+	  AND (
+			LTRIM(RTRIM(ISNULL(U.CODIGO_UNIDAD, N''))) = N'1010101'
+		 OR U.NOMBRE_UNIDAD LIKE N'%Departamento de Talento Humano%'
+	  )
+),
+THAmbito AS (
+	SELECT CORR_EMPRESA, CORR_UNIDAD
+	FROM THRaices
+	UNION ALL
+	SELECT H.CORR_EMPRESA, H.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS H
+	INNER JOIN THAmbito AS P
+		ON P.CORR_EMPRESA = H.CORR_EMPRESA
+	   AND P.CORR_UNIDAD = H.CORR_UNIDAD_PADRE
+	WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+	  AND H.ACTIVO = CONVERT(BIT, 1)
+)
+SELECT CAST(CASE WHEN EXISTS (
+	SELECT 1
+	FROM dbo.GEN_PERSONA_USUARIO AS PU
+	INNER JOIN dbo.GEN_EMPLEADO AS E
+		ON E.CORR_PERSONA = PU.CORR_PERSONA
+	   AND E.CORR_EMPRESA = @CORR_EMPRESA
+	INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS JU
+		ON JU.CORR_EMPRESA = E.CORR_EMPRESA
+	   AND JU.CORR_EMPLEADO = E.CORR_EMPLEADO
+	   AND JU.ACTIVO = CONVERT(BIT, 1)
+	INNER JOIN THAmbito AS TH
+		ON TH.CORR_EMPRESA = JU.CORR_EMPRESA
+	   AND TH.CORR_UNIDAD = JU.CORR_UNIDAD
+	WHERE PU.LOGIN_SISTEMA = @LOGIN_SISTEMA
+) THEN 1 ELSE 0 END AS BIT)", p);
+
+			var esJefeTh = false;
+			if (await reader.ReadAsync())
+			{
+				esJefeTh = reader.GetBoolean(0);
+			}
+			reader.Close();
+			return esJefeTh;
 		}
 
 		private async Task EnrichUnidadesDisplayAsync(
@@ -1053,7 +1295,7 @@ WHERE MR.CORR_EMPRESA = @CORR_EMPRESA
 			/* Confirmación solo se escribe en alta (default 0); Put Confirmar la actualiza aparte. */
 			if (includeCreateAudit)
 			{
-				p.Add(new CParameter { ParameterName = "CONFIRMADO", Value = false, DbType = DbType.Boolean });
+				p.Add(new CParameter { ParameterName = "CONFIRMADO", Value = 0, DbType = DbType.Int32 });
 				p.Add(new CParameter { ParameterName = "USUARIO_CONFIRMA", Value = DBNull.Value, DbType = DbType.String });
 				p.Add(new CParameter { ParameterName = "FECHA_CONFIRMA", Value = DBNull.Value, DbType = DbType.DateTime });
 				p.Add(new CParameter { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = DbType.String });
@@ -1076,6 +1318,54 @@ WHERE MR.CORR_EMPRESA = @CORR_EMPRESA
 			objResultado.ErrorCode = -1;
 			objResultado.ErrorMessage = e.Message;
 			objResultado.ErrorSource += $"[{e.Source}]";
+		}
+
+		public async Task<List<string>> GetLoginsJefesUnidadMovimientoAsync(int corrEmpresa, int corrMovimiento)
+		{
+			var logins = new List<string>();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new() { ParameterName = "CORR_MOVIMIENTO_PERSONAL", Value = corrMovimiento, DbType = DbType.Int32 },
+				};
+
+				var reader = await objData.GetDataReader(CommandType.Text, @"
+SELECT DISTINCT LTRIM(RTRIM(PU.LOGIN_SISTEMA)) AS LOGIN_DESTINO
+FROM dbo.SC_MOVIMIENTO_PERSONAL AS M
+INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS J
+	ON J.CORR_EMPRESA = M.CORR_EMPRESA
+   AND J.CORR_UNIDAD = ISNULL(M.CORR_UNIDAD_ACTUAL, M.CORR_UNIDAD_PROPUESTA)
+   AND J.ACTIVO = 1
+   AND (J.FECHA_FIN IS NULL OR J.FECHA_FIN >= CAST(GETDATE() AS DATE))
+INNER JOIN dbo.GEN_EMPLEADO AS E
+	ON E.CORR_EMPRESA = J.CORR_EMPRESA
+   AND E.CORR_EMPLEADO = J.CORR_EMPLEADO
+   AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+	ON PU.CORR_PERSONA = E.CORR_PERSONA
+WHERE M.CORR_EMPRESA = @CORR_EMPRESA
+  AND M.CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL
+  AND NULLIF(LTRIM(RTRIM(PU.LOGIN_SISTEMA)), N'') IS NOT NULL;", p);
+
+				while (reader.Read())
+				{
+					var login = reader["LOGIN_DESTINO"]?.ToString()?.Trim();
+					if (!string.IsNullOrWhiteSpace(login)
+						&& !logins.Exists(x => string.Equals(x, login, StringComparison.OrdinalIgnoreCase)))
+					{
+						logins.Add(login);
+					}
+				}
+				reader.Close();
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return logins;
 		}
 
 		public async Task<int> ResolverUnidadDocumentoAsync(int corrEmpresa, int corrMovimiento, string login)
@@ -1104,6 +1394,137 @@ WHERE MR.CORR_EMPRESA = @CORR_EMPRESA
 			return unidad;
 		}
 
+		public async Task<CResult> GetAccionesBandejaTHAsync(
+			int corrEmpresa,
+			int corrMovimiento,
+			string login)
+		{
+			var objResultado = new CResult();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+					new() { ParameterName = "CORR_MOVIMIENTO_PERSONAL", Value = corrMovimiento, DbType = DbType.Int32 },
+					new() { ParameterName = "LOGIN_SISTEMA", Value = login ?? string.Empty, DbType = DbType.String },
+				};
+				var reader = await objData.GetDataReader(CommandType.Text, @"
+;WITH THRaices AS (
+	SELECT U.CORR_EMPRESA, U.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+	WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+	  AND U.ACTIVO = 1
+	  AND (
+		LTRIM(RTRIM(ISNULL(U.CODIGO_UNIDAD, N''))) = N'1010101'
+		OR UPPER(LTRIM(RTRIM(ISNULL(U.NOMBRE_UNIDAD, N'')))) LIKE N'%TALENTO HUMANO%'
+		OR UPPER(LTRIM(RTRIM(ISNULL(U.CODIGO_UNIDAD, N'')))) LIKE N'%TALENTO HUMANO%'
+		OR UPPER(LTRIM(RTRIM(ISNULL(U.NOMBRE_UNIDAD, N'')))) LIKE N'%RECURSOS HUMANOS%'
+		OR UPPER(LTRIM(RTRIM(ISNULL(U.CODIGO_UNIDAD, N'')))) LIKE N'%RECURSOS HUMANOS%'
+	  )
+), THAmbito AS (
+	SELECT CORR_EMPRESA, CORR_UNIDAD
+	FROM THRaices
+
+	UNION ALL
+
+	SELECT H.CORR_EMPRESA, H.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS H
+	INNER JOIN THAmbito AS P
+		ON P.CORR_EMPRESA = H.CORR_EMPRESA
+	   AND P.CORR_UNIDAD = H.CORR_UNIDAD_PADRE
+	WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+	  AND H.ACTIVO = 1
+), THUsuarios AS (
+	SELECT TH.CORR_EMPRESA
+	FROM THAmbito AS TH
+	WHERE EXISTS (
+		SELECT 1
+		FROM dbo.GEN_PERSONA_USUARIO AS PU
+		INNER JOIN dbo.GEN_EMPLEADO AS E
+			ON E.CORR_PERSONA = PU.CORR_PERSONA
+		   AND E.CORR_EMPRESA = TH.CORR_EMPRESA
+		   AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+		INNER JOIN dbo.GEN_EMPLEADO_PUESTO AS EP
+			ON EP.CORR_EMPRESA = E.CORR_EMPRESA
+		   AND EP.CORR_EMPLEADO = E.CORR_EMPLEADO
+		   AND EP.CORR_UNIDAD = TH.CORR_UNIDAD
+		WHERE UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) =
+			  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	)
+	OR EXISTS (
+		SELECT 1
+		FROM dbo.SC_UNIDADES_USUARIO AS SU
+		WHERE SU.CORR_EMPRESA = TH.CORR_EMPRESA
+		  AND SU.CORR_UNIDAD = TH.CORR_UNIDAD
+		  AND UPPER(LTRIM(RTRIM(SU.LOGIN_SISTEMA))) =
+			  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	)
+	OR EXISTS (
+		SELECT 1
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS JU
+		INNER JOIN dbo.GEN_EMPLEADO AS E
+			ON E.CORR_EMPRESA = JU.CORR_EMPRESA
+		   AND E.CORR_EMPLEADO = JU.CORR_EMPLEADO
+		INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+			ON PU.CORR_PERSONA = E.CORR_PERSONA
+		WHERE JU.CORR_EMPRESA = TH.CORR_EMPRESA
+		  AND JU.CORR_UNIDAD = TH.CORR_UNIDAD
+		  AND JU.ACTIVO = 1
+		  AND (JU.FECHA_FIN IS NULL OR JU.FECHA_FIN >= CAST(GETDATE() AS DATE))
+		  AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+		  AND UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) =
+			  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	)
+)
+SELECT
+	ISNULL((
+		SELECT TOP (1) CONVERT(BIT, 1)
+		FROM THUsuarios AS THU
+		WHERE THU.CORR_EMPRESA = M.CORR_EMPRESA
+	), CONVERT(BIT, 0)) AS PUEDE_PROCESAR,
+	ISNULL((
+		SELECT TOP (1) CONVERT(BIT, 1)
+		FROM THUsuarios AS THU
+		WHERE THU.CORR_EMPRESA = M.CORR_EMPRESA
+	), CONVERT(BIT, 0)) AS PUEDE_CONFIRMAR
+FROM dbo.SC_MOVIMIENTO_PERSONAL AS M
+WHERE M.CORR_EMPRESA = @CORR_EMPRESA
+  AND M.CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL
+OPTION (MAXRECURSION 100)", p);
+
+				var acciones = new SC_MOVIMIENTO_PERSONAL_ACCIONESView
+				{
+					CORR_MOVIMIENTO_PERSONAL = corrMovimiento,
+				};
+				if (reader.Read())
+				{
+					acciones.PUEDE_PROCESAR =
+						reader["PUEDE_PROCESAR"] != DBNull.Value
+						&& Convert.ToBoolean(reader["PUEDE_PROCESAR"]);
+					acciones.PUEDE_CONFIRMAR =
+						reader["PUEDE_CONFIRMAR"] != DBNull.Value
+						&& Convert.ToBoolean(reader["PUEDE_CONFIRMAR"]);
+				}
+				reader.Close();
+
+				objResultado.Data = acciones;
+				objResultado.Result = true;
+				objResultado.RowsAffected = 1;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = string.Empty;
+			}
+			catch (Exception e)
+			{
+				SetError(objResultado, e);
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
 		public async Task<CResult> GetAccionesFlujoAsync(int corrEmpresa, int corrMovimiento, string login)
 		{
 			var objResultado = new CResult();
@@ -1116,6 +1537,71 @@ WHERE MR.CORR_EMPRESA = @CORR_EMPRESA
 					new() { ParameterName = "LOGIN_SISTEMA", Value = login ?? string.Empty, DbType = DbType.String },
 				};
 				var reader = await objData.GetDataReader(CommandType.Text, @"
+
+;WITH THRaices AS (
+	SELECT U.CORR_EMPRESA, U.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+	WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+	  AND U.ACTIVO = 1
+	  AND (
+		LTRIM(RTRIM(ISNULL(U.CODIGO_UNIDAD, N''))) = N'1010101'
+		OR UPPER(LTRIM(RTRIM(ISNULL(U.NOMBRE_UNIDAD, N'')))) LIKE N'%TALENTO HUMANO%'
+		OR UPPER(LTRIM(RTRIM(ISNULL(U.CODIGO_UNIDAD, N'')))) LIKE N'%TALENTO HUMANO%'
+		OR UPPER(LTRIM(RTRIM(ISNULL(U.NOMBRE_UNIDAD, N'')))) LIKE N'%RECURSOS HUMANOS%'
+		OR UPPER(LTRIM(RTRIM(ISNULL(U.CODIGO_UNIDAD, N'')))) LIKE N'%RECURSOS HUMANOS%'
+	  )
+), THAmbito AS (
+	SELECT CORR_EMPRESA, CORR_UNIDAD FROM THRaices
+	UNION ALL
+	SELECT H.CORR_EMPRESA, H.CORR_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS H
+	INNER JOIN THAmbito AS P
+		ON P.CORR_EMPRESA = H.CORR_EMPRESA
+	   AND P.CORR_UNIDAD = H.CORR_UNIDAD_PADRE
+	WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+	  AND H.ACTIVO = 1
+), THUsuarios AS (
+	SELECT DISTINCT TH.CORR_EMPRESA
+	FROM THAmbito AS TH
+	WHERE EXISTS (
+		SELECT 1
+		FROM dbo.GEN_PERSONA_USUARIO AS PU
+		INNER JOIN dbo.GEN_EMPLEADO AS E
+			ON E.CORR_PERSONA = PU.CORR_PERSONA
+		   AND E.CORR_EMPRESA = TH.CORR_EMPRESA
+		   AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+		INNER JOIN dbo.GEN_EMPLEADO_PUESTO AS EP
+			ON EP.CORR_EMPRESA = E.CORR_EMPRESA
+		   AND EP.CORR_EMPLEADO = E.CORR_EMPLEADO
+		   AND EP.CORR_UNIDAD = TH.CORR_UNIDAD
+		WHERE UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) =
+			  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	)
+	OR EXISTS (
+		SELECT 1
+		FROM dbo.SC_UNIDADES_USUARIO AS SU
+		WHERE SU.CORR_EMPRESA = TH.CORR_EMPRESA
+		  AND SU.CORR_UNIDAD = TH.CORR_UNIDAD
+		  AND UPPER(LTRIM(RTRIM(SU.LOGIN_SISTEMA))) =
+			  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	)
+	OR EXISTS (
+		SELECT 1
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS JU
+		INNER JOIN dbo.GEN_EMPLEADO AS E
+			ON E.CORR_EMPRESA = JU.CORR_EMPRESA
+		   AND E.CORR_EMPLEADO = JU.CORR_EMPLEADO
+		INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+			ON PU.CORR_PERSONA = E.CORR_PERSONA
+		WHERE JU.CORR_EMPRESA = TH.CORR_EMPRESA
+		  AND JU.CORR_UNIDAD = TH.CORR_UNIDAD
+		  AND JU.ACTIVO = 1
+		  AND (JU.FECHA_FIN IS NULL OR JU.FECHA_FIN >= CAST(GETDATE() AS DATE))
+		  AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+		  AND UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) =
+			  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+	)
+)
 SELECT
 	M.CORR_MOVIMIENTO_PERSONAL,
 	CASE
@@ -1138,6 +1624,80 @@ SELECT
 		WHEN BASE.PUEDE_ACTUAR = 1 AND ISNULL(ACC.HAY_RECHAZAR, 0) = 1
 		THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT)
 	END AS PUEDE_RECHAZAR,
+	CASE
+		WHEN ISNULL(M.CONFIRMADO, 0) = 1
+		 AND (
+			(M.ORIGEN_MOVIMIENTO = 'DIRECTO' AND M.ESTADO_MOVIMIENTO = 'AP')
+		 OR (
+			M.ORIGEN_MOVIMIENTO = 'REQUISICION'
+			AND EXISTS (
+				SELECT 1
+				FROM dbo.SC_MOVIMIENTO_REQUISICION AS MRX
+				INNER JOIN dbo.SC_REQUISICION_PERSONAL AS RX
+					ON RX.CORR_EMPRESA = MRX.CORR_EMPRESA
+				   AND RX.CORR_REQUISICION_PERSONAL = MRX.CORR_REQUISICION_PERSONAL
+				INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS UX
+					ON UX.CORR_EMPRESA = RX.CORR_EMPRESA
+				   AND UX.CORR_UNIDAD = RX.CORR_UNIDAD
+				WHERE MRX.CORR_EMPRESA = M.CORR_EMPRESA
+				  AND MRX.CORR_MOVIMIENTO_PERSONAL = M.CORR_MOVIMIENTO_PERSONAL
+				  AND (
+					UPPER(LTRIM(RTRIM(ISNULL(RX.USUARIO_CREA, N'')))) =
+					UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+					OR EXISTS (
+						SELECT 1
+						FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS J
+						INNER JOIN dbo.GEN_EMPLEADO AS E
+							ON E.CORR_EMPRESA = J.CORR_EMPRESA AND E.CORR_EMPLEADO = J.CORR_EMPLEADO
+						INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+							ON PU.CORR_PERSONA = E.CORR_PERSONA
+						WHERE J.CORR_EMPRESA = RX.CORR_EMPRESA
+						  AND J.CORR_UNIDAD IN (RX.CORR_UNIDAD, UX.CORR_UNIDAD_PADRE)
+						  AND J.ACTIVO = 1
+						  AND (J.FECHA_FIN IS NULL OR J.FECHA_FIN >= CAST(GETDATE() AS DATE))
+						  AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+						  AND UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) =
+							  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+					)
+					OR EXISTS (
+						SELECT 1
+						FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS GG
+						INNER JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS J
+							ON J.CORR_EMPRESA = GG.CORR_EMPRESA AND J.CORR_UNIDAD = GG.CORR_UNIDAD
+						INNER JOIN dbo.GEN_EMPLEADO AS E
+							ON E.CORR_EMPRESA = J.CORR_EMPRESA AND E.CORR_EMPLEADO = J.CORR_EMPLEADO
+						INNER JOIN dbo.GEN_PERSONA_USUARIO AS PU
+							ON PU.CORR_PERSONA = E.CORR_PERSONA
+						WHERE GG.CORR_EMPRESA = RX.CORR_EMPRESA
+						  AND GG.ACTIVO = 1
+						  AND (
+							UPPER(LTRIM(RTRIM(ISNULL(GG.NOMBRE_UNIDAD, N'')))) LIKE N'%GERENCIA GENERAL%'
+							OR UPPER(LTRIM(RTRIM(ISNULL(GG.CODIGO_UNIDAD, N'')))) LIKE N'%GERENCIA GENERAL%'
+						  )
+						  AND J.ACTIVO = 1
+						  AND (J.FECHA_FIN IS NULL OR J.FECHA_FIN >= CAST(GETDATE() AS DATE))
+						  AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+						  AND UPPER(LTRIM(RTRIM(PU.LOGIN_SISTEMA))) =
+							  UPPER(LTRIM(RTRIM(@LOGIN_SISTEMA)))
+					)
+				  )
+			)
+		 OR EXISTS (
+			SELECT 1
+			FROM THUsuarios AS THU
+			WHERE THU.CORR_EMPRESA = M.CORR_EMPRESA
+		 )
+		  )
+		THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT)
+	END AS PUEDE_CONFIRMAR,
+	CASE
+		WHEN EXISTS (
+			SELECT 1
+			FROM THUsuarios AS THU
+			WHERE THU.CORR_EMPRESA = M.CORR_EMPRESA
+		)
+		THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT)
+	END AS PUEDE_PROCESAR,
 	ISNULL(UND.CORR_UNIDAD, 0) AS CORR_UNIDAD_DOCUMENTO
 FROM dbo.SC_MOVIMIENTO_PERSONAL AS M
 LEFT JOIN dbo.SEG_FLUJO_INSTANCIA AS I
@@ -1192,7 +1752,8 @@ CROSS APPLY (
 	END AS PUEDE_ACTUAR
 ) AS BASE
 WHERE M.CORR_EMPRESA = @CORR_EMPRESA
-  AND M.CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL", p);
+  AND M.CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL
+OPTION (MAXRECURSION 100)", p);
 
 				var acciones = new SC_MOVIMIENTO_PERSONAL_ACCIONESView
 				{
@@ -1204,6 +1765,8 @@ WHERE M.CORR_EMPRESA = @CORR_EMPRESA
 					acciones.PUEDE_APROBAR = reader["PUEDE_APROBAR"] != DBNull.Value && Convert.ToBoolean(reader["PUEDE_APROBAR"]);
 					acciones.PUEDE_DEVOLVER = reader["PUEDE_DEVOLVER"] != DBNull.Value && Convert.ToBoolean(reader["PUEDE_DEVOLVER"]);
 					acciones.PUEDE_RECHAZAR = reader["PUEDE_RECHAZAR"] != DBNull.Value && Convert.ToBoolean(reader["PUEDE_RECHAZAR"]);
+					acciones.PUEDE_CONFIRMAR = reader["PUEDE_CONFIRMAR"] != DBNull.Value && Convert.ToBoolean(reader["PUEDE_CONFIRMAR"]);
+					acciones.PUEDE_PROCESAR = reader["PUEDE_PROCESAR"] != DBNull.Value && Convert.ToBoolean(reader["PUEDE_PROCESAR"]);
 					acciones.CORR_UNIDAD_DOCUMENTO = reader["CORR_UNIDAD_DOCUMENTO"] == DBNull.Value
 						? 0
 						: Convert.ToInt32(reader["CORR_UNIDAD_DOCUMENTO"]);

@@ -1,8 +1,7 @@
-﻿import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs/operators';
-import { confirm } from 'devextreme/ui/dialog';
 import { environment } from 'src/environments/environment';
 import { AuthService } from 'src/app/shared/services/auth.service';
 import {
@@ -13,6 +12,7 @@ import {
 } from '../shared/selection-hiring-rpt';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { BarraMttoCombox } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
@@ -44,7 +44,12 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	enviandoMovimiento = false;
 	confirmandoMovimiento = false;
 	btnEnviarMovimiento = '';
+	btnProcesarMovimiento = '';
 	btnConfirmarMovimiento = '';
+	procesarFechaEfectivaModo = false;
+	private procesarFechaEfectivaCorr: number | null = null;
+	popupConfirmarMovVisible = false;
+	popupFechaIngresoPropuesta: any = null;
 	/** Fecha efectiva editable solo cuando Confirmar está habilitado. */
 	puedeEditarFechaEfectiva = false;
 	requisicionAsociada: any = null;
@@ -58,15 +63,21 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		PUEDE_APROBAR: false,
 		PUEDE_DEVOLVER: false,
 		PUEDE_RECHAZAR: false,
+		PUEDE_CONFIRMAR: false,
+		PUEDE_PROCESAR: false,
 	};
 	btnAprobarMovimiento = '';
 	btnDevolverMovimiento = '';
 	btnRechazarMovimiento = '';
 
-	/** Visible al tener un movimiento seleccionado o abierto (CORR > 0). */
+	// QuÃ© hace: Muestra Imprimir solo para movimientos aprobados y confirmados.
+	// CÃ³mo lo hace: Exige correlativo, ESTADO_MOVIMIENTO = AP y CONFIRMADO = 2; el estado procesado (CONFIRMADO = 1) no habilita el botÃ³n.
 	get btnImprimirMovimiento(): string {
 		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
-		return corr > 0 ? 'Imprimir' : '';
+		const estadoMovimiento = `${this.model?.ESTADO_MOVIMIENTO || ''}`.trim().toUpperCase();
+		const aprobado = estadoMovimiento === 'AP';
+		const confirmado = this.service.esConfirmado(this.model?.CONFIRMADO);
+		return corr > 0 && aprobado && confirmado ? 'Imprimir' : '';
 	}
 
 	imprimirPopupVisible = false;
@@ -79,6 +90,9 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 	/** Lookups compartidos (unidad / modalidad / empleado); puestos van por lado. */
 	mCORR_UNIDAD: any[] = [];
+	filtroCorrUnidad = 0;
+	barraFiltroUnidad: BarraMttoCombox | null = null;
+	private modelsListadoCompleto: ScMovimientoPersonal[] = [];
 	/** Padres distintos (gerencia) para la posición propuesta. */
 	mGerenciaPropuesta: any[] = [];
 	/** Departamentos hijos de la gerencia elegida. */
@@ -92,6 +106,9 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 	unidadLookupColumns = [
 		{ dataField: 'CODIGO_UNIDAD', caption: 'Código', width: 100 },
+		{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 280 },
+	];
+	unidadFiltroLookupColumns = [
 		{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 280 },
 	];
 	puestoLookupColumns = [
@@ -126,7 +143,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
-		this.items = this.service.getItems('DIRECTO');
+		this.items = this.service.getItems('DIRECTO', null, 'ASCENSO');
 		this.columnsBitacora = this.service.getBitacoraColumns();
 	}
 
@@ -231,10 +248,16 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	inicializaOpciones(): void {}
 
 	override AsignaStatus(xEstado: UpdateType): void {
+		if (xEstado === UpdateType.Browse) {
+			this.procesarFechaEfectivaModo = false;
+			this.procesarFechaEfectivaCorr = null;
+		}
 		super.AsignaStatus(xEstado);
 		this.refrescarBotones();
 		if (xEstado === UpdateType.Browse) {
 			this.modelsBitacora = [];
+			this.syncBarraFiltros();
+			this.aplicarFiltrosListado(false);
 		} else {
 			this.refrescarItemsFormulario();
 		}
@@ -261,8 +284,12 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					this.mCORR_UNIDAD = response?.Result ? response.Data ?? [] : [];
+					this.mCORR_UNIDAD = (response?.Result ? response.Data ?? [] : []).map((item: any) => ({
+						...item,
+						DISPLAY_UNIDAD: item.DISPLAY_UNIDAD || this.formatUnidadDisplay(item),
+					}));
 					this.armarGerenciasPropuesta();
+					this.syncBarraFiltros();
 					if (!this.isBrowse()) {
 						this.aplicarPadreDesdeUnidadPropuesta();
 					}
@@ -434,7 +461,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 				HORARIO_PROPUESTO: xModel.HORARIO_PROPUESTO,
 				JUSTIFICACION: xModel.JUSTIFICACION,
 				FECHA_EFECTIVA: xModel.FECHA_EFECTIVA,
-				CONFIRMADO: xModel.CONFIRMADO ?? false,
+				CONFIRMADO: Number(xModel.CONFIRMADO) || 0,
 				NOMBRE_CONFIRMACION: xModel.NOMBRE_CONFIRMACION,
 				USUARIO_CONFIRMA: xModel.USUARIO_CONFIRMA ?? null,
 				FECHA_CONFIRMA: xModel.FECHA_CONFIRMA ?? null,
@@ -480,8 +507,8 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			HORARIO_PROPUESTO: '',
 			JUSTIFICACION: '',
 			FECHA_EFECTIVA: null,
-			CONFIRMADO: false,
-			NOMBRE_CONFIRMACION: 'En Evaluación',
+			CONFIRMADO: 0,
+			NOMBRE_CONFIRMACION: 'En evaluación',
 			USUARIO_CONFIRMA: null,
 			FECHA_CONFIRMA: null,
 			USUARIO_CREA: '',
@@ -496,8 +523,59 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	consultar(): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
-			onData: () => this.abrirDesdeQueryCorr(),
+			onData: (_resetPage = false) => {
+				this.modelsListadoCompleto = Array.isArray(this.models) ? [...this.models] : [];
+				this.aplicarFiltrosListado(false);
+				this.abrirDesdeQueryCorr();
+			},
 		});
+	}
+
+	private aplicarFiltrosListado(_resetPage = false): void {
+		let rows = Array.isArray(this.modelsListadoCompleto) ? [...this.modelsListadoCompleto] : [];
+		const corrUnidad = Number(this.filtroCorrUnidad);
+		if (corrUnidad > 0) {
+			rows = rows.filter((row: any) =>
+				Number(row.CORR_UNIDAD_PROPUESTA) === corrUnidad
+				|| Number(row.CORR_UNIDAD_ACTUAL) === corrUnidad
+			);
+		}
+		this.models = rows;
+	}
+
+	onFiltroUnidadChanged(value: any): void {
+		const corr = Number(value);
+		this.filtroCorrUnidad = corr > 0 ? corr : 0;
+		this.syncBarraFiltros();
+		if (this.isBrowse()) {
+			this.aplicarFiltrosListado(true);
+		}
+	}
+
+	selectedLookUpUnidadFiltro(vRow: any): number {
+		return Number(vRow?.[0]?.CORR_UNIDAD ?? 0);
+	}
+
+	private syncBarraFiltros(): void {
+		this.barraFiltroUnidad = {
+			label: 'Unidad',
+			model: this.mCORR_UNIDAD ?? [],
+			value: this.filtroCorrUnidad ?? 0,
+			valueExpr: 'CORR_UNIDAD',
+			displayExpr: 'DISPLAY_UNIDAD',
+			lookupColumns: this.unidadFiltroLookupColumns,
+			selectedRowKeys: this.selectedLookUpUnidadFiltro,
+			showClearButton: true,
+			dropDownWidth: 420,
+			width: 350,
+			todosOption: {
+				CORR_UNIDAD: 0,
+				CODIGO_UNIDAD: '',
+				NOMBRE_UNIDAD: 'Todos',
+				DISPLAY_UNIDAD: 'Todos',
+			},
+			clearResetsTo: 0,
+		};
 	}
 
 	override nuevo(): void {
@@ -547,9 +625,6 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.readOnly = true;
 		this.despuesDeCargarFormulario();
 		setTimeout(() => {
-			if (this.dataForm?.instance) {
-				this.dataForm.instance.option('formData', this.model);
-			}
 			this.bloquear();
 		}, 0);
 	}
@@ -573,16 +648,22 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	private refrescarItemsFormulario(): void {
 		this.items = this.service.getItems(
 			this.model?.ORIGEN_MOVIMIENTO || 'DIRECTO',
-			this.model?.CORR_TIPO_CONTRATACION
+			this.model?.CORR_TIPO_CONTRATACION,
+			this.model?.TIPO_MOVIMIENTO || 'ASCENSO'
 		);
 		setTimeout(() => {
 			if (this.dataForm?.instance) {
 				this.dataForm.instance.option('items', this.items);
-				this.dataForm.instance.option('formData', this.model);
 			}
 			this.aplicarBloqueoFormulario();
 			this.engancharFechaIngreso();
 		}, 0);
+	}
+
+	onMovimientoFieldChanged(e: any): void {
+		if (e?.dataField === 'TIPO_MOVIMIENTO') {
+			this.refrescarItemsFormulario();
+		}
 	}
 
 	override getPermiteEditar(e: any): boolean {
@@ -643,33 +724,46 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 	override setFocus(): void {
 		setTimeout(() => {
-			if (`${this.model?.ORIGEN_MOVIMIENTO || ''}`.toUpperCase() === 'DIRECTO') {
-				this.dataForm?.instance?.getEditor('CORR_EMPLEADO')?.focus();
-			} else {
-				this.dataForm?.instance?.getEditor('NOMBRE_COMPLETO')?.focus();
-			}
+			const field = `${this.model?.ORIGEN_MOVIMIENTO || ''}`.toUpperCase() === 'DIRECTO'
+				? 'CORR_EMPLEADO'
+				: 'NOMBRE_COMPLETO';
+			const input = this.elRef.nativeElement.querySelector(
+				`.dx-field-item[data-field="${field}"] input`
+			) as HTMLInputElement | null;
+			input?.focus({ preventScroll: true });
 		});
 	}
 
 	/** Textos de botones de proceso (barra). */
 	refrescarBotones(): void {
-		const abierto = !this.isBrowse() && (this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) > 0;
+		const abierto = (this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) > 0;
+		const estadoConfirmacion = Number(this.model?.CONFIRMADO) || 0;
 		this.btnEnviarMovimiento = abierto && this.accionesFlujo.PUEDE_ENVIAR ? 'Enviar a aprobación' : '';
 		this.btnAprobarMovimiento = abierto && this.accionesFlujo.PUEDE_APROBAR ? 'Aprobar' : '';
 		this.btnDevolverMovimiento = abierto && this.accionesFlujo.PUEDE_DEVOLVER ? 'Devolver' : '';
 		this.btnRechazarMovimiento = abierto && this.accionesFlujo.PUEDE_RECHAZAR ? 'Rechazar' : '';
+		this.btnProcesarMovimiento = '';
 
 		const puedeConfirmar =
 			(this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) > 0
+			&& estadoConfirmacion === 1
+			&& this.accionesFlujo.PUEDE_PROCESAR
+			&& (`${this.model?.ORIGEN_MOVIMIENTO || ''}`.trim().toUpperCase() !== 'REQUISICION'
+				|| this.accionesFlujo.PUEDE_CONFIRMAR)
 			&& this.service.esConfirmable(this.model);
 
 		this.btnConfirmarMovimiento = puedeConfirmar ? 'Confirmar' : '';
-		this.puedeEditarFechaEfectiva = puedeConfirmar;
+		this.puedeEditarFechaEfectiva = estadoConfirmacion === 0 && this.procesarFechaEfectivaModo;
 	}
 
 	/** En browse, al seleccionar fila se habilita Confirmar e Imprimir en la barra. */
 	override focusedRowChanged(e: any): void {
 		super.focusedRowChanged(e);
+		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (this.procesarFechaEfectivaModo && this.procesarFechaEfectivaCorr !== corr) {
+			this.procesarFechaEfectivaModo = false;
+			this.procesarFechaEfectivaCorr = null;
+		}
 		this.refrescarBotones();
 	}
 
@@ -924,22 +1018,18 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			PUEDE_APROBAR: false,
 			PUEDE_DEVOLVER: false,
 			PUEDE_RECHAZAR: false,
+			PUEDE_CONFIRMAR: false,
+			PUEDE_PROCESAR: false,
 		};
 	}
 
 	private cargarAccionesFlujo(): void {
 		this.limpiarAccionesFlujo();
 		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
-		if (corr <= 0 || `${this.model?.ORIGEN_MOVIMIENTO || ''}`.toUpperCase() !== 'DIRECTO') {
+		if (corr <= 0) {
 			this.refrescarBotones();
 			return;
 		}
-		const tipo = `${this.model?.TIPO_MOVIMIENTO || ''}`.toUpperCase();
-		if (tipo !== 'ASCENSO' && tipo !== 'TRASLADO') {
-			this.refrescarBotones();
-			return;
-		}
-
 		this.service.getAccionesFlujo(corr).pipe(take(1)).subscribe({
 			next: (response: any) => {
 				const data = response?.Result ? response.Data : null;
@@ -949,6 +1039,8 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 						PUEDE_APROBAR: !!data.PUEDE_APROBAR,
 						PUEDE_DEVOLVER: !!data.PUEDE_DEVOLVER,
 						PUEDE_RECHAZAR: !!data.PUEDE_RECHAZAR,
+						PUEDE_CONFIRMAR: !!data.PUEDE_CONFIRMAR,
+						PUEDE_PROCESAR: !!data.PUEDE_PROCESAR,
 					};
 				}
 				this.refrescarBotones();
@@ -982,7 +1074,114 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		});
 	}
 
-	/** Confirma el movimiento (CONFIRMADO=1 + FECHA_EFECTIVA + auditoría). */
+	/** Habilita la fecha efectiva en el formulario y luego procesa el movimiento. */
+	abrirPopupProcesarMovimiento(): void {
+		if (!this.model || (this.model.CORR_MOVIMIENTO_PERSONAL ?? 0) <= 0) return;
+		if (Number(this.model.CONFIRMADO) !== 0) {
+			this.notifyFx('El movimiento ya fue procesado o confirmado.', NotifyType.Warning);
+			return;
+		}
+
+		if (!this.procesarFechaEfectivaModo) {
+			if (!this.model.FECHA_EFECTIVA) {
+				this.notifyFx(
+					'Debe indicar la fecha efectiva antes de procesar el movimiento.',
+					NotifyType.Warning,
+					{ raw: true }
+				);
+			}
+			this.procesarFechaEfectivaModo = true;
+			this.procesarFechaEfectivaCorr = Number(this.model.CORR_MOVIMIENTO_PERSONAL);
+			if (this.isBrowse()) {
+				this.abrirEnConsulta(this.model);
+			}
+			this.puedeEditarFechaEfectiva = true;
+			this.refrescarBotones();
+			return;
+		}
+
+		if (!this.model.FECHA_EFECTIVA) {
+			this.notifyFx(
+				'Debe indicar la fecha efectiva antes de procesar el movimiento.',
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			return;
+		}
+		if (this.procesarFechaEfectivaCorr !== Number(this.model.CORR_MOVIMIENTO_PERSONAL)) {
+			this.procesarFechaEfectivaModo = false;
+			this.procesarFechaEfectivaCorr = null;
+			this.notifyFx('El movimiento seleccionado cambió. Vuelva a pulsar Procesar para habilitar la fecha efectiva.', NotifyType.Warning);
+			return;
+		}
+		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (corr <= 0) return;
+		this.confirmandoMovimiento = true;
+		this.loadingVisible = true;
+		this.service.procesar({
+			CORR_MOVIMIENTO_PERSONAL: corr,
+			FECHA_EFECTIVA: this.model.FECHA_EFECTIVA,
+		}).pipe(take(1)).subscribe({
+			next: (response: any) => {
+				this.confirmandoMovimiento = false;
+				this.loadingVisible = false;
+				if (response?.Result) {
+					this.actualizarEstadoConfirmacionLocal(1);
+					this.notifyFx('El movimiento fue procesado correctamente.', NotifyType.Success);
+				} else {
+					const message = response?.ErrorMessage || 'No se pudo procesar el movimiento.';
+					if (this.sincronizarEstadoProcesamientoExistente(message)) {
+						this.notifyFx('El estado del movimiento ya estaba actualizado.', NotifyType.Warning, { raw: true });
+					} else {
+						this.notifyFx(message, NotifyType.Warning);
+					}
+				}
+			},
+			error: (error: any) => {
+				this.confirmandoMovimiento = false;
+				this.loadingVisible = false;
+				const message = this.extraerMensajeErrorConfirmacion(error);
+				if (this.sincronizarEstadoProcesamientoExistente(message)) {
+					this.notifyFx('El estado del movimiento ya estaba actualizado.', NotifyType.Warning, { raw: true });
+				} else {
+					this.notifyFx(message, NotifyType.Warning);
+				}
+			},
+		});
+	}
+
+	private sincronizarEstadoProcesamientoExistente(message: string): boolean {
+		const normalized = `${message || ''}`.toLowerCase();
+		if (normalized.includes('ya está procesado') || normalized.includes('ya esta procesado')) {
+			this.actualizarEstadoConfirmacionLocal(1);
+			return true;
+		}
+		if (normalized.includes('ya está confirmado') || normalized.includes('ya esta confirmado')) {
+			this.actualizarEstadoConfirmacionLocal(2);
+			return true;
+		}
+		return false;
+	}
+
+	private actualizarEstadoConfirmacionLocal(estado: 1 | 2): void {
+		if (!this.model) return;
+		this.model.CONFIRMADO = estado;
+		this.model.NOMBRE_CONFIRMACION = estado === 1 ? 'Procesado' : 'Confirmado';
+		this.modelUpdate = this.fillData(this.model);
+		const corr = Number(this.model.CORR_MOVIMIENTO_PERSONAL) || 0;
+		const idx = this.models?.findIndex(
+			(m: any) => Number(m.CORR_MOVIMIENTO_PERSONAL) === corr
+		);
+		if (idx >= 0) {
+			this.models[idx] = { ...this.models[idx], ...this.model };
+			this.models = [...this.models];
+		}
+		this.procesarFechaEfectivaModo = false;
+		this.procesarFechaEfectivaCorr = null;
+		this.cargarAccionesFlujo();
+		this.refrescarBotones();
+	}
+
 	async confirmarMovimiento(): Promise<void> {
 		if (this.confirmandoMovimiento) {
 			return;
@@ -1001,23 +1200,28 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			);
 			return;
 		}
+		this.popupFechaIngresoPropuesta = this.model.FECHA_INGRESO_PROPUESTA ?? null;
+		this.popupConfirmarMovVisible = true;
+	}
 
-		const aceptar = await confirm(
-			'¿Desea confirmar este movimiento de personal?',
-			'Confirmar movimiento'
-		);
-		if (!aceptar) {
+	cancelarPopupConfirmarMovimiento(): void {
+		this.popupConfirmarMovVisible = false;
+		this.popupFechaIngresoPropuesta = null;
+	}
+
+	async confirmarPopupConfirmarMovimiento(): Promise<void> {
+		if (!this.popupFechaIngresoPropuesta) {
+			this.notifyFx('Debe indicar la fecha de ingreso propuesta.', NotifyType.Warning);
 			return;
 		}
-
 		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
 		this.confirmandoMovimiento = true;
 		this.loadingVisible = true;
-
 		this.service
 			.confirmar({
 				CORR_MOVIMIENTO_PERSONAL: corr,
 				FECHA_EFECTIVA: this.model.FECHA_EFECTIVA,
+				FECHA_INGRESO_PROPUESTA: this.popupFechaIngresoPropuesta,
 			})
 			.pipe(take(1))
 			.subscribe({
@@ -1037,6 +1241,11 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 								this.models[idx] = { ...this.models[idx], ...row };
 							}
 						}
+						this.model.FECHA_INGRESO_PROPUESTA = this.popupFechaIngresoPropuesta;
+						this.model.NOMBRE_CONFIRMACION = 'Confirmado';
+						this.model.CONFIRMADO = 2;
+						this.popupConfirmarMovVisible = false;
+						this.popupFechaIngresoPropuesta = null;
 						this.refrescarBotones();
 						this.notifyFx('El movimiento se confirmó correctamente.', NotifyType.Success);
 					} else {
@@ -1061,8 +1270,11 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		if ((this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) <= 0) {
 			return 'Seleccione o abra un movimiento para confirmarlo.';
 		}
-		if (this.service.esConfirmado(this.model?.CONFIRMADO)) {
+		if (Number(this.model?.CONFIRMADO) === 2) {
 			return 'El movimiento ya está confirmado.';
+		}
+		if (Number(this.model?.CONFIRMADO) !== 1) {
+			return 'Primero debe procesar el movimiento personal.';
 		}
 
 		const origen = `${this.model?.ORIGEN_MOVIMIENTO || ''}`.trim().toUpperCase();
@@ -1074,8 +1286,8 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		if (origen !== 'DIRECTO' && origen !== 'REQUISICION') {
 			return 'Origen de movimiento no válido para confirmar.';
 		}
-		if (this.esEventualRequisicion() && !this.model?.FECHA_INGRESO_PROPUESTA) {
-			return 'Indique la fecha de ingreso propuesta para calcular la fecha de finalización antes de confirmar.';
+		if (origen === 'REQUISICION' && !this.accionesFlujo.PUEDE_CONFIRMAR) {
+			return 'Solo el creador de la requisición, su jefe inmediato o Gerencia General puede ejecutar este movimiento.';
 		}
 		return null;
 	}

@@ -59,7 +59,7 @@ namespace SGUEES.Models
 		public int? CORR_REQUISICION_CANDIDATO { get; set; }
 		public int? CORR_MOVIMIENTO_PERSONAL { get; set; }
 		public string ESTADO_MOVIMIENTO { get; set; }
-		public bool? CONFIRMADO { get; set; }
+		public int? CONFIRMADO { get; set; }
 		public int? CORR_EMPLEADO { get; set; }
 		public DateTime? FECHA_EFECTIVA { get; set; }
 		public DateTime FECHA_ORDEN { get; set; }

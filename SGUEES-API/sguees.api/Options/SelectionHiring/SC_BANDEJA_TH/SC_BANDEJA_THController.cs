@@ -138,6 +138,32 @@ namespace SGUEES.Controllers
 			return BadRequest(resultado);
 		}
 
+		[HttpPut("Procesar")]
+		[Authorize(Policy = "/sc-bandeja-th|U")]
+		public async Task<IActionResult> ProcesarMovimientoPersonal(
+			[FromBody] SC_MOVIMIENTO_PERSONAL_PROCESAParam Data)
+		{
+			Data.CORR_EMPRESA = Empresa();
+			var resultado = await _movimientoPersonalService.ProcesarAsync(
+				Data,
+				Usuario(),
+				ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : Ok(resultado);
+		}
+
+		// Qué hace: Devuelve las acciones de flujo permitidas para un movimiento desde la bandeja TH.
+		// Cómo lo hace: Evalúa el usuario de sesión contra el organigrama antes de habilitar procesar o confirmar.
+		[HttpGet("GetAccionesMovimientoPersonal")]
+		[Authorize(Policy = "/sc-bandeja-th|R")]
+		public Task<CResult> GetAccionesMovimientoPersonal([FromQuery] SC_MOVIMIENTO_PERSONALParam Data)
+		{
+			Data.CORR_EMPRESA = Empresa();
+			return _movimientoPersonalService.GetAccionesBandejaTHAsync(
+				Data.CORR_EMPRESA,
+				Data.CORR_MOVIMIENTO_PERSONAL,
+				Usuario());
+		}
+
 		// Qué hace: Confirma el movimiento de personal vinculado a una contratación desde la bandeja de TH.
 		// Cómo lo hace: Inyecta CORR_EMPRESA, usuario y estación, e invoca el servicio de confirmación de movimiento personal.
 		[HttpPut("ConfirmarMovimientoPersonal")]
@@ -145,7 +171,7 @@ namespace SGUEES.Controllers
 		public async Task<IActionResult> ConfirmarMovimientoPersonal([FromBody] SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data)
 		{
 			Data.CORR_EMPRESA = Empresa();
-			var resultado = await _movimientoPersonalService.ConfirmarAsync(
+			var resultado = await _movimientoPersonalService.ConfirmarDesdeBandejaTHAsync(
 				Data,
 				Usuario(),
 				ClientInfoHelper.GetClientStation(HttpContext));

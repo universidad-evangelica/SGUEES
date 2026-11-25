@@ -36,6 +36,19 @@
 		[btn5Type]="'danger'"
 		[btn5Width]="120"
 		(btn5Click)="rechazarMovimiento()"
+		[btn6]="btnImprimirMovimiento"
+		[btn6Icon]="'print'"
+		[btn6Type]="'default'"
+		[btn6Width]="120"
+		(btn6Click)="imprimirMovimiento()"
+		[btn7]="btnProcesarMovimiento"
+		[btn7Icon]="'event'"
+		[btn7Type]="'default'"
+		[btn7Class]="'sguees-barra-btn-procesar'"
+		[btn7Width]="130"
+		(btn7Click)="abrirPopupProcesarMovimiento()"
+		[combox1]="barraFiltroUnidad"
+		(combox1Change)="onFiltroUnidadChanged($event)"
 	>
 		<!-- Barra principal de mantenimiento: flujo de estados y reporte de impresión -->
 	</app-barra-data-mtto>
@@ -51,6 +64,7 @@
 					[labelLocation]="'top'"
 					[colCount]="8"
 					[items]="items"
+					(onFieldDataChanged)="onMovimientoFieldChanged($event)"
 				>
 					<!-- Título Encabezado + Fecha efectiva (misma línea). -->
 					<div *dxTemplate="let cellInfo of 'EncabezadoConFechaTemplate'">
@@ -308,6 +322,29 @@
 	>
 	</app-data-grid-mtto>
 </div>
+
+<dx-popup
+	[(visible)]="popupConfirmarMovVisible"
+	[width]="480"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[showTitle]="true"
+	title="Confirmar movimiento personal"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[hideOnOutsideClick]="false"
+	(onHiding)="cancelarPopupConfirmarMovimiento()"
+>
+	<div *dxTemplate="let data of 'content'">
+		<p>Indique la fecha de ingreso propuesta para finalizar la confirmación.</p>
+		<label>Fecha de ingreso propuesta <span style="color:#ef4444">*</span></label>
+		<dx-date-box [(value)]="popupFechaIngresoPropuesta" displayFormat="dd/MM/yyyy" [width]="'100%'" [openOnFieldClick]="true" [showClearButton]="true" placeholder="Seleccione fecha de ingreso propuesta…"></dx-date-box>
+		<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+			<dx-button text="Cancelar" type="danger" stylingMode="contained" (onClick)="cancelarPopupConfirmarMovimiento()"></dx-button>
+			<dx-button text="Confirmar" type="success" stylingMode="contained" [disabled]="confirmandoMovimiento" (onClick)="confirmarPopupConfirmarMovimiento()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
 
 <dx-popup
 	[(visible)]="avisoIngresoVisible"

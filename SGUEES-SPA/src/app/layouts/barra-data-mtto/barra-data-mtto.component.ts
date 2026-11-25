@@ -182,6 +182,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn7Height: number = 44;
   @Input() btn7Width: number = 0;
   @Input() btn7Mode: string = 'contained';
+  @Input() btn7Class: string = '';
   @Output() btn7Click = new EventEmitter<any>();
 
   // Qué hace: hasta 4 combos de filtro en el header (mismo patrón de slots que btn1–btn7).
@@ -542,6 +543,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       changes['btn5'] ||
       changes['btn6'] ||
       changes['btn7'] ||
+      changes['btn7Class'] ||
       changes['combox1'] ||
       changes['combox2'] ||
       changes['combox3'] ||
@@ -692,7 +694,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     );
     this.optBtn7 = this.buildExtraBtn(
       this.btn7, this.btn7Icon, this.btn7Type, this.btn7Mode, this.Onbtn7Click, this.btn7Height, this.btn7Width,
-      browseToolbarInBarra,
+      browseToolbarInBarra, this.btn7Class,
     );
 
     this.optFechaInicial = {
@@ -744,6 +746,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     height = 44,
     width = 0,
     browseToolbarInBarra = true,
+    customClass = '',
   ): Record<string, unknown> {
     const opt: Record<string, unknown> = {
       stylingMode: mode || 'contained',
@@ -753,7 +756,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       type,
       onClick,
       visible: text !== '' && (browseToolbarInBarra || !this.isBrowse),
-      elementAttr: { class: 'sguees-barra-btn-standard sguees-barra-btn-action' },
+      elementAttr: { class: `sguees-barra-btn-standard sguees-barra-btn-action ${customClass}`.trim() },
       hint: text || undefined,
     };
     // Compacto: solo icono en barra; el texto completo queda en el menú ⋮ / hint.

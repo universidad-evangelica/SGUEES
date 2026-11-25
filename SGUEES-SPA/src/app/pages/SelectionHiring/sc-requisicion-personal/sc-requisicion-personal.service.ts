@@ -353,6 +353,10 @@ export class ScRequisicionPersonalService {
 		return this.repo.getCandidatos(xWhere);
 	}
 
+	puedeDecidirCandidato(corrRequisicionPersonal: number): Observable<IResult> {
+		return this.requisicionCandidatoService.puedeDecidir(corrRequisicionPersonal);
+	}
+
 	decidirCandidato(model: {
 		CORR_REQUISICION_PERSONAL: number;
 		CORR_SOLICITUD_EMPLEO: number;

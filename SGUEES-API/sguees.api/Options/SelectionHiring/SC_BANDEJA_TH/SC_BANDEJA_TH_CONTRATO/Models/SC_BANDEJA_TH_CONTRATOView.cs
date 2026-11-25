@@ -38,7 +38,7 @@ namespace SGUEES.Models
 		public int? CORR_REQUISICION_CANDIDATO { get; set; }
 		public int? CORR_MOVIMIENTO_PERSONAL { get; set; }
 		public string ESTADO_MOVIMIENTO { get; set; }
-		public bool? CONFIRMADO { get; set; }
+		public int? CONFIRMADO { get; set; }
 		public int? CORR_EMPLEADO { get; set; }
 		// Qué hace: Fecha efectiva del movimiento de personal asociado.
 		// Cómo lo hace: Mapea la columna FECHA_EFECTIVA devuelta por la consulta de contrataciones.
