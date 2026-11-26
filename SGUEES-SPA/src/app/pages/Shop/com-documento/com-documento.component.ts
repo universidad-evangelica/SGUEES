@@ -49,6 +49,8 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
   mCOM_DOCUMENTO_TOTAL: any;
   ES_ELECTRONICO = false;
   btnAplicar = '';
+  btnProvisionar = '';
+  private provisionConsultada = false;
   btnGenerarCR = '';
   btnAnularCR = '';
   popupVisibleJson = false;
@@ -95,7 +97,6 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
   tituloGridDetaDoc = '';
   provision: any = null;
   contabilidades: any[] = [];
-  puedeContabilizar = false;
   puedeEditarConta = false;
   mensajeProvision = '';
   nombrePartidaProvision = '';
@@ -705,8 +706,10 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
       {
         if (this.model.ESTADO_DOCUMENTO == 'DI') {
           this.btnAplicar = 'Aplicar';
+          this.btnProvisionar = this.provisionConsultada && !this.documentoTieneProvision() ? 'Provisionar' : '';
         } else {
           this.btnAplicar = '';
+          this.btnProvisionar = '';
         }
         if (this.model.ESTADO_DOCUMENTO == 'AP') {
           this.btnGenerarCR = 'Generar CR';
@@ -717,6 +720,7 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
         }
       } else {
         this.btnAplicar = '';
+        this.btnProvisionar = '';
         this.btnDocumentosElectronicos = '';
         this.btnVistaPrevia = '';
         this.btnGenerarCR = '';
@@ -971,75 +975,194 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
+  Provisionar(): void {
+    if (!this.model?.CORR_DOCUMENTO) {
+      this.notifyFx('Guarde el documento antes de provisionar.', NotifyType.Warning);
+      return;
+    }
+    if (this.documentoTieneProvision()) {
+      this.btnProvisionar = '';
+      this.notifyFx('Este documento ya tiene provisión.', NotifyType.Warning);
+      return;
+    }
+    const dialogo = custom({
+      title: 'Provisionar',
+      messageHtml: 'Se creará la provisión y su contabilidad proyectada. El documento no cambia de estado. ¿Continuar?',
+      buttons: [
+        { text: 'Si', onClick: () => this.provisionarDocumento(true) },
+        { text: 'No', onClick: () => false },
+      ],
+    });
+    dialogo.show();
+  }
+
   Aplicar(): void {
-      const confirpreli = custom({
-        title: 'Confirmación de Aplicar',
-        messageHtml: '¿Realmente Quiere Aplicar el documento?',
-        buttons: [
-          {
-            text: 'Si',
-            onClick: (e: any) => {
-              this.loadingVisible = true;
-              this.service
-              .update(this.model)
-              .pipe(take(1))
-              .subscribe({
-                next: (response: any) => {
-                  if (response.Result) {
-                    this.service
-                    .Aplicar(this.model)
-                    .pipe(take(1))
-                    .subscribe({
-                      next: (response: any) => {
-                        if (response.Result) {
-                          this.notifyFx('Aplicado con exito..!', NotifyType.Success);
-                          this.model = response.Data;
-                          const vIndex = this.models.findIndex((item: any) => item.ANIO_PERIODO === response.Data.ANIO_PERIODO &&
-                                                                              item.MES_PERIODO === response.Data.MES_PERIODO &&
-                                                                              item.CORR_DOCUMENTO === response.Data.CORR_DOCUMENTO);
-                          if (vIndex >= 0) {
-                            this.models[vIndex] = response.Data;
-                          }
-                          this.habilitar();
-                          this.refrescarBotones();
-                          this.banderaMtto = UpdateType.Not_Defined;
-                          if (this.model.ESTADO_DOCUMENTO != 'DI' && this.model.ESTADO_DOCUMENTO != 'SO') {
-                            setTimeout(() => {
-                              this.bloquear();
-                            });
-                          }
-                          this.provisionarDocumento(false);
-                        } else {
-                          this.notifyFx(response.ErrorMessage, NotifyType.Error);
-                          this.loadingVisible = false;
-                        }
-                      },
-                      error: (error: any) => {
-                        this.notifyFx(error, NotifyType.Error);
-                        this.loadingVisible = false;
-                      },
-                    });
-                  } else {
-                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
-                  }
-                },
-                error: (error: any) => {
-                  this.notifyFx(error, NotifyType.Error);
-                },
-              });
-            },
-          },
-          {
-            text: 'No',
-            onClick: (e: any) => false,
-          },
-        ],
+    if (!this.model?.CORR_DOCUMENTO) {
+      this.notifyFx('Guarde el documento antes de aplicar.', NotifyType.Warning);
+      return;
+    }
+    const pendiente = this.mensajeParaAplicar(this.provision, this.contabilidades, this.cantidadDocumentosProvision);
+    if (pendiente) {
+      this.notifyFx(pendiente, NotifyType.Warning);
+      if (this.provision) {
+        this.IndexTab = 2;
+      }
+      return;
+    }
+    const confirpreli = custom({
+      title: 'Confirmación de Aplicar',
+      messageHtml: 'Se aplicará el documento y se generará la partida con la contabilidad proyectada. ¿Continuar?',
+      buttons: [
+        { text: 'Si', onClick: () => this.confirmarAplicar() },
+        { text: 'No', onClick: () => false },
+      ],
+    });
+    confirpreli.show();
+  }
+
+  private confirmarAplicar(): void {
+    this.loadingVisible = true;
+    this.service
+      .getProvision(this.model)
+      .pipe(take(1))
+      .subscribe({
+        next: (response: any) => {
+          if (!response.Result) {
+            this.loadingVisible = false;
+            this.notifyFx(response.ErrorMessage, NotifyType.Error);
+            return;
+          }
+          this.aplicarProvision(response.Data);
+          const pendiente = this.mensajeParaAplicar(
+            response.Data?.Provision,
+            response.Data?.Conta,
+            response.Data?.CantidadDocumentos
+          );
+          if (pendiente) {
+            this.loadingVisible = false;
+            this.notifyFx(pendiente, NotifyType.Warning);
+            this.IndexTab = 2;
+            return;
+          }
+          this.aplicarDocumentoYPartida();
+        },
+        error: (error: any) => {
+          this.loadingVisible = false;
+          this.notifyFx(this.mensajeError(error), NotifyType.Error);
+        },
       });
-      confirpreli.show().then((dialogResult: any) => {});
+  }
+
+  private aplicarDocumentoYPartida(): void {
+    this.service
+      .update(this.model)
+      .pipe(take(1))
+      .subscribe({
+        next: (guardado: any) => {
+          if (!guardado.Result) {
+            this.loadingVisible = false;
+            this.notifyFx(guardado.ErrorMessage, NotifyType.Error);
+            return;
+          }
+          this.service
+            .Aplicar(this.model)
+            .pipe(take(1))
+            .subscribe({
+              next: (aplicado: any) => {
+                if (!(aplicado.Result && aplicado.ErrorCode === 0)) {
+                  this.loadingVisible = false;
+                  this.notifyFx(aplicado.ErrorMessage, NotifyType.Error);
+                  return;
+                }
+                this.tomarDocumentoAplicado(aplicado.Data);
+                this.service
+                  .contabilizarProvision(this.model)
+                  .pipe(take(1))
+                  .subscribe({
+                    next: (partida: any) => {
+                      this.loadingVisible = false;
+                      if (partida.Result && partida.ErrorCode === 0) {
+                        this.aplicarProvision(partida.Data);
+                        this.IndexTab = 2;
+                        this.notifyFx('Documento aplicado y partida contabilizada.', NotifyType.Success);
+                      } else {
+                        this.consultarProvision();
+                        this.notifyFx(
+                          'El documento quedó aplicado, pero la partida no se generó. ' + (partida.ErrorMessage || ''),
+                          NotifyType.Error
+                        );
+                      }
+                    },
+                    error: (error: any) => {
+                      this.loadingVisible = false;
+                      this.consultarProvision();
+                      this.notifyFx(
+                        'El documento quedó aplicado, pero la partida no se generó. ' + this.mensajeError(error),
+                        NotifyType.Error
+                      );
+                    },
+                  });
+              },
+              error: (error: any) => {
+                this.loadingVisible = false;
+                this.notifyFx(this.mensajeError(error), NotifyType.Error);
+              },
+            });
+        },
+        error: (error: any) => {
+          this.loadingVisible = false;
+          this.notifyFx(this.mensajeError(error), NotifyType.Error);
+        },
+      });
+  }
+
+  private tomarDocumentoAplicado(data: any): void {
+    this.model = data;
+    const vIndex = this.models.findIndex((item: any) => item.ANIO_PERIODO === data.ANIO_PERIODO &&
+                                                        item.MES_PERIODO === data.MES_PERIODO &&
+                                                        item.CORR_DOCUMENTO === data.CORR_DOCUMENTO);
+    if (vIndex >= 0) {
+      this.models[vIndex] = data;
+    }
+    this.habilitar();
+    this.refrescarBotones();
+    this.banderaMtto = UpdateType.Not_Defined;
+    if (this.model.ESTADO_DOCUMENTO != 'DI' && this.model.ESTADO_DOCUMENTO != 'SO') {
+      setTimeout(() => this.bloquear());
+    }
+  }
+
+  private documentoTieneProvision(): boolean {
+    return !!this.provision?.CORR_PROVISION || this.cantidadDocumentosProvision > 0;
+  }
+
+  private mensajeParaAplicar(provision: any, conta: any[], cantidad: number): string {
+    if (!provision) {
+      return 'Este documento todavía no tiene provisión. Use Provisionar antes de aplicar.';
+    }
+    if (Number(cantidad) !== 1) {
+      return 'Esta factura está en una provisión con otros documentos. Termine la contabilización en Provisión.';
+    }
+    const lineas = conta || [];
+    if (lineas.length === 0) {
+      return 'La provisión no tiene contabilidad proyectada.';
+    }
+    const ajena = lineas.some((linea: any) => linea.CORR_PROVISION !== provision.CORR_PROVISION
+      || linea.ANIO_PERIODO !== provision.ANIO_PERIODO
+      || linea.MES_PERIODO !== provision.MES_PERIODO);
+    if (ajena) {
+      return 'La contabilidad proyectada no pertenece a la provisión de este documento.';
+    }
+    const cargo = Math.round(lineas.reduce((total: number, linea: any) => total + Number(linea.MONTO_CARGO || 0), 0) * 100) / 100;
+    const abono = Math.round(lineas.reduce((total: number, linea: any) => total + Number(linea.MONTO_ABONO || 0), 0) * 100) / 100;
+    if (cargo !== abono || cargo === 0) {
+      return 'El asiento no está cuadrado. El cargo debe ser igual al abono antes de aplicar.';
+    }
+    return '';
   }
 
   tabContabilidadVisible(): boolean {
-    return this.model?.ESTADO_DOCUMENTO === 'AP';
+    return this.model?.ESTADO_DOCUMENTO === 'AP' || !!this.provision;
   }
 
   limpiarProvision(): void {
@@ -1048,28 +1171,32 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     }
     this.provision = null;
     this.contabilidades = [];
-    this.puedeContabilizar = false;
     this.puedeEditarConta = false;
     this.mensajeProvision = '';
     this.nombrePartidaProvision = '';
     this.cantidadDocumentosProvision = 0;
+    this.provisionConsultada = true;
+    this.refrescarBotones();
   }
 
   aplicarProvision(data: any): void {
     this.provision = data?.Provision ?? null;
     this.contabilidades = data?.Conta || [];
-    this.puedeContabilizar = !!data?.PuedeContabilizar;
     this.puedeEditarConta = !!data?.PuedeEditarConta;
     this.mensajeProvision = data?.Mensaje || '';
     this.nombrePartidaProvision = this.provision?.NOMBRE_PARTIDA || '';
     this.cantidadDocumentosProvision = data?.CantidadDocumentos || 0;
+    this.provisionConsultada = true;
+    this.refrescarBotones();
   }
 
   consultarProvision(): void {
-    if (!this.tabContabilidadVisible() || !this.model?.CORR_DOCUMENTO) {
+    if (!this.model?.CORR_DOCUMENTO) {
       this.limpiarProvision();
       return;
     }
+    this.provisionConsultada = false;
+    this.refrescarBotones();
     this.service
       .getProvision(this.model)
       .pipe(take(1))
@@ -1079,9 +1206,15 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
             this.aplicarProvision(response.Data);
           } else {
             this.mensajeProvision = response.ErrorMessage;
+            this.provisionConsultada = true;
+            this.refrescarBotones();
           }
         },
-        error: (error: any) => this.notifyFx(this.mensajeError(error), NotifyType.Error),
+        error: (error: any) => {
+          this.provisionConsultada = true;
+          this.refrescarBotones();
+          this.notifyFx(this.mensajeError(error), NotifyType.Error);
+        },
       });
   }
 
@@ -1144,41 +1277,6 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
         },
         error: (error: any) => this.notifyFx(this.mensajeError(error), NotifyType.Error),
       });
-  }
-
-  contabilizarProvision(): void {
-    const dialogo = custom({
-      title: 'Contabilizar',
-      messageHtml: 'Se generará la partida con la proyección actual. ¿Continuar?',
-      buttons: [
-        {
-          text: 'Si',
-          onClick: () => {
-            this.loadingVisible = true;
-            this.service
-              .contabilizarProvision(this.model)
-              .pipe(take(1))
-              .subscribe({
-                next: (response: any) => {
-                  this.loadingVisible = false;
-                  if (response.Result && response.ErrorCode === 0) {
-                    this.aplicarProvision(response.Data);
-                    this.notifyFx('Partida contabilizada.', NotifyType.Success);
-                  } else {
-                    this.notifyFx(response.ErrorMessage, NotifyType.Error);
-                  }
-                },
-                error: (error: any) => {
-                  this.loadingVisible = false;
-                  this.notifyFx(this.mensajeError(error), NotifyType.Error);
-                },
-              });
-          },
-        },
-        { text: 'No', onClick: () => false },
-      ],
-    });
-    dialogo.show();
   }
 
   regenerarProvisionConta(): void {

@@ -14,6 +14,7 @@ import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.compon
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
+import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 
 
 import { ComDocumentoComponent } from './com-documento.component';
@@ -36,6 +37,7 @@ const routes: Routes = [{ path: '', component: ComDocumentoComponent }];
 		DataLookupModule,
     DxPopupModule,
 		DxTextBoxModule,
+		DxTextAreaModule,
 
 	],
 	exports: [RouterModule],

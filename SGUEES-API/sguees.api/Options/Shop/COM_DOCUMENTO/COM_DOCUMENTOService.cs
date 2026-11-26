@@ -242,9 +242,9 @@ namespace eadmindevprojectmanagement.Services
 			{
 				return ErrorProvision("El documento de compra no existe.");
 			}
-			if (documento.ESTADO_DOCUMENTO != "AP")
+			if (documento.ESTADO_DOCUMENTO == "AN")
 			{
-				return ErrorProvision("El documento debe estar aplicado antes de generar la provisión.");
+				return ErrorProvision("Un documento anulado no se puede provisionar.");
 			}
 
 			var enlace = await BuscarEnlaceAsync(Data.CORR_EMPRESA, Data.ANIO_PERIODO, Data.MES_PERIODO, Data.CORR_DOCUMENTO);
@@ -345,6 +345,33 @@ namespace eadmindevprojectmanagement.Services
 			if (provision.ESTADO_PROVISION != "DI")
 			{
 				return ErrorProvision("La provisión ya está aplicada o anulada.");
+			}
+
+			var conta = await _provisionConta.GetAllAsync(new COM_PROVISION_CONTAParam
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				ANIO_PERIODO = enlace.ANIO_PERIODO,
+				MES_PERIODO = enlace.MES_PERIODO,
+				CORR_PROVISION = enlace.CORR_PROVISION,
+			});
+			var lineas = conta.Result && conta.Data is IEnumerable<COM_PROVISION_CONTAView> lista
+				? lista.ToList()
+				: new List<COM_PROVISION_CONTAView>();
+			if (lineas.Count == 0)
+			{
+				return ErrorProvision("La provisión no tiene contabilidad proyectada.");
+			}
+			if (lineas.Any(x => x.CORR_PROVISION != enlace.CORR_PROVISION
+				|| x.ANIO_PERIODO != enlace.ANIO_PERIODO
+				|| x.MES_PERIODO != enlace.MES_PERIODO))
+			{
+				return ErrorProvision("La contabilidad proyectada no pertenece a la provisión de este documento.");
+			}
+			var cargo = Math.Round(lineas.Sum(x => x.MONTO_CARGO), 2, MidpointRounding.AwayFromZero);
+			var abono = Math.Round(lineas.Sum(x => x.MONTO_ABONO), 2, MidpointRounding.AwayFromZero);
+			if (cargo != abono || cargo == 0)
+			{
+				return ErrorProvision("El asiento no está cuadrado. El cargo debe ser igual al abono antes de aplicar.");
 			}
 
 			var aplicado = await _provision.AplicarAsync(new COM_PROVISIONTable

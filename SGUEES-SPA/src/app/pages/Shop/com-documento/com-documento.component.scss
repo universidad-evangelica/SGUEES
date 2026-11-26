@@ -174,6 +174,47 @@
 
 .conta-descripcion-fila {
   margin-top: 4px;
+  align-items: flex-start;
+}
+
+.conta-descripcion-acciones {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+:host ::ng-deep .dx-button.conta-btn-guardar.dx-button-mode-contained {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  color: #fff;
+
+  .dx-icon {
+    color: #fff;
+  }
+
+  &.dx-state-hover,
+  &.dx-state-focused {
+    background-color: #256628;
+    border-color: #256628;
+    color: #fff;
+  }
+}
+
+:host ::ng-deep .dx-button.conta-btn-regenerar.dx-button-mode-contained {
+  background-color: #0f4c81;
+  border-color: #0f4c81;
+  color: #fff;
+
+  .dx-icon {
+    color: #fff;
+  }
+
+  &.dx-state-hover,
+  &.dx-state-focused {
+    background-color: #0c3d68;
+    border-color: #0c3d68;
+    color: #fff;
+  }
 }
 
 .conta-descripcion-campo {

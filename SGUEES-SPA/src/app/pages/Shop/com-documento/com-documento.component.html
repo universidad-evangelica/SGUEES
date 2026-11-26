@@ -19,24 +19,30 @@
   (btn1Click)="Aplicar()"
   [btn1Width]="100"
   [btn1Mode]="'contained'"
-  [btn2]="btnDocumentosElectronicos"
-  [btn2Icon]="'file'"
+  [btn2]="btnProvisionar"
+  [btn2Icon]="'ordersbox'"
   [btn2Type]="'default'"
-  (btn2Click)="MostrarDocumentosElectronicos()"
-  [btn2Width]="180"
+  (btn2Click)="Provisionar()"
+  [btn2Width]="140"
   [btn2Mode]="'contained'"
-  [btn3]="btnVistaPrevia"
-  [btn3Icon]="'pdffile'"
+  [btn3]="btnDocumentosElectronicos"
+  [btn3Icon]="'file'"
   [btn3Type]="'default'"
-  (btn3Click)="MostrarVistaPrevia()"
+  (btn3Click)="MostrarDocumentosElectronicos()"
   [btn3Width]="180"
   [btn3Mode]="'contained'"
-  [btn4]="btnGenerarCR"
-  [btn4Icon]="'check'"
-  [btn4Type]="'success'"
-  (btn4Click)="GenerarCR()"
+  [btn4]="btnVistaPrevia"
+  [btn4Icon]="'pdffile'"
+  [btn4Type]="'default'"
+  (btn4Click)="MostrarVistaPrevia()"
   [btn4Width]="180"
   [btn4Mode]="'contained'"
+  [btn5]="btnGenerarCR"
+  [btn5Icon]="'check'"
+  [btn5Type]="'success'"
+  (btn5Click)="GenerarCR()"
+  [btn5Width]="180"
+  [btn5Mode]="'contained'"
 
 >
 </app-barra-data-mtto>
@@ -467,15 +473,16 @@
 									<span class="conta-dato-label">Descripción de la partida <span class="conta-requerido">*</span></span>
 									<div class="conta-descripcion-fila">
 										<div class="conta-descripcion-campo">
-											<dx-text-box [(value)]="nombrePartidaProvision" [readOnly]="!puedeEditarConta" [width]="'100%'" placeholder="Texto que saldrá en la partida contable"></dx-text-box>
+											<dx-text-area [(value)]="nombrePartidaProvision" [readOnly]="!puedeEditarConta" [width]="'100%'" [height]="72" placeholder="Texto que saldrá en la partida contable"></dx-text-area>
 										</div>
-										<dx-button text="Guardar" icon="save" stylingMode="outlined" [visible]="puedeEditarConta" hint="Guarda el texto de la partida" (onClick)="guardarDescripcionPartida()"></dx-button>
+										<div class="conta-descripcion-acciones">
+											<dx-button class="conta-btn-guardar" text="Guardar" icon="save" type="success" stylingMode="contained" [visible]="puedeEditarConta" hint="Guarda el texto de la partida" (onClick)="guardarDescripcionPartida()"></dx-button>
+											<dx-button class="conta-btn-regenerar" text="Regenerar asientos" icon="refresh" stylingMode="contained" [visible]="puedeEditarConta" hint="Borra los asientos actuales, incluidos los cambios manuales, y los vuelve a calcular" (onClick)="regenerarProvisionConta()"></dx-button>
+										</div>
 									</div>
 								</div>
-								<div class="conta-botones">
-									<dx-button text="Contabilizar" icon="check" type="success" stylingMode="contained" [disabled]="!puedeContabilizar" hint="Crea la partida con los asientos de la tabla" (onClick)="contabilizarProvision()"></dx-button>
-									<dx-button text="Regenerar asientos" icon="refresh" stylingMode="outlined" [visible]="puedeEditarConta" hint="Borra los asientos actuales, incluidos los cambios manuales, y los vuelve a calcular" (onClick)="regenerarProvisionConta()"></dx-button>
-									<dx-button text="Reintentar provisión" icon="redo" stylingMode="outlined" [visible]="cantidadDocumentosProvision <= 1 && (!provision || contabilidades.length === 0)" hint="Vuelve a crear la provisión de esta factura" (onClick)="reintentarProvision()"></dx-button>
+								<div class="conta-botones" *ngIf="cantidadDocumentosProvision <= 1 && (!provision || contabilidades.length === 0)">
+									<dx-button text="Reintentar provisión" icon="redo" stylingMode="outlined" hint="Vuelve a crear la provisión de esta factura" (onClick)="reintentarProvision()"></dx-button>
 								</div>
 							</div>
 							<dx-data-grid
@@ -528,7 +535,7 @@
 										</app-data-lookup>
 									</div>
 								</dxi-column>
-								<dxi-column dataField="NOMBRE_CUENTA" caption="Nombre cuenta" width="220" [allowEditing]="false"></dxi-column>
+								<dxi-column dataField="NOMBRE_CUENTA" caption="Nombre cuenta" width="320" [allowEditing]="false"></dxi-column>
 								<dxi-column
 									dataField="CORR_CENTRO_COSTO"
 									caption="Centro costo"
@@ -549,10 +556,10 @@
 									</div>
 								</dxi-column>
 								<dxi-column dataField="NOMBRE_CENTRO" caption="Nombre centro" width="220" [allowEditing]="false"></dxi-column>
-								<dxi-column dataField="NOMBRE_TRAN" caption="Concepto" width="260"></dxi-column>
+								<dxi-column dataField="NOMBRE_TRAN" caption="Concepto" width="340"></dxi-column>
 								<dxi-column dataField="MONTO_CARGO" caption="Cargo" dataType="number" format="#,##0.00" width="120"></dxi-column>
 								<dxi-column dataField="MONTO_ABONO" caption="Abono" dataType="number" format="#,##0.00" width="120"></dxi-column>
-								<dxi-column dataField="NOMBRE_AUXILIAR" caption="Auxiliar" width="180" [allowEditing]="false"></dxi-column>
+								<dxi-column dataField="NOMBRE_AUXILIAR" caption="Auxiliar" width="180" [allowEditing]="false" [visible]="false"></dxi-column>
 								<dxo-summary>
 									<dxi-total-item column="CORR_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
 									<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
