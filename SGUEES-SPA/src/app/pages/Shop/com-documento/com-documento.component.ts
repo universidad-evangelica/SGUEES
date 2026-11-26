@@ -129,6 +129,8 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     this.selectedLookUpCORR_CONDICION_PAGO = this.selectedLookUpCORR_CONDICION_PAGO.bind(this);
     this.customizeItem = this.customizeItem.bind(this);
     this.DIAS_CREDITOValueChanged = this.DIAS_CREDITOValueChanged.bind(this);
+    this.FECHA_DOCUMENTOValueChanged = this.FECHA_DOCUMENTOValueChanged.bind(this);
+    this.enlazarCalculoVencimiento();
     this.gDataComDocumentoTotalRowUpdated = this.gDataComDocumentoTotalRowUpdated.bind(this);
     this.selectedLookUpCORR_TIPO_DOC = this.selectedLookUpCORR_TIPO_DOC.bind(this);
     this.selectedLookUpCORR_TIPO_GASTO = this.selectedLookUpCORR_TIPO_GASTO.bind(this);
@@ -856,19 +858,92 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     this.model.NOMBRE_PROVEEDOR = row.NOMBRE_PROVEEDOR ?? '';
     const corrCondicion = Number(row.CORR_CONDICION_PAGO ?? 0);
     if (corrCondicion !== 0) {
+      const condicionAnterior = Number(this.model.CORR_CONDICION_PAGO ?? 0);
+      const diasAnteriores = Number(this.model.DIAS_CREDITO ?? 0);
       this.model.CORR_CONDICION_PAGO = corrCondicion;
-      const condicion = this.mCORR_CONDICION_PAGO?.find((item: any) => item.CORR_CONDICION_PAGO === corrCondicion);
+      const condicion = this.mCORR_CONDICION_PAGO?.find((item: any) => Number(item.CORR_CONDICION_PAGO) === corrCondicion);
       if (condicion) {
-        this.model.DIAS_CREDITO = condicion.DIAS_CREDITO;
+        this.model.DIAS_CREDITO = Number(condicion.DIAS_CREDITO ?? 0);
+        this.model.NOMBRE_CONDICION_PAGO = condicion.NOMBRE_CONDICION_PAGO ?? '';
+      }
+      if (corrCondicion !== condicionAnterior || Number(this.model.DIAS_CREDITO ?? 0) !== diasAnteriores) {
+        this.calcularFechaVencimiento();
       }
     }
     return row.CORR_PROVEEDOR;
   }
 
   selectedLookUpCORR_CONDICION_PAGO(vRow: any): any {
-      this.model.DIAS_CREDITO = vRow[0].DIAS_CREDITO;
-      // this.model.FECHA_VENCIMIENTO = this.appInfoService.getDate(this.appInfoService.dateAdd(this.model.FECHA_DOCUMENTO, 'day',  vRow[0].DIAS_CREDITO));
-    return vRow[0].CORR_CONDICION_PAGO;
+    const condicion = vRow?.[0];
+    if (!condicion) {
+      return null;
+    }
+    const corr = Number(condicion.CORR_CONDICION_PAGO ?? 0);
+    const dias = Number(condicion.DIAS_CREDITO ?? 0);
+    const cambia = corr !== Number(this.model.CORR_CONDICION_PAGO ?? 0) || dias !== Number(this.model.DIAS_CREDITO ?? 0);
+    this.model.DIAS_CREDITO = dias;
+    this.model.NOMBRE_CONDICION_PAGO = condicion.NOMBRE_CONDICION_PAGO ?? '';
+    if (cambia) {
+      this.calcularFechaVencimiento(dias);
+    }
+    return condicion.CORR_CONDICION_PAGO;
+  }
+
+  FECHA_DOCUMENTOValueChanged(e: any): void {
+    if (!e?.event) {
+      return;
+    }
+    this.model.FECHA_DOCUMENTO = e.value;
+    this.calcularFechaVencimiento();
+  }
+
+  private enlazarCalculoVencimiento(): void {
+    const fecha = this.items?.find((item: any) => item.dataField === 'FECHA_DOCUMENTO');
+    if (fecha) {
+      fecha.editorOptions = { ...fecha.editorOptions, onValueChanged: this.FECHA_DOCUMENTOValueChanged };
+    }
+    const dias = this.items?.find((item: any) => item.dataField === 'DIAS_CREDITO');
+    if (dias) {
+      dias.editorOptions = { ...dias.editorOptions, onValueChanged: this.DIAS_CREDITOValueChanged };
+    }
+  }
+
+  private calcularFechaVencimiento(dias?: number): void {
+    const fecha = this.fechaComoDate(this.model?.FECHA_DOCUMENTO);
+    if (!fecha) {
+      return;
+    }
+    const diasCredito = Number(dias ?? this.model?.DIAS_CREDITO ?? 0);
+    this.model.FECHA_VENCIMIENTO = this.esCondicionCredito() && diasCredito > 0
+      ? this.appInfoService.dateAdd(fecha, 'day', diasCredito)
+      : fecha;
+  }
+
+  private esCondicionCredito(): boolean {
+    const corr = Number(this.model?.CORR_CONDICION_PAGO ?? 0);
+    const condicion = this.mCORR_CONDICION_PAGO?.find((item: any) => Number(item.CORR_CONDICION_PAGO) === corr);
+    const nombre = String(condicion?.NOMBRE_CONDICION_PAGO ?? this.model?.NOMBRE_CONDICION_PAGO ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
+    return nombre.includes('CREDITO');
+  }
+
+  private fechaComoDate(valor: any): Date | null {
+    if (valor instanceof Date && !Number.isNaN(valor.getTime())) {
+      return new Date(valor.getFullYear(), valor.getMonth(), valor.getDate());
+    }
+    if (typeof valor === 'string') {
+      const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(valor);
+      if (partes) {
+        return new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]));
+      }
+    }
+    const fecha = new Date(valor);
+    if (Number.isNaN(fecha.getTime())) {
+      return null;
+    }
+    return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
   }
 
   selectedLookUpCORR_TIPO_GASTO(vRow: any): any {
@@ -879,9 +954,11 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     return vRow[0].CORR_TIPO_GASTO;
   }
   DIAS_CREDITOValueChanged(e: any) {
-    if (e.value !== 0) {
-      this.model.FECHA_VENCIMIENTO = this.appInfoService.dateAdd(this.model.FECHA_VENCIMIENTO,'day', e.value);
+    if (!e?.event) {
+      return;
     }
+    this.model.DIAS_CREDITO = Number(e.value ?? 0);
+    this.calcularFechaVencimiento(this.model.DIAS_CREDITO);
   }
 
   customizeItem(item: any) {
@@ -1167,10 +1244,25 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     });
   }
 
+  getTotalCargo(): number {
+    return this.sumarColumnaConta('MONTO_CARGO');
+  }
+
+  getTotalAbono(): number {
+    return this.sumarColumnaConta('MONTO_ABONO');
+  }
+
   getDiferenciaConta(): number {
-    const cargo = this.contabilidades.reduce((s, d) => s + (Number(d.MONTO_CARGO) || 0), 0);
-    const abono = this.contabilidades.reduce((s, d) => s + (Number(d.MONTO_ABONO) || 0), 0);
-    return Math.round((cargo - abono) * 100) / 100;
+    return Math.round((this.getTotalCargo() - this.getTotalAbono()) * 100) / 100;
+  }
+
+  asientoCuadrado(): boolean {
+    return (this.contabilidades?.length ?? 0) > 0 && this.getDiferenciaConta() === 0;
+  }
+
+  private sumarColumnaConta(campo: 'MONTO_CARGO' | 'MONTO_ABONO'): number {
+    const total = (this.contabilidades ?? []).reduce((suma, fila) => suma + (Number(fila?.[campo]) || 0), 0);
+    return Math.round(total * 100) / 100;
   }
 
   mensajeError(error: any): string {

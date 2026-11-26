@@ -196,8 +196,7 @@ export class ComDocumentoService {
         label: { text: 'Dias Credito' },
         editorType: 'dxNumberBox',
         colSpan: 2,
-        editorOptions: { placeholder: 'Dias Credito...',format: '#,##0', showClearButton: false ,onValueChanged: 'DIAS_CREDITOValueChange'},
-        valueChange: 'DIAS_CREDITOValueChange',
+        editorOptions: { placeholder: 'Dias Credito...', format: '#,##0', showClearButton: false },
       },
       {
         dataField: 'FECHA_VENCIMIENTO',
