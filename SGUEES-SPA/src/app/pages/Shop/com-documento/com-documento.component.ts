@@ -145,6 +145,7 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
     this.selectNinguno = this.selectNinguno.bind(this);
     this.consultarCOM_DOCUMENTO_DETA_DOC_DISPONIBLES = this.consultarCOM_DOCUMENTO_DETA_DOC_DISPONIBLES.bind(this);
     this.selectedLookUpCUENTA_CONTABLE = this.selectedLookUpCUENTA_CONTABLE.bind(this);
+    this.cuentaContaSetCellValue = this.cuentaContaSetCellValue.bind(this);
     this.selectedLookUpCORR_CENTRO_COSTO = this.selectedLookUpCORR_CENTRO_COSTO.bind(this);
     this.contaRowUpdating = this.contaRowUpdating.bind(this);
 	}
@@ -330,6 +331,12 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 
   selectedLookUpCUENTA_CONTABLE(vRow: any): any {
     return vRow[0].CUENTA_CONTABLE;
+  }
+
+  cuentaContaSetCellValue(newData: any, value: any): void {
+    newData.CUENTA_CONTABLE = value;
+    const cuenta = (this.mCUENTA_CONTABLE || []).find((item: any) => item.CUENTA_CONTABLE === value);
+    newData.NOMBRE_CUENTA = cuenta?.NOMBRE_CUENTA || '';
   }
 
   selectedLookUpCORR_CENTRO_COSTO(vRow: any): any {

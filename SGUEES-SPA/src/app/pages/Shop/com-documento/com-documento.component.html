@@ -520,12 +520,14 @@
 									dataField="CUENTA_CONTABLE"
 									caption="Cuenta"
 									width="140"
+									[setCellValue]="cuentaContaSetCellValue"
 									[editCellTemplate]="'CUENTA_CONTABLELookup'"
 								>
 									<div *dxTemplate="let cellInfo of 'CUENTA_CONTABLELookup'">
 										<app-data-lookup
+											[setValue]="cellInfo.setValue"
 											[model]="mCUENTA_CONTABLE"
-											[(value)]="cellInfo.data.CUENTA_CONTABLE"
+											[(value)]="cellInfo.value"
 											[selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
 											[valueExpr]="'CUENTA_CONTABLE'"
 											[displayExpr]="'CUENTA_CONTABLE'"
