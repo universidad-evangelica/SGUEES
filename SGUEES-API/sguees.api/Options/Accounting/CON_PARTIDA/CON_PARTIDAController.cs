@@ -17,7 +17,13 @@ namespace sguees.Controllers
 	public class CON_PARTIDAController : ControllerBase
 	{
 		private readonly ICON_PARTIDAService _service;
-		public CON_PARTIDAController(ICON_PARTIDAService service) { _service = service ?? throw new ArgumentNullException(nameof(_service)); }
+		private readonly ISEG_USUARIOService _userService;
+
+		public CON_PARTIDAController(ICON_PARTIDAService service, ISEG_USUARIOService userService)
+		{
+			_service = service ?? throw new ArgumentNullException(nameof(_service));
+			_userService = userService ?? throw new ArgumentNullException(nameof(userService));
+		}
 
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/con-partida|R")]
@@ -219,6 +225,19 @@ namespace sguees.Controllers
 			{
 				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
 			}
+		}
+
+		/// <summary>
+		/// JWT para abrir Accounting.aspx (visor universal DevExpress) en SGUEES-RPT (iframe).
+		/// No genera el PDF: el ASPX llama al SP y muestra el WebDocumentViewer.
+		/// </summary>
+		[HttpGet("GetRptToken")]
+		[Authorize(Policy = "/con-partida|P")]
+		public IActionResult GetRptToken()
+		{
+			var login = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "user";
+			var token = _userService.GenerateRptToken(login);
+			return Ok(new { Token = token });
 		}
 
 		[HttpGet("GetPeriodosOrigenContrapartida")]
