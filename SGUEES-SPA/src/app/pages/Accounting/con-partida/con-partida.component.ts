@@ -1,6 +1,6 @@
-import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, HostListener, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { take } from 'rxjs/operators';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 
@@ -20,6 +20,12 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { custom } from 'devextreme/ui/dialog';
 import { environment } from 'src/environments/environment';
 import { PartidaIaContexto } from 'src/app/shared/partida-ia-asistente/partida-ia.models';
+import {
+	ACCOUNTING_RPT,
+	ACCOUNTING_RPT_MESSAGE_SOURCE,
+	buildAccountingRptUrl,
+	resolveAccountingFuente,
+} from '../shared/accounting-rpt';
 
 @Component({
   standalone: false,
@@ -67,10 +73,15 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	btnGenerarDesdeModelo = '';
 	btnContrapartida = '';
 	btnImprimir = '';
+	btnImprimirDx = '';
 	contrapartidaModalVisible = false;
 	popupVisiblePdf = false;
 	vPDF: Blob | null = null;
 	PDF!: SafeUrl;
+	imprimirDxPopupVisible = false;
+	imprimirDxUrl: SafeResourceUrl | null = null;
+	imprimirDxLoading = false;
+	private imprimirDxLoadFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 	importExcelVisible = false;
 	vFECHA_INICIAL: Date = new Date();
 	vFECHA_FINAL: Date = new Date();
@@ -534,6 +545,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			this.btnContrapartida = this.permiteEdit ? 'Contrapartida' : '';
 			this.btnCrearModelo = this.permiteEdit ? 'Crear Modelo' : '';
 			this.btnImprimir = this.permitePrint ? 'Imprimir' : '';
+			this.btnImprimirDx = this.permitePrint ? 'Imprimir DX' : '';
 			return;
 		}
 
@@ -543,6 +555,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		const puedeImprimirPartida =
 			this.permitePrint && this.banderaMtto === UpdateType.Update && this.hasPartidaSeleccionada();
 		this.btnImprimir = puedeImprimirPartida ? 'Imprimir' : '';
+		this.btnImprimirDx = puedeImprimirPartida ? 'Imprimir DX' : '';
 		this.btnCrearModelo = this.puedeCrearModelo() ? 'Crear Modelo' : '';
 	}
 
@@ -594,8 +607,113 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			});
 	}
 
+	/** Crystal / PDF blob vía API (botón Imprimir existente). */
 	imprimirPartida(): void {
-		this.abrirPdfPartida((params) => this.service.getPDFDx(params));
+		this.abrirPdfPartida((params) => this.service.getPDF(params));
+	}
+
+	/**
+	 * Abre el visor universal Accounting.aspx (XtraReports / WebDocumentViewer).
+	 * fuente = ruta del componente (con-partida); report = ACCOUNTING_RPT.PARTIDA_CONTABLE.
+	 */
+	imprimirPartidaDx(): void {
+		if (!this.hasPartidaSeleccionada()) {
+			this.notifyFx('Seleccione una partida para imprimir', NotifyType.Warning);
+			return;
+		}
+
+		const corrEmpresa =
+			Number(this.model?.CORR_EMPRESA) || Number(this.appInfoService.CORR_EMPRESA) || 0;
+		if (corrEmpresa <= 0) {
+			this.notifyFx('No se pudo resolver la empresa de sesión.', NotifyType.Error);
+			return;
+		}
+
+		const fuente = resolveAccountingFuente(this.router, this.urlOpcion);
+		if (!fuente) {
+			this.notifyFx('No se pudo resolver la fuente del reporte (ruta SPA).', NotifyType.Error);
+			return;
+		}
+
+		this.clearImprimirDxLoadFallback();
+		this.imprimirDxUrl = null;
+		this.imprimirDxLoading = true;
+		this.imprimirDxPopupVisible = true;
+
+		this.service
+			.getRptToken()
+			.pipe(take(1))
+			.subscribe({
+				next: (res: any) => {
+					const token = res?.Token || res?.Data?.Token || res?.token;
+					if (!token) {
+						this.imprimirDxLoading = false;
+						this.imprimirDxPopupVisible = false;
+						this.notifyFx('No se pudo obtener el token de reportería.', NotifyType.Error);
+						return;
+					}
+					const url = buildAccountingRptUrl({
+						fuente,
+						report: ACCOUNTING_RPT.PARTIDA_CONTABLE,
+						params: {
+							CORR_EMPRESA: corrEmpresa,
+							ANIO_PERIODO: this.model.ANIO_PERIODO,
+							MES_PERIODO: this.model.MES_PERIODO,
+							CORR_CLASE_PARTIDA: this.model.CORR_CLASE_PARTIDA,
+							CORR_PARTIDA: this.model.CORR_PARTIDA,
+						},
+						token,
+					});
+					this.imprimirDxUrl = this.sanitization.bypassSecurityTrustResourceUrl(url);
+					this.imprimirDxLoadFallbackTimer = setTimeout(() => {
+						this.imprimirDxLoading = false;
+						this.imprimirDxLoadFallbackTimer = null;
+					}, 45000);
+				},
+				error: (err: any) => {
+					this.imprimirDxLoading = false;
+					this.imprimirDxPopupVisible = false;
+					this.notifyFx(
+						err?.ErrorMessage || err?.message || err || 'Error al preparar impresión',
+						NotifyType.Error
+					);
+				},
+			});
+	}
+
+	@HostListener('window:message', ['$event'])
+	onImprimirDxRptMessage(event: MessageEvent): void {
+		const data = event?.data;
+		if (!data || data.type !== 'sguees-rpt-ready' || data.source !== ACCOUNTING_RPT_MESSAGE_SOURCE) {
+			return;
+		}
+		this.clearImprimirDxLoadFallback();
+		this.imprimirDxLoading = false;
+	}
+
+	onImprimirDxIframeLoad(): void {
+		if (!this.imprimirDxLoading) {
+			return;
+		}
+		this.clearImprimirDxLoadFallback();
+		this.imprimirDxLoadFallbackTimer = setTimeout(() => {
+			this.imprimirDxLoading = false;
+			this.imprimirDxLoadFallbackTimer = null;
+		}, 8000);
+	}
+
+	cerrarImprimirDxPopup(): void {
+		this.clearImprimirDxLoadFallback();
+		this.imprimirDxPopupVisible = false;
+		this.imprimirDxUrl = null;
+		this.imprimirDxLoading = false;
+	}
+
+	private clearImprimirDxLoadFallback(): void {
+		if (this.imprimirDxLoadFallbackTimer != null) {
+			clearTimeout(this.imprimirDxLoadFallbackTimer);
+			this.imprimirDxLoadFallbackTimer = null;
+		}
 	}
 
 	abrirContrapartida(): void {

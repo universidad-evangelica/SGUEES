@@ -49,6 +49,12 @@
 	[btn5Width]="160"
 	(btn5Click)="abrirContrapartida()"
 	[btn5Type]="'default'"
+	[btn6]="btnImprimirDx"
+	[btn6Icon]="'print'"
+	[btn6Width]="150"
+	[btn6Mode]="'outlined'"
+	[btn6Type]="'default'"
+	(btn6Click)="imprimirPartidaDx()"
 >
 </app-barra-data-mtto>
 
@@ -485,6 +491,38 @@
 		<object [data]="PDF" type="application/pdf" width="100%" height="95%">
 			<embed [src]="PDF" type="application/pdf" />
 		</object>
+	</div>
+</dx-popup>
+
+<dx-popup
+	[(visible)]="imprimirDxPopupVisible"
+	[showTitle]="true"
+	title="Partida Contable"
+	[width]="'90%'"
+	[height]="'90%'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[resizeEnabled]="true"
+	(onHidden)="cerrarImprimirDxPopup()"
+>
+	<div *dxTemplate="let data of 'content'" class="imprimir-viewer" id="imprimirPartidaDxViewerHost">
+		<dx-load-panel
+			shadingColor="rgba(0,0,0,0.4)"
+			[position]="{ my: 'center', at: 'center', of: '#imprimirPartidaDxViewerHost' }"
+			[(visible)]="imprimirDxLoading"
+			[showIndicator]="true"
+			[showPane]="true"
+			[shading]="true"
+			[container]="'#imprimirPartidaDxViewerHost'"
+			message="Cargando..."
+		></dx-load-panel>
+		<iframe
+			*ngIf="imprimirDxUrl"
+			class="imprimir-viewer__iframe"
+			[src]="imprimirDxUrl"
+			(load)="onImprimirDxIframeLoad()"
+			title="Visor Partida Contable"
+		></iframe>
 	</div>
 </dx-popup>
 

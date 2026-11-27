@@ -117,6 +117,10 @@ export class ConPartidaService {
 		return this.repo.getPDFDx(model);
 	}
 
+	getRptToken(): Observable<any> {
+		return this.repo.getRptToken();
+	}
+
 	generarPartidaLiquidacion(anio: number, mes: number): Observable<IResult> {
 		return this.repo.generarPartidaLiquidacion({ ANIO_PERIODO: anio, MES_PERIODO: mes });
 	}

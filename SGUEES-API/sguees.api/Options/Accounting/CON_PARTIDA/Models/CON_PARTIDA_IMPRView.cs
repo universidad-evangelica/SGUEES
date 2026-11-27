@@ -29,6 +29,7 @@ namespace sguees.Models
 		public string CUENTA_CONTABLE { get; set; }
 		public string NOMBRE_CUENTA { get; set; }
 		public int CORR_CENTRO_COSTO { get; set; }
+		public string CODIGO_CENTRO_COSTO { get; set; }
 		public string NOMBRE_CENTRO { get; set; }
 		public decimal MONTO_CARGO { get; set; }
 		public decimal MONTO_ABONO { get; set; }

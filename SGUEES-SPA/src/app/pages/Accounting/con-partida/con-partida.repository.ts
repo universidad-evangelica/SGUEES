@@ -45,6 +45,11 @@ export class ConPartidaRepository {
 		return this.objData.PostBlob(model, this.xController, 'getPDFDx', environment.UrlCONTAAPI);
 	}
 
+	/** JWT RPT para abrir Accounting.aspx en iframe. */
+	getRptToken(): Observable<any> {
+		return this.objData.Get(this.xController, 'GetRptToken', [], environment.UrlCONTAAPI);
+	}
+
 	generarPartidaLiquidacion(model: any): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'GenerarPartidaLiquidacion', [], environment.UrlCONTAAPI);
 	}

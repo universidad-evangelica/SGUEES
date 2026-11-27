@@ -15,7 +15,6 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
 		private PageHeaderBand pageHeaderBand1;
 		private DetailBand detailBand1;
 		private GroupFooterBand groupFooterPartida;
-		private ReportFooterBand reportFooterBand1;
 		private XRLabel xrLabelEmpresa;
 		private XRLabel xrLabelTitulo;
 		private XRLabel xrLabelPartidaNo;
@@ -38,13 +37,6 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
 		private XRLabel xrLabelTotalCargo;
 		private XRLabel xrLabelTotalAbono;
 		private XRLine xrLineFooterBottom;
-		private XRLabel xrLabelDigitadoUser;
-		private XRLine xrLineDigitado;
-		private XRLabel xrLabelDigitado;
-		private XRLine xrLineRevisado;
-		private XRLabel xrLabelRevisado;
-		private XRLine xrLineAutorizado;
-		private XRLabel xrLabelAutorizado;
 
 		protected override void Dispose(bool disposing)
 		{
@@ -60,9 +52,11 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
 		{
             DevExpress.XtraReports.UI.XRSummary xrSummary1 = new DevExpress.XtraReports.UI.XRSummary();
             DevExpress.XtraReports.UI.XRSummary xrSummary2 = new DevExpress.XtraReports.UI.XRSummary();
+            DevExpress.XtraReports.UI.XRWatermark xrWatermark1 = new DevExpress.XtraReports.UI.XRWatermark();
             this.topMarginBand1 = new DevExpress.XtraReports.UI.TopMarginBand();
             this.bottomMarginBand1 = new DevExpress.XtraReports.UI.BottomMarginBand();
             this.groupHeaderPartida = new DevExpress.XtraReports.UI.GroupHeaderBand();
+            this.xrLabel1 = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelHdrAbono = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelHdrCargo = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelHdrCuenta = new DevExpress.XtraReports.UI.XRLabel();
@@ -81,25 +75,23 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             this.pageHeaderBand1 = new DevExpress.XtraReports.UI.PageHeaderBand();
             this.xrLinePageHeader = new DevExpress.XtraReports.UI.XRLine();
             this.detailBand1 = new DevExpress.XtraReports.UI.DetailBand();
+            this.xrLabel2 = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelCuenta = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelNombreCuenta = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelNombreTran = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelCargo = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelAbono = new DevExpress.XtraReports.UI.XRLabel();
             this.groupFooterPartida = new DevExpress.XtraReports.UI.GroupFooterBand();
+            this.xrLabelAutorizado = new DevExpress.XtraReports.UI.XRLabel();
+            this.xrLineAutorizado = new DevExpress.XtraReports.UI.XRLine();
+            this.xrLabelDigitado = new DevExpress.XtraReports.UI.XRLabel();
+            this.xrLineDigitado = new DevExpress.XtraReports.UI.XRLine();
+            this.xrLabelDigitadoUser = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLineFooterTop = new DevExpress.XtraReports.UI.XRLine();
             this.xrLabelTotalPrefix = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelTotalCargo = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLabelTotalAbono = new DevExpress.XtraReports.UI.XRLabel();
             this.xrLineFooterBottom = new DevExpress.XtraReports.UI.XRLine();
-            this.reportFooterBand1 = new DevExpress.XtraReports.UI.ReportFooterBand();
-            this.xrLabelDigitadoUser = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLineDigitado = new DevExpress.XtraReports.UI.XRLine();
-            this.xrLabelDigitado = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLineRevisado = new DevExpress.XtraReports.UI.XRLine();
-            this.xrLabelRevisado = new DevExpress.XtraReports.UI.XRLabel();
-            this.xrLineAutorizado = new DevExpress.XtraReports.UI.XRLine();
-            this.xrLabelAutorizado = new DevExpress.XtraReports.UI.XRLabel();
             ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
             // 
             // topMarginBand1
@@ -109,12 +101,13 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             // 
             // bottomMarginBand1
             // 
-            this.bottomMarginBand1.HeightF = 20F;
+            this.bottomMarginBand1.HeightF = 14.20838F;
             this.bottomMarginBand1.Name = "bottomMarginBand1";
             // 
             // groupHeaderPartida
             // 
             this.groupHeaderPartida.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
+            this.xrLabel1,
             this.xrLabelHdrAbono,
             this.xrLabelHdrCargo,
             this.xrLabelHdrCuenta,
@@ -136,54 +129,62 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             this.groupHeaderPartida.Name = "groupHeaderPartida";
             this.groupHeaderPartida.RepeatEveryPage = true;
             // 
+            // xrLabel1
+            // 
+            this.xrLabel1.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.xrLabel1.LocationFloat = new DevExpress.Utils.PointFloat(92.00011F, 99.99998F);
+            this.xrLabel1.Name = "xrLabel1";
+            this.xrLabel1.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabel1.SizeF = new System.Drawing.SizeF(107.9998F, 17.99999F);
+            this.xrLabel1.Text = "Centro Costo";
+            // 
             // xrLabelHdrAbono
             // 
             this.xrLabelHdrAbono.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLabelHdrAbono.LocationFloat = new DevExpress.Utils.PointFloat(626F, 99.99998F);
+            this.xrLabelHdrAbono.LocationFloat = new DevExpress.Utils.PointFloat(630F, 99.99998F);
             this.xrLabelHdrAbono.Name = "xrLabelHdrAbono";
             this.xrLabelHdrAbono.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelHdrAbono.SizeF = new System.Drawing.SizeF(124F, 18F);
+            this.xrLabelHdrAbono.SizeF = new System.Drawing.SizeF(120F, 18F);
             this.xrLabelHdrAbono.Text = "Abono";
             this.xrLabelHdrAbono.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
             // 
             // xrLabelHdrCargo
             // 
             this.xrLabelHdrCargo.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLabelHdrCargo.LocationFloat = new DevExpress.Utils.PointFloat(502.0001F, 99.99998F);
+            this.xrLabelHdrCargo.LocationFloat = new DevExpress.Utils.PointFloat(510F, 99.99998F);
             this.xrLabelHdrCargo.Name = "xrLabelHdrCargo";
             this.xrLabelHdrCargo.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelHdrCargo.SizeF = new System.Drawing.SizeF(124F, 18F);
+            this.xrLabelHdrCargo.SizeF = new System.Drawing.SizeF(120F, 18F);
             this.xrLabelHdrCargo.Text = "Cargo";
             this.xrLabelHdrCargo.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
             // 
             // xrLabelHdrCuenta
             // 
             this.xrLabelHdrCuenta.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLabelHdrCuenta.LocationFloat = new DevExpress.Utils.PointFloat(0.0001678467F, 99.99998F);
+            this.xrLabelHdrCuenta.LocationFloat = new DevExpress.Utils.PointFloat(0F, 99.99998F);
             this.xrLabelHdrCuenta.Name = "xrLabelHdrCuenta";
             this.xrLabelHdrCuenta.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelHdrCuenta.SizeF = new System.Drawing.SizeF(72F, 18F);
+            this.xrLabelHdrCuenta.SizeF = new System.Drawing.SizeF(92.00011F, 17.99999F);
             this.xrLabelHdrCuenta.Text = "Cuenta Contable";
             // 
             // xrLabelHdrDetalle
             // 
             this.xrLabelHdrDetalle.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLabelHdrDetalle.LocationFloat = new DevExpress.Utils.PointFloat(72.00017F, 99.99998F);
+            this.xrLabelHdrDetalle.LocationFloat = new DevExpress.Utils.PointFloat(199.9999F, 99.99998F);
             this.xrLabelHdrDetalle.Name = "xrLabelHdrDetalle";
             this.xrLabelHdrDetalle.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelHdrDetalle.SizeF = new System.Drawing.SizeF(430F, 18F);
+            this.xrLabelHdrDetalle.SizeF = new System.Drawing.SizeF(310.0001F, 17.99999F);
             this.xrLabelHdrDetalle.Text = "Detalle de Transacción";
             // 
             // xrLabelEmpresa
             // 
             this.xrLabelEmpresa.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "?NOMBRE_EMPRESA")});
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_EMPRESA]")});
             this.xrLabelEmpresa.Font = new DevExpress.Drawing.DXFont("Arial", 10F, DevExpress.Drawing.DXFontStyle.Bold);
             this.xrLabelEmpresa.LocationFloat = new DevExpress.Utils.PointFloat(0F, 0F);
             this.xrLabelEmpresa.Name = "xrLabelEmpresa";
             this.xrLabelEmpresa.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
             this.xrLabelEmpresa.SizeF = new System.Drawing.SizeF(280F, 18F);
-            this.xrLabelEmpresa.Text = "?NOMBRE_EMPRESA";
             // 
             // xrLabelTitulo
             // 
@@ -246,7 +247,7 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             this.xrLabelClase.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "\'Clase : \' + [CLASE_PARTIDA]")});
             this.xrLabelClase.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.xrLabelClase.LocationFloat = new DevExpress.Utils.PointFloat(502F, 24F);
+            this.xrLabelClase.LocationFloat = new DevExpress.Utils.PointFloat(586F, 18F);
             this.xrLabelClase.Name = "xrLabelClase";
             this.xrLabelClase.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
             this.xrLabelClase.SizeF = new System.Drawing.SizeF(164F, 16F);
@@ -254,10 +255,8 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             // 
             // xrLabelEstado
             // 
-            this.xrLabelEstado.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_ESTADO_PARTIDA]")});
             this.xrLabelEstado.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.xrLabelEstado.LocationFloat = new DevExpress.Utils.PointFloat(502F, 40F);
+            this.xrLabelEstado.LocationFloat = new DevExpress.Utils.PointFloat(586F, 40F);
             this.xrLabelEstado.Name = "xrLabelEstado";
             this.xrLabelEstado.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
             this.xrLabelEstado.SizeF = new System.Drawing.SizeF(164F, 16F);
@@ -306,6 +305,7 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             // detailBand1
             // 
             this.detailBand1.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
+            this.xrLabel2,
             this.xrLabelCuenta,
             this.xrLabelNombreCuenta,
             this.xrLabelNombreTran,
@@ -314,46 +314,61 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             this.detailBand1.HeightF = 38F;
             this.detailBand1.Name = "detailBand1";
             // 
+            // xrLabel2
+            // 
+            this.xrLabel2.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[CODIGO_CENTRO_COSTO]")});
+            this.xrLabel2.Font = new DevExpress.Drawing.DXFont("Arial", 8F);
+            this.xrLabel2.LocationFloat = new DevExpress.Utils.PointFloat(92.00011F, 2.000014F);
+            this.xrLabel2.Name = "xrLabel2";
+            this.xrLabel2.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabel2.SizeF = new System.Drawing.SizeF(107.9998F, 16F);
+            this.xrLabel2.StylePriority.UseFont = false;
+            // 
             // xrLabelCuenta
             // 
             this.xrLabelCuenta.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[CUENTA_CONTABLE]")});
-            this.xrLabelCuenta.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.xrLabelCuenta.LocationFloat = new DevExpress.Utils.PointFloat(0F, 2F);
+            this.xrLabelCuenta.Font = new DevExpress.Drawing.DXFont("Arial", 8F);
+            this.xrLabelCuenta.LocationFloat = new DevExpress.Utils.PointFloat(0F, 1.999987F);
             this.xrLabelCuenta.Name = "xrLabelCuenta";
             this.xrLabelCuenta.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelCuenta.SizeF = new System.Drawing.SizeF(72F, 16F);
+            this.xrLabelCuenta.SizeF = new System.Drawing.SizeF(92.00011F, 16F);
+            this.xrLabelCuenta.StylePriority.UseFont = false;
             // 
             // xrLabelNombreCuenta
             // 
             this.xrLabelNombreCuenta.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_CUENTA]")});
-            this.xrLabelNombreCuenta.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLabelNombreCuenta.LocationFloat = new DevExpress.Utils.PointFloat(72F, 2F);
+            this.xrLabelNombreCuenta.Font = new DevExpress.Drawing.DXFont("Arial", 8F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.xrLabelNombreCuenta.LocationFloat = new DevExpress.Utils.PointFloat(199.9999F, 1.999987F);
             this.xrLabelNombreCuenta.Name = "xrLabelNombreCuenta";
             this.xrLabelNombreCuenta.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelNombreCuenta.SizeF = new System.Drawing.SizeF(430F, 16F);
+            this.xrLabelNombreCuenta.SizeF = new System.Drawing.SizeF(310.0001F, 16F);
+            this.xrLabelNombreCuenta.StylePriority.UseFont = false;
             // 
             // xrLabelNombreTran
             // 
             this.xrLabelNombreTran.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[NOMBRE_TRAN]")});
-            this.xrLabelNombreTran.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.xrLabelNombreTran.LocationFloat = new DevExpress.Utils.PointFloat(72F, 18F);
+            this.xrLabelNombreTran.Font = new DevExpress.Drawing.DXFont("Arial", 8F);
+            this.xrLabelNombreTran.LocationFloat = new DevExpress.Utils.PointFloat(199.9999F, 17.99999F);
             this.xrLabelNombreTran.Multiline = true;
             this.xrLabelNombreTran.Name = "xrLabelNombreTran";
             this.xrLabelNombreTran.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelNombreTran.SizeF = new System.Drawing.SizeF(430F, 18F);
+            this.xrLabelNombreTran.SizeF = new System.Drawing.SizeF(310.0001F, 18F);
+            this.xrLabelNombreTran.StylePriority.UseFont = false;
             // 
             // xrLabelCargo
             // 
             this.xrLabelCargo.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[MONTO_CARGO]")});
-            this.xrLabelCargo.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.xrLabelCargo.LocationFloat = new DevExpress.Utils.PointFloat(502F, 2F);
+            this.xrLabelCargo.Font = new DevExpress.Drawing.DXFont("Arial", 8F);
+            this.xrLabelCargo.LocationFloat = new DevExpress.Utils.PointFloat(510F, 2F);
             this.xrLabelCargo.Name = "xrLabelCargo";
             this.xrLabelCargo.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelCargo.SizeF = new System.Drawing.SizeF(124F, 16F);
+            this.xrLabelCargo.SizeF = new System.Drawing.SizeF(120F, 16F);
+            this.xrLabelCargo.StylePriority.UseFont = false;
             this.xrLabelCargo.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
             this.xrLabelCargo.TextFormatString = "{0:n2}";
             // 
@@ -361,24 +376,73 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             // 
             this.xrLabelAbono.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
             new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "[MONTO_ABONO]")});
-            this.xrLabelAbono.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.xrLabelAbono.LocationFloat = new DevExpress.Utils.PointFloat(626F, 2F);
+            this.xrLabelAbono.Font = new DevExpress.Drawing.DXFont("Arial", 8F);
+            this.xrLabelAbono.LocationFloat = new DevExpress.Utils.PointFloat(630F, 2F);
             this.xrLabelAbono.Name = "xrLabelAbono";
             this.xrLabelAbono.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelAbono.SizeF = new System.Drawing.SizeF(124F, 16F);
+            this.xrLabelAbono.SizeF = new System.Drawing.SizeF(120F, 16F);
+            this.xrLabelAbono.StylePriority.UseFont = false;
             this.xrLabelAbono.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopRight;
             this.xrLabelAbono.TextFormatString = "{0:n2}";
             // 
             // groupFooterPartida
             // 
             this.groupFooterPartida.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
+            this.xrLabelAutorizado,
+            this.xrLineAutorizado,
+            this.xrLabelDigitado,
+            this.xrLineDigitado,
+            this.xrLabelDigitadoUser,
             this.xrLineFooterTop,
             this.xrLabelTotalPrefix,
             this.xrLabelTotalCargo,
             this.xrLabelTotalAbono,
             this.xrLineFooterBottom});
-            this.groupFooterPartida.HeightF = 36F;
+            this.groupFooterPartida.HeightF = 126.2083F;
             this.groupFooterPartida.Name = "groupFooterPartida";
+            // 
+            // xrLabelAutorizado
+            // 
+            this.xrLabelAutorizado.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.xrLabelAutorizado.LocationFloat = new DevExpress.Utils.PointFloat(436.0001F, 82.20834F);
+            this.xrLabelAutorizado.Name = "xrLabelAutorizado";
+            this.xrLabelAutorizado.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabelAutorizado.SizeF = new System.Drawing.SizeF(230F, 16F);
+            this.xrLabelAutorizado.Text = "Autorizado Por";
+            this.xrLabelAutorizado.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
+            // 
+            // xrLineAutorizado
+            // 
+            this.xrLineAutorizado.LocationFloat = new DevExpress.Utils.PointFloat(446.0002F, 76.20834F);
+            this.xrLineAutorizado.Name = "xrLineAutorizado";
+            this.xrLineAutorizado.SizeF = new System.Drawing.SizeF(200F, 2F);
+            // 
+            // xrLabelDigitado
+            // 
+            this.xrLabelDigitado.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
+            this.xrLabelDigitado.LocationFloat = new DevExpress.Utils.PointFloat(72.00012F, 82.20834F);
+            this.xrLabelDigitado.Name = "xrLabelDigitado";
+            this.xrLabelDigitado.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabelDigitado.SizeF = new System.Drawing.SizeF(230F, 16F);
+            this.xrLabelDigitado.Text = "Digitado Por";
+            this.xrLabelDigitado.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
+            // 
+            // xrLineDigitado
+            // 
+            this.xrLineDigitado.LocationFloat = new DevExpress.Utils.PointFloat(92.00007F, 76.20834F);
+            this.xrLineDigitado.Name = "xrLineDigitado";
+            this.xrLineDigitado.SizeF = new System.Drawing.SizeF(190F, 2F);
+            // 
+            // xrLabelDigitadoUser
+            // 
+            this.xrLabelDigitadoUser.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
+            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "?USUARIO_DIGITA")});
+            this.xrLabelDigitadoUser.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
+            this.xrLabelDigitadoUser.LocationFloat = new DevExpress.Utils.PointFloat(72.00012F, 60.20835F);
+            this.xrLabelDigitadoUser.Name = "xrLabelDigitadoUser";
+            this.xrLabelDigitadoUser.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
+            this.xrLabelDigitadoUser.SizeF = new System.Drawing.SizeF(230F, 14F);
+            this.xrLabelDigitadoUser.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
             // 
             // xrLineFooterTop
             // 
@@ -429,81 +493,9 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             // 
             // xrLineFooterBottom
             // 
-            this.xrLineFooterBottom.LocationFloat = new DevExpress.Utils.PointFloat(492F, 26F);
+            this.xrLineFooterBottom.LocationFloat = new DevExpress.Utils.PointFloat(482.0001F, 26F);
             this.xrLineFooterBottom.Name = "xrLineFooterBottom";
             this.xrLineFooterBottom.SizeF = new System.Drawing.SizeF(268F, 2F);
-            // 
-            // reportFooterBand1
-            // 
-            this.reportFooterBand1.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
-            this.xrLabelDigitadoUser,
-            this.xrLineDigitado,
-            this.xrLabelDigitado,
-            this.xrLineRevisado,
-            this.xrLabelRevisado,
-            this.xrLineAutorizado,
-            this.xrLabelAutorizado});
-            this.reportFooterBand1.HeightF = 72F;
-            this.reportFooterBand1.Name = "reportFooterBand1";
-            // 
-            // xrLabelDigitadoUser
-            // 
-            this.xrLabelDigitadoUser.ExpressionBindings.AddRange(new DevExpress.XtraReports.UI.ExpressionBinding[] {
-            new DevExpress.XtraReports.UI.ExpressionBinding("BeforePrint", "Text", "?USUARIO_DIGITA")});
-            this.xrLabelDigitadoUser.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.xrLabelDigitadoUser.LocationFloat = new DevExpress.Utils.PointFloat(0F, 10F);
-            this.xrLabelDigitadoUser.Name = "xrLabelDigitadoUser";
-            this.xrLabelDigitadoUser.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelDigitadoUser.SizeF = new System.Drawing.SizeF(230F, 14F);
-            this.xrLabelDigitadoUser.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
-            // 
-            // xrLineDigitado
-            // 
-            this.xrLineDigitado.LocationFloat = new DevExpress.Utils.PointFloat(20F, 26F);
-            this.xrLineDigitado.Name = "xrLineDigitado";
-            this.xrLineDigitado.SizeF = new System.Drawing.SizeF(190F, 2F);
-            // 
-            // xrLabelDigitado
-            // 
-            this.xrLabelDigitado.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLabelDigitado.LocationFloat = new DevExpress.Utils.PointFloat(0F, 32F);
-            this.xrLabelDigitado.Name = "xrLabelDigitado";
-            this.xrLabelDigitado.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelDigitado.SizeF = new System.Drawing.SizeF(230F, 16F);
-            this.xrLabelDigitado.Text = "Digitado Por";
-            this.xrLabelDigitado.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
-            // 
-            // xrLineRevisado
-            // 
-            this.xrLineRevisado.LocationFloat = new DevExpress.Utils.PointFloat(280F, 26F);
-            this.xrLineRevisado.Name = "xrLineRevisado";
-            this.xrLineRevisado.SizeF = new System.Drawing.SizeF(190F, 2F);
-            // 
-            // xrLabelRevisado
-            // 
-            this.xrLabelRevisado.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLabelRevisado.LocationFloat = new DevExpress.Utils.PointFloat(260F, 32F);
-            this.xrLabelRevisado.Name = "xrLabelRevisado";
-            this.xrLabelRevisado.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelRevisado.SizeF = new System.Drawing.SizeF(230F, 16F);
-            this.xrLabelRevisado.Text = "Revisado Por";
-            this.xrLabelRevisado.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
-            // 
-            // xrLineAutorizado
-            // 
-            this.xrLineAutorizado.LocationFloat = new DevExpress.Utils.PointFloat(530F, 26F);
-            this.xrLineAutorizado.Name = "xrLineAutorizado";
-            this.xrLineAutorizado.SizeF = new System.Drawing.SizeF(200F, 2F);
-            // 
-            // xrLabelAutorizado
-            // 
-            this.xrLabelAutorizado.Font = new DevExpress.Drawing.DXFont("Arial", 9F, DevExpress.Drawing.DXFontStyle.Bold);
-            this.xrLabelAutorizado.LocationFloat = new DevExpress.Utils.PointFloat(520F, 32F);
-            this.xrLabelAutorizado.Name = "xrLabelAutorizado";
-            this.xrLabelAutorizado.Padding = new DevExpress.XtraPrinting.PaddingInfo(2, 2, 0, 0, 100F);
-            this.xrLabelAutorizado.SizeF = new System.Drawing.SizeF(230F, 16F);
-            this.xrLabelAutorizado.Text = "Autorizado Por";
-            this.xrLabelAutorizado.TextAlignment = DevExpress.XtraPrinting.TextAlignment.TopCenter;
             // 
             // PARTIDA_CONTABLE_DXReport
             // 
@@ -513,11 +505,13 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
             this.pageHeaderBand1,
             this.detailBand1,
             this.groupFooterPartida,
-            this.reportFooterBand1,
             this.bottomMarginBand1});
             this.Font = new DevExpress.Drawing.DXFont("Arial", 9F);
-            this.Margins = new DevExpress.Drawing.DXMargins(50F, 50F, 20F, 20F);
+            this.Margins = new DevExpress.Drawing.DXMargins(50F, 50F, 20F, 14.20838F);
             this.Version = "24.2";
+            xrWatermark1.Id = "Watermark1";
+            this.Watermarks.AddRange(new DevExpress.XtraPrinting.Drawing.Watermark[] {
+            xrWatermark1});
             ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
 
 		}
@@ -526,5 +520,12 @@ namespace sgueesRpt.Reports.Accounting.CON_PARTIDA.DxReports
         private XRLabel xrLabelHdrCargo;
         private XRLabel xrLabelHdrCuenta;
         private XRLabel xrLabelHdrDetalle;
+        private XRLabel xrLabelAutorizado;
+        private XRLine xrLineAutorizado;
+        private XRLabel xrLabelDigitado;
+        private XRLine xrLineDigitado;
+        private XRLabel xrLabelDigitadoUser;
+        private XRLabel xrLabel1;
+        private XRLabel xrLabel2;
     }
 }
