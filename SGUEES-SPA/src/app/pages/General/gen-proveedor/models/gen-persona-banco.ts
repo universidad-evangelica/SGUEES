@@ -5,6 +5,7 @@ export interface GenPersonaBanco {
 	CORR_BANCO: number;
 	NOMBRE_BANCO?: string;
 	CUENTA_BANCARIA: string;
+	POR_DEFECTO?: boolean;
 	USUARIO_CREA?: string;
 	FECHA_CREA?: Date | string;
 	ESTACION_CREA?: string;

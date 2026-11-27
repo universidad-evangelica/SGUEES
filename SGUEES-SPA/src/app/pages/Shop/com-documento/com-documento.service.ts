@@ -196,8 +196,7 @@ export class ComDocumentoService {
         label: { text: 'Dias Credito' },
         editorType: 'dxNumberBox',
         colSpan: 2,
-        editorOptions: { placeholder: 'Dias Credito...',format: '#,##0', showClearButton: false ,onValueChanged: 'DIAS_CREDITOValueChange'},
-        valueChange: 'DIAS_CREDITOValueChange',
+        editorOptions: { placeholder: 'Dias Credito...', format: '#,##0', showClearButton: false },
       },
       {
         dataField: 'FECHA_VENCIMIENTO',
@@ -447,6 +446,38 @@ export class ComDocumentoService {
     ];
 
 		return this.repo.getALL_COM_DOCUMENTO_CR(xWhere);
+	}
+
+	private documentoWhere(param: any): IParam[] {
+		return [
+			{ Parameter: 'ANIO_PERIODO', Value: param.ANIO_PERIODO },
+			{ Parameter: 'MES_PERIODO', Value: param.MES_PERIODO },
+			{ Parameter: 'CORR_DOCUMENTO', Value: param.CORR_DOCUMENTO },
+		];
+	}
+
+	getProvision(param: any): Observable<IResult> {
+		return this.repo.getProvision(this.documentoWhere(param));
+	}
+
+	provisionar(model: any): Observable<IResult> {
+		return this.repo.provisionar(model);
+	}
+
+	contabilizarProvision(model: any): Observable<IResult> {
+		return this.repo.contabilizarProvision(model);
+	}
+
+	regenerarProvisionConta(model: any): Observable<IResult> {
+		return this.repo.regenerarProvisionConta(model);
+	}
+
+	actualizarPartidaProvision(model: any): Observable<IResult> {
+		return this.repo.actualizarPartidaProvision(model);
+	}
+
+	actualizarProvisionConta(model: any, documento: any): Observable<IResult> {
+		return this.repo.actualizarProvisionConta(model, this.documentoWhere(documento));
 	}
 
 }

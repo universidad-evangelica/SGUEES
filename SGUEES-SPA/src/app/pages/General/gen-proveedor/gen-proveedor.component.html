@@ -322,6 +322,13 @@
 									(onEnterKey)="agregarPersonaBanco()"
 								></dx-text-box>
 							</label>
+							<div class="proveedor-bancos__default">
+								<dx-check-box
+									[(value)]="nuevoBancoPorDefecto"
+									text="Por defecto"
+									[disabled]="bancoGuardando"
+								></dx-check-box>
+							</div>
 							<button
 								type="button"
 								class="proveedor-bancos__add-btn"
@@ -357,35 +364,119 @@
 							*ngIf="!bancosCargando && personaBancos.length > 0"
 							class="proveedor-bancos__grid"
 							[dataSource]="personaBancos"
+							[columns]="bancoColumns"
 							[keyExpr]="'CORR_PERSONA_BANCO'"
 							[showBorders]="true"
 							[columnAutoWidth]="false"
 							[hoverStateEnabled]="true"
 							[paging]="{ enabled: false }"
-							[editing]="bancosGridEditing"
-							(onRowRemoving)="personaBancoRowRemoving($event)"
 						>
-							<dxi-column
-								dataField="NOMBRE_BANCO"
-								caption="Banco"
-								[minWidth]="180"
-								[allowEditing]="false"
-							></dxi-column>
-							<dxi-column
-								dataField="CUENTA_BANCARIA"
-								caption="Cuenta bancaria"
-								[minWidth]="180"
-								[allowEditing]="false"
-							></dxi-column>
-							<dxi-column type="buttons" [width]="56" caption="">
-								<dxi-button name="delete"></dxi-button>
-							</dxi-column>
+							<div *dxTemplate="let cell of 'bancoPorDefecto'">
+								<dx-check-box
+									[value]="bancoEsPorDefecto(cell.data)"
+									[disabled]="readOnly || bancoGuardando"
+									(onValueChanged)="cambiarBancoPorDefecto(cell.data, $event)"
+								></dx-check-box>
+							</div>
+							<div *dxTemplate="let cell of 'bancoActions'" class="proveedor-bancos__actions">
+								<button
+									type="button"
+									class="proveedor-bancos__action"
+									title="Eliminar"
+									aria-label="Eliminar"
+									*ngIf="!readOnly"
+									[disabled]="bancoGuardando"
+									(click)="eliminarPersonaBanco(cell.data)"
+								>
+									<i class="dx-icon dx-icon-trash"></i>
+								</button>
+							</div>
+							<dxo-summary>
+								<dxi-total-item column="NOMBRE_BANCO" summaryType="count" displayFormat="Cant: {0}"></dxi-total-item>
+							</dxo-summary>
 						</dx-data-grid>
 					</ng-container>
 				</div>
 			</dxi-item>
 
-			<dxi-item title="Usuarios" icon="group">
+			<dxi-item title="Cuenta contable" icon="bulletlist">
+				<div class="proveedor-usuarios"><
+					<p class="proveedor-usuarios__warn" *ngIf="!(model?.CORR_PROVEEDOR > 0)">
+						Guarde el proveedor para poder asignar cuentas contables.
+					</p>
+
+					<ng-container *ngIf="model?.CORR_PROVEEDOR > 0">
+						<div class="proveedor-usuarios__toolbar" *ngIf="!readOnly">
+							<button type="button" class="proveedor-usuarios__btn proveedor-usuarios__btn--add" (click)="abrirCuentaNueva()">
+								<i class="dx-icon dx-icon-add"></i>
+								Agregar cuenta
+							</button>
+						</div>
+
+						<div class="proveedor-usuarios__loading" *ngIf="cuentasCargando">
+							<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
+							<span>Cargando cuentas…</span>
+						</div>
+
+						<div
+							class="proveedor-usuarios__empty-state"
+							*ngIf="!cuentasCargando && cuentasProveedor.length === 0"
+						>
+							<div class="proveedor-usuarios__empty-icon" aria-hidden="true">
+								<i class="dx-icon dx-icon-money"></i>
+							</div>
+							<h4>Sin cuentas contables</h4>
+							<p>Aún no hay cuentas asignadas a este proveedor.</p>
+						</div>
+
+						<dx-data-grid
+							*ngIf="!cuentasCargando && cuentasProveedor.length > 0"
+							class="proveedor-usuarios__grid"
+							[dataSource]="cuentasProveedor"
+							[columns]="cuentaColumns"
+							keyExpr="CORR_CUENTA"
+							[showBorders]="true"
+							[columnAutoWidth]="false"
+							[hoverStateEnabled]="true"
+							[paging]="{ enabled: false }"
+						>
+							<div *dxTemplate="let cell of 'cuentaTipo'">
+								{{ textoTipoCuenta(cell.value) }}
+							</div>
+							<div *dxTemplate="let cell of 'cuentaEstado'">
+								{{ textoEstadoCuenta(cell.value) }}
+							</div>
+							<div *dxTemplate="let cell of 'cuentaActions'" class="proveedor-usuarios__actions">
+								<button
+									type="button"
+									class="proveedor-usuarios__action"
+									title="Editar"
+									aria-label="Editar"
+									*ngIf="!readOnly && permiteEdit"
+									(click)="abrirCuentaEditar(cell.data)"
+								>
+									<i class="dx-icon dx-icon-edit"></i>
+								</button>
+								<button
+									type="button"
+									class="proveedor-usuarios__action proveedor-usuarios__action--danger"
+									title="Eliminar"
+									aria-label="Eliminar"
+									*ngIf="!readOnly && permiteDele"
+									(click)="eliminarCuenta(cell.data)"
+								>
+									<i class="dx-icon dx-icon-trash"></i>
+								</button>
+							</div>
+							<dxo-summary>
+								<dxi-total-item column="CUENTA_CONTABLE" summaryType="count" displayFormat="Cant: {0}"></dxi-total-item>
+							</dxo-summary>
+						</dx-data-grid>
+					</ng-container>
+				</div>
+			</dxi-item>
+
+						<dxi-item title="Usuarios" icon="group">
 				<div class="proveedor-usuarios">
 					<p class="proveedor-usuarios__warn" *ngIf="!(model?.CORR_PROVEEDOR > 0)">
 						Guarde el proveedor para poder asignar usuarios.
@@ -465,82 +556,6 @@
 				</div>
 			</dxi-item>
 
-			<dxi-item title="Cuenta contable" icon="money">
-				<div class="proveedor-usuarios">
-					<p class="proveedor-usuarios__warn" *ngIf="!(model?.CORR_PROVEEDOR > 0)">
-						Guarde el proveedor para poder asignar cuentas contables.
-					</p>
-
-					<ng-container *ngIf="model?.CORR_PROVEEDOR > 0">
-						<div class="proveedor-usuarios__toolbar" *ngIf="!readOnly">
-							<button type="button" class="proveedor-usuarios__btn proveedor-usuarios__btn--add" (click)="abrirCuentaNueva()">
-								<i class="dx-icon dx-icon-add"></i>
-								Agregar cuenta
-							</button>
-						</div>
-
-						<div class="proveedor-usuarios__loading" *ngIf="cuentasCargando">
-							<dx-load-indicator width="36px" height="36px" [visible]="true"></dx-load-indicator>
-							<span>Cargando cuentas…</span>
-						</div>
-
-						<div
-							class="proveedor-usuarios__empty-state"
-							*ngIf="!cuentasCargando && cuentasProveedor.length === 0"
-						>
-							<div class="proveedor-usuarios__empty-icon" aria-hidden="true">
-								<i class="dx-icon dx-icon-money"></i>
-							</div>
-							<h4>Sin cuentas contables</h4>
-							<p>Aún no hay cuentas asignadas a este proveedor.</p>
-						</div>
-
-						<dx-data-grid
-							*ngIf="!cuentasCargando && cuentasProveedor.length > 0"
-							class="proveedor-usuarios__grid"
-							[dataSource]="cuentasProveedor"
-							[columns]="cuentaColumns"
-							keyExpr="CORR_CUENTA"
-							[showBorders]="true"
-							[columnAutoWidth]="false"
-							[hoverStateEnabled]="true"
-							[paging]="{ enabled: false }"
-						>
-							<div *dxTemplate="let cell of 'cuentaTipo'">
-								{{ textoTipoCuenta(cell.value) }}
-							</div>
-							<div *dxTemplate="let cell of 'cuentaEstado'">
-								{{ textoEstadoCuenta(cell.value) }}
-							</div>
-							<div *dxTemplate="let cell of 'cuentaActions'" class="proveedor-usuarios__actions">
-								<button
-									type="button"
-									class="proveedor-usuarios__action"
-									title="Editar"
-									aria-label="Editar"
-									*ngIf="!readOnly && permiteEdit"
-									(click)="abrirCuentaEditar(cell.data)"
-								>
-									<i class="dx-icon dx-icon-edit"></i>
-								</button>
-								<button
-									type="button"
-									class="proveedor-usuarios__action proveedor-usuarios__action--danger"
-									title="Eliminar"
-									aria-label="Eliminar"
-									*ngIf="!readOnly && permiteDele"
-									(click)="eliminarCuenta(cell.data)"
-								>
-									<i class="dx-icon dx-icon-trash"></i>
-								</button>
-							</div>
-							<dxo-summary>
-								<dxi-total-item column="CUENTA_CONTABLE" summaryType="count" displayFormat="Cant: {0}"></dxi-total-item>
-							</dxo-summary>
-						</dx-data-grid>
-					</ng-container>
-				</div>
-			</dxi-item>
 		</dx-tab-panel>
 	</div>
 </div>

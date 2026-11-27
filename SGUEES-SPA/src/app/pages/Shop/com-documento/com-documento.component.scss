@@ -20,3 +20,227 @@
   height: 100%;
 }
 
+.conta-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  margin: 12px 0;
+  padding: 16px;
+  color: var(--sguees-text-primary, var(--base-text-color, #242424));
+  border: 1px solid color-mix(in srgb, var(--base-text-color, #242424) 14%, transparent);
+  border-radius: 10px;
+  background: var(--card-background, var(--base-bg, #fff));
+}
+
+.conta-alerta {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(244, 135, 113, 0.16);
+}
+
+.conta-cabecera,
+.conta-datos,
+.conta-botones,
+.conta-descripcion-fila,
+.conta-cuadre-montos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.conta-cabecera {
+  align-items: stretch;
+  gap: 0;
+}
+
+.conta-principal {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 16px;
+  margin-right: 16px;
+  border-right: 1px solid color-mix(in srgb, var(--base-text-color, #242424) 18%, transparent);
+}
+
+.conta-titulo {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.conta-titulo > i {
+  margin-top: 2px;
+  font-size: 22px;
+}
+
+.conta-titulo-texto {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.conta-subtitulo,
+.conta-dato-label,
+.conta-cuadre-montos span {
+  display: block;
+  font-size: 12px;
+  color: var(--base-text-color-alpha, rgba(36, 36, 36, 0.68));
+}
+
+.conta-cuadre {
+  flex: 0 0 auto;
+  align-self: center;
+  min-width: 280px;
+  padding: 10px 0 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.conta-cuadre-ok {
+  color: #146c2e;
+  background: color-mix(in srgb, var(--success-color, #22c55e) 14%, var(--card-background, #fff));
+  border-color: color-mix(in srgb, var(--success-color, #22c55e) 45%, transparent);
+}
+
+.conta-cuadre-mal {
+  color: #b42318;
+  background: color-mix(in srgb, #c0392b 12%, var(--card-background, #fff));
+  border-color: color-mix(in srgb, #c0392b 45%, transparent);
+}
+
+:host-context(body.sguees-theme-dark) .conta-cuadre-ok {
+  color: #7ddea0;
+  background: rgba(46, 160, 67, 0.16);
+  border-color: rgba(46, 160, 67, 0.7);
+}
+
+:host-context(body.sguees-theme-dark) .conta-cuadre-mal {
+  color: #ffb4ab;
+  background: rgba(192, 57, 43, 0.16);
+  border-color: rgba(192, 57, 43, 0.75);
+}
+
+.conta-cuadre-titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 14px 8px;
+  font-weight: 600;
+}
+
+.conta-cuadre-montos {
+  gap: 0;
+}
+
+.conta-cuadre-montos > div {
+  padding: 0 14px;
+}
+
+.conta-cuadre-montos > div + div {
+  border-left: 1px solid currentColor;
+}
+
+.conta-cuadre-montos strong {
+  display: block;
+  font-size: 16px;
+}
+
+.conta-dato {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--base-text-color, #242424) 12%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--base-text-color, #242424) 6%, transparent);
+}
+
+.conta-dato-ancho {
+  flex: 1;
+  min-width: 220px;
+}
+
+.conta-dato-valor {
+  font-weight: 600;
+}
+
+.conta-requerido {
+  color: #f48771;
+}
+
+.conta-descripcion-fila {
+  margin-top: 4px;
+  align-items: flex-start;
+}
+
+.conta-descripcion-acciones {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+:host ::ng-deep .dx-button.conta-btn-guardar.dx-button-mode-contained {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  color: #fff;
+
+  .dx-icon {
+    color: #fff;
+  }
+
+  &.dx-state-hover,
+  &.dx-state-focused {
+    background-color: #256628;
+    border-color: #256628;
+    color: #fff;
+  }
+}
+
+:host ::ng-deep .dx-button.conta-btn-regenerar.dx-button-mode-contained {
+  background-color: #0f4c81;
+  border-color: #0f4c81;
+  color: #fff;
+
+  .dx-icon {
+    color: #fff;
+  }
+
+  &.dx-state-hover,
+  &.dx-state-focused {
+    background-color: #0c3d68;
+    border-color: #0c3d68;
+    color: #fff;
+  }
+}
+
+.conta-descripcion-campo {
+  flex: 1;
+  min-width: 240px;
+}
+
+:host ::ng-deep .documento-tab-panel {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+
+  .dx-tabpanel-container,
+  .dx-multiview-wrapper,
+  .dx-multiview-item,
+  .dx-multiview-item-content {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.dx-grid-deta {
+  margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 0;
+  width: 100%;
+}
+

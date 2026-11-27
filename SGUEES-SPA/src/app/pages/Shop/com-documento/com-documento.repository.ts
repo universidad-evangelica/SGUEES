@@ -66,4 +66,28 @@ export class ComDocumentoRepository {
   getALL_COM_DOCUMENTO_CR(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAllCOM_DOCUMENTO_CR', xWhere, environment.UrlCOMPRASAPI);
 	}
+
+	getProvision(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetProvision', xWhere, environment.UrlCOMPRASAPI);
+	}
+
+	provisionar(model: any): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'Provisionar', [], environment.UrlCOMPRASAPI);
+	}
+
+	contabilizarProvision(model: any): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ContabilizarProvision', [], environment.UrlCOMPRASAPI);
+	}
+
+	regenerarProvisionConta(model: any): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'RegenerarProvisionConta', [], environment.UrlCOMPRASAPI);
+	}
+
+	actualizarPartidaProvision(model: any): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActualizarPartidaProvision', [], environment.UrlCOMPRASAPI);
+	}
+
+	actualizarProvisionConta(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActualizarProvisionConta', xWhere, environment.UrlCOMPRASAPI);
+	}
 }

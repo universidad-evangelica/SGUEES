@@ -10,6 +10,7 @@ namespace sguees.Models
 		public int CORR_BANCO { get; set; }
 		public string NOMBRE_BANCO { get; set; }
 		public string CUENTA_BANCARIA { get; set; }
+		public bool POR_DEFECTO { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }

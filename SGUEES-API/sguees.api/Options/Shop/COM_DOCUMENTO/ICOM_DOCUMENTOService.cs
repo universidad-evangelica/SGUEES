@@ -20,7 +20,11 @@ namespace eadmindevprojectmanagement.Services
 		Task<CResult> AnularCRAsync(COM_DOCUMENTO_ANULAR_CRTable Data);
 		Task<CResult> GetAllDocumentosCRAsync(COM_DOCUMENTOParam xWhere);
 		Task<CResult> GetAllAnularAsync(COM_DOCUMENTOParam xWhere);
-	
-
+		Task<CResult> GetProvisionAsync(COM_DOCUMENTOParam xWhere);
+		Task<CResult> ProvisionarAsync(COM_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ContabilizarProvisionAsync(COM_DOCUMENTOTable Data);
+		Task<CResult> RegenerarProvisionContaAsync(COM_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ActualizarPartidaProvisionAsync(COM_DOCUMENTO_PROVISION_PARTIDA Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ActualizarProvisionContaAsync(COM_DOCUMENTOParam documento, sguees.Models.COM_PROVISION_CONTATable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

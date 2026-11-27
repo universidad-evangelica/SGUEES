@@ -228,7 +228,7 @@ export class GenProveedorService {
 	getCuentaColumns(): any[] {
 		return [
 			{
-				caption: '',
+				caption: 'Options',
 				width: 100,
 				allowSorting: false,
 				allowFiltering: false,
@@ -261,6 +261,29 @@ export class GenProveedorService {
 		CLAVE_CONFIRMAR: string;
 	}): Observable<IResult> {
 		return this.usuarioRepo.reasignarClave(model);
+	}
+
+	getBancoColumns(): any[] {
+		return [
+			{
+				caption: 'Options',
+				width: 100,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'bancoActions',
+				alignment: 'center',
+			},
+			{ dataField: 'NOMBRE_BANCO', caption: 'Banco', minWidth: 180 },
+			{ dataField: 'CUENTA_BANCARIA', caption: 'Cuenta bancaria', minWidth: 180 },
+			{
+				caption: 'Por defecto',
+				width: 130,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'bancoPorDefecto',
+				alignment: 'center',
+			},
+		];
 	}
 
 	deletePersonaBanco(corrPersona: number, corrPersonaBanco: number): Observable<IResult> {

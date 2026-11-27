@@ -29,6 +29,7 @@ SELECT
 	A.CORR_BANCO,
 	ISNULL(B.NOMBRE_BANCO, N'') AS NOMBRE_BANCO,
 	A.CUENTA_BANCARIA,
+	CAST(ISNULL(A.POR_DEFECTO, 0) AS bit) AS POR_DEFECTO,
 	A.USUARIO_CREA,
 	A.FECHA_CREA,
 	A.ESTACION_CREA,
@@ -41,7 +42,7 @@ LEFT JOIN dbo.GEN_BANCO B
 	AND B.CORR_BANCO = A.CORR_BANCO
 WHERE A.CORR_EMPRESA = @CORR_EMPRESA
   AND A.CORR_PERSONA = @CORR_PERSONA
-ORDER BY A.CORR_PERSONA_BANCO;";
+ORDER BY A.POR_DEFECTO DESC, A.CORR_PERSONA_BANCO;";
 
 				var p = new List<CParameter>
 				{
@@ -88,6 +89,7 @@ SELECT
 	A.CORR_BANCO,
 	ISNULL(B.NOMBRE_BANCO, N'') AS NOMBRE_BANCO,
 	A.CUENTA_BANCARIA,
+	CAST(ISNULL(A.POR_DEFECTO, 0) AS bit) AS POR_DEFECTO,
 	A.USUARIO_CREA,
 	A.FECHA_CREA,
 	A.ESTACION_CREA,
@@ -172,20 +174,32 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_PERSONA = @CORR_PERSONA;";
 			try
 			{
 				var sql = @"
+SET XACT_ABORT ON;
+BEGIN TRAN;
+IF @POR_DEFECTO = 1
+BEGIN
+	UPDATE dbo.GEN_PERSONA_BANCO
+	SET POR_DEFECTO = 0
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PERSONA = @CORR_PERSONA
+	  AND CORR_PERSONA_BANCO <> @CORR_PERSONA_BANCO
+	  AND POR_DEFECTO = 1;
+END;
 INSERT INTO dbo.GEN_PERSONA_BANCO
 (
 	CORR_EMPRESA, CORR_PERSONA, CORR_PERSONA_BANCO,
-	CORR_BANCO, CUENTA_BANCARIA,
+	CORR_BANCO, CUENTA_BANCARIA, POR_DEFECTO,
 	USUARIO_CREA, FECHA_CREA, ESTACION_CREA,
 	USUARIO_ACTU, FECHA_ACTU, ESTACION_ACTU
 )
 VALUES
 (
 	@CORR_EMPRESA, @CORR_PERSONA, @CORR_PERSONA_BANCO,
-	@CORR_BANCO, @CUENTA_BANCARIA,
+	@CORR_BANCO, @CUENTA_BANCARIA, @POR_DEFECTO,
 	@USUARIO_CREA, @FECHA_CREA, @ESTACION_CREA,
 	@USUARIO_ACTU, @FECHA_ACTU, @ESTACION_ACTU
-);";
+);
+COMMIT;";
 
 				var p = BuildWriteParameters(Data);
 				await objData.ExecCmd(System.Data.CommandType.Text, sql, false, p);
@@ -216,15 +230,28 @@ VALUES
 			try
 			{
 				var sql = @"
+SET XACT_ABORT ON;
+BEGIN TRAN;
+IF @POR_DEFECTO = 1
+BEGIN
+	UPDATE dbo.GEN_PERSONA_BANCO
+	SET POR_DEFECTO = 0
+	WHERE CORR_EMPRESA = @CORR_EMPRESA
+	  AND CORR_PERSONA = @CORR_PERSONA
+	  AND CORR_PERSONA_BANCO <> @CORR_PERSONA_BANCO
+	  AND POR_DEFECTO = 1;
+END;
 UPDATE dbo.GEN_PERSONA_BANCO SET
 	CORR_BANCO = @CORR_BANCO,
 	CUENTA_BANCARIA = @CUENTA_BANCARIA,
+	POR_DEFECTO = @POR_DEFECTO,
 	USUARIO_ACTU = @USUARIO_ACTU,
 	FECHA_ACTU = @FECHA_ACTU,
 	ESTACION_ACTU = @ESTACION_ACTU
 WHERE CORR_EMPRESA = @CORR_EMPRESA
   AND CORR_PERSONA = @CORR_PERSONA
-  AND CORR_PERSONA_BANCO = @CORR_PERSONA_BANCO;";
+  AND CORR_PERSONA_BANCO = @CORR_PERSONA_BANCO;
+COMMIT;";
 
 				var p = BuildWriteParameters(Data);
 				await objData.ExecCmd(System.Data.CommandType.Text, sql, false, p);
@@ -295,6 +322,7 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 			CORR_BANCO = Data.CORR_BANCO,
 			NOMBRE_BANCO = string.Empty,
 			CUENTA_BANCARIA = Data.CUENTA_BANCARIA ?? string.Empty,
+			POR_DEFECTO = Data.POR_DEFECTO,
 			USUARIO_CREA = Data.USUARIO_CREA,
 			FECHA_CREA = Data.FECHA_CREA,
 			ESTACION_CREA = Data.ESTACION_CREA,
@@ -311,6 +339,7 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 				new() { ParameterName = "@CORR_PERSONA_BANCO", Value = Data.CORR_PERSONA_BANCO, DbType = System.Data.DbType.Int32 },
 				new() { ParameterName = "@CORR_BANCO", Value = Data.CORR_BANCO, DbType = System.Data.DbType.Int32 },
 				new() { ParameterName = "@CUENTA_BANCARIA", Value = Data.CUENTA_BANCARIA ?? string.Empty, DbType = System.Data.DbType.String },
+				new() { ParameterName = "@POR_DEFECTO", Value = Data.POR_DEFECTO, DbType = System.Data.DbType.Boolean },
 				new() { ParameterName = "@USUARIO_CREA", Value = Data.USUARIO_CREA ?? string.Empty, DbType = System.Data.DbType.String },
 				new() { ParameterName = "@FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
 				new() { ParameterName = "@ESTACION_CREA", Value = Data.ESTACION_CREA ?? string.Empty, DbType = System.Data.DbType.String },
@@ -340,6 +369,10 @@ WHERE CORR_EMPRESA = @CORR_EMPRESA
 				|| msg.IndexOf("no existe", System.StringComparison.OrdinalIgnoreCase) >= 0)
 			{
 				return "La tabla GEN_PERSONA_BANCO no existe en la base de datos. Ejecute DEPLOY_GEN_PERSONA_BANCO_TABLA.sql.";
+			}
+			if (msg.IndexOf("UX_GEN_PERSONA_BANCO_DEFECTO", System.StringComparison.OrdinalIgnoreCase) >= 0)
+			{
+				return "Solo una cuenta puede estar marcada por defecto.";
 			}
 			if (msg.IndexOf("FOREIGN KEY", System.StringComparison.OrdinalIgnoreCase) >= 0
 				|| msg.IndexOf("REFERENCE constraint", System.StringComparison.OrdinalIgnoreCase) >= 0)

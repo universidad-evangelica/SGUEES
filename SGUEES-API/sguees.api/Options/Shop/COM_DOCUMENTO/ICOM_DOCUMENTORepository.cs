@@ -16,5 +16,6 @@ namespace eadmindevprojectmanagement.Repositories
 		Task<CResult> AnularCRAsync(COM_DOCUMENTO_ANULAR_CRTable Data);
 		Task<CResult> GetAllDocumentosCRAsync(List<CParameter> xWhere);
 		Task<CResult> GetAllAnularAsync(List<CParameter> xWhere);
+		Task<CResult> GetProvisionPorDocumentoAsync(List<CParameter> xWhere);
 	}
 }

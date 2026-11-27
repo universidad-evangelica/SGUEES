@@ -19,24 +19,30 @@
   (btn1Click)="Aplicar()"
   [btn1Width]="100"
   [btn1Mode]="'contained'"
-  [btn2]="btnDocumentosElectronicos"
-  [btn2Icon]="'file'"
+  [btn2]="btnProvisionar"
+  [btn2Icon]="'ordersbox'"
   [btn2Type]="'default'"
-  (btn2Click)="MostrarDocumentosElectronicos()"
-  [btn2Width]="180"
+  (btn2Click)="Provisionar()"
+  [btn2Width]="140"
   [btn2Mode]="'contained'"
-  [btn3]="btnVistaPrevia"
-  [btn3Icon]="'pdffile'"
+  [btn3]="btnDocumentosElectronicos"
+  [btn3Icon]="'file'"
   [btn3Type]="'default'"
-  (btn3Click)="MostrarVistaPrevia()"
+  (btn3Click)="MostrarDocumentosElectronicos()"
   [btn3Width]="180"
   [btn3Mode]="'contained'"
-  [btn4]="btnGenerarCR"
-  [btn4Icon]="'check'"
-  [btn4Type]="'success'"
-  (btn4Click)="GenerarCR()"
+  [btn4]="btnVistaPrevia"
+  [btn4Icon]="'pdffile'"
+  [btn4Type]="'default'"
+  (btn4Click)="MostrarVistaPrevia()"
   [btn4Width]="180"
   [btn4Mode]="'contained'"
+  [btn5]="btnGenerarCR"
+  [btn5Icon]="'check'"
+  [btn5Type]="'success'"
+  (btn5Click)="GenerarCR()"
+  [btn5Width]="180"
+  [btn5Mode]="'contained'"
 
 >
 </app-barra-data-mtto>
@@ -115,17 +121,15 @@
 			</app-data-lookup>
 		</div>
 	</dx-form>
-  <div class="form">
-		<div class="dx-fieldset">
-			<div class="dx-field">
-				<dx-tab-panel
-        #tabPanelDetalle
-        [height]="'100%'"
-        [loop]="false"
-        [animationEnabled]="false"
-        [swipeEnabled]="true"
-        [selectedIndex]="IndexTab"
-        >
+	<dx-tab-panel
+		class="documento-tab-panel"
+		#tabPanelDetalle
+		[height]="'100%'"
+		[loop]="false"
+		[animationEnabled]="false"
+		[swipeEnabled]="true"
+		[selectedIndex]="IndexTab"
+	>
 					<dxi-item title="Rubros Gravados " [name]="'tpTotales'" [visible]="TabTotales" [autofocus]="TabTotales" [icon]="'doc'">
             <div #tptotales></div>
               <table class='border'>
@@ -393,10 +397,180 @@
                 </div>
               </div>
 					</dxi-item>
-				</dx-tab-panel>
-			</div>
-		</div>
-	</div>
+					<dxi-item title="Contabilidad" [name]="'tpContabilidad'" [visible]="tabContabilidadVisible()" icon="detailslayout">
+						<div class="dx-grid-deta">
+							<div class="conta-panel" *ngIf="provision || mensajeProvision || cantidadDocumentosProvision <= 1">
+								<div class="conta-alerta" *ngIf="mensajeProvision">{{ mensajeProvision }}</div>
+								<div class="conta-cabecera">
+									<div class="conta-principal">
+										<div class="conta-titulo">
+											<i class="dx-icon-detailslayout"></i>
+											<div>
+												<div class="conta-titulo-texto">Contabilización del Documento Provisionado</div>
+												<div class="conta-subtitulo">Registra y gestiona los asientos contables de la partida.</div>
+											</div>
+										</div>
+										<div class="conta-datos" *ngIf="provision">
+											<div class="conta-dato">
+												<i class="dx-icon-doc"></i>
+												<div>
+													<span class="conta-dato-label">Provisión</span>
+													<span class="conta-dato-valor">{{ provision.CORR_PROVISION }}</span>
+												</div>
+											</div>
+											<div class="conta-dato">
+												<i class="dx-icon-refresh"></i>
+												<div>
+													<span class="conta-dato-label">Estado</span>
+													<span class="conta-dato-valor">{{ provision.NOMBRE_ESTADO_PROVISION || provision.ESTADO_PROVISION }}</span>
+												</div>
+											</div>
+											<div class="conta-dato">
+												<i class="dx-icon-event"></i>
+												<div>
+													<span class="conta-dato-label">Fecha</span>
+													<span class="conta-dato-valor">{{ provision.FECHA_PROVISION | date:'dd/MM/yyyy' }}</span>
+												</div>
+											</div>
+											<div class="conta-dato conta-dato-ancho">
+												<i class="dx-icon-user"></i>
+												<div>
+													<span class="conta-dato-label">Proveedor</span>
+													<span class="conta-dato-valor">{{ provision.NOMBRE_PROVEEDOR }}</span>
+												</div>
+											</div>
+											<div class="conta-dato" *ngIf="provision.CORR_PARTIDA">
+												<i class="dx-icon-ordersbox"></i>
+												<div>
+													<span class="conta-dato-label">Partida</span>
+													<span class="conta-dato-valor">{{ provision.CORR_PARTIDA }}</span>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="conta-cuadre" [class.conta-cuadre-ok]="asientoCuadrado()" [class.conta-cuadre-mal]="!asientoCuadrado()">
+										<div class="conta-cuadre-titulo">
+											<i [class]="asientoCuadrado() ? 'dx-icon-check' : 'dx-icon-close'"></i>
+											Cuadre del asiento
+										</div>
+										<div class="conta-cuadre-montos">
+											<div>
+												<span>Cargo</span>
+												<strong>{{ getTotalCargo() | number:'1.2-2' }}</strong>
+											</div>
+											<div>
+												<span>Abono</span>
+												<strong>{{ getTotalAbono() | number:'1.2-2' }}</strong>
+											</div>
+											<div>
+												<span>Diferencia</span>
+												<strong>{{ getDiferenciaConta() | number:'1.2-2' }}</strong>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="conta-descripcion" *ngIf="provision">
+									<span class="conta-dato-label">Descripción de la partida <span class="conta-requerido">*</span></span>
+									<div class="conta-descripcion-fila">
+										<div class="conta-descripcion-campo">
+											<dx-text-area [(value)]="nombrePartidaProvision" [readOnly]="!puedeEditarConta" [width]="'100%'" [height]="72" placeholder="Texto que saldrá en la partida contable"></dx-text-area>
+										</div>
+										<div class="conta-descripcion-acciones">
+											<dx-button class="conta-btn-guardar" text="Guardar" icon="save" type="success" stylingMode="contained" [visible]="puedeEditarConta" hint="Guarda el texto de la partida" (onClick)="guardarDescripcionPartida()"></dx-button>
+											<dx-button class="conta-btn-regenerar" text="Regenerar asientos" icon="refresh" stylingMode="contained" [visible]="puedeEditarConta" hint="Borra los asientos actuales, incluidos los cambios manuales, y los vuelve a calcular" (onClick)="regenerarProvisionConta()"></dx-button>
+										</div>
+									</div>
+								</div>
+								<div class="conta-botones" *ngIf="cantidadDocumentosProvision <= 1 && (!provision || contabilidades.length === 0)">
+									<dx-button text="Reintentar provisión" icon="redo" stylingMode="outlined" hint="Vuelve a crear la provisión de esta factura" (onClick)="reintentarProvision()"></dx-button>
+								</div>
+							</div>
+							<dx-data-grid
+								#gridConta
+								[dataSource]="contabilidades"
+								[columnAutoWidth]="false"
+								[showBorders]="true"
+								[showColumnLines]="true"
+								[showRowLines]="true"
+								[rowAlternationEnabled]="true"
+								[hoverStateEnabled]="true"
+								[allowColumnResizing]="true"
+								[columnResizingMode]="'widget'"
+								[focusedRowEnabled]="true"
+								[height]="360"
+								[width]="'100%'"
+								keyExpr="CORR_DETA"
+								(onRowUpdating)="contaRowUpdating($event)"
+							>
+								<dxo-editing
+									mode="row"
+									[allowAdding]="false"
+									[allowUpdating]="puedeEditarConta"
+									[allowDeleting]="false"
+									[useIcons]="true"
+								>
+								</dxo-editing>
+								<dxo-load-panel [enabled]="false"></dxo-load-panel>
+								<dxo-search-panel [visible]="true"></dxo-search-panel>
+								<dxi-column type="buttons" [width]="70">
+									<dxi-button name="edit" [visible]="puedeEditarConta"></dxi-button>
+								</dxi-column>
+								<dxi-column dataField="CORR_DETA" caption="Línea" width="70" [allowEditing]="false"></dxi-column>
+								<dxi-column
+									dataField="CUENTA_CONTABLE"
+									caption="Cuenta"
+									width="140"
+									[setCellValue]="cuentaContaSetCellValue"
+									[editCellTemplate]="'CUENTA_CONTABLELookup'"
+								>
+									<div *dxTemplate="let cellInfo of 'CUENTA_CONTABLELookup'">
+										<app-data-lookup
+											[setValue]="cellInfo.setValue"
+											[model]="mCUENTA_CONTABLE"
+											[(value)]="cellInfo.value"
+											[selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
+											[valueExpr]="'CUENTA_CONTABLE'"
+											[displayExpr]="'CUENTA_CONTABLE'"
+											[lookupColumns]="cuentaLookupColumns"
+											[readOnly]="!puedeEditarConta"
+										>
+										</app-data-lookup>
+									</div>
+								</dxi-column>
+								<dxi-column dataField="NOMBRE_CUENTA" caption="Nombre cuenta" width="320" [allowEditing]="false"></dxi-column>
+								<dxi-column
+									dataField="CORR_CENTRO_COSTO"
+									caption="Centro costo"
+									width="120"
+									[editCellTemplate]="'CORR_CENTRO_COSTOLookup'"
+								>
+									<div *dxTemplate="let cellInfo of 'CORR_CENTRO_COSTOLookup'">
+										<app-data-lookup
+											[model]="mCORR_CENTRO_COSTO"
+											[(value)]="cellInfo.data.CORR_CENTRO_COSTO"
+											[selectedRowKeys]="selectedLookUpCORR_CENTRO_COSTO"
+											[valueExpr]="'CORR_CENTRO_COSTO'"
+											[displayExpr]="'NOMBRE_CENTRO'"
+											[lookupColumns]="centroLookupColumns"
+											[readOnly]="!puedeEditarConta"
+										>
+										</app-data-lookup>
+									</div>
+								</dxi-column>
+								<dxi-column dataField="NOMBRE_CENTRO" caption="Nombre centro" width="220" [allowEditing]="false"></dxi-column>
+								<dxi-column dataField="NOMBRE_TRAN" caption="Concepto" width="340"></dxi-column>
+								<dxi-column dataField="MONTO_CARGO" caption="Cargo" dataType="number" format="#,##0.00" width="120"></dxi-column>
+								<dxi-column dataField="MONTO_ABONO" caption="Abono" dataType="number" format="#,##0.00" width="120"></dxi-column>
+								<dxi-column dataField="NOMBRE_AUXILIAR" caption="Auxiliar" width="180" [allowEditing]="false" [visible]="false"></dxi-column>
+								<dxo-summary>
+									<dxi-total-item column="CORR_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+									<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+									<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+								</dxo-summary>
+							</dx-data-grid>
+						</div>
+					</dxi-item>
+	</dx-tab-panel>
 
 </div>
 <app-data-grid-mtto

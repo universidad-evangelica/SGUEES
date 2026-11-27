@@ -105,6 +105,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	personaBancos: GenPersonaBanco[] = [];
 	nuevoBancoCorr: number | null = null;
 	nuevoBancoCuenta = '';
+	nuevoBancoPorDefecto = false;
 	bancosCargando = false;
 	bancoGuardando = false;
 
@@ -146,6 +147,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 	/** Tab Doc. Adjuntos */
 	documentos: GenProveedorDoc[] = [];
 	documentoColumns: any[] = [];
+	bancoColumns: any[] = [];
 	usuarioColumns: any[] = [];
 	documentosCargando = false;
 	documentoSubiendo = false;
@@ -173,6 +175,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.summary = {};
 		this.items = this.service.getItems();
 		this.documentoColumns = this.service.getDocumentoColumns();
+		this.bancoColumns = this.service.getBancoColumns();
 		this.usuarioColumns = this.service.getUsuarioColumns();
 		this.cuentaColumns = this.service.getCuentaColumns();
 		this.selectedLookUpCORR_PERSONA = this.selectedLookUpCORR_PERSONA.bind(this);
@@ -189,22 +192,6 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 			Number(this.model?.CORR_PERSONA ?? 0) > 0 &&
 			!this.readOnly
 		);
-	}
-
-	get bancosGridEditing(): {
-		allowAdding: boolean;
-		allowUpdating: boolean;
-		allowDeleting: boolean;
-		useIcons: boolean;
-		confirmDelete: boolean;
-	} {
-		return {
-			allowAdding: false,
-			allowUpdating: false,
-			allowDeleting: this.puedeGestionarBancos,
-			useIcons: true,
-			confirmDelete: true,
-		};
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -1275,7 +1262,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		this.ejecutarGuardarPersona();
 	}
 
-	agregarPersonaBanco(): void {
+	async agregarPersonaBanco(): Promise<void> {
 		if (!this.puedeGestionarBancos || this.bancoGuardando) {
 			if (!(Number(this.model?.CORR_PERSONA ?? 0) > 0)) {
 				this.notifyFx('Seleccione una persona primero.', NotifyType.Warning);
@@ -1300,12 +1287,17 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		}
 
 		this.bancoGuardando = true;
+		if (this.nuevoBancoPorDefecto && !(await this.confirmarReemplazoPorDefecto(0))) {
+			this.bancoGuardando = false;
+			return;
+		}
 		this.service
 			.insertPersonaBanco({
 				CORR_PERSONA: corrPersona,
 				CORR_PERSONA_BANCO: 0,
 				CORR_BANCO: corrBanco,
 				CUENTA_BANCARIA: cuenta,
+				POR_DEFECTO: this.nuevoBancoPorDefecto,
 			})
 			.pipe(take(1))
 			.subscribe({
@@ -1317,6 +1309,7 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 					}
 					this.nuevoBancoCorr = null;
 					this.nuevoBancoCuenta = '';
+					this.nuevoBancoPorDefecto = false;
 					this.notifyFx('Cuenta bancaria agregada.', NotifyType.Success);
 					this.cargarPersonaBancos(corrPersona);
 				},
@@ -1365,47 +1358,109 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 		});
 	}
 
-	/** Elimina en API de inmediato; cancela la fila si falla. */
-	personaBancoRowRemoving(e: any): void {
-		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
-		const corrLinea = Number(e?.data?.CORR_PERSONA_BANCO ?? 0);
-		if (!this.puedeGestionarBancos || !(corrPersona > 0) || !(corrLinea > 0)) {
-			e.cancel = true;
+	async eliminarPersonaBanco(row: GenPersonaBanco): Promise<void> {
+		if (!this.puedeGestionarBancos || this.bancoGuardando) {
 			return;
 		}
-		e.cancel = new Promise<boolean>((resolve) => {
-			this.service
-				.deletePersonaBanco(corrPersona, corrLinea)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (!response?.Result) {
-							this.notifyPersonaBancoError(response);
-							resolve(true);
-							return;
-						}
-						this.notifyFx('Cuenta bancaria eliminada.', NotifyType.Success);
-						resolve(false);
-					},
-					error: (error: any) => {
-						this.notifyPersonaBancoError(error);
-						resolve(true);
-					},
-				});
-		});
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? row?.CORR_PERSONA ?? 0);
+		const corrLinea = Number(row?.CORR_PERSONA_BANCO ?? 0);
+		if (!(corrPersona > 0) || !(corrLinea > 0)) {
+			return;
+		}
+		const cuenta = String(row?.CUENTA_BANCARIA ?? '').trim() || `#${corrLinea}`;
+		const ok = await confirm(`¿Eliminar la cuenta ${cuenta}?`, 'Confirmar eliminación');
+		if (!ok) {
+			return;
+		}
+		this.bancoGuardando = true;
+		this.service
+			.deletePersonaBanco(corrPersona, corrLinea)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.bancoGuardando = false;
+					if (!response?.Result) {
+						this.notifyPersonaBancoError(response);
+						return;
+					}
+					this.notifyFx('Cuenta bancaria eliminada.', NotifyType.Success);
+					this.cargarPersonaBancos(corrPersona);
+				},
+				error: (error: any) => {
+					this.bancoGuardando = false;
+					this.notifyPersonaBancoError(error);
+				},
+			});
 	}
 
 	private resetPersonaBancosLocal(): void {
 		this.personaBancos = [];
 		this.nuevoBancoCorr = null;
 		this.nuevoBancoCuenta = '';
+		this.nuevoBancoPorDefecto = false;
 		this.bancosCargando = false;
 		this.bancoGuardando = false;
+	}
+
+	bancoEsPorDefecto(row: GenPersonaBanco | null | undefined): boolean {
+		const valor = row?.POR_DEFECTO as unknown;
+		return valor === true || valor === 1 || valor === '1' || valor === 'true';
+	}
+
+	async cambiarBancoPorDefecto(row: GenPersonaBanco, e: any): Promise<void> {
+		if (!e?.event || this.readOnly || this.bancoGuardando) {
+			return;
+		}
+		const marcar = !!e.value;
+		if (marcar === this.bancoEsPorDefecto(row)) {
+			return;
+		}
+		if (marcar && !(await this.confirmarReemplazoPorDefecto(row.CORR_PERSONA_BANCO))) {
+			e.component?.option?.('value', false);
+			return;
+		}
+		this.bancoGuardando = true;
+		this.service
+			.updatePersonaBanco({
+				...row,
+				POR_DEFECTO: marcar,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.bancoGuardando = false;
+					if (!response?.Result) {
+						this.notifyPersonaBancoError(response);
+						e.component?.option?.('value', !marcar);
+						return;
+					}
+					this.cargarPersonaBancos(Number(row.CORR_PERSONA));
+				},
+				error: (error: any) => {
+					this.bancoGuardando = false;
+					this.notifyPersonaBancoError(error);
+					e.component?.option?.('value', !marcar);
+				},
+			});
+	}
+
+	private async confirmarReemplazoPorDefecto(corrLinea: number): Promise<boolean> {
+		const otra = (this.personaBancos ?? []).find(
+			(row) => this.bancoEsPorDefecto(row) && Number(row.CORR_PERSONA_BANCO) !== Number(corrLinea),
+		);
+		if (!otra) {
+			return true;
+		}
+		return confirm(
+			`La cuenta ${otra.CUENTA_BANCARIA} ya está por defecto. Si confirma, esa deja de serlo y esta pasa a ser la cuenta por defecto.`,
+			'Cuenta por defecto',
+		);
 	}
 
 	private cargarPersonaBancos(corrPersona: number): void {
 		this.nuevoBancoCorr = null;
 		this.nuevoBancoCuenta = '';
+		this.nuevoBancoPorDefecto = false;
 		if (!(corrPersona > 0)) {
 			this.personaBancos = [];
 			this.bancosCargando = false;
@@ -1419,7 +1474,10 @@ export class GenProveedorComponent extends CBaseComponent implements OnInit, OnD
 				next: (response: any) => {
 					this.bancosCargando = false;
 					if (response?.Result) {
-						this.personaBancos = [...(response.Data ?? [])];
+						this.personaBancos = (response.Data ?? []).map((row: GenPersonaBanco) => ({
+							...row,
+							POR_DEFECTO: this.bancoEsPorDefecto(row),
+						}));
 					} else {
 						this.personaBancos = [];
 						this.notifyPersonaBancoError(response);
