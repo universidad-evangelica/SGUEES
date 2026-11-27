@@ -8,6 +8,16 @@ namespace sguees.Services
     {
         private readonly IACA_CICLOSRepository repo;
         public ACA_CICLOSService(IACA_CICLOSRepository repo) { this.repo = repo; }
+        public Task<CResult> OfertaAdmision(int empresa, int id, int sede) => repo.OfertaAdmision(empresa, id, sede);
+        public Task<CResult> GuardarOfertaAdmision(int empresa, ACA_ADMISION_OFERTAInput input, string user, string station)
+        {
+            if (empresa<=0 || string.IsNullOrWhiteSpace(user) || input==null || input.CORR_CICLO_ACADEMICO<=0 || input.CORR_SEDE<=0
+                || input.VERSION_CICLO?.Length!=8 || (input.VERSION_OFERTA!=null && input.VERSION_OFERTA.Length!=8)
+                || input.CARRERAS==null || input.CARRERAS.Count==0 || input.CARRERAS.Count>10000 || input.MODALIDADES==null || input.PLANES==null
+                || input.MODALIDADES.Count>10000 || input.PLANES.Count>10000)
+                return Task.FromResult(new CResult { ErrorCode=51000, ErrorMessage="Seleccione una oferta actualizada y una sesión válida." });
+            return repo.GuardarOfertaAdmision(empresa,input,user,station);
+        }
         public Task<CResult> Areas(int empresa) => repo.Areas(empresa);
         public Task<CResult> Listar(int empresa, int area) => repo.Listar(empresa, area);
         public Task<CResult> Detalle(int empresa, int id) => repo.Detalle(empresa, id);

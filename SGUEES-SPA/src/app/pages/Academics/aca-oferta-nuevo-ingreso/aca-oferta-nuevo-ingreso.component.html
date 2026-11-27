@@ -1,0 +1,14 @@
+<div class="sguees-mtto-view">
+ <div class="content-block dx-card responsive-paddings oferta-pagina">
+  <header><div><h2>Oferta de nuevo ingreso</h2><p>Marque las carreras, modalidades y planes que ofrecerá en cada período.</p></div><span *ngIf="ciclo" class="estado-ciclo">{{ciclo.ESTADO}}</span></header>
+  <div class="selector-periodo"><label for="oferta-periodo">Período académico</label>
+   <select id="oferta-periodo" [value]="cicloId" [disabled]="loadingVisible || editor?.cargando" (change)="seleccionar($any($event.target).value)">
+    <option value="0">Seleccione un período</option>
+    <option *ngFor="let c of ciclos" [value]="c.CORR_CICLO_ACADEMICO">{{c.ANIO}}-{{c.NUMERO_PERIODO | number:'2.0-0'}} · {{c.NOMBRE_AREA}}</option>
+   </select>
+  </div>
+  <p *ngIf="loadingVisible" role="status">Consultando períodos…</p>
+  <p *ngIf="!loadingVisible && !ciclos.length">No hay ciclos creados. Prepare primero el período en Ciclos académicos por área.</p>
+  <app-aca-oferta-admision *ngIf="ciclo" [ciclo]="ciclo" [sedes]="sedes" [puedeEditar]="permiteEdit"></app-aca-oferta-admision>
+ </div>
+</div>

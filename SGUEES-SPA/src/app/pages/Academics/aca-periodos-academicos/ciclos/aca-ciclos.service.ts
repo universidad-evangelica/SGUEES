@@ -1,9 +1,12 @@
+import type { OfertaAdmisionInput } from './aca-oferta-admision.model';
 import type { AcaCicloInput, AcaCicloAsignacion } from './aca-ciclo-input';
 import { Injectable } from '@angular/core';
 import { AcaCiclosRepository } from './aca-ciclos.repository';
 @Injectable({ providedIn: 'root' })
 export class AcaCiclosService {
     constructor(private repo: AcaCiclosRepository) {}
+    ofertaAdmision(id: number, sede: number) { return this.repo.ofertaAdmision(id, sede); }
+    guardarOfertaAdmision(model: OfertaAdmisionInput) { return this.repo.guardarOfertaAdmision(model); }
     areas() { return this.repo.areas(); }
     ciclos(area: number) { return this.repo.ciclos(area); }
     detalle(id: number) { return this.repo.detalle(id); }

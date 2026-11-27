@@ -1,3 +1,4 @@
+import type { OfertaAdmisionInput } from './aca-oferta-admision.model';
 import type { AcaCicloInput, AcaCicloAsignacion } from './aca-ciclo-input';
 import { Injectable } from '@angular/core';
 import { CData } from 'src/app/FxAPI/CData';
@@ -6,6 +7,11 @@ import { environment } from 'src/environments/environment';
 @Injectable({ providedIn: 'root' })
 export class AcaCiclosRepository {
     constructor(private data: CData) {}
+    ofertaAdmision(id: number, sede: number) {
+        return this.data.Get('ACA_CICLOS', 'OfertaAdmision', [{ Parameter: 'CORR_CICLO_ACADEMICO', Value: id },
+            { Parameter: 'CORR_SEDE', Value: sede }], environment.UrlGENERALAPI);
+    }
+    guardarOfertaAdmision(model: OfertaAdmisionInput) { return this.data.Put(model, 'ACA_CICLOS', 'OfertaAdmision', [], environment.UrlGENERALAPI); }
     areas() { return this.data.Get('ACA_CICLOS', 'Areas', [], environment.UrlGENERALAPI); }
     ciclos(area: number) { return this.data.Get('ACA_CICLOS', 'GetAll', [{ Parameter: 'CORR_AREA_ACADEMICA', Value: area }], environment.UrlGENERALAPI); }
     detalle(id: number) { return this.data.Get('ACA_CICLOS', 'Detalle', [{ Parameter: 'CORR_CICLO_ACADEMICO', Value: id }], environment.UrlGENERALAPI); }

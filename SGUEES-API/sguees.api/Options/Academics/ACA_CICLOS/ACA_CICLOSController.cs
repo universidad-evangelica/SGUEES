@@ -13,10 +13,18 @@ namespace sguees.Controllers
     {
         private readonly IACA_CICLOSService repo;
         public ACA_CICLOSController(IACA_CICLOSService repo) { this.repo = repo; }
+        [HttpGet("OfertaAdmision"), Authorize(Policy = "/aca-oferta-nuevo-ingreso|R")]
+        public Task<CResult> OfertaAdmision(int CORR_CICLO_ACADEMICO, int CORR_SEDE) => repo.OfertaAdmision(Empresa, CORR_CICLO_ACADEMICO, CORR_SEDE);
+        [HttpPut("OfertaAdmision"), Authorize(Policy = "/aca-oferta-nuevo-ingreso|U")]
+        public async Task<IActionResult> GuardarOfertaAdmision(ACA_ADMISION_OFERTAInput input)
+        {
+            var result=await repo.GuardarOfertaAdmision(Empresa,input,User.FindFirstValue(ClaimTypes.NameIdentifier),ClientInfoHelper.GetClientStation(HttpContext));
+            return result.Result ? Ok(result) : result.ErrorCode==51009 ? Conflict(result) : BadRequest(result);
+        }
         private int Empresa => int.TryParse(User.FindFirstValue("CORR_EMPRESA"), out var id) ? id : 0;
         [HttpGet("Areas"), Authorize(Policy = "/aca-periodos-academicos|R")] public Task<CResult> Areas() => repo.Areas(Empresa);
-        [HttpGet("GetAll"), Authorize(Policy = "/aca-periodos-academicos|R")] public Task<CResult> GetAll(int CORR_AREA_ACADEMICA = 0) => repo.Listar(Empresa, CORR_AREA_ACADEMICA);
-        [HttpGet("Detalle"), Authorize(Policy = "/aca-periodos-academicos|R")] public Task<CResult> Detalle(int CORR_CICLO_ACADEMICO) => repo.Detalle(Empresa, CORR_CICLO_ACADEMICO);
+        [HttpGet("GetAll"), Authorize(Policy = "/aca-periodos-academicos,/aca-oferta-nuevo-ingreso|R")] public Task<CResult> GetAll(int CORR_AREA_ACADEMICA = 0) => repo.Listar(Empresa, CORR_AREA_ACADEMICA);
+        [HttpGet("Detalle"), Authorize(Policy = "/aca-periodos-academicos,/aca-oferta-nuevo-ingreso|R")] public Task<CResult> Detalle(int CORR_CICLO_ACADEMICO) => repo.Detalle(Empresa, CORR_CICLO_ACADEMICO);
         [HttpGet("Catalogos"), Authorize(Policy = "/aca-periodos-academicos|R")] public Task<CResult> Catalogos() => repo.Catalogos(Empresa);
         [HttpGet("Candidatas"), Authorize(Policy = "/aca-periodos-academicos|R")]
         public Task<CResult> Candidatas(int CORR_AREA_ACADEMICA, DateTime FECHA_INICIO) => repo.Candidatas(Empresa, CORR_AREA_ACADEMICA, FECHA_INICIO);

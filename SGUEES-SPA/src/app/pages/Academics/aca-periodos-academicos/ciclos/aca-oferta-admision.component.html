@@ -1,0 +1,45 @@
+<section class="oferta-admision" aria-label="Configuración de la oferta">
+ <div class="filtros">
+  <label>Sede<select [value]="sedeId" [disabled]="cargando" (change)="cambiarSede($any($event.target).value)"><option *ngFor="let s of sedesActivas" [value]="s.CORR_SEDE">{{s.NOMBRE_SEDE}}</option></select></label>
+  <label>Facultad<select [value]="facultadId" [disabled]="cargando" (change)="filtrarFacultad($any($event.target).value)"><option value="0">Todas las facultades</option><option *ngFor="let f of facultades" [value]="f.id">{{f.nombre}}</option></select></label>
+  <label class="publicacion"><span>Disponibilidad en el portal</span><span><input type="checkbox" [checked]="publicarEnAdmision" [disabled]="!editando || ciclo.CORR_AREA_ACADEMICA!==5" (change)="cambiarPublicacion($any($event.target).checked)"/>Publicar en nuevo ingreso</span></label>
+ </div>
+ <div class="barra-oferta">
+  <div class="resumen"><strong>{{carrerasPublicables}} carreras · {{modalidadesPublicables}} modalidades · {{resumen.length}} planes habilitados</strong><small>Inscripción: {{ciclo.FECHA_INICIO_INSCRIPCION | date:'dd/MM/yyyy'}} – {{ciclo.FECHA_FIN_INSCRIPCION | date:'dd/MM/yyyy'}}</small></div>
+  <div class="acciones"><dx-button text="Actualizar" icon="refresh" [disabled]="cargando" (onClick)="actualizar()"></dx-button><dx-button text="Guardar oferta" icon="save" type="default" [disabled]="!editando || !pendiente" (onClick)="guardar()"></dx-button></div>
+ </div>
+ <div class="estado-oferta" aria-live="polite"><span *ngIf="pendiente">Cambios sin guardar</span><span *ngIf="guardado && !pendiente" class="guardado">Oferta guardada</span><span *ngIf="cargando">Consultando oferta…</span><span *ngIf="usaPeriodosVigentes">Oferta del período vigente: se aplican las exclusiones guardadas.</span><span *ngIf="!publicarEnAdmision">Configuración interna: sin publicar en SIS-Admisión.</span><span *ngIf="publicarEnAdmision && !usaPeriodosVigentes && ciclo.ESTADO!=='HABILITADO'">Se publicará al habilitar el ciclo y abrir la inscripción.</span></div>
+ <p *ngIf="mensaje" role="alert" class="aviso">{{mensaje}}</p>
+ <p *ngIf="conflicto" class="aviso">Actualice la oferta antes de continuar. Sus cambios no se guardaron.</p>
+ <div class="carreras-grid-contenedor">
+  <dx-data-grid class="carreras-grid" [dataSource]="visibles" keyExpr="id" height="100%" [showBorders]="true" [rowAlternationEnabled]="true" [allowColumnResizing]="true" [wordWrapEnabled]="true" [noDataText]="cargando ? 'Consultando carreras…' : 'No hay carreras para la sede y facultad seleccionadas.'">
+   <dxo-sorting mode="multiple"></dxo-sorting>
+   <dxo-search-panel [visible]="true" [width]="260" placeholder="Buscar carrera…"></dxo-search-panel>
+   <dxo-paging [enabled]="false"></dxo-paging>
+   <dxo-scrolling mode="standard" [useNative]="true" showScrollbar="always"></dxo-scrolling>
+   <dxi-column dataField="publicar" caption="Ofrecer" dataType="boolean" [width]="95" [allowSorting]="false" [allowFiltering]="false" [allowSearch]="false" cellTemplate="ofrecerCarrera"></dxi-column>
+   <dxi-column dataField="nombre" caption="Carrera" sortOrder="asc" [minWidth]="300"></dxi-column>
+   <dxi-column caption="Modalidades / validación" [calculateCellValue]="estadoCarrera" [minWidth]="260" [allowSearch]="false"></dxi-column>
+   <div *dxTemplate="let cell of 'ofrecerCarrera'" class="marca-carrera"><input type="checkbox" [attr.aria-label]="'Ofrecer '+cell.data.nombre" [checked]="cell.data.publicar" [disabled]="!editando" (change)="cell.data.publicar=$any($event.target).checked;pendiente=true"/></div>
+   <dxo-master-detail [enabled]="true" template="detalleCarrera"></dxo-master-detail>
+   <div *dxTemplate="let detalle of 'detalleCarrera'" class="detalle-carrera">
+    <ng-container *ngIf="detalle.data as c">
+  <p *ngIf="!c.modalidades.length" class="sin-planes">Sin planes registrados. Publicación pendiente.</p>
+  <div *ngIf="c.modalidades.length" class="tabla-planes">
+   <table>
+    <thead><tr><th scope="col">Modalidad</th><th scope="col">Plan</th><th scope="col">Vigencia</th><th scope="col">Estado</th></tr></thead>
+    <tbody *ngFor="let m of c.modalidades">
+     <tr *ngFor="let p of m.planes; let primero=first" [class.retirada]="!c.publicar || !m.publicar">
+      <td *ngIf="primero" [attr.rowspan]="m.planes.length"><label><input type="checkbox" [checked]="m.publicar" [disabled]="!editando || !c.publicar" (change)="m.publicar=$any($event.target).checked;pendiente=true"/>{{m.nombre}}</label></td>
+      <td><label><input type="checkbox" [checked]="p.PUBLICAR_PLAN && p.PLAN_ELEGIBLE" [disabled]="!editando || !c.publicar || !m.publicar || !p.PLAN_ELEGIBLE" (change)="marcarPlan(m,p,$any($event.target).checked)"/>{{p.CODIGO_PLAN}}</label></td>
+      <td class="vigencia">{{p.FECHA_VIGENCIA_INICIO | date:'dd/MM/yyyy'}} – {{p.FECHA_VIGENCIA_FIN ? (p.FECHA_VIGENCIA_FIN | date:'dd/MM/yyyy') : 'Sin vencimiento'}}</td>
+      <td><span [class.aviso]="!p.PLAN_ELEGIBLE">{{!p.PLAN_ELEGIBLE ? p.DIAGNOSTICO : (!c.publicar || !m.publicar || !p.PUBLICAR_PLAN ? 'Retirado de la oferta' : 'Habilitado')}}</span></td>
+     </tr>
+    </tbody>
+   </table>
+  </div>
+    </ng-container>
+   </div>
+  </dx-data-grid>
+ </div>
+</section>

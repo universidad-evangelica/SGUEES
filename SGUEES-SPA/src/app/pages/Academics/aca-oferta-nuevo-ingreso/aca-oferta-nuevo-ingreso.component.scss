@@ -1,0 +1,7 @@
+.oferta-pagina { padding:20px!important; }
+header { display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px; }
+h2 { font-size:1.5rem!important;margin:0 0 6px!important; } header p { font-size:.9rem;margin:0;opacity:.8; }
+.estado-ciclo { font-size:.8rem;padding:5px 10px;border:1px solid #647586;border-radius:4px;white-space:nowrap; }
+.selector-periodo { display:flex;align-items:center;gap:12px; } .selector-periodo label { font-size:.9rem;white-space:nowrap; }
+select { width:100%;max-width:520px;padding:8px;background:var(--sguees-input-bg,#282828);color:inherit;border:1px solid #666;border-radius:4px; }
+@media(max-width:600px) { .selector-periodo { align-items:stretch;flex-direction:column;gap:6px; } header { align-items:flex-start; } .oferta-pagina { padding:14px!important; } }

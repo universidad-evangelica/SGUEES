@@ -5,6 +5,8 @@ namespace sguees.Repositories
 {
     public interface IACA_CICLOSRepository
     {
+        Task<CResult> OfertaAdmision(int empresa, int id, int sede);
+        Task<CResult> GuardarOfertaAdmision(int empresa, ACA_ADMISION_OFERTAInput input, string user, string station);
         Task<CResult> Areas(int empresa);
         Task<CResult> Listar(int empresa, int area);
         Task<CResult> Detalle(int empresa, int id);

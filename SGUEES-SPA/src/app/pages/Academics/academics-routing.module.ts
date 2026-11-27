@@ -1,6 +1,7 @@
 import { AcaAsignaturasComponent } from './aca-asignaturas/aca-asignaturas.component';
 import { NgModule } from '@angular/core';
 import { AcaCarrerasComponent } from './aca-carreras/aca-carreras.component';
+import { AcaOfertaNuevoIngresoComponent } from './aca-oferta-nuevo-ingreso/aca-oferta-nuevo-ingreso.component';
 import { AcaCiclosComponent } from './aca-periodos-academicos/ciclos/aca-ciclos.component';
 import { RouterModule, Routes } from '@angular/router';
 import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
@@ -28,6 +29,11 @@ import { AcaSeOpcionComponent } from './aca-se-opcion/aca-se-opcion.component';
 
 
 const routes: Routes = [
+  {
+    path: 'aca-oferta-nuevo-ingreso', component: AcaOfertaNuevoIngresoComponent,
+    canActivate: [AuthGuardService], canDeactivate: [AppCanDeactivateGuard], data: { titulo: 'Oferta de nuevo ingreso' },
+    loadChildren: () => import('./aca-oferta-nuevo-ingreso/aca-oferta-nuevo-ingreso.module').then(m => m.AcaOfertaNuevoIngresoModule),
+  },
   { path: 'aca-tipos-practica', redirectTo: '/aca-asignaturas?catalogo=practicas', pathMatch: 'full' },
   {
     path: 'aca-asignaturas', component: AcaAsignaturasComponent,

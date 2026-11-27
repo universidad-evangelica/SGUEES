@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using System.Data;
 using eFramework.Core;
 using eFramework.Data;
@@ -26,6 +27,30 @@ namespace sguees.Repositories
             try { var rows = await Rows<T>(procedure, parameters); return new() { Result = true, Data = rows, RowsAffected = rows.Count }; }
             catch (SqlException ex) when (ex.Number == 51009) { return Error(ex.Message, ex.Number); }
             catch (Exception ex) { return Error(ex.Message); }
+        }
+        public Task<CResult> OfertaAdmision(int empresa, int id, int sede) => Read<ACA_ADMISION_OFERTAView>("PRAL_DATA_ACA_ADMISION_OFERTA",
+            P("@empresa", DbType.Int32, empresa), P("@id", DbType.Int32, id), P("@sede", DbType.Int32, sede));
+        public async Task<CResult> GuardarOfertaAdmision(int empresa, ACA_ADMISION_OFERTAInput input, string user, string station)
+        {
+            try
+            {
+                var parameters = new List<CParameter> {
+                    P("@empresa", DbType.Int32, empresa), P("@id", DbType.Int32, input.CORR_CICLO_ACADEMICO), P("@sede", DbType.Int32, input.CORR_SEDE),
+                    new() { ParameterName="@version_ciclo", DbType=DbType.Binary, Size=8, Value=input.VERSION_CICLO },
+                    new() { ParameterName="@version_oferta", DbType=DbType.Binary, Size=8, Value=(object)input.VERSION_OFERTA ?? DBNull.Value },
+                    P("@publicar", DbType.Boolean, input.PUBLICAR_NUEVO_INGRESO),
+                    P("@datos", DbType.Xml, new XElement("oferta",
+                        new XElement("carreras", input.CARRERAS.Select(c => new XElement("carrera", new XAttribute("id",c.id), new XAttribute("publicar",c.publicar)))),
+                        new XElement("modalidades", input.MODALIDADES.Select(m => new XElement("modalidad", new XAttribute("carrera",m.carrera), new XAttribute("modalidad",m.modalidad), new XAttribute("publicar",m.publicar), new XAttribute("principal",m.principal ?? 0)))),
+                        new XElement("planes", input.PLANES.Select(p => new XElement("plan", new XAttribute("id",p.id), new XAttribute("publicar",p.publicar))))).ToString(SaveOptions.DisableFormatting)),
+                    P("@usuario", DbType.AnsiString, user), P("@estacion", DbType.AnsiString, station)
+                };
+                await objData.ExecCmd(CommandType.StoredProcedure, "PRAL_MTTO_ACA_ADMISION_OFERTA", false, parameters);
+                return new CResult { Result=true };
+            }
+            catch (SqlException ex) when (ex.Number == 51009) { return Error(ex.Message, ex.Number); }
+            catch (Exception ex) { return Error(ex.Message); }
+            finally { objData.objConnection.Close(); }
         }
         public Task<CResult> Areas(int empresa) => Read<ACA_CICLOS_AREASView>("PRAL_DATA_ACA_CICLOS_AREAS", P("@empresa", DbType.Int32, empresa));
         public Task<CResult> Listar(int empresa, int area) => Read<ACA_CICLOS_LISTARView>("PRAL_DATA_ACA_CICLOS_LISTAR", P("@empresa", DbType.Int32, empresa), P("@area", DbType.Int32, area));
